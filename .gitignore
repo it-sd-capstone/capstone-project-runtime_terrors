@@ -1,0 +1,29 @@
+# Configuration files with credentials
+/config/*.local.php
+.env
+
+# Composer dependencies
+/vendor/
+composer.lock
+composer.phar
+
+# Temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-*
+nbproject/
+
+# XAMPP specific
+/logs/
