@@ -1,6 +1,10 @@
 # Configuration files with credentials
 /config/*.local.php
 .env
+config/environments/production.php
+
+# Example files are ok to commit
+!config/environments/production.example.php
 
 # Composer dependencies
 /vendor/
