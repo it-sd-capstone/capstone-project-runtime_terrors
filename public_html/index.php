@@ -3,42 +3,42 @@
  * Front Controller
  * All requests are routed through this file
  */
-
+ 
 // Load the bootstrap
 require_once 'bootstrap.php';
-
+ 
 // Get the requested path
 $path = $_SERVER['PATH_INFO'] ?? $_SERVER['REQUEST_URI'] ?? '/';
-
+ 
 // Remove query string if present
 if (($pos = strpos($path, '?')) !== false) {
     $path = substr($path, 0, $pos);
 }
-
+ 
 // Remove script name and base directory from path if present
 $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
 $base_dir = dirname($script_name);
 if ($base_dir != '/' && strpos($path, $base_dir) === 0) {
     $path = substr($path, strlen($base_dir));
 }
-
+ 
 // Basic routing
 try {
     // Remove leading/trailing slashes and sanitize
     $path = trim($path, '/');
     $path = filter_var($path, FILTER_SANITIZE_URL);
-    
+   
     // Default to home if path is empty
     if (empty($path)) {
         $path = 'home';
     }
-    
+   
     // Split into segments (controller/action/params)
     $segments = explode('/', $path);
     $controller_name = $segments[0];
     $action = $segments[1] ?? 'index';
     $params = array_slice($segments, 2);
-    
+   
     // Special case for test files
     if ($controller_name == 'test' && isset($segments[1])) {
         // Allow direct access to test files
@@ -52,18 +52,18 @@ try {
         }
         exit;
     }
-    
+   
     // Load the appropriate controller file
     $controller_file = CONTROLLER_PATH . "/{$controller_name}_controller.php";
     if (file_exists($controller_file)) {
         require_once $controller_file;
-        
+       
         // Create controller class name (e.g., 'home' -> 'HomeController')
         $class_name = ucfirst($controller_name) . 'Controller';
-        
+       
         // Instantiate the controller
         $controller = new $class_name();
-        
+       
         // Call the action method
         if (method_exists($controller, $action)) {
             call_user_func_array([$controller, $action], $params);
@@ -79,7 +79,7 @@ try {
             VIEW_PATH . "/{$controller_name}.php",           // e.g., views/home.php (flat structure)
             VIEW_PATH . "/home/index.php"                    // Default to home page if nothing found
         ];
-
+ 
         $view_found = false;
         foreach ($possible_view_locations as $view_file) {
             if (file_exists($view_file)) {
@@ -89,7 +89,7 @@ try {
                 break;
             }
         }
-
+ 
         if (!$view_found) {
             throw new Exception("View not found for '{$controller_name}/{$action}'");
         }
@@ -99,17 +99,17 @@ try {
     header('HTTP/1.1 404 Not Found');
     echo "<h1>Error</h1>";
     echo "<p>{$e->getMessage()}</p>";
-    
+   
     // Show available views and controllers for easier debugging
     echo "<h2>Available Views:</h2>";
     echo "<ul>";
-
+ 
     // List view directories
     $view_dirs = glob(VIEW_PATH . "/*", GLOB_ONLYDIR);
     foreach ($view_dirs as $dir) {
         $dir_name = basename($dir);
         echo "<li><strong>{$dir_name}/</strong>";
-        
+       
         // List files in this directory
         $view_files = glob($dir . "/*.php");
         if (!empty($view_files)) {
@@ -120,10 +120,10 @@ try {
             }
             echo "</ul>";
         }
-        
+       
         echo "</li>";
     }
-
+ 
     // List standalone view files (if any)
     $view_files = glob(VIEW_PATH . "/*.php");
     if (!empty($view_files)) {
@@ -134,9 +134,9 @@ try {
         }
         echo "</ul></li>";
     }
-    
+   
     echo "</ul>";
-    
+   
     echo "<h2>Available Controllers:</h2>";
     echo "<ul>";
     $controllers = glob(CONTROLLER_PATH . "/*_controller.php");
@@ -145,14 +145,15 @@ try {
         echo "<li>{$controller_name}</li>";
     }
     echo "</ul>";
-    
+   
     // Debug information
     echo "<h2>Debug Information</h2>";
     echo "<p>Requested Path: {$path}</p>";
     echo "<p>Controller: {$controller_name}</p>";
     echo "<p>Action: {$action}</p>";
-    
+   
     if (get_environment() === 'development' || config('debug', false)) {
         echo "<pre>{$e->getTraceAsString()}</pre>";
     }
 }
+ 
