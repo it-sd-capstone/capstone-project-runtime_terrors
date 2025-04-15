@@ -25,7 +25,7 @@
 
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-3">
-        <a class="navbar-brand" href="/index.php?page=home">Appointment System</a>
+        <a class="navbar-brand" href="appointments">Appointment System</a>
         <div class="collapse navbar-collapse">
             <ul class="navbar-nav">
                 <li class="nav-item"><a class="nav-link" href="auth/login">Login</a></li>
