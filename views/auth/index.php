@@ -36,7 +36,7 @@
     </form>
 
     <div class="text-center mt-3">
-        <a href="/index.php?page=home" class="btn btn-secondary">Back to Home</a>
+        <a href="../home" class="btn btn-secondary">Back to Home</a>
     </div>
 
     <!-- Bootstrap JS -->

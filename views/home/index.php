@@ -36,13 +36,13 @@
 <div class="collapse navbar-collapse" id="navbarNav">
 <ul class="navbar-nav">
 <li class="nav-item">
-<a class="nav-link" href="/index.php">Home</a>
+<a class="nav-link" href="home">Home</a>
 </li>
 <li class="nav-item">
-<a class="nav-link" href="/index.php?page=appointments">Appointments</a>
+<a class="nav-link" href="appointments">Appointments</a>
 </li>
 <li class="nav-item">
-<a class="nav-link" href="/index.php?page=auth">Login</a>
+<a class="nav-link" href="auth/login">Login</a>
 </li>
 </ul>
 </div>

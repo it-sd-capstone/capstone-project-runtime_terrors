@@ -28,8 +28,8 @@
         <a class="navbar-brand" href="/index.php?page=home">Appointment System</a>
         <div class="collapse navbar-collapse">
             <ul class="navbar-nav">
-                <li class="nav-item"><a class="nav-link" href="/index.php?page=auth">Login</a></li>
-                <li class="nav-item"><a class="nav-link" href="/index.php?page=home">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="auth/login">Login</a></li>
+                <li class="nav-item"><a class="nav-link" href="home">Home</a></li>
             </ul>
         </div>
     </nav>
