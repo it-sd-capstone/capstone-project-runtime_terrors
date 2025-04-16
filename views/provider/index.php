@@ -22,6 +22,7 @@
 
     <h2 class="text-center">Provider Dashboard</h2>
 
+    <!-- Upload Availability Form -->
     <h3>Upload Availability</h3>
     <form action="provider/upload_availability" method="POST">
         <label>Available Date:</label>
@@ -37,7 +38,7 @@
     </form>
 
     <!-- FullCalendar for Providers -->
-    <h3 class="mt-4">Availability Calendar</h3>
+    <h3 class="mt-4">Availability & Appointments Calendar</h3>
     <div id="provider-calendar"></div>
 
     <!-- FullCalendar Script -->
@@ -51,7 +52,15 @@
                         {
                             title: "Available",
                             start: "<?= htmlspecialchars($availability['available_date']) ?>",
-                            description: "<?= htmlspecialchars($availability['start_time']) ?> - <?= htmlspecialchars($availability['end_time']) ?>"
+                            description: "<?= htmlspecialchars($availability['start_time']) ?> - <?= htmlspecialchars($availability['end_time']) ?>",
+                            backgroundColor: "#28a745" // Green for available
+                        },
+                    <?php endforeach; ?>
+                    <?php foreach ($appointments as $appointment): ?>
+                        {
+                            title: "Booked: <?= htmlspecialchars($appointment['patient_name']) ?>",
+                            start: "<?= htmlspecialchars($appointment['appointment_date']) ?>",
+                            backgroundColor: "#dc3545" // Red for booked
                         },
                     <?php endforeach; ?>
                 ]
