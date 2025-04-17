@@ -8,14 +8,24 @@ class ProviderController {
     private $appointmentModel;
     
     public function __construct() {
-        $this->db = get_db();
-        $this->providerModel = new Provider($this->db);
-        $this->appointmentModel = new Appointment($this->db);
-        
         // Start session if not already started
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+        
+        // Get database connection
+        $this->db = get_db();
+        
+        // Check if user is logged in and has provider or admin role
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || 
+            ($_SESSION['role'] !== 'provider' && $_SESSION['role'] !== 'admin')) {
+            // Redirect to login
+            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
+            exit;
+        }
+        
+        $this->providerModel = new Provider($this->db);
+        $this->appointmentModel = new Appointment($this->db);
     }
     
     public function index() {

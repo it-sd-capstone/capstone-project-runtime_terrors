@@ -23,14 +23,7 @@ if (!defined('APP_ROOT')) {
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 </head>
 <body class="container mt-5">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <ul class="navbar-nav">
-            <li class="nav-item"><a class="nav-link" href="home">Home</a></li>
-            <li class="nav-item"><a class="nav-link" href="appointments">Appointments</a></li>
-            <li class="nav-item"><a class="nav-link" href="auth/login">Login</a></li>
-            <li class="nav-item"><a class="nav-link" href="provider">Provider</a></li>
-        </ul>
-    </nav>
+    <?php include_once VIEW_PATH . '/partials/navigation.php'; ?>
 
     <?php if (isset($_SESSION['success'])): ?>
         <div class="alert alert-success">

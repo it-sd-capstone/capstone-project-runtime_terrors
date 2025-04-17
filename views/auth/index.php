@@ -7,41 +7,69 @@ if (!defined('APP_ROOT')) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Login | Appointment System</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Appointment System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 50px;
+        }
+        .login-container {
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        .login-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .demo-login {
+            margin-top: 30px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+        }
+    </style>
 </head>
-<body class="container mt-5">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" href="/index.php">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="appointments">Appointments</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="auth/login">Login</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="provider">Provider</a>
-            </li>
-        </ul>
-    </nav>
-
-    <h2 class="text-center">Login</h2>
-
-    <form action="/index.php?page=auth/login" method="post">
-        <div class="mb-3">
-            <label for="email" class="form-label">Email:</label>
-            <input type="email" id="email" name="email" class="form-control" required>
+<body>
+    <div class="container login-container">
+        <div class="card login-card">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h3>Login to Your Account</h3>
+            </div>
+            <div class="card-body p-4">
+                <?php if (!empty($error)): ?>
+                    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+                <?php endif; ?>
+                
+                <form action="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/login" method="post">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <small class="text-muted">For demo purposes, use "demo" or "password" as the password</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
+                </form>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="password" class="form-label">Password:</label>
-            <input type="password" id="password" name="password" class="form-control" required>
+        
+        <!-- Quick Role Selector for Demos/Testing -->
+        <div class="demo-login">
+            <h4 class="text-center mb-3">Quick Login for Testing</h4>
+            <div class="d-flex justify-content-between">
+                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/demo?role=patient" class="btn btn-outline-primary">Login as Patient</a>
+                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/demo?role=provider" class="btn btn-outline-success">Login as Provider</a>
+                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/demo?role=admin" class="btn btn-outline-dark">Login as Admin</a>
+            </div>
         </div>
-        <button type="submit" class="btn btn-primary w-100">Login</button>
-    </form>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

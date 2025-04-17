@@ -1,150 +1,333 @@
 <?php
-require_once MODEL_PATH . '/Appointment.php';
-require_once MODEL_PATH . '/Provider.php';
-
 class AppointmentsController {
     private $db;
-    private $appointmentModel;
-    private $providerModel;
     
-    // Updated constructor to better handle database connection
     public function __construct() {
-        // Get database connection from bootstrap
-        $this->db = get_db();
-        
-        // Check connection type and ensure models are compatible
-        if ($this->db instanceof mysqli) {
-            // Using MySQLi - ensure models are initialized correctly
-            error_log("Using MySQLi connection in AppointmentsController");
-        } elseif ($this->db instanceof PDO) {
-            // Using PDO - ensure models are initialized correctly
-            error_log("Using PDO connection in AppointmentsController");
-        } else {
-            error_log("Unknown database connection type: " . get_class($this->db));
-        }
-        
-        // Initialize models with the connection
-        $this->appointmentModel = new Appointment($this->db);
-        $this->providerModel = new Provider($this->db);
-        
         // Start session if not already started
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+        
+        // Get database connection
+        $this->db = get_db();
+        
+        // Debug message to check connection type
+        error_log("Using MySQLi connection in AppointmentsController");
     }
     
     public function index() {
         error_log("APPOINTMENT controller index method called - this should appear if routing is correct");
         
-        // Debug the database connection type
-        if ($this->db instanceof mysqli) {
-            error_log("Using MySQLi connection in AppointmentsController");
-        } elseif ($this->db instanceof PDO) {
-            error_log("Using PDO connection in AppointmentsController");
-        } else {
-            error_log("Unknown database connection type in AppointmentsController");
-        }
+        // Check if user is logged in
+        $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['logged_in'] === true;
+        $userRole = $isLoggedIn ? $_SESSION['role'] : '';
+        $userId = $isLoggedIn ? $_SESSION['user_id'] : null;
         
-        // Get available slots
-        try {
-            $availableSlots = $this->providerModel->getAvailableSlots();
-            error_log("Successfully retrieved available slots: " . count($availableSlots));
-            
-            // Make sure provider_name is set for each slot
-            foreach ($availableSlots as &$slot) {
-                if (!isset($slot['provider_name'])) {
-                    // Get provider name if not already set
-                    $providerId = $slot['provider_id'];
-                    // Query to get provider name
-                    if ($this->db instanceof mysqli) {
-                        $query = "SELECT CONCAT(first_name, ' ', last_name) as provider_name 
-                                  FROM users WHERE user_id = ?";
-                        $stmt = $this->db->prepare($query);
-                        $stmt->bind_param("i", $providerId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        if ($row = $result->fetch_assoc()) {
-                            $slot['provider_name'] = $row['provider_name'];
-                        } else {
-                            $slot['provider_name'] = 'Unknown Provider';
-                        }
-                    } else {
-                        // Default for when query fails
-                        $slot['provider_name'] = 'Provider #' . $providerId;
-                    }
-                }
-            }
-            
-        } catch (Exception $e) {
-            error_log("Error getting available slots: " . $e->getMessage());
-            $availableSlots = [];
-        }
+        // Get available appointment slots
+        $availableSlots = $this->getAvailableSlots();
+        error_log("Successfully retrieved available slots: " . count($availableSlots));
+        error_log("Available slots: " . count($availableSlots));
         
         // Get user's appointments if logged in
-        $appointments = [];
-        try {
-            if (isset($_SESSION['user_id'])) {
-                $userId = $_SESSION['user_id'];
-                $userRole = $_SESSION['role'] ?? 'patient';
-                
-                if ($userRole == 'patient') {
-                    $appointments = $this->appointmentModel->getByPatient($userId);
-                } elseif ($userRole == 'provider') {
-                    $appointments = $this->appointmentModel->getByProvider($userId);
-                }
+        $userAppointments = [];
+        if ($isLoggedIn) {
+            if ($userRole === 'patient') {
+                $userAppointments = $this->getUserAppointments($userId);
+            } elseif ($userRole === 'provider') {
+                $userAppointments = $this->getProviderAppointments($userId);
+            } elseif ($userRole === 'admin') {
+                $userAppointments = $this->getAllAppointments();
             }
-        } catch (Exception $e) {
-            error_log("Error getting appointments: " . $e->getMessage());
         }
+        error_log("Appointments: " . count($userAppointments));
         
-        error_log("Available slots: " . count($availableSlots));
-        error_log("Appointments: " . count($appointments));
-        
-        // Include the view
+        // Pass data to view
         include VIEW_PATH . '/appointments/index.php';
     }
     
-    public function create() {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $patient_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
-            $availability_id = $_POST['availability_id'] ?? 0;
-            
-            // Validate input
-            if (!$availability_id) {
-                header("Location: /index.php?page=appointments&error=invalid_input");
-                exit;
-            }
-            
-            // Check if patient is logged in
-            if (!$patient_id) {
-                header("Location: /index.php?page=auth/login");
-                exit;
-            }
-            
-            // Check if slot is already booked
-            try {
-                if ($this->appointmentModel->isSlotBooked($availability_id)) {
-                    // Redirect with error message
-                    header("Location: /index.php?page=appointments&error=slot_booked");
-                    exit;
-                }
-                
-                // Create the appointment
-                if ($this->appointmentModel->create($patient_id, $availability_id)) {
-                    header("Location: /index.php?page=appointments&success=1");
-                } else {
-                    header("Location: /index.php?page=appointments&error=create_failed");
-                }
-            } catch (Exception $e) {
-                error_log("Error in appointment creation: " . $e->getMessage());
-                header("Location: /index.php?page=appointments&error=system_error");
-            }
+    public function book() {
+        // Require login for booking
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['logged_in'] !== true) {
+            // Redirect to login
+            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
             exit;
         }
         
-        // If not a POST request, redirect to appointments page
-        header("Location: /index.php?page=appointments");
+        // Only patients can book appointments
+        if ($_SESSION['role'] !== 'patient' && $_SESSION['role'] !== 'admin') {
+            // Redirect to appointments view
+            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments');
+            exit;
+        }
+        
+        $availabilityId = $_GET['id'] ?? null;
+        $error = null;
+        $success = null;
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Process booking form
+            $availabilityId = $_POST['availability_id'] ?? null;
+            $serviceId = $_POST['service_id'] ?? null;
+            
+            if (!$availabilityId || !$serviceId) {
+                $error = "Missing required booking information";
+            } else {
+                // Get availability details
+                $stmt = $this->db->prepare("SELECT provider_id, available_date, start_time, end_time 
+                                           FROM provider_availability 
+                                           WHERE availability_id = ? AND is_available = 1");
+                $stmt->bind_param("i", $availabilityId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result && $result->num_rows > 0) {
+                    $availability = $result->fetch_assoc();
+                    
+                    // Get service duration
+                    $stmtService = $this->db->prepare("SELECT duration FROM services WHERE service_id = ?");
+                    $stmtService->bind_param("i", $serviceId);
+                    $stmtService->execute();
+                    $serviceResult = $stmtService->get_result();
+                    $service = $serviceResult->fetch_assoc();
+                    
+                    // Calculate end time based on service duration
+                    $startTime = new DateTime($availability['start_time']);
+                    $endTime = clone $startTime;
+                    $endTime->add(new DateInterval('PT' . $service['duration'] . 'M'));
+                    $endTimeStr = $endTime->format('H:i:s');
+                    
+                    // Create the appointment
+                    $stmt = $this->db->prepare("INSERT INTO appointments 
+                                              (patient_id, provider_id, service_id, availability_id, 
+                                               appointment_date, start_time, end_time, status) 
+                                              VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')");
+                    
+                    $patientId = $_SESSION['user_id'];
+                    $providerId = $availability['provider_id'];
+                    $appointmentDate = $availability['available_date'];
+                    $startTimeStr = $availability['start_time'];
+                    
+                    $stmt->bind_param("iiissss", 
+                        $patientId, 
+                        $providerId, 
+                        $serviceId, 
+                        $availabilityId, 
+                        $appointmentDate, 
+                        $startTimeStr, 
+                        $endTimeStr
+                    );
+                    
+                    if ($stmt->execute()) {
+                        // Mark the availability as no longer available
+                        $updateStmt = $this->db->prepare("UPDATE provider_availability 
+                                                         SET is_available = 0 
+                                                         WHERE availability_id = ?");
+                        $updateStmt->bind_param("i", $availabilityId);
+                        $updateStmt->execute();
+                        
+                        $success = "Appointment booked successfully!";
+                        // Redirect to appointments list
+                        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments?success=booked');
+                        exit;
+                    } else {
+                        $error = "Failed to book appointment: " . $this->db->error;
+                    }
+                } else {
+                    $error = "Selected time slot is no longer available";
+                }
+            }
+        }
+        
+        // Get available slot details for the form
+        $availabilityDetails = null;
+        if ($availabilityId) {
+            $stmt = $this->db->prepare("
+                SELECT pa.*, u.first_name, u.last_name 
+                FROM provider_availability pa
+                JOIN users u ON pa.provider_id = u.user_id
+                WHERE availability_id = ? AND is_available = 1
+            ");
+            $stmt->bind_param("i", $availabilityId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result && $result->num_rows > 0) {
+                $availabilityDetails = $result->fetch_assoc();
+            } else {
+                $error = "Selected time slot not found or no longer available";
+            }
+        } else {
+            $error = "No time slot selected";
+        }
+        
+        // Get all services for dropdown
+        $services = [];
+        $stmt = $this->db->query("SELECT service_id, name, description, duration FROM services WHERE is_active = 1");
+        if ($stmt) {
+            while ($row = $stmt->fetch_assoc()) {
+                $services[] = $row;
+            }
+        }
+        
+        // Load booking form view
+        include VIEW_PATH . '/appointments/book.php';
+    }
+    
+    public function cancel() {
+        // Require login for canceling
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['logged_in'] !== true) {
+            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
+            exit;
+        }
+        
+        $appointmentId = $_GET['id'] ?? null;
+        
+        if (!$appointmentId) {
+            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments');
+            exit;
+        }
+        
+        // Check appointment belongs to user or user is admin/provider
+        $stmt = $this->db->prepare("SELECT * FROM appointments WHERE appointment_id = ?");
+        $stmt->bind_param("i", $appointmentId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result && $result->num_rows > 0) {
+            $appointment = $result->fetch_assoc();
+            
+            // Only the patient who booked it, the provider assigned to it, or an admin can cancel
+            if ($_SESSION['user_id'] == $appointment['patient_id'] || 
+                $_SESSION['user_id'] == $appointment['provider_id'] || 
+                $_SESSION['role'] === 'admin') {
+                
+                // Update appointment status
+                $updateStmt = $this->db->prepare("UPDATE appointments SET status = 'canceled' WHERE appointment_id = ?");
+                $updateStmt->bind_param("i", $appointmentId);
+                
+                if ($updateStmt->execute()) {
+                    // Free up the availability slot again
+                    if ($appointment['availability_id']) {
+                        $freeSlot = $this->db->prepare("UPDATE provider_availability SET is_available = 1 WHERE availability_id = ?");
+                        $freeSlot->bind_param("i", $appointment['availability_id']);
+                        $freeSlot->execute();
+                    }
+                    
+                    header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments?success=canceled');
+                    exit;
+                }
+            }
+        }
+        
+        // If we get here, something went wrong
+        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments?error=cancel_failed');
         exit;
+    }
+    
+    private function getAvailableSlots() {
+        $slots = [];
+        
+        $stmt = $this->db->query("
+            SELECT pa.*, u.first_name, u.last_name 
+            FROM provider_availability pa
+            JOIN users u ON pa.provider_id = u.user_id
+            WHERE pa.is_available = 1 
+              AND pa.available_date >= CURDATE()
+            ORDER BY pa.available_date, pa.start_time
+        ");
+        
+        if ($stmt) {
+            while ($row = $stmt->fetch_assoc()) {
+                $slots[] = $row;
+            }
+        }
+        
+        return $slots;
+    }
+    
+    private function getUserAppointments($userId) {
+        $appointments = [];
+        
+        $stmt = $this->db->prepare("
+            SELECT a.*, 
+                   u_provider.first_name as provider_first_name, 
+                   u_provider.last_name as provider_last_name,
+                   s.name as service_name, 
+                   s.duration as service_duration
+            FROM appointments a
+            JOIN users u_provider ON a.provider_id = u_provider.user_id
+            JOIN services s ON a.service_id = s.service_id
+            WHERE a.patient_id = ?
+            ORDER BY a.appointment_date, a.start_time
+        ");
+        
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $appointments[] = $row;
+            }
+        }
+        
+        return $appointments;
+    }
+    
+    private function getProviderAppointments($userId) {
+        $appointments = [];
+        
+        $stmt = $this->db->prepare("
+            SELECT a.*, 
+                   u_patient.first_name as patient_first_name, 
+                   u_patient.last_name as patient_last_name,
+                   s.name as service_name, 
+                   s.duration as service_duration
+            FROM appointments a
+            JOIN users u_patient ON a.patient_id = u_patient.user_id
+            JOIN services s ON a.service_id = s.service_id
+            WHERE a.provider_id = ?
+            ORDER BY a.appointment_date, a.start_time
+        ");
+        
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $appointments[] = $row;
+            }
+        }
+        
+        return $appointments;
+    }
+    
+    private function getAllAppointments() {
+        $appointments = [];
+        
+        $stmt = $this->db->query("
+            SELECT a.*, 
+                   u_patient.first_name as patient_first_name, 
+                   u_patient.last_name as patient_last_name,
+                   u_provider.first_name as provider_first_name, 
+                   u_provider.last_name as provider_last_name,
+                   s.name as service_name, 
+                   s.duration as service_duration
+            FROM appointments a
+            JOIN users u_patient ON a.patient_id = u_patient.user_id
+            JOIN users u_provider ON a.provider_id = u_provider.user_id
+            JOIN services s ON a.service_id = s.service_id
+            ORDER BY a.appointment_date, a.start_time
+        ");
+        
+        if ($stmt) {
+            while ($row = $stmt->fetch_assoc()) {
+                $appointments[] = $row;
+            }
+        }
+        
+        return $appointments;
     }
 }
 ?>
