@@ -11,61 +11,60 @@
 <body class="container mt-5">
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" href="/index.php">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="appointments">Appointments</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="auth/login">Login</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="provider">Provider</a>
-            </li>
+            <li class="nav-item"><a class="nav-link" href="home">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="appointments">Appointments</a></li>
+            <li class="nav-item"><a class="nav-link" href="auth/login">Login</a></li>
+            <li class="nav-item"><a class="nav-link" href="provider">Provider</a></li>
         </ul>
     </nav>
 
-    <h2>Appointments</h2>
+    <h2>Book an Appointment</h2>
 
-    <form action="/index.php?page=appointments&action=create" method="POST">
-        <input type="text" name="patient_name" placeholder="Patient Name" required>
-        <input type="text" name="provider_name" placeholder="Provider Name" required>
-        <input type="datetime-local" name="appointment_date" required>
-        <button type="submit" class="btn btn-success">Create Appointment</button>
-    </form>
-
+    <!-- Available Slots for Booking -->
     <table class="table mt-3">
         <tr>
-            <th>Patient</th>
             <th>Provider</th>
             <th>Date</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>Time</th>
+            <th>Action</th>
         </tr>
-        <?php foreach ($appointments as $appointment) : ?>
+        <?php foreach ($available_slots as $slot) : ?>
         <tr>
-            <td><?= htmlspecialchars($appointment['patient_name']) ?></td>
-            <td><?= htmlspecialchars($appointment['provider_name']) ?></td>
-            <td><?= htmlspecialchars($appointment['appointment_date']) ?></td>
-            <td><?= htmlspecialchars($appointment['status']) ?></td>
+            <td><?= htmlspecialchars($slot['provider_name']) ?></td>
+            <td><?= htmlspecialchars($slot['available_date']) ?></td>
+            <td><?= htmlspecialchars($slot['start_time']) ?> - <?= htmlspecialchars($slot['end_time']) ?></td>
             <td>
-                <form action="/index.php?page=appointments&action=update" method="POST">
-                    <input type="hidden" name="id" value="<?= $appointment['id'] ?>">
-                    <select name="status">
-                        <option value="Scheduled">Scheduled</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Canceled">Canceled</option>
-                    </select>
-                    <button type="submit" class="btn btn-warning">Update</button>
-                </form>
-                <form action="/index.php?page=appointments&action=delete" method="POST">
-                    <input type="hidden" name="id" value="<?= $appointment['id'] ?>">
-                    <button type="submit" class="btn btn-danger">Delete</button>
+                <form action="appointments/create" method="POST">
+                    <input type="hidden" name="availability_id" value="<?= $slot['availability_id'] ?>">
+                    <button type="submit" class="btn btn-primary">Book Now</button>
                 </form>
             </td>
         </tr>
         <?php endforeach; ?>
     </table>
+
+    <!-- FullCalendar for Appointments -->
+    <h3 class="mt-4">Scheduled Appointments</h3>
+    <div id="appointments-calendar"></div>
+
+    <!-- FullCalendar Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('appointments-calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                events: [
+                    <?php foreach ($appointments as $appointment): ?>
+                        {
+                            title: "<?= htmlspecialchars($appointment['provider_name']) ?>",
+                            start: "<?= htmlspecialchars($appointment['appointment_date']) ?>",
+                            backgroundColor: "#dc3545" // Red for booked
+                        },
+                    <?php endforeach; ?>
+                ]
+            });
+            calendar.render();
+        });
+    </script>
 </body>
 </html>

@@ -6,7 +6,7 @@ class Provider {
         $this->db = $db;
     }
 
-    // Get all available slots for a provider (excluding booked ones)
+    // Get available slots (excluding booked ones)
     public function getAvailableSlots($provider_id) {
         $stmt = $this->db->prepare("
             SELECT pa.*
@@ -39,7 +39,7 @@ class Provider {
         return $stmt->execute([$provider_id, $available_date, $start_time, $end_time]);
     }
 
-    // Check if an availability slot is already booked
+    // Check if a time slot is already booked
     public function isSlotBooked($availability_id) {
         $stmt = $this->db->prepare("
             SELECT COUNT(*) FROM appointments WHERE availability_id = ?

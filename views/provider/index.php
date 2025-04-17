@@ -27,13 +27,13 @@
     <form action="provider/upload_availability" method="POST">
         <label>Available Date:</label>
         <input type="date" name="available_date" required class="form-control">
-        
+
         <label>Start Time:</label>
         <input type="time" name="start_time" required class="form-control">
-        
+
         <label>End Time:</label>
         <input type="time" name="end_time" required class="form-control">
-        
+
         <button type="submit" class="btn btn-success mt-3">Upload Availability</button>
     </form>
 
