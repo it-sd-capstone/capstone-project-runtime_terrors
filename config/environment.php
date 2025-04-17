@@ -1,49 +1,52 @@
 <?php
+
 class Environment {
     private static $env = null;
     private static $config = [];
-    
+
+    /**
+     * Detect the current environment based on hostname.
+     * Defaults to 'development' if no match is found.
+     */
     public static function detect() {
-        // Already detected
-        if (self::$env !== null) return self::$env;
+        if (self::$env !== null) return self::$env; // Already detected
         
         $hostname = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
-        
-        // Detect environment based on hostname
-        if (strpos($hostname, 'localhost') !== false || 
-            strpos($hostname, '127.0.0.1') !== false) {
+
+        // Determine environment based on hostname
+        if (strpos($hostname, 'localhost') !== false || strpos($hostname, '127.0.0.1') !== false) {
             self::$env = 'development';
-        } elseif (strpos($hostname, 'capstone.mommabearsweetz.com') !== false) {
+        } elseif (strpos($hostname, 'your-production-domain.com') !== false) {
             self::$env = 'production';
         } else {
-            // Default to development for safety
-            self::$env = 'development';
+            self::$env = 'development'; // Default to development for safety
         }
-        
-        // Load environment-specific configuration
-        self::loadConfig();
-        
+
+        self::loadConfig(); // Load respective configuration
         return self::$env;
     }
-    
+
+    /**
+     * Retrieve a configuration value.
+     */
     public static function get($key, $default = null) {
-        self::detect(); // Ensure environment is detected
+        self::detect(); // Ensure environment is detected first
         return self::$config[$key] ?? $default;
     }
-    
+
+    /**
+     * Load configuration based on the detected environment.
+     */
     private static function loadConfig() {
-        // Base configuration (common to all environments)
+        // Base configuration (common across environments)
         $baseConfig = require __DIR__ . '/config.php';
-        
+
         // Environment-specific configuration
-        $envConfig = [];
-        $envConfigFile = __DIR__ . '/environments/' . self::$env . '.php';
-        if (file_exists($envConfigFile)) {
-            $envConfig = require $envConfigFile;
-        }
-        
+        $envConfigFile = __DIR__ . "/environments/" . self::$env . ".php";
+        $envConfig = file_exists($envConfigFile) ? require $envConfigFile : [];
+
         // Merge configurations (environment-specific overrides base)
         self::$config = array_merge($baseConfig, $envConfig);
     }
 }
-
+?>

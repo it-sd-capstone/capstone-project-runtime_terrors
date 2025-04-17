@@ -1,0 +1,78 @@
+/* General Page Styles */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f5f5;
+  line-height: 1.6;
+}
+
+/* Container Styling */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Navbar Customization */
+.navbar {
+  margin-bottom: 20px;
+}
+
+/* Heading Styles */
+h1, h2 {
+  text-align: center;
+  color: #333;
+}
+
+/* Buttons */
+.btn {
+  transition: 0.3s ease-in-out;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+}
+
+/* FullCalendar Custom Styling */
+#calendar {
+  margin-top: 20px;
+}
+
+/* Table Styles */
+.table {
+  margin-top: 20px;
+}
+
+.table th {
+  background-color: #007bff;
+  color: white;
+}
+
+.table td, .table th {
+  text-align: center;
+}
+
+/* Form Elements */
+.form-control {
+  border-radius: 5px;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+/* Responsive Design Tweaks */
+@media (max-width: 768px) {
+  .container {
+      width: 90%;
+  }
+}

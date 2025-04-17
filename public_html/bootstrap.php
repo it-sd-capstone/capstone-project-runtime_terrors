@@ -85,9 +85,10 @@ function get_db() {
  * Get the current environment
  * @return string Environment name
  */
+
 function get_environment() {
     global $env;
-    return $env;
+    return isset($env) ? $env : 'unknown';
 }
 
 // Register an autoloader for classes
