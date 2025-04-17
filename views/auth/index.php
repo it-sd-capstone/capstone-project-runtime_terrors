@@ -1,3 +1,9 @@
+<?php
+// Prevent direct access to view files
+if (!defined('APP_ROOT')) {
+    die("Direct access to views is not allowed");
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

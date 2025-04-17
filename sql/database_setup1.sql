@@ -73,4 +73,12 @@ INSERT INTO `provider_availability` (`provider_id`, `available_date`, `start_tim
 
 -- Sample Appointments
 INSERT INTO `appointments` (`patient_id`, `provider_id`, `service_id`, `availability_id`, `appointment_date`, `start_time`, `end_time`, `status`) VALUES
-(1, 2, 1, 1, '2025-04-15', '10:00:00', '10:30:00', 'pending');
+public function getAvailableSlots() {
+    $query = "SELECT pa.*, u.first_name as provider_name 
+              FROM provider_availability pa
+              JOIN users u ON pa.provider_id = u.user_id
+              WHERE pa.is_available = 1";
+    $stmt = $this->db->prepare($query);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
