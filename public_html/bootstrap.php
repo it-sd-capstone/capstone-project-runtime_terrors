@@ -19,6 +19,9 @@ define('TESTS_PATH', APP_ROOT . '/tests');
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+// Start session
+session_start();
+
 // Load environment configuration
 require_once CONFIG_PATH . '/environment.php';
 $env = Environment::detect();

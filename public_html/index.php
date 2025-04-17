@@ -53,9 +53,14 @@ try {
         exit;
     }
    
-    // Load the appropriate controller file
+    // Debug controller loading
     $controller_file = CONTROLLER_PATH . "/{$controller_name}_controller.php";
+    error_log("Attempting to load controller file: {$controller_file}");
+    error_log("Controller name: {$controller_name}");
+    error_log("Class name will be: " . ucfirst($controller_name) . 'Controller');
+   
     if (file_exists($controller_file)) {
+        error_log("Controller file exists, loading it");
         require_once $controller_file;
        
         // Create controller class name (e.g., 'home' -> 'HomeController')
