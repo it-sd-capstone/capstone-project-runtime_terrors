@@ -1,97 +1,102 @@
+<?php
+// Debugging
+if (!isset($available_slots)) {
+    echo "<p>Error: \$available_slots is not set. Controller method may not be executing.</p>";
+    $available_slots = []; // Prevent foreach error
+}
+
+// Debug the actual data
+echo "<pre>Available slots: ";
+var_dump($available_slots);
+echo "</pre>";
+// Prevent direct access to view files
+if (!defined('APP_ROOT')) {
+    die("Direct access to views is not allowed");
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <title>Appointments</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Bootstrap & FullCalendar -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
-
-    <style>
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 </head>
 <body class="container mt-5">
-    <h1 class="text-center">Manage Your Appointments</h1>
+    <?php include_once VIEW_PATH . '/partials/navigation.php'; ?>
 
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-3">
-        <a class="navbar-brand" href="appointments">Appointment System</a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav">
-                <li class="nav-item"><a class="nav-link" href="auth/login">Login</a></li>
-                <li class="nav-item"><a class="nav-link" href="home">Home</a></li>
-            </ul>
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success">
+            <?= $_SESSION['success'] ?>
+            <?php unset($_SESSION['success']); ?>
         </div>
-    </nav>
+    <?php endif; ?>
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger">
+            <?= $_SESSION['error'] ?>
+            <?php unset($_SESSION['error']); ?>
+        </div>
+    <?php endif; ?>
 
-    <!-- FullCalendar -->
-    <h2>Upcoming Appointments</h2>
-    <div id="calendar"></div>
+    <h2>Book an Appointment</h2>
 
-    <!-- Appointments Table -->
-    <h2>Appointment List</h2>
-    <table class="table table-bordered">
-        <thead class="table-dark">
-            <tr>
-                <th>Appointment ID</th>
-                <th>Patient</th>
-                <th>Provider</th>
-                <th>Date & Time</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            // Assuming you retrieve appointments from a database
-            require_once '../../models/Database.php';
-            $db = new Database();
-            $conn = $db->getConnection();
-            $stmt = $conn->query("SELECT * FROM appointments");
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)): ?>
-                <tr>
-                    <td><?= $row['appointment_id']; ?></td>
-                    <td><?= $row['patient_id']; ?></td>
-                    <td><?= $row['provider_id']; ?></td>
-                    <td><?= $row['appointment_date'] . ' @ ' . $row['start_time']; ?></td>
-                    <td><?= ucfirst($row['status']); ?></td>
-                    <td>
-                        <a href="/index.php?page=appointments/edit&id=<?= $row['appointment_id']; ?>" class="btn btn-warning btn-sm">Edit</a>
-                        <a href="/index.php?page=appointments/cancel&id=<?= $row['appointment_id']; ?>" class="btn btn-danger btn-sm">Cancel</a>
-                    </td>
-                </tr>
-            <?php endwhile; ?>
-        </tbody>
+    <table class="table mt-3">
+        <tr>
+            <th>Provider</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Action</th>
+        </tr>
+        <?php foreach ($available_slots as $slot) : ?>
+        <tr>
+            <td><?= htmlspecialchars($slot['provider_name']) ?></td>
+            <td><?= htmlspecialchars($slot['available_date']) ?></td>
+            <td><?= htmlspecialchars($slot['start_time']) ?> - <?= htmlspecialchars($slot['end_time']) ?></td>
+            <td>
+                <form action="appointments/create" method="POST">
+                    <input type="hidden" name="availability_id" value="<?= $slot['availability_id'] ?>">
+                    <button type="submit" class="btn btn-primary">Book Now</button>
+                </form>
+            </td>
+        </tr>
+        <?php endforeach; ?>
     </table>
 
-    <!-- Bootstrap & FullCalendar JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+    <h3 class="mt-4">Scheduled Appointments</h3>
+    <div id="appointments-calendar" style="height: 500px; padding-bottom: 50px;"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            var calendarEl = document.getElementById('calendar');
+            console.log("Initializing appointments calendar...");
+            var calendarEl = document.getElementById('appointments-calendar');
+            
+            if (!calendarEl) {
+                console.error("Calendar element not found!");
+                return;
+            }
+            
+            var appointments = <?= json_encode($appointments ?? []) ?>;
+            console.log("Appointment data:", appointments);
+            
             var calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
-                events: [
-                    <?php
-                    $stmt = $conn->query("SELECT * FROM appointments");
-                    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                        echo "{ title: 'Appointment " . $row['appointment_id'] . "', start: '" . $row['appointment_date'] . "T" . $row['start_time'] . "' },";
-                    }
-                    ?>
-                ]
+                height: 500,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listMonth'
+                },
+                events: <?= json_encode(array_map(function($appt) {
+                    return [
+                        'title' => 'Appointment with ' . ($appt['provider_name'] ?? 'Provider'),
+                        'start' => $appt['appointment_date'] . 'T' . $appt['start_time'],
+                        'end' => $appt['appointment_date'] . 'T' . $appt['end_time'],
+                        'color' => '#dc3545'
+                    ];
+                }, $appointments ?? [])) ?>
             });
+            
+            console.log("Rendering calendar...");
             calendar.render();
         });
     </script>

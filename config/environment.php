@@ -16,7 +16,7 @@ class Environment {
         // Determine environment based on hostname
         if (strpos($hostname, 'localhost') !== false || strpos($hostname, '127.0.0.1') !== false) {
             self::$env = 'development';
-        } elseif (strpos($hostname, 'your-production-domain.com') !== false) {
+        } elseif (strpos($hostname, 'capstone.mommabearsweetz.com') !== false) {
             self::$env = 'production';
         } else {
             self::$env = 'development'; // Default to development for safety

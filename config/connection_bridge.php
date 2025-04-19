@@ -6,7 +6,7 @@ require_once __DIR__ . '/environment.php';
 $env_db_host = Environment::get('db_host', 'localhost');
 $env_db_user = Environment::get('db_user', 'root');
 $env_db_pass = Environment::get('db_pass', '');
-$env_db_name = Environment::get('db_name', 'appointment_system');
+$env_db_name = Environment::get('db_name', 'kholley_appointment_system');
 
 // Define constants if they aren't already defined
 if (!defined('DB_HOST')) define('DB_HOST', $env_db_host);
