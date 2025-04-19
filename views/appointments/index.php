@@ -31,7 +31,6 @@ if (!defined('APP_ROOT')) {
             <?php unset($_SESSION['success']); ?>
         </div>
     <?php endif; ?>
-
     <?php if (isset($_SESSION['error'])): ?>
         <div class="alert alert-danger">
             <?= $_SESSION['error'] ?>
