@@ -10,6 +10,7 @@
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
+SET FOREIGN_KEY_CHECKS = 0;
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -19,18 +20,38 @@ SET time_zone = "+00:00";
 --
 -- Database: `kholley_appointment_system`
 --
+
 CREATE DATABASE IF NOT EXISTS `kholley_appointment_system`;
 USE `kholley_appointment_system`;
 
 -- --------------------------------------------------------
+-- Drop tables in reverse order of dependencies
+--
 
+DROP TABLE IF EXISTS `notifications`;
+DROP TABLE IF EXISTS `appointment_history`;
+DROP TABLE IF EXISTS `waitlist`;
+DROP TABLE IF EXISTS `appointments`;
+DROP TABLE IF EXISTS `availability`;
+DROP TABLE IF EXISTS `provider_services`;
+DROP TABLE IF EXISTS `recurring_schedules`;
+DROP TABLE IF EXISTS `services`;
+DROP TABLE IF EXISTS `patient_profiles`;
+DROP TABLE IF EXISTS `provider_profiles`;
+DROP TABLE IF EXISTS `auth_sessions`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `settings`;
+
+-- Re-enable foreign key checks
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- --------------------------------------------------------
 --
 -- Table structure for table `users`
 --
 
-DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
-  `user_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `first_name` varchar(100) NOT NULL,
@@ -40,7 +61,9 @@ CREATE TABLE `users` (
   `is_active` tinyint(1) DEFAULT 1,
   `email_verified_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
-  `last_login` datetime DEFAULT NULL
+  `last_login` datetime DEFAULT NULL,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -53,12 +76,10 @@ INSERT INTO `users` (`user_id`, `email`, `password_hash`, `first_name`, `last_na
 (3, 'admin@example.com', '$2y$10$example_hash', 'Admin', 'User', NULL, 'admin', 1, NULL, '2025-04-17 08:59:28', NULL);
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `patient_profiles`
 --
 
-DROP TABLE IF EXISTS `patient_profiles`;
 CREATE TABLE `patient_profiles` (
   `patient_id` int(11) NOT NULL,
   `date_of_birth` date DEFAULT NULL,
@@ -78,12 +99,10 @@ INSERT INTO `patient_profiles` (`patient_id`, `date_of_birth`, `insurance_info`,
 (1, '1985-06-15', 'HealthPlus Insurance #12345', NULL, NULL, NULL, '2025-04-17 08:59:28', '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `provider_profiles`
 --
 
-DROP TABLE IF EXISTS `provider_profiles`;
 CREATE TABLE `provider_profiles` (
   `provider_id` int(11) NOT NULL,
   `specialization` varchar(100) DEFAULT NULL,
@@ -104,12 +123,10 @@ INSERT INTO `provider_profiles` (`provider_id`, `specialization`, `title`, `bio`
 (2, 'Family Medicine', 'MD', 'General practitioner with 15 years of experience', 20, NULL, 1, '2025-04-17 08:59:28', '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `auth_sessions`
 --
 
-DROP TABLE IF EXISTS `auth_sessions`;
 CREATE TABLE `auth_sessions` (
   `session_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -122,12 +139,10 @@ CREATE TABLE `auth_sessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `services`
 --
 
-DROP TABLE IF EXISTS `services`;
 CREATE TABLE `services` (
   `service_id` int(11) NOT NULL,
   `name` varchar(100) NOT NULL,
@@ -147,12 +162,10 @@ INSERT INTO `services` (`service_id`, `name`, `description`, `duration`, `is_act
 (2, 'Therapy Session', 'One-hour counseling session', 60, 1, '2025-04-17 08:59:28', '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `provider_services`
 --
 
-DROP TABLE IF EXISTS `provider_services`;
 CREATE TABLE `provider_services` (
   `provider_service_id` int(11) NOT NULL,
   `provider_id` int(11) NOT NULL,
@@ -171,12 +184,10 @@ INSERT INTO `provider_services` (`provider_service_id`, `provider_id`, `service_
 (2, 2, 2, NULL, NULL, '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `recurring_schedules`
 --
 
-DROP TABLE IF EXISTS `recurring_schedules`;
 CREATE TABLE `recurring_schedules` (
   `schedule_id` int(11) NOT NULL,
   `provider_id` int(11) NOT NULL,
@@ -200,12 +211,10 @@ INSERT INTO `recurring_schedules` (`schedule_id`, `provider_id`, `day_of_week`, 
 (3, 2, 5, '09:00:00', '12:00:00', 1, '2025-04-01', NULL, '2025-04-17 08:59:28', '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `availability`
 --
 
-DROP TABLE IF EXISTS `availability`;
 CREATE TABLE `availability` (
   `availability_id` int(11) NOT NULL,
   `provider_id` int(11) NOT NULL,
@@ -228,12 +237,10 @@ INSERT INTO `availability` (`availability_id`, `provider_id`, `availability_date
 (5, 2, '2025-04-17', '10:11:00', '22:11:00', 1, '2025-04-17 10:11:09', '2025-04-17 10:11:09');
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `appointments`
 --
 
-DROP TABLE IF EXISTS `appointments`;
 CREATE TABLE `appointments` (
   `appointment_id` int(11) NOT NULL,
   `patient_id` int(11) NOT NULL,
@@ -261,12 +268,10 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `serv
 (1, 1, 2, 1, '2025-04-15', '10:00:00', '10:30:00', 'scheduled', 'in_person', NULL, NULL, 0, NULL, NULL, '2025-04-17 08:59:28', '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `appointment_history`
 --
 
-DROP TABLE IF EXISTS `appointment_history`;
 CREATE TABLE `appointment_history` (
   `history_id` int(11) NOT NULL,
   `appointment_id` int(11) NOT NULL,
@@ -286,17 +291,15 @@ INSERT INTO `appointment_history` (`history_id`, `appointment_id`, `action`, `ch
 (1, 1, 'created', NULL, NULL, NULL, 1, '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `waitlist`
 --
 
-DROP TABLE IF EXISTS `waitlist`;
 CREATE TABLE `waitlist` (
   `waitlist_id` int(11) NOT NULL,
   `patient_id` int(11) NOT NULL,
   `provider_id` int(11) NOT NULL,
-    `service_id` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL,
   `preferred_date` date NOT NULL,
   `preferred_time` time DEFAULT NULL,
   `flexibility` enum('strict','flexible_time','flexible_day','flexible_provider') DEFAULT 'strict',
@@ -306,12 +309,10 @@ CREATE TABLE `waitlist` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `notifications`
 --
 
-DROP TABLE IF EXISTS `notifications`;
 CREATE TABLE `notifications` (
   `notification_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -333,12 +334,10 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `su
 (1, 1, 1, 'Appointment Confirmation', 'Your appointment on April 15, 2025 at 10:00 AM has been scheduled.', 'email', 'sent', '2025-04-17 09:00:00', '2025-04-17 09:00:05', '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `settings`
 --
 
-DROP TABLE IF EXISTS `settings`;
 CREATE TABLE `settings` (
   `setting_id` int(11) NOT NULL,
   `setting_key` varchar(100) NOT NULL,
@@ -358,7 +357,6 @@ INSERT INTO `settings` (`setting_id`, `setting_key`, `setting_value`, `descripti
 (4, 'business_hours', '{"monday":"9:00-17:00","tuesday":"9:00-17:00","wednesday":"9:00-17:00","thursday":"9:00-17:00","friday":"9:00-13:00"}', 'Business hours by day', '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
-
 --
 -- Indexes for dumped tables
 --
@@ -367,8 +365,8 @@ INSERT INTO `settings` (`setting_id`, `setting_key`, `setting_value`, `descripti
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
-  ADD PRIMARY KEY (`user_id`),
-  ADD UNIQUE KEY `email` (`email`),
+  ADD PRIMARY KEY IF NOT EXISTS (`user_id`),
+  ADD UNIQUE KEY IF NOT EXISTS `email` (`email`),
   ADD KEY `idx_role` (`role`),
   ADD KEY `idx_is_active` (`is_active`);
 
