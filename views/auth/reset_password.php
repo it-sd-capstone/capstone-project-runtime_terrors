@@ -40,10 +40,9 @@ if (!defined('APP_ROOT')) {
                 <?php if (!empty($success)): ?>
                     <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
                     <div class="text-center mt-3">
-                        <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth" class="btn btn-primary">Go to Login</a>
-                    </div>
-                <?php else: ?>
-                    <form action="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/reset_password?token=<?= htmlspecialchars($token ?? '') ?>" method="post">
+                        <a href="<?= base_url('index.php/auth') ?>" class="btn btn-primary">Go to Login</a>
+                    </div>                <?php else: ?>
+                    <form action="<?= base_url('index.php/auth/reset_password?token=' . htmlspecialchars($token ?? '')) ?>" method="post">
                         <div class="mb-3">
                             <label for="password" class="form-label">New Password</label>
                             <input type="password" class="form-control" id="password" name="password" required>

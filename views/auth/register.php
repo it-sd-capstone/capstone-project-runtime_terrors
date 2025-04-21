@@ -40,7 +40,7 @@ if (!defined('APP_ROOT')) {
                 <?php if (!empty($success)): ?>
                     <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
                 <?php else: ?>
-                    <form action="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/register" method="post">
+                    <form action="<?= base_url('index.php/auth/register') ?>" method="post">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="first_name" class="form-label">First Name *</label>
@@ -82,7 +82,7 @@ if (!defined('APP_ROOT')) {
                 <?php endif; ?>
             </div>
             <div class="card-footer text-center py-3">
-                Already have an account? <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth">Log in</a>
+                Already have an account? <a href="<?= base_url('index.php/auth') ?>">Log in</a>
             </div>
         </div>
     </div>

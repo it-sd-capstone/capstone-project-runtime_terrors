@@ -47,7 +47,7 @@ if (!defined('APP_ROOT')) {
                         Your email has been successfully verified. You can now log in to your account.
                     </p>
                     <div class="mt-4">
-                        <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth" class="btn btn-primary">
+                        <a href="<?= base_url('index.php/auth') ?>" class="btn btn-primary">
                             Go to Login
                         </a>
                     </div>

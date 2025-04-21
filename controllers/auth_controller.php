@@ -110,7 +110,7 @@ class AuthController {
                     $success = 'Registration successful! Please check your email to verify your account.';
                     
                     // For demonstration purposes:
-                    $verifyUrl = "/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/verify?token=$token";
+                    $verifyUrl = base_url("index.php/auth/verify?token=$token");
                     $success .= " <a href='$verifyUrl'>Verify now</a> (for demonstration only)";
                 } else {
                     $error = $result['error'] ?? 'Registration failed';
@@ -167,9 +167,8 @@ class AuthController {
                     $success = 'Password reset instructions have been sent to your email.';
                     
                     // For demonstration purposes:
-                    $resetUrl = "/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/reset_password?token=" . $result['token'];
-                    $success .= " <a href='$resetUrl'>Reset now</a> (for demonstration only)";
-                } else {
+                    $resetUrl = base_url("index.php/auth/reset_password?token=" . $result['token']);
+                    $success .= " <a href='$resetUrl'>Reset now</a> (for demonstration only)";                } else {
                     $error = 'No account found with that email address.';
                 }
             }
@@ -283,7 +282,7 @@ class AuthController {
     public function settings() {
         // Check if user is logged in
         if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
-            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
+            header('Location: ' . base_url('index.php/auth'));
             exit;
         }
         

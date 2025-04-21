@@ -6,7 +6,7 @@ if (!defined('APP_ROOT')) {
 
 // Ensure user is logged in
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
-    header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
+    header('Location: ' . base_url('index.php/auth'));
     exit;
 }
 ?>
@@ -51,7 +51,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <h4 class="m-0">Profile Information</h4>
             </div>
             <div class="card-body p-4">
-                <form action="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/settings" method="post">
+                <form action="<?= base_url('index.php/auth/settings') ?>" method="post">
                     <input type="hidden" name="action" value="update_profile">
                     
                     <div class="row mb-3">
@@ -87,7 +87,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <h4 class="m-0">Change Password</h4>
             </div>
             <div class="card-body p-4">
-                <form action="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/settings" method="post">
+                <form action="<?= base_url('index.php/auth/settings') ?>" method="post">
                     <input type="hidden" name="action" value="change_password">
                     
                     <div class="mb-3">
@@ -117,13 +117,13 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
         <!-- Navigation Buttons -->
         <div class="d-flex justify-content-between mt-4">
             <?php if ($_SESSION['role'] === 'patient'): ?>
-                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments" class="btn btn-outline-primary">My Appointments</a>
+                <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-outline-primary">My Appointments</a>
             <?php elseif ($_SESSION['role'] === 'provider'): ?>
-                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/provider" class="btn btn-outline-primary">Provider Dashboard</a>
+                <a href="<?= base_url('index.php/provider') ?>" class="btn btn-outline-primary">Provider Dashboard</a>
             <?php elseif ($_SESSION['role'] === 'admin'): ?>
-                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin" class="btn btn-outline-primary">Admin Dashboard</a>
+                <a href="<?= base_url('index.php/admin') ?>" class="btn btn-outline-primary">Admin Dashboard</a>
             <?php endif; ?>
-            <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/logout" class="btn btn-outline-danger">Logout</a>
+            <a href="<?= base_url('index.php/auth/logout') ?>" class="btn btn-outline-danger">Logout</a>
         </div>
     </div>
     
