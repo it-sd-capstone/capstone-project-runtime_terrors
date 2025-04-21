@@ -35,7 +35,7 @@
                                     <td><?= $user['is_active'] ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>' ?></td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/users/edit/<?= $user['user_id'] ?>" class="btn btn-outline-primary">Edit</a>
+                                            <a href="<?= base_url('index.php/admin/users/edit/' . $user['user_id']) ?>" class="btn btn-outline-primary">Edit</a>
                                             <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal<?= $user['user_id'] ?>">Delete</button>
                                         </div>
                                     </td>
@@ -58,7 +58,7 @@
                 <h5 class="modal-title">Add New User</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/users/add" method="post">
+            <form action="<?= base_url('index.php/admin/users/add') ?>" method="post">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="first_name" class="form-label">First Name</label>
@@ -109,7 +109,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/users/delete/<?= $user['user_id'] ?>" class="btn btn-danger">Delete</a>
+                <a href="<?= base_url('index.php/admin/users/delete/' . $user['user_id']) ?>" class="btn btn-danger">Delete</a>
             </div>
         </div>
     </div>

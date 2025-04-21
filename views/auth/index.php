@@ -44,7 +44,7 @@ if (!defined('APP_ROOT')) {
                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                 <?php endif; ?>
                 
-                <form action="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/login" method="post">
+                <form action="<?= base_url('index.php/auth/login') ?>" method="post">
                     <div class="mb-3">
                         <label for="email" class="form-label">Email Address</label>
                         <input type="email" class="form-control" id="email" name="email" required>
@@ -56,16 +56,15 @@ if (!defined('APP_ROOT')) {
                     </div>
                     <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
                 </form>
-            </div>
         </div>
         
         <!-- Quick Role Selector for Demos/Testing -->
         <div class="demo-login">
             <h4 class="text-center mb-3">Quick Login for Testing</h4>
             <div class="d-flex justify-content-between">
-                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/demo?role=patient" class="btn btn-outline-primary">Login as Patient</a>
-                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/demo?role=provider" class="btn btn-outline-success">Login as Provider</a>
-                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/demo?role=admin" class="btn btn-outline-dark">Login as Admin</a>
+                <a href="<?= base_url('index.php/auth/demo?role=patient') ?>" class="btn btn-outline-primary">Login as Patient</a>
+                <a href="<?= base_url('index.php/auth/demo?role=provider') ?>" class="btn btn-outline-success">Login as Provider</a>
+                <a href="<?= base_url('index.php/auth/demo?role=admin') ?>" class="btn btn-outline-dark">Login as Admin</a>            
             </div>
         </div>
     </div>

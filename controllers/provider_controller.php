@@ -20,7 +20,7 @@ class ProviderController {
         if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || 
             ($_SESSION['role'] !== 'provider' && $_SESSION['role'] !== 'admin')) {
             // Redirect to login
-            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
+            header('Location: ' . base_url('index.php/auth'));
             exit;
         }
         
@@ -91,7 +91,7 @@ class ProviderController {
                 try {
                     $result = $this->providerModel->addAvailability($date, $start_time, $end_time, $provider_id);
                     if ($result) {
-                        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/provider?success=1');
+                        header('Location: ' . base_url('index.php/provider?success=1'));
                         exit;
                     } else {
                         $error = "Failed to add availability record";
@@ -108,7 +108,7 @@ class ProviderController {
         }
         
         // You may not need a separate view file - just redirect back to provider index
-        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/provider');
+        header('Location: ' . base_url('index.php/provider'));
         exit;
     }
 }

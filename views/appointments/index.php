@@ -4,7 +4,6 @@ if (!isset($available_slots)) {
     echo "<p>Error: \$available_slots is not set. Controller method may not be executing.</p>";
     $available_slots = []; // Prevent foreach error
 }
-
 // Debug the actual data
 echo "<pre>Available slots: ";
 var_dump($available_slots);
@@ -24,7 +23,6 @@ if (!defined('APP_ROOT')) {
 </head>
 <body class="container mt-5">
     <?php include_once VIEW_PATH . '/partials/navigation.php'; ?>
-
     <?php if (isset($_SESSION['success'])): ?>
         <div class="alert alert-success">
             <?= $_SESSION['success'] ?>
@@ -37,9 +35,7 @@ if (!defined('APP_ROOT')) {
             <?php unset($_SESSION['error']); ?>
         </div>
     <?php endif; ?>
-
     <h2>Book an Appointment</h2>
-
     <table class="table mt-3">
         <tr>
             <th>Provider</th>
@@ -53,7 +49,7 @@ if (!defined('APP_ROOT')) {
             <td><?= htmlspecialchars($slot['available_date']) ?></td>
             <td><?= htmlspecialchars($slot['start_time']) ?> - <?= htmlspecialchars($slot['end_time']) ?></td>
             <td>
-                <form action="appointments/create" method="POST">
+                <form action="<?= base_url('index.php/appointments/create') ?>" method="POST">
                     <input type="hidden" name="availability_id" value="<?= $slot['availability_id'] ?>">
                     <button type="submit" class="btn btn-primary">Book Now</button>
                 </form>
@@ -61,10 +57,8 @@ if (!defined('APP_ROOT')) {
         </tr>
         <?php endforeach; ?>
     </table>
-
     <h3 class="mt-4">Scheduled Appointments</h3>
     <div id="appointments-calendar" style="height: 500px; padding-bottom: 50px;"></div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             console.log("Initializing appointments calendar...");
