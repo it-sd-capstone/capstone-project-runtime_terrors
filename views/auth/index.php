@@ -54,9 +54,14 @@ if (!defined('APP_ROOT')) {
                         <input type="password" class="form-control" id="password" name="password" required>
                         <small class="text-muted">For demo purposes, use "demo" or "password" as the password</small>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
-                </form>
-            </div>
+                                    <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
+                                    <!-- Add these links just before the form's closing tag -->
+                                    <div class="mt-3 text-center">
+                                        <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/register">Create an Account</a>
+                                        <span class="mx-2">|</span>
+                                        <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/forgot_password">Forgot Password?</a>
+                                    </div>
+                                </form>            </div>
         </div>
         
         <!-- Quick Role Selector for Demos/Testing -->

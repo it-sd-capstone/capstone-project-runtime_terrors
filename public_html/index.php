@@ -6,6 +6,7 @@
  
 // Load the bootstrap
 require_once 'bootstrap.php';
+
  
 // Get the requested path
 $path = $_SERVER['PATH_INFO'] ?? $_SERVER['REQUEST_URI'] ?? '/';
