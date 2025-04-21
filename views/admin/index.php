@@ -32,16 +32,16 @@
                     <div class="collapse navbar-collapse" id="adminNavbar">
                         <ul class="navbar-nav">
                             <li class="nav-item">
-                                <a class="nav-link" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin">Dashboard</a>
+                                <a class="nav-link" href="<?= base_url('index.php/admin') ?>">Dashboard</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/appointment-system/capstone-project-runtime_ter-r/public_html/index.php/admin/users">Manage Users</a>
+                                <a class="nav-link" href="<?= base_url('index.php/admin/users') ?>">Manage Users</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/appointments">Manage Appointments</a>
+                                <a class="nav-link" href="<?= base_url('index.php/admin/appointments') ?>">Manage Appointments</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/services">Manage Services</a>
+                                <a class="nav-link" href="<?= base_url('index.php/admin/services') ?>">Manage Services</a>
                             </li>
                         </ul>
                         <ul class="navbar-nav ms-auto">
@@ -52,7 +52,7 @@
                                         <?= htmlspecialchars($_SESSION['name'] ?? 'Admin') ?>
                                     </a>
                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminNavDropdown">
-                                        <li><a class="dropdown-item" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/logout">Logout</a></li>
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>">Logout</a></li>
                                     </ul>
                                 </li>
                             <?php endif; ?>
@@ -81,7 +81,7 @@
                             <h5 class="card-title">Users</h5>
                             <p class="card-text">Manage system users including patients, providers, and administrators.</p>
                             <div class="d-grid">
-                                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/users" class="btn btn-primary">Manage Users</a>
+                                <a href="<?= base_url('index.php/admin/users') ?>" class="btn btn-primary">Manage Users</a>
                             </div>
                         </div>
                         <div class="card-footer">
@@ -97,7 +97,7 @@
                             <h5 class="card-title">Appointments</h5>
                             <p class="card-text">View and manage all appointments in the system.</p>
                             <div class="d-grid">
-                                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/appointments" class="btn btn-success">Manage Appointments</a>
+                                <a href="<?= base_url('index.php/admin/appointments') ?>" class="btn btn-success">Manage Appointments</a>
                             </div>
                         </div>
                         <div class="card-footer">
@@ -113,7 +113,7 @@
                             <h5 class="card-title">Services</h5>
                             <p class="card-text">Manage available services and their details.</p>
                             <div class="d-grid">
-                                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/services" class="btn btn-info">Manage Services</a>
+                                <a href="<?= base_url('index.php/admin/services') ?>" class="btn btn-info">Manage Services</a>
                             </div>
                         </div>
                         <div class="card-footer">
@@ -222,10 +222,10 @@
                         </div>
                         <div class="card-body">
                             <div class="d-flex gap-2">
-                                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/users/create" class="btn btn-outline-primary">Add New User</a>
-                                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/services/create" class="btn btn-outline-success">Add New Service</a>
-                                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/reports" class="btn btn-outline-info">Generate Reports</a>
-                                <a href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/settings" class="btn btn-outline-secondary">System Settings</a>
+                                <a href="<?= base_url('index.php/admin/users/create') ?>" class="btn btn-outline-primary">Add New User</a>
+                                <a href="<?= base_url('index.php/admin/services/create') ?>" class="btn btn-outline-success">Add New Service</a>
+                                <a href="<?= base_url('index.php/admin/reports') ?>" class="btn btn-outline-info">Generate Reports</a>
+                                <a href="<?= base_url('index.php/admin/settings') ?>" class="btn btn-outline-secondary">System Settings</a>
                             </div>
                         </div>
                     </div>

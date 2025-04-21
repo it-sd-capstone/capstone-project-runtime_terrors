@@ -21,7 +21,7 @@ if (!defined('APP_ROOT')) {
     <h2 class="text-center">Provider Dashboard</h2>
 
     <h3>Upload Availability</h3>
-    <form action="provider/upload_availability" method="POST">
+    <form action="<?= base_url('index.php/provider/upload_availability') ?>" method="POST">
         <label>Available Date:</label>
         <input type="date" name="available_date" required class="form-control">
         

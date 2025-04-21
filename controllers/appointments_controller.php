@@ -49,14 +49,14 @@ class AppointmentsController {
         // Require login for booking
         if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['logged_in'] !== true) {
             // Redirect to login
-            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
+            header('Location: ' . base_url('index.php/auth'));
             exit;
         }
         
         // Only patients can book appointments
         if ($_SESSION['role'] !== 'patient' && $_SESSION['role'] !== 'admin') {
             // Redirect to appointments view
-            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments');
+            header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
         
@@ -127,7 +127,7 @@ class AppointmentsController {
                         
                         $success = "Appointment booked successfully!";
                         // Redirect to appointments list
-                        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments?success=booked');
+                        header('Location: ' . base_url('index.php/appointments?success=booked'));
                         exit;
                     } else {
                         $error = "Failed to book appointment: " . $this->db->error;
@@ -176,14 +176,14 @@ class AppointmentsController {
     public function cancel() {
         // Require login for canceling
         if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['logged_in'] !== true) {
-            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
+            header('Location: ' . base_url('index.php/auth'));
             exit;
         }
         
         $appointmentId = $_GET['id'] ?? null;
         
         if (!$appointmentId) {
-            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments');
+            header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
         
@@ -213,14 +213,14 @@ class AppointmentsController {
                         $freeSlot->execute();
                     }
                     
-                    header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments?success=canceled');
+                    header('Location: ' . base_url('index.php/appointments?success=canceled'));
                     exit;
                 }
             }
         }
         
         // If we get here, something went wrong
-        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments?error=cancel_failed');
+        header('Location: ' . base_url('index.php/appointments?error=cancel_failed'));
         exit;
     }
     

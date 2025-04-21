@@ -12,34 +12,33 @@ $userName = $isLoggedIn ? $_SESSION['name'] : '';
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/home">Appointment System</a>
+        <a class="navbar-brand" href="<?= base_url('index.php/home') ?>">Appointment System</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/home">Home</a>
+                    <a class="nav-link" href="<?= base_url('index.php/home') ?>">Home</a>
                 </li>
                 
                 <li class="nav-item">
-                    <a class="nav-link" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments">Appointments</a>
+                    <a class="nav-link" href="<?= base_url('index.php/appointments') ?>">Appointments</a>
                 </li>
                 
                 <?php if ($isLoggedIn): ?>
                     <?php if ($userRole === 'provider' || $userRole === 'admin'): ?>
                         <li class="nav-item">
-                            <a class="nav-link" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/provider">Provider Portal</a>
+                            <a class="nav-link" href="<?= base_url('index.php/provider') ?>">Provider Portal</a>
                         </li>
                     <?php endif; ?>
                     
                     <?php if ($userRole === 'admin'): ?>
                         <li class="nav-item">
-                            <a class="nav-link" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin">Admin Dashboard</a>
+                            <a class="nav-link" href="<?= base_url('index.php/admin') ?>">Admin Dashboard</a>
                         </li>
                     <?php endif; ?>
-                <?php endif; ?>
-            </ul>
+                <?php endif; ?>            </ul>
             
             <ul class="navbar-nav ms-auto">
                 <?php if ($isLoggedIn): ?>
@@ -53,18 +52,18 @@ $userName = $isLoggedIn ? $_SESSION['name'] : '';
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <?php if ($userRole === 'patient'): ?>
-                                <li><a class="dropdown-item" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/profile">My Profile</a></li>
+                                <li><a class="dropdown-item" href="<?= base_url('index.php/profile') ?>">My Profile</a></li>
                             <?php endif; ?>
                             <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
                                 <li>
-                                    <a class="dropdown-item" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/logout">Logout</a>
+                                    <a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>">Logout</a>
                                 </li>
                             <?php endif; ?>
                         </ul>
                     </li>
                 <?php else: ?>
                     <li class="nav-item">
-                        <a class="nav-link" href="/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth">Login</a>
+                        <a class="nav-link" href="<?= base_url('index.php/auth') ?>">Login</a>
                     </li>
                 <?php endif; ?>
             </ul>
