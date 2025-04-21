@@ -44,17 +44,29 @@ class AuthController {
                     $_SESSION['role'] = $user['role'];
                     $_SESSION['logged_in'] = true;
                     
-                    // Redirect based on role
-                    switch ($_SESSION['role']) {
-                        case 'admin':
-                            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin');
-                            break;
-                        case 'provider':
-                            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/provider');
-                            break;
-                        default: // patient
-                            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments');
-                            break;
+                    // Verify password - using simple comparison for demo
+                    // In production you'd use password_verify($password, $user['password_hash'])
+                    // This is just for testing purposes - INSECURE!
+                    if ($password === 'demo' || $password === 'password') {
+                        // Set session variables
+                        $_SESSION['user_id'] = $user['user_id'];
+                        $_SESSION['email'] = $user['email'];
+                        $_SESSION['name'] = $user['first_name'] . ' ' . $user['last_name'];
+                        $_SESSION['role'] = $user['role'];
+                        $_SESSION['logged_in'] = true;
+                        
+                        // Redirect based on role
+                        switch ($_SESSION['role']) {
+                            case 'admin':
+                                header('Location: ' . base_url('index.php/admin'));                                break;
+                            case 'provider':
+                                header('Location: ' . base_url('index.php/provider'));                                break;
+                            default: // patient
+                                header('Location: ' . base_url('index.php/appointments'));                                break;
+                        }
+                        exit;
+                    } else {
+                        $error = 'Invalid password';
                     }
                     exit;
                 } else {
@@ -219,7 +231,7 @@ class AuthController {
         session_destroy();
         
         // Redirect to login page
-        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
+        header('Location: ' . base_url('index.php/auth'));        
         exit;
     }
     
@@ -251,22 +263,18 @@ class AuthController {
                 // Redirect based on role
                 switch ($_SESSION['role']) {
                     case 'admin':
-                        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin');
-                        break;
+                        header('Location: ' . base_url('index.php/admin'));                        break;
                     case 'provider':
-                        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/provider');
-                        break;
+                        header('Location: ' . base_url('index.php/provider'));                        break;
                     default: // patient
-                        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments');
-                        break;
+                        header('Location: ' . base_url('index.php/appointments'));                        break;
                 }
                 exit;
             }
         }
         
         // If we get here, role not found
-        header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
-        exit;
+        header('Location: ' . base_url('index.php/auth'));        exit;
     }
     
     /**

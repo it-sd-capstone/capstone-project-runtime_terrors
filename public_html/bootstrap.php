@@ -22,6 +22,9 @@ error_reporting(E_ALL);
 // Start session
 session_start();
 
+// Load helper functions
+require_once APP_ROOT . '/core/helpers.php';
+
 // Load environment configuration
 require_once CONFIG_PATH . '/environment.php';
 // Load helper functions

@@ -14,7 +14,7 @@ class AdminController {
         // Check if user is logged in and has admin role
         if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
             // Redirect to login
-            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth');
+            header('Location: ' . base_url('index.php/auth'));
             exit;
         }
     }
@@ -100,7 +100,7 @@ class AdminController {
         // Get all appointments with details
         $appointments = [];
         $stmt = $this->db->query("
-            SELECT a.*, 
+            SELECT a.*,
                    p.first_name as patient_first_name, p.last_name as patient_last_name,
                    pr.first_name as provider_first_name, pr.last_name as provider_last_name,
                    s.name as service_name, s.duration as service_duration
@@ -139,12 +139,12 @@ class AdminController {
                 $updateStmt->bind_param("ii", $newStatus, $userId);
                 
                 if ($updateStmt->execute()) {
-                    header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/users?success=updated');
+                    header('Location: ' . base_url('index.php/admin/users?success=updated'));
                     exit;
                 }
             }
             
-            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/users?error=update_failed');
+            header('Location: ' . base_url('index.php/admin/users?error=update_failed'));
             exit;
         }
     }
@@ -168,12 +168,12 @@ class AdminController {
                 $updateStmt->bind_param("ii", $newStatus, $serviceId);
                 
                 if ($updateStmt->execute()) {
-                    header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/services?success=updated');
+                    header('Location: ' . base_url('index.php/admin/services?success=updated'));
                     exit;
                 }
             }
             
-            header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/services?error=update_failed');
+            header('Location: ' . base_url('index.php/admin/services?error=update_failed'));
             exit;
         }
     }
@@ -185,7 +185,7 @@ class AdminController {
             $duration = $_POST['duration'] ?? 30;
             
             if (empty($name)) {
-                header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/services?error=missing_name');
+                header('Location: ' . base_url('index.php/admin/services?error=missing_name'));
                 exit;
             }
             
@@ -193,10 +193,10 @@ class AdminController {
             $stmt->bind_param("ssi", $name, $description, $duration);
             
             if ($stmt->execute()) {
-                header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/services?success=added');
+                header('Location: ' . base_url('index.php/admin/services?success=added'));
                 exit;
             } else {
-                header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/services?error=add_failed');
+                header('Location: ' . base_url('index.php/admin/services?error=add_failed'));
                 exit;
             }
         }
@@ -212,7 +212,7 @@ class AdminController {
             // Validate status
             $validStatuses = ['pending', 'confirmed', 'completed', 'canceled'];
             if (!in_array($status, $validStatuses)) {
-                header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/appointments?error=invalid_status');
+                header('Location: ' . base_url('index.php/admin/appointments?error=invalid_status'));
                 exit;
             }
             
@@ -220,10 +220,10 @@ class AdminController {
             $stmt->bind_param("si", $status, $appointmentId);
             
             if ($stmt->execute()) {
-                header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/appointments?success=updated');
+                header('Location: ' . base_url('index.php/admin/appointments?success=updated'));
                 exit;
             } else {
-                header('Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/admin/appointments?error=update_failed');
+                header('Location: ' . base_url('index.php/admin/appointments?error=update_failed'));
                 exit;
             }
         }

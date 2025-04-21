@@ -5,6 +5,7 @@
 
 /**
  * Get the base URL for the application
+ *
  * @param string $path Path to append to the base URL
  * @return string The complete URL
  */

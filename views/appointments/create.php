@@ -11,7 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Check if user is logged in
     if (!isset($_SESSION['user_id'])) {
         // Redirect to login
-        header("Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth/login?redirect=appointments");
+        header("Location: " . base_url('index.php/auth/login?redirect=appointments'));
         exit;
     }
     
@@ -22,17 +22,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     if ($appointmentModel->isSlotBooked($availability_id)) {
         $_SESSION['error'] = "This slot is already booked!";
-        header("Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments");
+        header("Location: " . base_url('index.php/appointments'));
         exit;
     }
     
     if ($appointmentModel->create($patient_id, $availability_id)) {
         $_SESSION['success'] = "Appointment booked successfully!";
-        header("Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments");
+        header("Location: " . base_url('index.php/appointments'));
         exit;
     } else {
         $_SESSION['error'] = "Failed to book the appointment.";
-        header("Location: /appointment-system/capstone-project-runtime_terrors/public_html/index.php/appointments");
+        header("Location: " . base_url('index.php/appointments'));
         exit;
     }
 }
