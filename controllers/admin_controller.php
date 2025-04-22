@@ -228,4 +228,289 @@ class AdminController {
             }
         }
     }
+    
+    public function addProvider() {
+        $error = '';
+        $success = '';
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Process form data
+            $email = $_POST['email'] ?? '';
+            $firstName = $_POST['first_name'] ?? '';
+            $lastName = $_POST['last_name'] ?? '';
+            $phone = $_POST['phone'] ?? '';
+            $specialization = $_POST['specialization'] ?? '';
+            $title = $_POST['title'] ?? '';
+            $bio = $_POST['bio'] ?? '';
+            
+            // Basic validation
+            if (empty($email) || empty($firstName) || empty($lastName)) {
+                $error = 'Email, first name and last name are required';
+            } else {
+                // Check if email exists
+                $stmt = $this->db->prepare("SELECT user_id FROM users WHERE email = ?");
+                $stmt->bind_param("s", $email);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows > 0) {
+                    $error = 'Email already registered';
+                } else {
+                    // Generate a secure temporary password
+                    $tempPassword = bin2hex(random_bytes(4)); // 8 character random password
+                    $passwordHash = password_hash($tempPassword, PASSWORD_DEFAULT);
+                    
+                    // Start transaction
+                    $this->db->begin_transaction();
+                    
+                    try {
+                        // Insert user
+                        $stmt = $this->db->prepare("
+                            INSERT INTO users 
+                            (email, password_hash, first_name, last_name, phone, role, is_active, password_change_required) 
+                            VALUES (?, ?, ?, ?, ?, 'provider', 1, 1)
+                        ");
+                        $stmt->bind_param("sssss", $email, $passwordHash, $firstName, $lastName, $phone);
+                        $stmt->execute();
+                        
+                        $userId = $this->db->insert_id;
+                        
+                        // Create provider profile
+                        $stmt = $this->db->prepare("
+                            INSERT INTO provider_profiles 
+                            (provider_id, specialization, title, bio, accepting_new_patients) 
+                            VALUES (?, ?, ?, ?, 1)
+                        ");
+                        $stmt->bind_param("isss", $userId, $specialization, $title, $bio);
+                        $stmt->execute();
+                        
+                        // Create notification for the provider
+                        $subject = "Your Provider Account Has Been Created";
+                        $message = "Hello $firstName $lastName,\n\n" .
+                                   "An account has been created for you as a provider in our appointment system.\n\n" .
+                                   "Your temporary login credentials are:\n" .
+                                   "Email: $email\n" .
+                                   "Password: $tempPassword\n\n" .
+                                   "Please login and change your password as soon as possible at: " . 
+                                   base_url('index.php/auth') . "\n\n" .
+                                   "Thank you,\n" .
+                                   "Appointment System Admin";
+                        
+                        $stmt = $this->db->prepare("
+                            INSERT INTO notifications 
+                            (user_id, subject, message, type, status, created_at) 
+                            VALUES (?, ?, ?, 'email', 'pending', NOW())
+                        ");
+                        $stmt->bind_param("iss", $userId, $subject, $message);
+                        $stmt->execute();
+                        
+                        $this->db->commit();
+                        
+                        // Display the temporary password to admin
+                        $success = "Provider account created successfully! Temporary password: <strong>$tempPassword</strong>";
+                    } catch (Exception $e) {
+                        $this->db->rollback();
+                        $error = "Error creating provider: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+        
+        // Get all services for the checkboxes
+        $services = [];
+        $stmt = $this->db->query("SELECT service_id, name FROM services WHERE is_active = 1");
+        if ($stmt) {
+            while ($row = $stmt->fetch_assoc()) {
+                $services[] = $row;
+            }
+        }
+        
+        include VIEW_PATH . '/admin/add_provider.php';
+    }
+    
+    public function providers() {
+        // Get all providers with their profile details
+        $providers = [];
+        $stmt = $this->db->query("
+            SELECT u.*, pp.specialization, pp.title, pp.accepting_new_patients, 
+                   pp.max_patients_per_day, pp.profile_image
+            FROM users u
+            LEFT JOIN provider_profiles pp ON u.user_id = pp.provider_id
+            WHERE u.role = 'provider'
+            ORDER BY u.last_name, u.first_name
+        ");
+        
+        if ($stmt) {
+            while ($row = $stmt->fetch_assoc()) {
+                // Get count of services offered by this provider
+                $serviceStmt = $this->db->prepare("
+                    SELECT COUNT(*) as service_count 
+                    FROM provider_services 
+                    WHERE provider_id = ?
+                ");
+                $serviceStmt->bind_param("i", $row['user_id']);
+                $serviceStmt->execute();
+                $serviceResult = $serviceStmt->get_result();
+                $serviceCount = $serviceResult->fetch_assoc()['service_count'] ?? 0;
+                $row['service_count'] = $serviceCount;
+                
+                // Get upcoming appointment count
+                $apptStmt = $this->db->prepare("
+                    SELECT COUNT(*) as appointment_count 
+                    FROM appointments 
+                    WHERE provider_id = ? AND appointment_date >= CURDATE()
+                ");
+                $apptStmt->bind_param("i", $row['user_id']);
+                $apptStmt->execute();
+                $apptResult = $apptStmt->get_result();
+                $appointmentCount = $apptResult->fetch_assoc()['appointment_count'] ?? 0;
+                $row['appointment_count'] = $appointmentCount;
+                
+                $providers[] = $row;
+            }
+        }
+        
+        include VIEW_PATH . '/admin/providers.php';
+    }
+    
+    public function manageProviderServices($providerId = null) {
+        if (!$providerId && isset($_GET['id'])) {
+            $providerId = $_GET['id'];
+        }
+        
+        if (!$providerId) {
+            header('Location: ' . base_url('index.php/admin/providers'));
+            exit;
+        }
+        
+        // Get provider details
+        $stmt = $this->db->prepare("
+            SELECT u.*, pp.specialization, pp.title 
+            FROM users u
+            LEFT JOIN provider_profiles pp ON u.user_id = pp.provider_id
+            WHERE u.user_id = ? AND u.role = 'provider'
+        ");
+        $stmt->bind_param("i", $providerId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if (!$result || $result->num_rows === 0) {
+            header('Location: ' . base_url('index.php/admin/providers'));
+            exit;
+        }
+        
+        $provider = $result->fetch_assoc();
+        
+        // Get all available services
+        $services = [];
+        $serviceStmt = $this->db->query("SELECT * FROM services ORDER BY name");
+        if ($serviceStmt) {
+            while ($row = $serviceStmt->fetch_assoc()) {
+                $services[] = $row;
+            }
+        }
+        
+        // Get provider's current services
+        $providerServices = [];
+        $psStmt = $this->db->prepare("
+            SELECT ps.*, s.name, s.duration 
+            FROM provider_services ps
+            JOIN services s ON ps.service_id = s.service_id
+            WHERE ps.provider_id = ?
+        ");
+        $psStmt->bind_param("i", $providerId);
+        $psStmt->execute();
+        $psResult = $psStmt->get_result();
+        
+        if ($psResult) {
+            while ($row = $psResult->fetch_assoc()) {
+                $providerServices[] = $row;
+            }
+        }
+        
+        // Process form submission to add/remove services
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (isset($_POST['add_service']) && isset($_POST['service_id'])) {
+                $serviceId = $_POST['service_id'];
+                $customDuration = $_POST['custom_duration'] ?? null;
+                $customNotes = $_POST['custom_notes'] ?? null;
+                
+                // Check if service already exists for this provider
+                $checkStmt = $this->db->prepare("
+                    SELECT * FROM provider_services 
+                    WHERE provider_id = ? AND service_id = ?
+                ");
+                $checkStmt->bind_param("ii", $providerId, $serviceId);
+                $checkStmt->execute();
+                $checkResult = $checkStmt->get_result();
+                
+                if ($checkResult->num_rows === 0) {
+                    // Add service
+                    $addStmt = $this->db->prepare("
+                        INSERT INTO provider_services (provider_id, service_id, custom_duration, custom_notes)
+                        VALUES (?, ?, ?, ?)
+                    ");
+                    $addStmt->bind_param("iiis", $providerId, $serviceId, $customDuration, $customNotes);
+                    
+                    if ($addStmt->execute()) {
+                        header('Location: ' . base_url('index.php/admin/manageProviderServices?id=' . $providerId . '&success=added'));
+                        exit;
+                    }
+                }
+            } elseif (isset($_POST['remove_service']) && isset($_POST['provider_service_id'])) {
+                $providerServiceId = $_POST['provider_service_id'];
+                
+                // Remove service
+                $removeStmt = $this->db->prepare("
+                    DELETE FROM provider_services 
+                    WHERE provider_service_id = ? AND provider_id = ?
+                ");
+                $removeStmt->bind_param("ii", $providerServiceId, $providerId);
+                
+                if ($removeStmt->execute()) {
+                    header('Location: ' . base_url('index.php/admin/manageProviderServices?id=' . $providerId . '&success=removed'));
+                    exit;
+                }
+            }
+        }
+        
+        include VIEW_PATH . '/admin/provider_services.php';
+    }
+    
+    public function toggleAcceptingPatients() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['provider_id'])) {
+            $providerId = $_POST['provider_id'];
+            
+            // Get current status
+            $stmt = $this->db->prepare("
+                SELECT accepting_new_patients 
+                FROM provider_profiles 
+                WHERE provider_id = ?
+            ");
+            $stmt->bind_param("i", $providerId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result && $result->num_rows > 0) {
+                $profile = $result->fetch_assoc();
+                $newStatus = $profile['accepting_new_patients'] ? 0 : 1; // Toggle status
+                
+                // Update status
+                $updateStmt = $this->db->prepare("
+                    UPDATE provider_profiles 
+                    SET accepting_new_patients = ? 
+                    WHERE provider_id = ?
+                ");
+                $updateStmt->bind_param("ii", $newStatus, $providerId);
+                
+                if ($updateStmt->execute()) {
+                    header('Location: ' . base_url('index.php/admin/providers?success=updated'));
+                    exit;
+                }
+            }
+            
+            header('Location: ' . base_url('index.php/admin/providers?error=update_failed'));
+            exit;
+        }
+    }
 }
