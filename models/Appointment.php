@@ -10,21 +10,36 @@ class Appointment {
     public function getByProvider($provider_id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT a.*, s.name AS service_name, 
-                       CONCAT(u.first_name, ' ', u.last_name) AS patient_name 
+                SELECT a.*, s.name AS service_name,
+                    CONCAT(u.first_name, ' ', u.last_name) AS patient_name
                 FROM appointments a
                 JOIN services s ON a.service_id = s.service_id
                 JOIN users u ON a.patient_id = u.user_id
                 WHERE a.provider_id = ?
                 ORDER BY a.appointment_date, a.start_time
             ");
-            $stmt->execute([$provider_id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Bind the parameter using mysqli syntax
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            
+            // Get result set and fetch rows with mysqli syntax
+            $result = $stmt->get_result();
+            $appointments = [];
+            
+            while ($row = $result->fetch_assoc()) {
+                $appointments[] = $row;
+            }
+            
+            $stmt->close();
+            return $appointments;
+            
         } catch (Exception $e) {
             error_log("Error in getByProvider: " . $e->getMessage());
             return [];
         }
     }
+
 
     // ✅ Get appointments for a patient
     public function getByPatient($patient_id) {

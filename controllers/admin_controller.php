@@ -1,35 +1,41 @@
 <?php
-require_once MODEL_PATH . '/Admin.php';
-require_once '../core/Session.php';
-require_once '../core/Database.php';
+require_once MODEL_PATH . '/User.php';
 
 class AdminController {
     private $db;
-    private $adminModel;
+    private $userModel;
     
     public function __construct() {
-        Session::start();
-        $this->db = Database::getConnection();
+        // Replace Session class with native PHP session handling
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         
-        if (!Session::isLoggedIn() || $_SESSION['role'] !== 'admin') {
+        // Replace Session::isLoggedIn() with direct $_SESSION check
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
             header('Location: ' . base_url('index.php/auth'));
             exit;
         }
         
-        $this->adminModel = new Admin($this->db);
+        // Use get_db() function instead of Database::getConnection()
+        $this->db = get_db();
+        
+        // Use User model instead of non-existent Admin model
+        $this->userModel = new User($this->db);
     }
     
     // ✅ Admin Dashboard Overview
     public function index() {
+        // Get stats using direct database queries instead of non-existent model
         $stats = [
-            'totalUsers' => $this->adminModel->getCount('users'),
-            'totalPatients' => $this->adminModel->getCountByRole('patient'),
-            'totalProviders' => $this->adminModel->getCountByRole('provider'),
-            'totalAppointments' => $this->adminModel->getCount('appointments'),
-            'pendingAppointments' => $this->adminModel->getCountByStatus('pending'),
-            'completedAppointments' => $this->adminModel->getCountByStatus('completed'),
-            'canceledAppointments' => $this->adminModel->getCountByStatus('canceled'),
-            'totalServices' => $this->adminModel->getCount('services')
+            'totalUsers' => $this->getCount('users'),
+            'totalPatients' => $this->getCountByRole('patient'),
+            'totalProviders' => $this->getCountByRole('provider'),
+            'totalAppointments' => $this->getCount('appointments'),
+            'pendingAppointments' => $this->getCountByStatus('pending'),
+            'completedAppointments' => $this->getCountByStatus('completed'),
+            'canceledAppointments' => $this->getCountByStatus('canceled'),
+            'totalServices' => $this->getCount('services')
         ];
         
         include VIEW_PATH . '/admin/index.php';
