@@ -73,12 +73,26 @@ class Provider {
     public function getAvailability($provider_id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT * FROM availability 
+                SELECT * FROM availability
                 WHERE provider_id = ? AND availability_date >= CURDATE()
                 ORDER BY availability_date, start_time
             ");
-            $stmt->execute([$provider_id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Bind the parameter using mysqli syntax
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            
+            // Get result set and fetch rows with mysqli syntax
+            $result = $stmt->get_result();
+            $availability = [];
+            
+            while ($row = $result->fetch_assoc()) {
+                $availability[] = $row;
+            }
+            
+            $stmt->close();
+            return $availability;
+            
         } catch (Exception $e) {
             error_log("Error in getAvailability: " . $e->getMessage());
             return [];
