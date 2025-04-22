@@ -44,25 +44,37 @@ if (!defined('APP_ROOT')) {
                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                 <?php endif; ?>
                 
+                <?php if (!empty($errors) && is_array($errors)): ?>
+                    <div class="alert alert-danger">
+                        <strong>Login failed:</strong>
+                        <ul class="mb-0">
+                            <?php foreach ($errors as $err): ?>
+                                <li><?= htmlspecialchars($err) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+                
                 <form action="<?= base_url('index.php/auth/login') ?>" method="post">
                     <div class="mb-3">
                         <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
+                        <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
                         <input type="password" class="form-control" id="password" name="password" required>
                         <small class="text-muted">For demo purposes, use "demo" or "password" as the password</small>
                     </div>
-                                    <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
-                                    <!-- Add these links just before the form's closing tag -->
-                                    <div class="mt-3 text-center">
-                                        <a href="<?= base_url('index.php/auth/register') ?>">Create an Account</a>
-                                        <span class="mx-2">|</span>
-                                        <a href="<?= base_url('index.php/auth/forgot_password') ?>">Forgot Password?</a>                                    </div>
-                                </form>           
-                             </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
+                    
+                    <div class="mt-3 text-center">
+                        <a href="<?= base_url('index.php/auth/register') ?>">Create an Account</a>
+                        <span class="mx-2">|</span>
+                        <a href="<?= base_url('index.php/auth/forgot_password') ?>">Forgot Password?</a>
+                    </div>
                 </form>
+            </div>
         </div>
         
         <!-- Quick Role Selector for Demos/Testing -->
@@ -71,7 +83,7 @@ if (!defined('APP_ROOT')) {
             <div class="d-flex justify-content-between">
                 <a href="<?= base_url('index.php/auth/demo?role=patient') ?>" class="btn btn-outline-primary">Login as Patient</a>
                 <a href="<?= base_url('index.php/auth/demo?role=provider') ?>" class="btn btn-outline-success">Login as Provider</a>
-                <a href="<?= base_url('index.php/auth/demo?role=admin') ?>" class="btn btn-outline-dark">Login as Admin</a>            
+                <a href="<?= base_url('index.php/auth/demo?role=admin') ?>" class="btn btn-outline-dark">Login as Admin</a>
             </div>
         </div>
     </div>

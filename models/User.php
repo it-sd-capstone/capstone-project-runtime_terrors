@@ -14,8 +14,8 @@ class User {
             if ($this->db instanceof mysqli) {
                 // MySQLi implementation
                 $query = "SELECT user_id, email, password_hash, first_name, last_name, role
-                          FROM users
-                          WHERE email = ? AND is_active = 1";
+                        FROM users
+                        WHERE email = ? AND is_active = 1";
                 
                 $stmt = $this->db->prepare($query);
                 $stmt->bind_param("s", $email);
@@ -23,12 +23,16 @@ class User {
                 
                 $result = $stmt->get_result();
                 $user = $result->fetch_assoc();
+                error_log("User query result: " . ($user ? "User found" : "No user found"));
+                if ($user) {
+                    error_log("Password verification: " . (password_verify($password, $user['password_hash']) ? "Success" : "Failed"));
+                }
                 
             } elseif ($this->db instanceof PDO) {
                 // PDO implementation
                 $query = "SELECT user_id, email, password_hash, first_name, last_name, role
-                          FROM users
-                          WHERE email = :email AND is_active = 1";
+                        FROM users
+                        WHERE email = :email AND is_active = 1";
                 
                 $stmt = $this->db->prepare($query);
                 $stmt->bindParam(':email', $email, PDO::PARAM_STR);
@@ -37,6 +41,11 @@ class User {
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
             } else {
                 throw new Exception("Unsupported database connection type");
+            }
+            
+            // Add your debug log separately before the conditional
+            if ($user) {
+                error_log("Attempting to verify password: '" . substr($password, 0, 3) . "***' against hash: '" . $user['password_hash'] . "'");
             }
             
             // Secure password verification using PHP's built-in function
@@ -59,7 +68,7 @@ class User {
             throw $e;
         }
     }
-    
+
     /**
      * Update the password hash if the algorithm has changed
      */
@@ -121,8 +130,8 @@ class User {
                 return ['error' => $passwordValidation];
             }
             
-            // Hash the password
-            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+            // Use already hashed password
+            $passwordHash = $password;
             
             if ($this->db instanceof mysqli) {
                 // Start transaction
