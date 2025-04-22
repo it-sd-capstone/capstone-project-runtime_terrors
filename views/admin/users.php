@@ -1,5 +1,4 @@
-<?php include VIEW_PATH . '/partials/header.php'; ?>
-
+<?php include VIEW_PATH . '/partials/admin_header.php'; ?>
 <div class="container">
     <h2>Manage Users</h2>
     
