@@ -114,37 +114,62 @@ class Appointment {
         }
     }
 
-    // ✅ Retrieve all appointments in the system
+    // ✅ Retrieve all appointments in the system (MySQLi version)
     public function getAllAppointments() {
         try {
             $stmt = $this->db->prepare("
-                SELECT a.*, 
-                       p.first_name AS patient_first_name, p.last_name AS patient_last_name,
-                       pr.first_name AS provider_first_name, pr.last_name AS provider_last_name
+                SELECT a.*,
+                    p.first_name AS patient_first_name, p.last_name AS patient_last_name,
+                    pr.first_name AS provider_first_name, pr.last_name AS provider_last_name
                 FROM appointments a
                 JOIN users p ON a.patient_id = p.user_id
                 JOIN users pr ON a.provider_id = pr.user_id
                 ORDER BY a.appointment_date, a.start_time
             ");
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->get_result();
+            
+            $appointments = [];
+            while ($row = $result->fetch_assoc()) {
+                $appointments[] = $row;
+            }
+            return $appointments;
         } catch (Exception $e) {
             error_log("Error fetching all appointments: " . $e->getMessage());
             return [];
         }
     }
 
+
     // ✅ Fetch appointment details by ID
-    public function getAppointmentById($appointment_id) {
+    public function getAppointmentById($id) {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM appointments WHERE appointment_id = ?");
-            $stmt->execute([$appointment_id]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt = $this->db->prepare("
+                SELECT a.*,
+                    p.first_name AS patient_first_name, p.last_name AS patient_last_name,
+                    pr.first_name AS provider_first_name, pr.last_name AS provider_last_name,
+                    s.name AS service_name
+                FROM appointments a
+                JOIN users p ON a.patient_id = p.user_id
+                JOIN users pr ON a.provider_id = pr.user_id
+                JOIN services s ON a.service_id = s.service_id
+                WHERE a.appointment_id = ?
+            ");
+            
+            // If using MySQLi
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result->num_rows > 0) {
+                return $result->fetch_assoc();
+            }
+            return null;
         } catch (Exception $e) {
             error_log("Error fetching appointment by ID: " . $e->getMessage());
             return null;
         }
     }
+    
 
     // ✅ Update appointment status (e.g., Confirmed, Completed, Canceled)
     public function updateStatus($appointment_id, $status) {

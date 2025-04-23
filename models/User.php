@@ -68,7 +68,22 @@ class User {
             throw $e;
         }
     }
-
+    
+    public function toggleStatus($userId) {
+        $sql = "UPDATE users SET is_active = NOT is_active WHERE user_id = ?";
+        $stmt = $this->db->prepare($sql);
+        
+        if (!$stmt) {
+            error_log("Prepare failed: " . $this->db->error);
+            return false;
+        }
+        
+        $stmt->bind_param('i', $userId);
+        $result = $stmt->execute();
+        
+        return $result && $stmt->affected_rows > 0;
+    }
+    
     /**
      * Update the password hash if the algorithm has changed
      */
@@ -565,7 +580,30 @@ class User {
             return ['error' => 'Update failed: ' . $e->getMessage()];
         }
     }
-    
+
+    public function getAllUsersWithFilters($whereClause = "", $params = []) {
+        $sql = "SELECT * FROM users $whereClause ORDER BY user_id DESC";
+        
+        if (empty($params)) {
+            $stmt = $this->db->query($sql);
+            return $stmt->fetch_all(MYSQLI_ASSOC);
+        } else {
+            $stmt = $this->db->prepare($sql);
+            if (!$stmt) {
+                error_log("Prepare failed: " . $this->db->error);
+                return [];
+            }
+            
+            // Create binding parameters
+            $types = str_repeat('s', count($params)); // Assume all strings for simplicity
+            
+            $stmt->bind_param($types, ...$params);
+            $stmt->execute();
+            
+            $result = $stmt->get_result();
+            return $result->fetch_all(MYSQLI_ASSOC);
+        }
+    }
     /**
      * Change user password
      */
