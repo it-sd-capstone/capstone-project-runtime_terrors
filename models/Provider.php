@@ -90,7 +90,7 @@ class Provider {
                 // Process each row
             }
             
-            $stmt->close();
+            
             return $availability;
             
         } catch (Exception $e) {
