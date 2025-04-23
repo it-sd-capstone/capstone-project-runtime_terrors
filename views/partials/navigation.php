@@ -7,8 +7,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // Determine if user is logged in
 $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['logged_in'] === true;
 $userRole = $isLoggedIn ? $_SESSION['role'] : '';
-$userName = $isLoggedIn ? $_SESSION['name'] : '';
-?>
+$userName = $isLoggedIn ? ($_SESSION['name'] ?? ($_SESSION['email'] ?? 'User')) : '';?>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">

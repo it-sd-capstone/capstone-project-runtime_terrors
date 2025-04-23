@@ -6,6 +6,7 @@
  
 // Load the bootstrap
 require_once 'bootstrap.php';
+
  
 // Get the requested path
 $path = $_SERVER['PATH_INFO'] ?? $_SERVER['REQUEST_URI'] ?? '/';
@@ -54,7 +55,7 @@ try {
     }
    
     // Debug controller loading
-    $controller_file = CONTROLLER_PATH . "/{$controller_name}_controller.php";
+    $controller_file = APP_ROOT . '/controllers/' . strtolower($controller_name) . '_controller.php';
     error_log("Attempting to load controller file: {$controller_file}");
     error_log("Controller name: {$controller_name}");
     error_log("Class name will be: " . ucfirst($controller_name) . 'Controller');
