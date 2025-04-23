@@ -26,15 +26,32 @@ class AdminController {
             'totalUsers' => $this->getCount('users'),
             'totalPatients' => $this->getCountByRole('patient'),
             'totalProviders' => $this->getCountByRole('provider'),
+            'totalAdmins' => $this->getCountByRole('admin'),
             'totalAppointments' => $this->getCount('appointments'),
-            'pendingAppointments' => $this->getCountByStatus('pending'),
+            'scheduledAppointments' => $this->getCountByStatus('scheduled'),
+            'confirmedAppointments' => $this->getCountByStatus('confirmed'),
             'completedAppointments' => $this->getCountByStatus('completed'),
             'canceledAppointments' => $this->getCountByStatus('canceled'),
+            'noShowAppointments' => $this->getCountByStatus('no_show'),
             'totalServices' => $this->getCount('services')
         ];
         
+        // Add service usage metrics
+        $stats['topServices'] = $this->getTopServices(5);
+        
+        // Add provider availability summary
+        $stats['totalAvailableSlots'] = $this->getAvailableSlotsCount();
+        $stats['bookedSlots'] = $this->getBookedSlotsCount();
+        $stats['availabilityRate'] = ($stats['totalAvailableSlots'] > 0) ?
+            round(($stats['bookedSlots'] / $stats['totalAvailableSlots']) * 100) : 0;
+        $stats['topProviders'] = $this->getTopProviders(5);
+        
+        // Get recent activity for the dashboard
+        $stats['recentActivity'] = $this->getRecentActivity(10);
+        
         include VIEW_PATH . '/admin/index.php';
     }
+
     
     // Database count methods (as fallback if model methods fail)
     private function getCount($table) {
@@ -45,7 +62,138 @@ class AdminController {
         }
         return 0;
     }
+    /**
+     * Get top services by usage
+     * @param int $limit Number of services to return
+     * @return array Top services with usage counts
+     */
+    private function getTopServices($limit = 5) {
+        try {
+            $query = "SELECT s.service_id, s.name, COUNT(a.appointment_id) as usage_count 
+                    FROM services s
+                    LEFT JOIN appointments a ON s.service_id = a.service_id
+                    GROUP BY s.service_id, s.name
+                    ORDER BY usage_count DESC
+                    LIMIT ?";
+            
+            $stmt = $this->db->prepare($query);
+            // MySQLi uses bind_param instead of bindValue
+            $stmt->bind_param("i", $limit);
+            $stmt->execute();
+            
+            // MySQLi requires you to get the result first
+            $result = $stmt->get_result();
+            return $result->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            error_log("Database error in getTopServices: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    private function getBookedSlotsCount() {
+        try {
+            // Join appointments to availability based on provider, date and time overlap
+            $stmt = $this->db->prepare("
+                SELECT COUNT(DISTINCT a.appointment_id) as count 
+                FROM appointments a
+                JOIN provider_availability pa ON 
+                    a.provider_id = pa.provider_id AND
+                    a.appointment_date = pa.available_date AND
+                    a.start_time >= pa.start_time AND
+                    a.end_time <= pa.end_time
+                WHERE a.status NOT IN ('canceled', 'no_show')
+            ");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                return $row['count'];
+            }
+            return 0;
+        } catch (Exception $e) {
+            error_log("Database error in getBookedSlotsCount: " . $e->getMessage());
+            return 0;
+        }
+    }
     
+    private function getTopProviders($limit = 5) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    a.provider_id, 
+                    CONCAT(u.first_name, ' ', u.last_name) as provider_name,
+                    COUNT(a.appointment_id) as appointment_count
+                FROM 
+                    appointments a
+                    JOIN users u ON a.provider_id = u.user_id
+                WHERE 
+                    a.status NOT IN ('canceled', 'no_show')
+                GROUP BY 
+                    a.provider_id, provider_name
+                ORDER BY 
+                    appointment_count DESC
+                LIMIT ?
+            ");
+            $stmt->bind_param("i", $limit);
+            $stmt->execute();
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            error_log("Database error in getTopProviders: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    private function getAvailableSlotsCount() {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as count
+                FROM provider_availability
+                WHERE is_available = 1
+            ");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                return $row['count'];
+            }
+            return 0;
+        } catch (Exception $e) {
+            error_log("Database error in getAvailableSlotsCount: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+
+    /**
+     * Get recent system activity
+     * @param int $limit Number of activities to return
+     * @return array Recent activities
+     */
+    private function getRecentActivity($limit = 10) {
+        try {
+            // This assumes you have an activity_log table
+            // Adjust the query based on your actual schema
+            $query = "SELECT a.activity_id, a.activity_type, a.description, 
+                    a.created_at as date, CONCAT(u.first_name, ' ', u.last_name) as user
+                    FROM activity_log a
+                    LEFT JOIN users u ON a.user_id = u.user_id
+                    ORDER BY a.created_at DESC
+                    LIMIT ?";
+            
+            $stmt = $this->db->prepare($query);
+            // MySQLi uses bind_param instead of bindValue
+            $stmt->bind_param("i", $limit);
+            $stmt->execute();
+            
+            // MySQLi requires you to get the result first
+            $result = $stmt->get_result();
+            return $result->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            error_log("Database error in getRecentActivity: " . $e->getMessage());
+            return [];
+        }
+    }
+
     private function getCountByRole($role) {
         $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM users WHERE role = ?");
         $stmt->bind_param("s", $role);
@@ -93,6 +241,88 @@ class AdminController {
         
         // Handle different actions
         switch($action) {
+            case 'delete':
+                if (!$userId) {
+                    $_SESSION['error'] = "User ID is required";
+                    header('Location: ' . base_url('index.php/admin/users'));
+                    exit;
+                }
+                
+                // Check if user exists
+                try {
+                    $user = $this->userModel->getUserById($userId);
+                    if (!$user) {
+                        $_SESSION['error'] = "User not found";
+                        header('Location: ' . base_url('index.php/admin/users'));
+                        exit;
+                    }
+                    
+                    // Make sure admin can't delete themselves
+                    if ($userId == $_SESSION['user_id']) {
+                        $_SESSION['error'] = "You cannot delete your own account";
+                        header('Location: ' . base_url('index.php/admin/users'));
+                        exit;
+                    }
+                    
+                    // Begin transaction for safe deletion
+                    $this->db->begin_transaction();
+                    
+                    try {
+                        // Delete related records first (adjust these based on your database schema)
+                        // Delete appointments
+                        $stmt = $this->db->prepare("DELETE FROM appointments WHERE patient_id = ? OR provider_id = ?");
+                        $stmt->bind_param("ii", $userId, $userId);
+                        $stmt->execute();
+                        
+                        // Delete provider availability if applicable
+                        if ($user['role'] === 'provider') {
+                            $stmt = $this->db->prepare("DELETE FROM provider_availability WHERE provider_id = ?");
+                            $stmt->bind_param("i", $userId);
+                            $stmt->execute();
+                        }
+                        
+                        // Delete profile data if applicable
+                        if ($user['role'] === 'provider') {
+                            $stmt = $this->db->prepare("DELETE FROM provider_profiles WHERE provider_id = ?");
+                            $stmt->bind_param("i", $userId);
+                            $stmt->execute();
+                        } elseif ($user['role'] === 'patient') {
+                            $stmt = $this->db->prepare("DELETE FROM patient_profiles WHERE patient_id = ?");
+                            $stmt->bind_param("i", $userId);
+                            $stmt->execute();
+                        }
+                        
+                        // Finally delete the user
+                        $stmt = $this->db->prepare("DELETE FROM users WHERE user_id = ?");
+                        $stmt->bind_param("i", $userId);
+                        $stmt->execute();
+                        
+                        // If we got here, everything succeeded
+                        $this->db->commit();
+                        
+                        // Log the deletion
+                        error_log("User {$user['first_name']} {$user['last_name']} (ID: {$userId}) was deleted by admin ID: {$_SESSION['user_id']}");
+                        
+                        $_SESSION['success'] = "User has been permanently deleted";
+                    } catch (Exception $e) {
+                        // Something went wrong, rollback changes
+                        $this->db->rollback();
+                        error_log("Error deleting user ID {$userId}: " . $e->getMessage());
+                        $_SESSION['error'] = "Error deleting user: " . $e->getMessage();
+                    }
+                    
+                    // Redirect back to user list
+                    header('Location: ' . base_url('index.php/admin/users'));
+                    exit;
+                    
+                } catch (Exception $e) {
+                    error_log("Error in users/delete: " . $e->getMessage());
+                    $_SESSION['error'] = "Error deleting user: " . $e->getMessage();
+                    header('Location: ' . base_url('index.php/admin/users'));
+                    exit;
+                }
+                break;
+                
             case 'edit':
                 if (!$userId) {
                     $_SESSION['error'] = "User ID is required";
@@ -338,7 +568,7 @@ class AdminController {
                 break;
         }
     }
-    
+
     // ✅ Manage Services
     public function services($action = null, $id = null) {
         // If action is specified (add, edit, delete)
@@ -621,13 +851,14 @@ class AdminController {
             return [];
         }
     }
-    /**
+
+   /**
      * Get all available services
      */
     public function getServices() {
         try {
             $stmt = $this->db->prepare("
-                SELECT service_id, name AS service_name, description, duration, price
+                SELECT service_id, name, description, duration, price
                 FROM services
                 WHERE is_active = 1 OR is_active IS NULL
                 ORDER BY name
@@ -648,7 +879,6 @@ class AdminController {
             return [];
         }
     }
-    
 
     // ✅ Manage Appointments
     public function appointments($action = 'list', $id = null) {
@@ -661,9 +891,15 @@ class AdminController {
                     $provider_id = $_POST['provider_id'] ?? '';
                     $service_id = $_POST['service_id'] ?? '';
                     $appointment_date = $_POST['appointment_date'] ?? '';
-                    $start_time = $_POST['appointment_time'] ?? ''; // Keep form field name but change variable
-                    $status = $_POST['status'] ?? 'pending';
-
+                    $start_time = $_POST['appointment_time'] ?? ''; // Form field name
+                    $status = $_POST['status'] ?? 'scheduled'; // Changed from 'pending' to 'scheduled'
+                    $type = $_POST['type'] ?? 'in_person'; // Added type field
+                    $notes = $_POST['notes'] ?? '';
+                    $reason = $_POST['reason'] ?? '';
+                    
+                    // Calculate end time (30 minutes after start time)
+                    $end_time = date('H:i:s', strtotime($start_time . ' +30 minutes'));
+                    
                     // Basic validation
                     $errors = [];
                     if (empty($patient_id)) {
@@ -678,19 +914,26 @@ class AdminController {
                     if (empty($appointment_date)) {
                         $errors[] = "Appointment date is required";
                     }
-                    if (empty($appointment_time)) {
+                    if (empty($start_time)) { // Fixed variable name
                         $errors[] = "Appointment time is required";
                     }
-
                     if (empty($errors)) {
                         // Check if provider is available at that time
-                        $datetime = $appointment_date . ' ' . $appointment_time;
+                        $datetime = $appointment_date . ' ' . $start_time;
                         
-                        // Insert new appointment
-                        $query = "INSERT INTO appointments (patient_id, provider_id, service_id, appointment_date, start_time, status) 
-                                  VALUES (?, ?, ?, ?, ?, ?)";
+                        // Insert new appointment with all required fields
+                        $query = "INSERT INTO appointments (
+                            patient_id, provider_id, service_id, 
+                            appointment_date, start_time, end_time,
+                            status, type, notes, reason
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->db->prepare($query);
-                        $stmt->bind_param("iiisss", $patient_id, $provider_id, $service_id, $appointment_date, $appointment_time, $status);
+                        $stmt->bind_param(
+                            "iiisssssss", 
+                            $patient_id, $provider_id, $service_id,
+                            $appointment_date, $start_time, $end_time,
+                            $status, $type, $notes, $reason
+                        );
                         
                         if ($stmt->execute()) {
                             $_SESSION['success'] = "Appointment added successfully";
@@ -712,9 +955,15 @@ class AdminController {
                     $provider_id = $_POST['provider_id'] ?? '';
                     $service_id = $_POST['service_id'] ?? '';
                     $appointment_date = $_POST['appointment_date'] ?? '';
-                    $appointment_time = $_POST['appointment_time'] ?? '';
-                    $status = $_POST['status'] ?? 'pending';
-
+                    $start_time = $_POST['appointment_time'] ?? ''; // Fixed variable name
+                    $status = $_POST['status'] ?? 'scheduled'; // Changed from 'pending' to 'scheduled'
+                    $type = $_POST['type'] ?? 'in_person'; // Added type field
+                    $notes = $_POST['notes'] ?? '';
+                    $reason = $_POST['reason'] ?? '';
+                    
+                    // Calculate end time (30 minutes after start time)
+                    $end_time = date('H:i:s', strtotime($start_time . ' +30 minutes'));
+                    
                     // Basic validation
                     $errors = [];
                     if (empty($patient_id)) {
@@ -729,16 +978,23 @@ class AdminController {
                     if (empty($appointment_date)) {
                         $errors[] = "Appointment date is required";
                     }
-                    if (empty($appointment_time)) {
+                    if (empty($start_time)) { // Fixed variable name
                         $errors[] = "Appointment time is required";
                     }
-
                     if (empty($errors)) {
-                        // Update appointment
-                        $query = "UPDATE appointments SET patient_id = ?, provider_id = ?, service_id = ?, 
-                                  appointment_date = ?, start_time = ?, status = ? WHERE appointment_id = ?";
+                        // Update appointment with all required fields
+                        $query = "UPDATE appointments SET 
+                            patient_id = ?, provider_id = ?, service_id = ?,
+                            appointment_date = ?, start_time = ?, end_time = ?, 
+                            status = ?, type = ?, notes = ?, reason = ? 
+                            WHERE appointment_id = ?";
                         $stmt = $this->db->prepare($query);
-                        $stmt->bind_param("iiisssi", $patient_id, $provider_id, $service_id, $appointment_date, $start_time, $status, $id);
+                        $stmt->bind_param(
+                            "iiissssssi", 
+                            $patient_id, $provider_id, $service_id,
+                            $appointment_date, $start_time, $end_time,
+                            $status, $type, $notes, $reason, $id
+                        );
                         
                         if ($stmt->execute()) {
                             $_SESSION['success'] = "Appointment updated successfully";
@@ -753,29 +1009,28 @@ class AdminController {
                     header('Location: ' . base_url('index.php/admin/appointments'));
                     exit;
                 }
-
                 // Get appointment details for editing
                 try {
                     // Get appointment details
                     $appointmentModel = new Appointment($this->db);
                     $appointment = $appointmentModel->getAppointmentById($id);
-            
+                    
                     if (!$appointment) {
                         $_SESSION['error'] = "Appointment not found";
                         header('Location: ' . base_url('index.php/admin/appointments'));
                         exit;
                     }
-            
+                    
                     // Get dropdown data - add debugging
                     $patients = $this->getPatients();
                     error_log("Patients data: " . print_r($patients, true));
-            
+                    
                     $providers = $this->getProviders();
                     error_log("Providers data: " . print_r($providers, true));
-            
+                    
                     $services = $this->getServices();
                     error_log("Services data: " . print_r($services, true));
-            
+                    
                     // Load the view
                     include VIEW_PATH . '/admin/edit_appointment.php';
                     return;
@@ -787,7 +1042,7 @@ class AdminController {
                 }
             } elseif ($action === 'cancel' && $id) {
                 // Cancel appointment (update status to canceled)
-                $query = "UPDATE appointments SET status = 'canceled' WHERE appointment_id = ?";
+                $query = "UPDATE appointments SET status = 'canceled', canceled_at = NOW() WHERE appointment_id = ?";
                 $stmt = $this->db->prepare($query);
                 $stmt->bind_param("i", $id);
                 
@@ -804,15 +1059,15 @@ class AdminController {
         }
         
         // Get all appointments for display with patient and provider names
-        $query = "SELECT a.*, 
-              CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
-              CONCAT(pr.first_name, ' ', pr.last_name) AS provider_name,
-              s.name AS service_name
-              FROM appointments a
-              JOIN users p ON a.patient_id = p.user_id
-              JOIN users pr ON a.provider_id = pr.user_id
-              JOIN services s ON a.service_id = s.service_id
-              ORDER BY a.appointment_date DESC, a.start_time DESC";
+        $query = "SELECT a.*,
+            CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+            CONCAT(pr.first_name, ' ', pr.last_name) AS provider_name,
+            s.name AS service_name
+            FROM appointments a
+            JOIN users p ON a.patient_id = p.user_id
+            JOIN users pr ON a.provider_id = pr.user_id
+            JOIN services s ON a.service_id = s.service_id
+            ORDER BY a.appointment_date DESC, a.start_time DESC";
         $result = $this->db->query($query);
         $appointments = [];
         
@@ -836,14 +1091,15 @@ class AdminController {
         
         include VIEW_PATH . '/admin/appointments.php';
     }
+
     
     public function updateAppointmentStatus() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['appointment_id']) && isset($_POST['status'])) {
             $appointmentId = intval($_POST['appointment_id']);
             $status = $_POST['status'];
             
-            // Validate status
-            $validStatuses = ['pending', 'confirmed', 'completed', 'canceled'];
+            // Update valid statuses to match your database schema
+            $validStatuses = ['scheduled', 'confirmed', 'completed', 'canceled', 'no_show'];
             if (!in_array($status, $validStatuses)) {
                 header('Location: ' . base_url('index.php/admin/appointments?error=invalid_status'));
                 exit;

@@ -22,6 +22,10 @@
                                 Activate User
                             </a>
                         <?php endif; ?>
+                        <!-- New Delete Button -->
+                        <button type="button" class="btn btn-danger btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
+                            Delete User
+                        </button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -118,5 +122,28 @@
     </div>
 </div>
 <?php endif; ?>
+
+<!-- NEW: Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Permanently Delete User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Warning: This action cannot be undone.
+                </div>
+                <p>Are you sure you want to <strong>permanently delete</strong> the user account for <strong><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></strong>?</p>
+                <p>All associated data including appointment history will be removed from the system.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="<?= base_url('index.php/admin/users/delete/' . $user['user_id']) ?>" class="btn btn-danger">Permanently Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php include VIEW_PATH . '/partials/footer.php'; ?>

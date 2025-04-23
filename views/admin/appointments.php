@@ -67,7 +67,7 @@
 
 <!-- Add Appointment Modal -->
 <div class="modal fade" id="addAppointmentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add New Appointment</h5>
@@ -75,54 +75,74 @@
             </div>
             <form action="<?= base_url('index.php/admin/appointments/add') ?>" method="post">
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="patient_id" class="form-label">Patient</label>
-                        <select class="form-select" id="patient_id" name="patient_id" required>
-                            <option value="">Select Patient</option>
-                            <?php if(!empty($patients)): ?>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="patient_id" class="form-label">Patient</label>
+                            <select class="form-select" id="patient_id" name="patient_id" required>
+                                <option value="">Select Patient</option>
                                 <?php foreach ($patients as $patient): ?>
-                                    <option value="<?= $patient['user_id'] ?>"><?= htmlspecialchars($patient['full_name'] ?? '') ?></option>
+                                <option value="<?= $patient['user_id'] ?>"><?= htmlspecialchars($patient['full_name']) ?></option>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="provider_id" class="form-label">Provider</label>
-                        <select class="form-select" id="provider_id" name="provider_id" required>
-                            <option value="">Select Provider</option>
-                            <?php if(!empty($providers)): ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="provider_id" class="form-label">Provider</label>
+                            <select class="form-select" id="provider_id" name="provider_id" required>
+                                <option value="">Select Provider</option>
                                 <?php foreach ($providers as $provider): ?>
-                                    <option value="<?= $provider['user_id'] ?>"><?= htmlspecialchars($provider['full_name'] ?? '') ?></option>
+                                <option value="<?= $provider['user_id'] ?>"><?= htmlspecialchars($provider['full_name']) ?></option>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
+                            </select>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="service_id" class="form-label">Service</label>
-                        <select class="form-select" id="service_id" name="service_id" required>
-                            <option value="">Select Service</option>
-                            <?php if(!empty($services)): ?>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="service_id" class="form-label">Service</label>
+                            <select class="form-select" id="service_id" name="service_id" required>
+                                <option value="">Select Service</option>
                                 <?php foreach ($services as $service): ?>
-                                    <option value="<?= $service['service_id'] ?>"><?= htmlspecialchars($service['service_name'] ?? $service['name'] ?? '') ?></option>
+                                <option value="<?= $service['service_id'] ?>"><?= htmlspecialchars($service['name']) ?></option>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="appointment_date" class="form-label">Appointment Date</label>
+                            <input type="date" class="form-control" id="appointment_date" name="appointment_date" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="appointment_time" class="form-label">Start Time</label>
+                            <input type="time" class="form-control" id="appointment_time" name="appointment_time" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="scheduled" selected>Scheduled</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="completed">Completed</option>
+                                <option value="canceled">Canceled</option>
+                                <option value="no_show">No Show</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="type" class="form-label">Appointment Type</label>
+                            <select class="form-select" id="type" name="type" required>
+                                <option value="in_person" selected>In Person</option>
+                                <option value="virtual">Virtual</option>
+                                <option value="phone">Phone</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label for="appointment_date" class="form-label">Date</label>
-                        <input type="date" class="form-control" id="appointment_date" name="appointment_date" required min="<?= date('Y-m-d') ?>">
+                        <label for="reason" class="form-label">Reason for Visit</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="2"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="appointment_time" class="form-label">Time</label>
-                        <input type="time" class="form-control" id="appointment_time" name="appointment_time" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="status" class="form-label">Status</label>
-                        <select class="form-select" id="status" name="status" required>
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="canceled">Canceled</option>
-                        </select>
+                        <label for="notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
