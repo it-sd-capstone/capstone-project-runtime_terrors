@@ -25,14 +25,14 @@ class ProviderController {
     // ✅ Provider Dashboard
     public function index() {
         $provider_id = $_SESSION['user_id'];
-        $provider = $this->providerModel->getProviderById($provider_id); // ✅ Fetch provider data
+        $provider = $this->providerModel->getProviderById($provider_id); //  Call the method
         $provider_availability = $this->providerModel->getAvailability($provider_id);
         $appointments = $this->appointmentModel->getByProvider($provider_id);
     
         include VIEW_PATH . '/provider/index.php';
     }
 
-    // ✅ Update Provider Profile
+    //  Update Provider Profile
     public function updateProfile() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $name = trim($_POST['name']);
@@ -49,7 +49,7 @@ class ProviderController {
         exit;
     }
 
-    // ✅ Manage Provider Availability
+    //  Manage Provider Availability
     public function addAvailability() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'];
@@ -67,7 +67,7 @@ class ProviderController {
         exit;
     }
 
-    // ✅ Manage Recurring Schedule
+    // Manage Recurring Schedule
     public function addRecurringSchedule() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'];
@@ -85,7 +85,7 @@ class ProviderController {
         exit;
     }
 
-    // ✅ Fetch Availability for FullCalendar.js
+    // Fetch Availability for FullCalendar.js
     public function getProviderSchedules() {
         header("Content-Type: application/json");
         $provider_id = $_SESSION['user_id'];

@@ -6,7 +6,7 @@ class Appointment {
         $this->db = $db;
     }
 
-    // ✅ Get appointments for a provider
+    // Get appointments for a provider
     public function getByProvider($provider_id) {
         try {
             $stmt = $this->db->prepare("
@@ -41,7 +41,7 @@ class Appointment {
     }
 
 
-    // ✅ Get appointments for a patient
+    // Get appointments for a patient
     public function getByPatient($patient_id) {
         try {
             $stmt = $this->db->prepare("
@@ -61,7 +61,7 @@ class Appointment {
         }
     }
 
-    // ✅ Check if an appointment slot is already booked
+    // Check if an appointment slot is already booked
     public function isSlotBooked($availability_id) {
         try {
             $stmt = $this->db->prepare("SELECT is_booked FROM availability WHERE availability_id = ?");
@@ -74,7 +74,7 @@ class Appointment {
         }
     }
 
-    // ✅ Create an appointment while ensuring atomic transaction safety
+    // Create an appointment while ensuring atomic transaction safety
     public function create($patient_id, $availability_id) {
         try {
             $this->db->beginTransaction();
@@ -114,7 +114,7 @@ class Appointment {
         }
     }
 
-    // ✅ Retrieve all appointments in the system (MySQLi version)
+    // Retrieve all appointments in the system (MySQLi version)
     public function getAllAppointments() {
         try {
             $stmt = $this->db->prepare("
@@ -141,7 +141,7 @@ class Appointment {
     }
 
 
-    // ✅ Fetch appointment details by ID
+    // Fetch appointment details by ID
     public function getAppointmentById($id) {
         try {
             $stmt = $this->db->prepare("
@@ -171,7 +171,7 @@ class Appointment {
     }
     
 
-    // ✅ Update appointment status (e.g., Confirmed, Completed, Canceled)
+    // Update appointment status (e.g., Confirmed, Completed, Canceled)
     public function updateStatus($appointment_id, $status) {
         try {
             $stmt = $this->db->prepare("UPDATE appointments SET status = ? WHERE appointment_id = ?");

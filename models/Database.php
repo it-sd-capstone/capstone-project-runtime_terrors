@@ -30,7 +30,7 @@ class Database {
         return $this->conn;
     }
 
-    // ✅ Optional: Allow manual disconnection
+    // Optional: Allow manual disconnection
     public function disconnect() {
         self::$instance = null;
     }

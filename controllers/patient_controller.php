@@ -19,13 +19,13 @@ class PatientController {
         $this->appointmentModel = new Appointment($this->db);
     }
 
-    // ✅ Display Available Providers for Booking
+    // Display Available Providers for Booking
     public function book() {
         $availableProviders = $this->appointmentModel->getAvailableProviders();
         include VIEW_PATH . '/auth/book.php';
     }
 
-    // ✅ Book an Appointment
+    // Book an Appointment
     public function bookAppointment() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $patient_id = $_SESSION['user_id'];
@@ -44,14 +44,14 @@ class PatientController {
         }
     }
 
-    // ✅ Show Appointment History
+    //  Show Appointment History
     public function history() {
         $patient_id = $_SESSION['user_id'];
         $appointments = $this->appointmentModel->getByPatient($patient_id);
         include VIEW_PATH . '/appointments/history.php';
     }
 
-    // ✅ Cancel an Appointment
+    // Cancel an Appointment
     public function cancelAppointment() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $appointment_id = $_POST['appointment_id'];
@@ -61,7 +61,7 @@ class PatientController {
         }
     }
 
-    // ✅ Fetch Patient Appointments for FullCalendar.js
+    // Fetch Patient Appointments for FullCalendar.js
     public function getAppointments() {
         header("Content-Type: application/json");
         $patient_id = $_SESSION['user_id'];

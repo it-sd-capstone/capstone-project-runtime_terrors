@@ -6,6 +6,19 @@ class Provider {
         $this->db = $db;
     }
 
+    public function getProviderById($provider_id) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT * FROM providers WHERE provider_id = ?
+            ");
+            $stmt->bindParam(1, $provider_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC); //  Ensure this returns provider details
+        } catch (Exception $e) {
+            error_log("Error fetching provider details: " . $e->getMessage());
+            return null; // Return null if an error occurs
+        }
+    }
     // Get provider's available slots, ensuring they are not booked
     public function getAvailableSlots($provider_id) {
         try {
@@ -81,10 +94,10 @@ class Provider {
             $stmt->bindValue(1, $provider_id, PDO::PARAM_INT);
             $stmt->execute();
     
-            return $stmt->fetchAll(PDO::FETCH_ASSOC); // ✅ Directly return fetched rows
+            return $stmt->fetchAll(PDO::FETCH_ASSOC); //  Directly return fetched rows
         } catch (Exception $e) {
             error_log("Error in getAvailability: " . $e->getMessage());
-            throw new Exception("Failed to retrieve availability."); // ✅ Send meaningful error to caller
+            throw new Exception("Failed to retrieve availability."); //  Send meaningful error to caller
         }
     }
 
