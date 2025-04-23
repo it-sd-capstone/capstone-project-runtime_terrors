@@ -44,9 +44,10 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="password" class="form-label">Password *</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                            <div class="form-text">Password must be at least 8 characters long.</div>
+                            <label class="form-label">Password</label>
+                            <div class="form-text text-info">
+                                <i class="fas fa-info-circle"></i> A secure temporary password will be automatically generated when the account is created. You'll see it once after submission.
+                            </div>
                         </div>
                         
                         <!-- Provider-specific fields -->

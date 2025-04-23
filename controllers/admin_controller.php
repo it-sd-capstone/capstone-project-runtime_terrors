@@ -23,6 +23,12 @@ class AdminController {
         
         // Use User model instead of non-existent Admin model
         $this->userModel = new User($this->db);
+        
+        // Create Admin model instance if the class exists
+        if (file_exists(MODEL_PATH . '/Admin.php')) {
+            require_once MODEL_PATH . '/Admin.php';
+            $this->adminModel = new Admin($this->db);
+        }
     }
     
     // ✅ Admin Dashboard Overview
@@ -78,17 +84,12 @@ class AdminController {
     
     // ✅ Manage Users
     public function users() {
-        // Try to get users from model first
-        try {
-            $users = $this->adminModel->getAllUsers();
-        } catch (Exception $e) {
-            // Fallback to direct query if model fails
-            $users = [];
-            $stmt = $this->db->query("SELECT * FROM users ORDER BY role, last_name, first_name");
-            if ($stmt) {
-                while ($row = $stmt->fetch_assoc()) {
-                    $users[] = $row;
-                }
+        // Use direct query instead of non-existent model
+        $users = [];
+        $stmt = $this->db->query("SELECT * FROM users ORDER BY role, last_name, first_name");
+        if ($stmt) {
+            while ($row = $stmt->fetch_assoc()) {
+                $users[] = $row;
             }
         }
         
@@ -223,27 +224,23 @@ class AdminController {
     
     // ✅ Manage Appointments
     public function appointments() {
-        try {
-            $appointments = $this->adminModel->getAllAppointments();
-        } catch (Exception $e) {
-            // Fallback to direct query
-            $appointments = [];
-            $stmt = $this->db->query("
-                SELECT a.*,
-                       p.first_name as patient_first_name, p.last_name as patient_last_name,
-                       pr.first_name as provider_first_name, pr.last_name as provider_last_name,
-                       s.name as service_name, s.duration as service_duration
-                FROM appointments a
-                JOIN users p ON a.patient_id = p.user_id
-                JOIN users pr ON a.provider_id = pr.user_id
-                JOIN services s ON a.service_id = s.service_id
-                ORDER BY a.appointment_date DESC, a.start_time
-            ");
-            
-            if ($stmt) {
-                while ($row = $stmt->fetch_assoc()) {
-                    $appointments[] = $row;
-                }
+        // Use direct query instead of non-existent model
+        $appointments = [];
+        $stmt = $this->db->query("
+            SELECT a.*,
+                   p.first_name as patient_first_name, p.last_name as patient_last_name,
+                   pr.first_name as provider_first_name, pr.last_name as provider_last_name,
+                   s.name as service_name, s.duration as service_duration
+            FROM appointments a
+            JOIN users p ON a.patient_id = p.user_id
+            JOIN users pr ON a.provider_id = pr.user_id
+            JOIN services s ON a.service_id = s.service_id
+            ORDER BY a.appointment_date DESC, a.start_time
+        ");
+        
+        if ($stmt) {
+            while ($row = $stmt->fetch_assoc()) {
+                $appointments[] = $row;
             }
         }
         

@@ -13,7 +13,7 @@ class User {
         try {
             if ($this->db instanceof mysqli) {
                 // MySQLi implementation
-                $query = "SELECT user_id, email, password_hash, first_name, last_name, role
+                $query = "SELECT user_id, email, password_hash, first_name, last_name, role, password_change_required
                         FROM users
                         WHERE email = ? AND is_active = 1";
                 
@@ -30,7 +30,7 @@ class User {
                 
             } elseif ($this->db instanceof PDO) {
                 // PDO implementation
-                $query = "SELECT user_id, email, password_hash, first_name, last_name, role
+                $query = "SELECT user_id, email, password_hash, first_name, last_name, role, password_change_required
                         FROM users
                         WHERE email = :email AND is_active = 1";
                 
