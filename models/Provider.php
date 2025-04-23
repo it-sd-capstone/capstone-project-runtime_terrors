@@ -86,8 +86,8 @@ class Provider {
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $availability = [];
             
-            while ($row = $result->fetch_assoc()) {
-                $availability[] = $row;
+            foreach ($result as $row) {
+                // Process each row
             }
             
             $stmt->close();
