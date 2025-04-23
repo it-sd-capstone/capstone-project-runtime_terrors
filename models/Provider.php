@@ -79,7 +79,7 @@ class Provider {
             ");
             
             // Bind the parameter using mysqli syntax
-            $stmt->bind_param("i", $provider_id);
+            $stmt->bindValue(1, $provider_id, PDO::PARAM_INT);
             $stmt->execute();
             
             // Get result set and fetch rows with mysqli syntax
