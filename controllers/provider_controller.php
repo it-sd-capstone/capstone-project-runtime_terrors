@@ -25,6 +25,7 @@ class ProviderController {
 
     // ✅ Load Provider Schedule Page
     public function schedule($provider_id) {
+        $available_slots = $this->providerModel->getAvailableSlots($provider_id); // ✅ Ensure this is being set
         include VIEW_PATH . '/provider/schedule.php';
     }
 

@@ -26,11 +26,12 @@ class Provider {
                 SELECT a.*, u.first_name, u.last_name 
                 FROM availability a
                 JOIN users u ON a.provider_id = u.user_id
-                WHERE a.is_available = 1 AND a.provider_id = ? AND a.availability_date >= CURDATE()
+                WHERE a.is_available = 1 AND a.provider_id = ?
                 ORDER BY a.availability_date, a.start_time
             ");
-            $stmt->execute([$provider_id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->bindParam(1, $provider_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC); // ✅ Ensure this returns data
         } catch (Exception $e) {
             error_log("Error in getAvailableSlots: " . $e->getMessage());
             return [];
