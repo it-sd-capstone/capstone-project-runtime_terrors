@@ -55,19 +55,19 @@ class PatientController {
         exit;
     }
 
-    // ✅ View Appointment History
+    // View Appointment History
     public function history($patient_id) {
         $pastAppointments = $this->appointmentModel->getPastAppointments($patient_id);
         include VIEW_PATH . '/patient/history.php';
     }
 
-    // ✅ View Profile
+    // View Profile
     public function profile($patient_id) {
         $patient = $this->userModel->getPatientById($patient_id);
         include VIEW_PATH . '/patient/profile.php';
     }
 
-    // ✅ Update Profile
+    // Update Profile
     public function updateProfile() {
         $user_id = $_POST['user_id'];
         $data = [
