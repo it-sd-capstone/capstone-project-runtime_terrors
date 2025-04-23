@@ -1,53 +1,35 @@
 <?php include VIEW_PATH . '/partials/provider_header.php'; ?>
 
 <div class="container provider-dashboard">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="alert alert-info">
-                <h4>Welcome to the Provider Dashboard</h4>
-                <p>Manage appointments, availability, and services.</p>
-            </div>
-        </div>
+    <h2>Welcome, Dr. <?= htmlspecialchars($provider['first_name'] ?? 'Provider') ?>!</h2>
+    <p>Manage appointments, availability, and patient interactions.</p>
+
+    <div class="nav nav-tabs">
+        <a class="nav-link active" href="<?= base_url('index.php/provider') ?>">Dashboard</a>
+        <a class="nav-link" href="<?= base_url('index.php/provider/schedule') ?>">Schedule</a>
+        <a class="nav-link" href="<?= base_url('index.php/provider/appointments') ?>">Appointments</a>
+        <a class="nav-link" href="<?= base_url('index.php/provider/services') ?>">Services</a>
     </div>
 
-    <div class="row">
-        <!-- Manage Schedule -->
-        <div class="col-md-4">
-            <div class="card provider-card">
-                <div class="card-body">
-                    <h5 class="card-title">Schedule</h5>
-                    <p class="card-text">Set and manage your availability.</p>
-                    <div class="d-grid">
-                        <a href="<?= base_url('index.php/provider/schedule') ?>" class="btn btn-primary">Manage Schedule</a>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Upcoming Appointments -->
+    <div class="card mt-3">
+        <h4>Upcoming Appointments</h4>
+        <?php foreach ($appointments as $appointment) : ?>
+            <p>
+                <?= htmlspecialchars($appointment['patient_name']) ?> - <?= htmlspecialchars($appointment['date']) ?> at <?= htmlspecialchars($appointment['time']) ?>
+                <br>
+                <a href="<?= base_url('index.php/provider/viewAppointment/' . $appointment['id']) ?>" class="btn btn-info">View Details</a>
+            </p>
+        <?php endforeach; ?>
+    </div>
 
-        <!-- View Appointments -->
-        <div class="col-md-4">
-            <div class="card provider-card">
-                <div class="card-body">
-                    <h5 class="card-title">Appointments</h5>
-                    <p class="card-text">View upcoming patient bookings.</p>
-                    <div class="d-grid">
-                        <a href="<?= base_url('index.php/provider/appointments') ?>" class="btn btn-success">View Appointments</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Manage Services -->
-        <div class="col-md-4">
-            <div class="card provider-card">
-                <div class="card-body">
-                    <h5 class="card-title">Services</h5>
-                    <p class="card-text">Update your offered services.</p>
-                    <div class="d-grid">
-                        <a href="<?= base_url('index.php/provider/services') ?>" class="btn btn-info">Manage Services</a>
-                    </div>
-                </div>
-            </div>
+    <!-- Quick Actions -->
+    <div class="col-md-4">
+        <div class="card">
+            <h4>Quick Actions</h4>
+            <a href="<?= base_url('index.php/provider/profile') ?>" class="btn btn-info">Edit Profile</a>
+            <a href="<?= base_url('index.php/provider/services') ?>" class="btn btn-secondary">Manage Services</a>
+            <a href="<?= base_url('index.php/provider/reports') ?>" class="btn btn-warning">View Reports</a>
         </div>
     </div>
 </div>

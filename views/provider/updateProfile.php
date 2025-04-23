@@ -1,27 +1,16 @@
-<?php
-require_once '../models/Patient.php';
-require_once '../core/Database.php';
+<h4>Update Profile</h4>
+<form method="POST" action="<?= base_url('index.php/provider/processUpdateProfile') ?>">
+    <label>First Name:</label>
+    <input type="text" name="first_name" value="<?= htmlspecialchars($provider['first_name']) ?>" required>
 
-session_start();
-$db = Database::getInstance()->getConnection();
-$patientModel = new Patient($db);
+    <label>Last Name:</label>
+    <input type="text" name="last_name" value="<?= htmlspecialchars($provider['last_name']) ?>" required>
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $patient_id = $_SESSION['user_id'];
-    $first_name = trim($_POST['first_name']);
-    $last_name = trim($_POST['last_name']);
-    $phone = trim($_POST['phone']);
-    $age = trim($_POST['age']);
+    <label>Specialty:</label>
+    <input type="text" name="specialty" value="<?= htmlspecialchars($provider['specialty']) ?>" required>
 
-    if (!empty($first_name) && !empty($last_name) && !empty($phone) && !empty($age)) {
-        $updated = $patientModel->updateProfile($patient_id, $first_name, $last_name, $phone, $age);
+    <label>Phone:</label>
+    <input type="text" name="phone" value="<?= htmlspecialchars($provider['phone']) ?>" required>
 
-        if ($updated) {
-            header("Location: /patient/profile?success=Profile updated successfully");
-            exit;
-        }
-    }
-    header("Location: /patient/profile?error=Failed to update profile");
-    exit;
-}
-?>
+    <button type="submit" class="btn btn-success">Save Changes</button>
+</form>
