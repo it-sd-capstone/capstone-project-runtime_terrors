@@ -31,7 +31,7 @@ class Appointment {
                 // Process each row here
             }
             
-            $stmt->close();
+            
             return $appointments;
             
         } catch (Exception $e) {
