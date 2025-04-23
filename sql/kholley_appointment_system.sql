@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 23, 2025 at 12:53 AM
+-- Generation Time: Apr 23, 2025 at 01:27 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -153,7 +153,8 @@ CREATE TABLE `notifications` (
 --
 
 INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `subject`, `message`, `type`, `status`, `scheduled_for`, `sent_at`, `created_at`) VALUES
-(1, 1, 1, 'Appointment Confirmation', 'Your appointment on April 15, 2025 at 10:00 AM has been scheduled.', 'email', 'sent', '2025-04-17 09:00:00', '2025-04-17 09:00:05', '2025-04-17 08:59:28');
+(1, 1, 1, 'Appointment Confirmation', 'Your appointment on April 15, 2025 at 10:00 AM has been scheduled.', 'email', 'sent', '2025-04-17 09:00:00', '2025-04-17 09:00:05', '2025-04-17 08:59:28'),
+(0, 16, NULL, 'Your Provider Account Has Been Created', 'Hello john doe,\n\nAn account has been created for you as a provider in our appointment system.\n\nYour temporary login credentials are:\nEmail: john@doe.com\nPassword: c1291205\n\nPlease login and change your password as soon as possible at: http://localhost/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth\n\nThank you,\nAppointment System Admin', 'email', 'pending', NULL, NULL, '2025-04-22 20:16:51');
 
 -- --------------------------------------------------------
 
@@ -207,6 +208,33 @@ INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availabl
 (2, 2, '2025-04-16', '14:00:00', '17:00:00', 1, '2025-04-17 08:59:28'),
 (4, 2, '2025-04-18', '10:04:00', '22:04:00', 1, '2025-04-17 10:05:05'),
 (5, 2, '2025-04-17', '10:11:00', '22:11:00', 1, '2025-04-17 10:11:09');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `provider_profiles`
+--
+
+DROP TABLE IF EXISTS `provider_profiles`;
+CREATE TABLE `provider_profiles` (
+  `profile_id` int(11) NOT NULL,
+  `provider_id` int(11) NOT NULL,
+  `specialization` varchar(100) DEFAULT NULL,
+  `title` varchar(50) DEFAULT NULL,
+  `bio` text DEFAULT NULL,
+  `accepting_new_patients` tinyint(1) DEFAULT 1,
+  `max_patients_per_day` int(11) DEFAULT 20,
+  `profile_image` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `provider_profiles`
+--
+
+INSERT INTO `provider_profiles` (`profile_id`, `provider_id`, `specialization`, `title`, `bio`, `accepting_new_patients`, `max_patients_per_day`, `profile_image`, `created_at`, `updated_at`) VALUES
+(1, 16, 'Practisioner', 'MD', 'Hello', 1, 20, NULL, '2025-04-23 01:16:51', '2025-04-23 01:16:51');
 
 -- --------------------------------------------------------
 
@@ -346,7 +374,8 @@ INSERT INTO `users` (`user_id`, `email`, `password_hash`, `first_name`, `last_na
 (2, 'provider@example.com', '$2y$10$example_hash', 'Dr. Smith', 'MD', NULL, 'provider', 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
 (3, 'admin@example.com', '$2y$10$example_hash', 'Admin', 'User', NULL, 'admin', 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
 (10, 'Kholley@student.cvtc.edu', '$2y$10$xiDwOmotNFAOn.5R0XJ1huUpLb681/phtw/TCkT9wlddp9s1DiRnG', 'Kaleb', 'Holley', '7156191363', 'patient', 1, '2025-04-22 09:54:17', '2025-04-22 09:54:02', '2025-04-22 09:54:47', NULL, 'd9472a925ebd1c3138bb4731edcaf0a207e72c66c1bd00be9783e31f632bb69e', '2025-04-22 15:55:40', '2025-04-23 14:54:02', 0),
-(0, 'Kalebholley43@gmail.com', '$2y$10$HWdcMU4r2n9jkNTDSM9hl.3X2Ezx.wHJatpcmPpCO2spX5Xh3NDPm', 'Kaleb', 'Holley', '7152556589', 'patient', 1, '2025-04-22 19:50:05', '2025-04-22 19:49:59', '2025-04-22 19:50:31', NULL, NULL, NULL, '2025-04-24 00:49:59', 0);
+(11, 'Kalebholley43@gmail.com', '$2y$10$HWdcMU4r2n9jkNTDSM9hl.3X2Ezx.wHJatpcmPpCO2spX5Xh3NDPm', 'Kaleb', 'Holley', '7152556589', 'patient', 1, '2025-04-22 19:50:05', '2025-04-22 19:49:59', '2025-04-22 19:50:31', NULL, NULL, NULL, '2025-04-24 00:49:59', 0),
+(16, 'john@doe.com', '$2y$10$nxPUCopIWXPZw442f6B4UOJv.H/6wty9qrJmSqXzYPCmo6i6Zn8sW', 'john', 'doe', '1234567897', 'provider', 1, NULL, '2025-04-22 20:16:51', '2025-04-22 20:25:22', NULL, NULL, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -391,10 +420,23 @@ ALTER TABLE `patient_profiles`
   ADD PRIMARY KEY (`patient_id`);
 
 --
+-- Indexes for table `provider_profiles`
+--
+ALTER TABLE `provider_profiles`
+  ADD PRIMARY KEY (`profile_id`),
+  ADD KEY `provider_id` (`provider_id`);
+
+--
 -- Indexes for table `services`
 --
 ALTER TABLE `services`
   ADD PRIMARY KEY (`service_id`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`user_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -407,10 +449,32 @@ ALTER TABLE `patient_profiles`
   MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `provider_profiles`
+--
+ALTER TABLE `provider_profiles`
+  MODIFY `profile_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `services`
 --
 ALTER TABLE `services`
   MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `provider_profiles`
+--
+ALTER TABLE `provider_profiles`
+  ADD CONSTRAINT `provider_profiles_ibfk_1` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 SET FOREIGN_KEY_CHECKS=1;
 COMMIT;
 
