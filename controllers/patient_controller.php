@@ -19,13 +19,13 @@ class PatientController {
         $this->appointmentModel = new Appointment($this->db);
     }
 
-    // ✅ Display available providers for booking
+    // ✅ Display Available Providers for Booking
     public function book() {
         $availableProviders = $this->appointmentModel->getAvailableProviders();
         include VIEW_PATH . '/auth/book.php';
     }
 
-    // ✅ Book an appointment
+    // ✅ Book an Appointment
     public function bookAppointment() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $patient_id = $_SESSION['user_id'];
@@ -34,25 +34,24 @@ class PatientController {
             $start_time = $_POST['appointment_time'];
             $end_time = date("H:i:s", strtotime($start_time) + (30 * 60));
 
-            if (!$this->appointmentModel->isSlotAvailable($provider_id, $date, $start_time, $end_time)) {
-                header("Location: /auth/book?error=Slot unavailable");
+            if ($this->appointmentModel->isSlotAvailable($provider_id, $date, $start_time, $end_time)) {
+                $this->appointmentModel->create($patient_id, $provider_id, $date, $start_time, $end_time);
+                header("Location: /appointments/history?success=Appointment booked");
                 exit;
             }
-
-            $this->appointmentModel->create($patient_id, $provider_id, $date, $start_time, $end_time);
-            header("Location: /appointments/history?success=Appointment booked");
+            header("Location: /auth/book?error=Slot unavailable");
             exit;
         }
     }
 
-    // ✅ Show appointment history
+    // ✅ Show Appointment History
     public function history() {
         $patient_id = $_SESSION['user_id'];
         $appointments = $this->appointmentModel->getByPatient($patient_id);
         include VIEW_PATH . '/appointments/history.php';
     }
 
-    // ✅ Cancel an appointment
+    // ✅ Cancel an Appointment
     public function cancelAppointment() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $appointment_id = $_POST['appointment_id'];
@@ -60,6 +59,16 @@ class PatientController {
             header("Location: /appointments/history?success=Appointment canceled");
             exit;
         }
+    }
+
+    // ✅ Fetch Patient Appointments for FullCalendar.js
+    public function getAppointments() {
+        header("Content-Type: application/json");
+        $patient_id = $_SESSION['user_id'];
+        $appointments = $this->appointmentModel->getByPatient($patient_id);
+        
+        echo json_encode($appointments);
+        exit;
     }
 }
 ?>
