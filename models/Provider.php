@@ -83,7 +83,7 @@ class Provider {
             $stmt->execute();
             
             // Get result set and fetch rows with mysqli syntax
-            $result = $stmt->get_result();
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $availability = [];
             
             while ($row = $result->fetch_assoc()) {
