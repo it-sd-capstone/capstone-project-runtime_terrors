@@ -24,7 +24,7 @@ class Appointment {
             $stmt->execute();
             
             // Get result set and fetch rows with mysqli syntax
-            $result = $stmt->get_result();
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $appointments = [];
             
             while ($row = $result->fetch_assoc()) {
