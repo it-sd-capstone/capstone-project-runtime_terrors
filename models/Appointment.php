@@ -27,8 +27,8 @@ class Appointment {
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $appointments = [];
             
-            while ($row = $result->fetch_assoc()) {
-                $appointments[] = $row;
+            foreach ($result as $row) {
+                // Process each row here
             }
             
             $stmt->close();
