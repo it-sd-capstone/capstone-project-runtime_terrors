@@ -4,20 +4,22 @@ header("Content-Type: application/json");
 require_once "../models/Appointment.php";
 require_once "../core/Database.php";
 
+session_start();
 $db = Database::getInstance()->getConnection();
 $appointmentModel = new Appointment($db);
 
-// Fetch all appointments
-$appointments = $appointmentModel->getAllAppointments();
+$provider_id = $_SESSION['user_id'];
 
-// Convert to JSON format for FullCalendar.js
+$appointments = $appointmentModel->getByProvider($provider_id);
+
 $calendarEvents = [];
 foreach ($appointments as $appointment) {
     $calendarEvents[] = [
-        "title" => $appointment['status'],
+        "title" => $appointment['patient_name'] . " (" . $appointment['service_name'] . ")",
         "start" => $appointment['appointment_date'] . "T" . $appointment['start_time'],
         "end" => $appointment['appointment_date'] . "T" . $appointment['end_time'],
-        "color" => $appointment['status'] === "scheduled" ? "blue" : ($appointment['status'] === "completed" ? "green" : "red")
+        "color" => ($appointment['status'] == 'confirmed') ? "blue" : "gray",
+        "description" => "Status: " . $appointment['status']
     ];
 }
 
