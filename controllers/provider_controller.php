@@ -11,7 +11,7 @@ class ProviderController {
 
     public function __construct() {
         Session::start();
-        $this->db = Database::getConnection();
+        $this->db = Database::getInstance()->getConnection();
 
         if (!Session::isLoggedIn() || $_SESSION['role'] !== 'provider') {
             header("Location: /auth/login");
