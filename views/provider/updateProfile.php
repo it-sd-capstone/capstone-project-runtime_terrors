@@ -1,34 +1,27 @@
 <?php
-require_once '../models/Provider.php';
+require_once '../models/Patient.php';
 require_once '../core/Database.php';
 
 session_start();
 $db = Database::getInstance()->getConnection();
-$providerModel = new Provider($db);
+$patientModel = new Patient($db);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $provider_id = $_SESSION['user_id'];
+    $patient_id = $_SESSION['user_id'];
     $first_name = trim($_POST['first_name']);
     $last_name = trim($_POST['last_name']);
-    $specialty = trim($_POST['specialty']);
-    $bio = trim($_POST['bio']);
+    $phone = trim($_POST['phone']);
+    $age = trim($_POST['age']);
 
-    // Profile Picture Upload Handling
-    $profilePicture = null;
-    if (!empty($_FILES["profile_picture"]["name"])) {
-        $targetDir = "../uploads/";
-        $profilePicture = $targetDir . basename($_FILES["profile_picture"]["name"]);
-        move_uploaded_file($_FILES["profile_picture"]["tmp_name"], $profilePicture);
+    if (!empty($first_name) && !empty($last_name) && !empty($phone) && !empty($age)) {
+        $updated = $patientModel->updateProfile($patient_id, $first_name, $last_name, $phone, $age);
+
+        if ($updated) {
+            header("Location: /patient/profile?success=Profile updated successfully");
+            exit;
+        }
     }
-
-    $updated = $providerModel->updateProfile($provider_id, $first_name, $last_name, $specialty, $bio, $profilePicture);
-
-    if ($updated) {
-        header("Location: /provider/profile?success=Profile updated successfully");
-        exit;
-    } else {
-        header("Location: /provider/profile?error=Failed to update profile");
-        exit;
-    }
+    header("Location: /patient/profile?error=Failed to update profile");
+    exit;
 }
 ?>
