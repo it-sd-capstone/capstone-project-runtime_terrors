@@ -25,9 +25,10 @@ class ProviderController {
     // ✅ Provider Dashboard
     public function index() {
         $provider_id = $_SESSION['user_id'];
+        $provider = $this->providerModel->getProviderById($provider_id); // ✅ Fetch provider data
         $provider_availability = $this->providerModel->getAvailability($provider_id);
         $appointments = $this->appointmentModel->getByProvider($provider_id);
-        
+    
         include VIEW_PATH . '/provider/index.php';
     }
 

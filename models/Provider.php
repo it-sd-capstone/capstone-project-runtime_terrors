@@ -77,25 +77,14 @@ class Provider {
                 WHERE provider_id = ? AND availability_date >= CURDATE()
                 ORDER BY availability_date, start_time
             ");
-            
-            // Bind the parameter using mysqli syntax
+    
             $stmt->bindValue(1, $provider_id, PDO::PARAM_INT);
             $stmt->execute();
-            
-            // Get result set and fetch rows with mysqli syntax
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $availability = [];
-            
-            foreach ($result as $row) {
-                // Process each row
-            }
-            
-            
-            return $availability;
-            
+    
+            return $stmt->fetchAll(PDO::FETCH_ASSOC); // ✅ Directly return fetched rows
         } catch (Exception $e) {
             error_log("Error in getAvailability: " . $e->getMessage());
-            return [];
+            throw new Exception("Failed to retrieve availability."); // ✅ Send meaningful error to caller
         }
     }
 

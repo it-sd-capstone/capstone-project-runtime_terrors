@@ -1,7 +1,7 @@
 <?php include VIEW_PATH . '/partials/provider_header.php'; ?>
 
 <div class="container my-4 provider-dashboard">
-    <h2>Welcome, <?= htmlspecialchars($provider['first_name']) ?>!</h2>
+    <h2>Welcome, <?= isset($provider['first_name']) ? htmlspecialchars($provider['first_name']) : "Provider" ?>!</h2>
 
     <div class="row">
         <div class="col-md-4">
