@@ -4,6 +4,7 @@ require_once MODEL_PATH . '/User.php';
 class AdminController {
     private $db;
     private $userModel;
+    private $adminModel;
     
     public function __construct() {
         // Replace Session class with native PHP session handling
