@@ -604,6 +604,21 @@ class User {
             return $result->fetch_all(MYSQLI_ASSOC);
         }
     }
+   
+    public function getPatientById($user_id) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT * FROM users 
+                WHERE user_id = ? AND role = 'patient'
+            ");
+            $stmt->bindParam(1, $user_id, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC); //Ensures patient data is returned
+        } catch (Exception $e) {
+            error_log("Error fetching patient details: " . $e->getMessage());
+            return null;
+        }
+    }
     /**
      * Change user password
      */
