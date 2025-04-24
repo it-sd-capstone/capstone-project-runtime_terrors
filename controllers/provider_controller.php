@@ -19,14 +19,21 @@ class ProviderController {
     // Load provider dashboard with provider & appointment data
     public function index($provider_id) {
         $provider = $this->providerModel->getProviderById($provider_id);
-        $appointments = $this->appointmentModel->getByProvider($provider_id);
+        if (!$provider) {
+            die("Error: Provider not found."); // Error handling if provider doesn't exist
+        }
 
+        $appointments = $this->appointmentModel->getByProvider($provider_id);
         include VIEW_PATH . '/provider/index.php';
     }
 
     // View full details of a specific appointment
     public function viewAppointment($appointment_id) {
         $appointment = $this->appointmentModel->getById($appointment_id);
+        if (!$appointment) {
+            die("Error: Appointment not found."); // Error handling for missing appointment
+        }
+
         include VIEW_PATH . '/provider/view.php';
     }
 
@@ -48,6 +55,15 @@ class ProviderController {
         $reason = $_POST['reason'];
 
         $this->appointmentModel->cancelAppointment($appointment_id, $reason, $_SESSION['user_id']);
+
+        header("Location: /provider/appointments");
+        exit;
+    }
+
+    // Delete an appointment
+    public function deleteAppointment() {
+        $appointment_id = $_POST['appointment_id'];
+        $this->appointmentModel->deleteAppointment($appointment_id);
 
         header("Location: /provider/appointments");
         exit;
@@ -89,6 +105,28 @@ class ProviderController {
 
         $this->providerModel->updateProvider($provider_id, $data);
         header("Location: /provider/profile");
+        exit;
+    }
+
+    // Provider authentication
+    public function login() {
+        $email = $_POST['email'];
+        $password = $_POST['password'];
+
+        $provider = $this->providerModel->getByEmail($email);
+
+        if ($provider && password_verify($password, $provider['password'])) {
+            $_SESSION['provider_id'] = $provider['provider_id'];
+            header("Location: /provider");
+        } else {
+            header("Location: /login?error=Invalid credentials");
+        }
+        exit;
+    }
+
+    public function logout() {
+        session_destroy();
+        header("Location: /login");
         exit;
     }
 }
