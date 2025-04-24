@@ -31,8 +31,8 @@
                         <td><?= htmlspecialchars($appointment['start_time']) ?></td>
                         <td>
                             <a href="<?= base_url('index.php/provider/viewAppointment/' . htmlspecialchars($appointment['appointment_id'] ?? '')) ?>" class="btn btn-info">View</a>
-                            <a href="<?= base_url('index.php/provider/rescheduleAppointment/' . htmlspecialchars($appointment['appointment_id'] ?? '')) ?>" class="btn btn-warning">Reschedule</a>
-                            <form action="<?= base_url('index.php/provider/cancelAppointment') ?>" method="POST" style="display:inline;">
+                            <a href="<?= base_url('index.php/provider/reschedule/' . htmlspecialchars($appointment['appointment_id'] ?? '')) ?>" class="btn btn-warning">Reschedule</a>
+                            <form action="<?= base_url('index.php/provider/cancel') ?>" method="POST" style="display:inline;">
                                 <input type="hidden" name="appointment_id" value="<?= htmlspecialchars($appointment['appointment_id'] ?? '') ?>">
                                 <button type="submit" class="btn btn-danger">Cancel</button>
                             </form>
