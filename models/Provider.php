@@ -85,21 +85,17 @@ class Provider {
 
     // Get provider's availability
     public function getAvailability($provider_id) {
-        try {
-            $stmt = $this->db->prepare("
-                SELECT * FROM availability
-                WHERE provider_id = ? AND availability_date >= CURDATE()
-                ORDER BY availability_date, start_time
-            ");
-    
-            $stmt->bindValue(1, $provider_id, PDO::PARAM_INT);
-            $stmt->execute();
-    
-            return $stmt->fetchAll(PDO::FETCH_ASSOC); //  Directly return fetched rows
-        } catch (Exception $e) {
-            error_log("Error in getAvailability: " . $e->getMessage());
-            throw new Exception("Failed to retrieve availability."); //  Send meaningful error to caller
-        }
+        $stmt = $this->db->prepare("
+            SELECT availability_date, start_time, end_time, is_available 
+            FROM provider_availability 
+            WHERE provider_id = ?
+            UNION 
+            SELECT NULL AS availability_date, start_time, end_time, is_active AS is_available 
+            FROM recurring_schedules 
+            WHERE provider_id = ?
+        ");
+        $stmt->execute([$provider_id, $provider_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // Add a service

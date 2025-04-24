@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        events: '<?= base_url("index.php/provider/getProviderSchedules") ?>' // Load availability dynamically
+        events: '<?= base_url("index.php/provider/getProviderSchedules") ?>' // ✅ Fetch availability dynamically
     });
     calendar.render();
 });

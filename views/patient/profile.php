@@ -12,5 +12,8 @@
     <label>Phone:</label>
     <input type="text" name="phone" value="<?= htmlspecialchars($patient['phone']) ?>" required>
 
+    <label>Medical History:</label>
+    <textarea name="medical_history"><?= htmlspecialchars($patient['medical_history']) ?></textarea>
+
     <button type="submit" class="btn btn-success">Save Changes</button>
 </form>

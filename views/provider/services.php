@@ -5,7 +5,7 @@
             <th>Service</th>
             <th>Duration</th>
             <th>Cost</th>
-            <th>Action</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
