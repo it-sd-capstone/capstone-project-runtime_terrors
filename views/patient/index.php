@@ -1,43 +1,56 @@
-<?php include VIEW_PATH . '/partials/patient_header.php'; ?>
+<!-- Patient Dashboard Content -->
+<h2>Welcome back, <?= htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']) ?>!</h2>
 
-<div class="container patient-dashboard">
-    <h2>Welcome, <?= htmlspecialchars($patient['first_name'] ?? 'Patient') ?>!</h2>
-    <p>Manage your appointments and healthcare records.</p>
+<div class="dashboard">
+    <div class="appointment-section">
+        <h3>Upcoming Appointments</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Provider</th>
+                    <th>Service</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($upcomingAppointments as $appointment) : ?>
+                    <tr>
+                        <td><?= htmlspecialchars($appointment['appointment_date']) ?></td>
+                        <td>Dr. <?= htmlspecialchars($appointment['provider_name']) ?></td>
+                        <td><?= htmlspecialchars($appointment['service_name']) ?></td>
+                        <td><?= htmlspecialchars($appointment['status']) ?></td>
+                        <td>
+                            <a href="<?= base_url('index.php/patient/reschedule/' . $appointment['appointment_id']) ?>" class="btn btn-warning">Reschedule</a>
+                            <a href="<?= base_url('index.php/patient/cancel/' . $appointment['appointment_id']) ?>" class="btn btn-danger">Cancel</a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 
-    <div class="row">
-        <!-- Upcoming Appointments -->
-        <div class="col-md-6">
-            <div class="card">
-                <h4>Upcoming Appointments</h4>
-                <?php if (!empty($appointments)) : ?>
-                    <ul>
-                        <?php foreach ($appointments as $appointment) : ?>
-                            <li>
-                                Dr. <?= htmlspecialchars($appointment['provider_name']) ?> - <?= htmlspecialchars($appointment['service_name']) ?><br>
-                                <?= htmlspecialchars($appointment['appointment_date']) ?> at <?= htmlspecialchars($appointment['start_time']) ?>
-                                <br>
-                                <a href="<?= base_url('index.php/patient/reschedule/' . $appointment['appointment_id']) ?>" class="btn btn-warning">Reschedule</a>
-                                <a href="<?= base_url('index.php/patient/cancel/' . $appointment['appointment_id']) ?>" class="btn btn-danger">Cancel</a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php else : ?>
-                    <p>No upcoming appointments.</p>
-                    <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-primary">Book an Appointment</a>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="col-md-6">
-            <div class="card">
-                <h4>Quick Actions</h4>
-                <a href="<?= base_url('index.php/patient/profile') ?>" class="btn btn-info">Edit Profile</a>
-                <a href="<?= base_url('index.php/patient/history') ?>" class="btn btn-secondary">View History</a>
-                <a href="<?= base_url('index.php/patient/notifications') ?>" class="btn btn-warning">View Notifications</a>
-            </div>
-        </div>
+    <div class="appointment-stats">
+        <h3>Your Appointment Stats</h3>
+        <p>**Total Appointments:** <?= count($upcomingAppointments) + count($pastAppointments) ?></p>
+        <p>**Completed:** <?= count($pastAppointments) ?></p>
+        <p>**Upcoming:** <?= count($upcomingAppointments) ?></p>
     </div>
 </div>
 
-<?php include VIEW_PATH . '/partials/footer.php'; ?>
+<!-- JavaScript for Real-Time Updates -->
+<script>
+setInterval(() => {
+    fetch("<?= base_url('index.php/patient/fetchAppointments') ?>")
+        .then(response => response.json())
+        .then(data => {
+            document.querySelector(".appointment-stats").innerHTML = `
+                <h3>Your Appointment Stats</h3>
+                <p>**Total Appointments:** ${data.total}</p>
+                <p>**Completed:** ${data.completed}</p>
+                <p>**Upcoming:** ${data.upcoming}</p>
+            `;
+        });
+}, 60000); // Refresh every 60 seconds
+</script>
