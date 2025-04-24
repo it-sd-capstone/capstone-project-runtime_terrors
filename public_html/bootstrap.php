@@ -120,4 +120,3 @@ spl_autoload_register(function($class_name) {
 
 // Return true to indicate bootstrap loaded successfully
 return true;
-

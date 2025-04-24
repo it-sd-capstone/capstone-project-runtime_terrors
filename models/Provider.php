@@ -6,18 +6,6 @@ class Provider {
         $this->db = $db;
     }
 
-    public function getProviderById($provider_id) {
-        $stmt = $this->db->prepare("SELECT * FROM providers WHERE provider_id = ?");
-        $stmt->execute([$provider_id]);
-        $provider = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-        if (!$provider) {
-            error_log("No provider found for ID: " . $provider_id);
-            return null;
-        }
-    
-        return $provider;
-    }
     // Get provider's available slots, ensuring they are not booked
     public function getAvailableSlots($provider_id) {
         try {
@@ -25,12 +13,11 @@ class Provider {
                 SELECT a.*, u.first_name, u.last_name 
                 FROM availability a
                 JOIN users u ON a.provider_id = u.user_id
-                WHERE a.is_available = 1 AND a.provider_id = ?
+                WHERE a.is_available = 1 AND a.provider_id = ? AND a.availability_date >= CURDATE()
                 ORDER BY a.availability_date, a.start_time
             ");
-            $stmt->bindParam(1, $provider_id, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC); // Ensure this returns data
+            $stmt->execute([$provider_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("Error in getAvailableSlots: " . $e->getMessage());
             return [];
@@ -84,17 +71,32 @@ class Provider {
 
     // Get provider's availability
     public function getAvailability($provider_id) {
-        $stmt = $this->db->prepare("
-            SELECT availability_date, start_time, end_time, is_available 
-            FROM provider_availability 
-            WHERE provider_id = ?
-            UNION 
-            SELECT NULL AS availability_date, start_time, end_time, is_active AS is_available 
-            FROM recurring_schedules 
-            WHERE provider_id = ?
-        ");
-        $stmt->execute([$provider_id, $provider_id]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $stmt = $this->db->prepare("
+                SELECT * FROM availability
+                WHERE provider_id = ? AND availability_date >= CURDATE()
+                ORDER BY availability_date, start_time
+            ");
+            
+            // Bind the parameter using mysqli syntax
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            
+            // Get result set and fetch rows with mysqli syntax
+            $result = $stmt->get_result();
+            $availability = [];
+            
+            while ($row = $result->fetch_assoc()) {
+                $availability[] = $row;
+            }
+            
+            $stmt->close();
+            return $availability;
+            
+        } catch (Exception $e) {
+            error_log("Error in getAvailability: " . $e->getMessage());
+            return [];
+        }
     }
 
     // Add a service

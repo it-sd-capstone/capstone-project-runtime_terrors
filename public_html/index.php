@@ -67,24 +67,15 @@ try {
         // Create controller class name (e.g., 'home' -> 'HomeController')
         $class_name = ucfirst($controller_name) . 'Controller';
        
-        //  Ensure provider ID is passed dynamically
-    if ($controller_name === 'provider' && empty($params)) {
-        $provider_id = $_SESSION['user_id'] ?? null;
-        if (!$provider_id) {
-            die("Error: Provider ID missing.");
-        }
-        $params = [$provider_id]; // Dynamically inject provider ID
-    }
-
         // Instantiate the controller
-    $controller = new $class_name();
-
-    // Check if the action exists, then call it with parameters
-    if (method_exists($controller, $action)) {
-        call_user_func_array([$controller, $action], $params);
-    } else {
-        throw new Exception("Action '{$action}' not found in controller '{$controller_name}'");
-    }
+        $controller = new $class_name();
+       
+        // Call the action method
+        if (method_exists($controller, $action)) {
+            call_user_func_array([$controller, $action], $params);
+        } else {
+            throw new Exception("Action '{$action}' not found in controller '{$controller_name}'");
+        }
     } else {
         // Check for views in subdirectories
         $possible_view_locations = [
