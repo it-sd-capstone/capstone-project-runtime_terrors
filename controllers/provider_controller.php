@@ -18,7 +18,7 @@ class ProviderController {
 
     // Load provider dashboard
     public function index($provider_id) {
-        var_dump($provider_id);
+        var_dump($provider);
         die();
         $provider = $this->providerModel->getProviderById($provider_id);
         if (!$provider) {
