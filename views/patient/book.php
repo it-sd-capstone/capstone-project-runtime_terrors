@@ -26,3 +26,29 @@
 
     <button type="submit" class="btn btn-success">Confirm Booking</button>
 </form>
+    <script>
+    document.getElementById("bookForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+        var selectedDate = document.getElementById("appointment_date").value;
+        var selectedTime = document.getElementById("appointment_time").value;
+
+        if (!selectedDate || !selectedTime) {
+            alert("Please select both date and time.");
+            return;
+        }
+
+        fetch("<?= base_url('index.php/patient/checkAvailability') ?>", {
+            method: "POST",
+            body: JSON.stringify({ date: selectedDate, time: selectedTime }),
+            headers: { "Content-Type": "application/json" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.available) {
+                alert("Selected time is unavailable. Please pick a different slot.");
+            } else {
+                document.getElementById("bookForm").submit();
+            }
+        });
+    });
+</script>

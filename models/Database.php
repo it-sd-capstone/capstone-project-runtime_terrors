@@ -9,7 +9,7 @@ class Database {
     private function __construct() {
         $this->conn = new mysqli($config['db_host'], $config['db_user'], $config['db_pass'], $config['db_name']);
 
-        // ✅ Check for connection errors
+        // Check for connection errors
         if ($this->conn->connect_error) {
             error_log("MySQL Connection Error: " . $this->conn->connect_error);
             throw new Exception("Database connection failed.");
