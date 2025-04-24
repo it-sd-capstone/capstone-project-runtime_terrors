@@ -70,9 +70,26 @@ h1, h2 {
   background-color: #0056b3;
 }
 
-/* Responsive Design Tweaks */
+/* Add custom styles for admin forms */
+.card.shadow {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.card-header {
+    border-bottom: 0;
+}
+
+/* Improve form appearance */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Add responsive padding */
 @media (max-width: 768px) {
-  .container {
-      width: 90%;
-  }
+    .container.my-4 {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
 }

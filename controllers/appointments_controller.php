@@ -108,24 +108,32 @@ class AppointmentsController {
                     $endTimeStr = $endTime->format('H:i:s');
                     
                     // Create the appointment
-                    $stmt = $this->db->prepare("INSERT INTO appointments 
-                                              (patient_id, provider_id, service_id, availability_id, 
-                                               appointment_date, start_time, end_time, status) 
-                                              VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')");
+                    $query = "INSERT INTO appointments (
+                        patient_id, provider_id, service_id, 
+                        appointment_date, start_time, end_time,
+                        status, type, notes, reason
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    
+                    $stmt = $this->db->prepare($query);
                     
                     $patientId = $_SESSION['user_id'];
                     $providerId = $availability['provider_id'];
                     $appointmentDate = $availability['available_date'];
                     $startTimeStr = $availability['start_time'];
+                    $status = $_POST['status'] ?? 'scheduled';
+                    $type = $_POST['type'] ?? 'in_person';
+                    $notes = $_POST['notes'] ?? '';
+                    $reason = $_POST['reason'] ?? '';
                     
-                    $stmt->bind_param("iiissss", 
+                    $stmt->bind_param(
+                        "iiissssss", 
                         $patientId, 
                         $providerId, 
                         $serviceId, 
-                        $availabilityId, 
                         $appointmentDate, 
                         $startTimeStr, 
-                        $endTimeStr
+                        $endTimeStr,
+                        $status, $type, $notes, $reason
                     );
                     
                     if ($stmt->execute()) {

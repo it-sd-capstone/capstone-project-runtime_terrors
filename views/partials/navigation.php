@@ -7,12 +7,13 @@ if (session_status() === PHP_SESSION_NONE) {
 // Determine if user is logged in
 $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['logged_in'] === true;
 $userRole = $isLoggedIn ? $_SESSION['role'] : '';
-$userName = $isLoggedIn ? $_SESSION['name'] : '';
-
+//$userName = $isLoggedIn ? $_SESSION['name'] : '';
+$userName = $isLoggedIn ? ($_SESSION['name'] ?? ($_SESSION['email'] ?? 'User')) : '';
 // Determine current page by looking at the URL
 $current_url = $_SERVER['REQUEST_URI'];
 $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_url === '/' || $current_url === '/index.php');
 ?>
+
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
