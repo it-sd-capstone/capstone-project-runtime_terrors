@@ -116,7 +116,49 @@ class Service {
         
         return null;
     }
-    
+    /**
+     * Get all services offered by a specific provider
+     *
+     * @param int $provider_id Provider ID to get services for
+     * @return array List of services with provider-specific customizations
+     */
+    public function getServicesByProvider($provider_id) {
+        $services = [];
+        
+        try {
+            // Query that joins provider_services with services table
+            // Note the added alias "s.name AS service_name" to match what the view expects
+            $query = "SELECT s.*, s.name AS service_name, ps.provider_service_id, ps.custom_duration, ps.custom_notes
+                    FROM services s
+                    JOIN provider_services ps ON s.service_id = ps.service_id
+                    WHERE ps.provider_id = ? AND s.is_active = 1
+                    ORDER BY s.name";
+            
+            if ($this->db instanceof mysqli) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bind_param("i", $provider_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result) {
+                    while ($row = $result->fetch_assoc()) {
+                        $services[] = $this->enrichServiceData($row);
+                    }
+                }
+            } elseif ($this->db instanceof PDO) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(1, $provider_id, PDO::PARAM_INT);
+                $stmt->execute();
+                
+                $services = array_map([$this, 'enrichServiceData'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+            }
+        } catch (Exception $e) {
+            error_log("Error in getServicesByProvider: " . $e->getMessage());
+        }
+        
+        return $services;
+    }
+
     /**
      * Add icon and other metadata to service records
      * 

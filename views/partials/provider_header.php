@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Provider Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?= base_url('css/style.css') ?>">
     <style>
         body {
             padding-top: 20px;
@@ -33,7 +34,7 @@
                                 <a class="nav-link" href="<?= base_url('index.php/provider') ?>">Dashboard</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="<?= base_url('index.php/provider/manage_services') ?>">Manage Services</a>
+                                <a class="nav-link" href="<?= base_url('index.php/provider/services') ?>">Manage Services</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="<?= base_url('index.php/provider/manage_availability') ?>">Manage Availability</a>

@@ -8,26 +8,31 @@ class Appointment {
     }
 
     // Schedule an appointment securely
-    public function scheduleAppointment($patient_id, $provider_id, $appointment_date, $start_time) {
+    public function scheduleAppointment($patient_id, $provider_id, $service_id, $appointment_date, $start_time, $end_time, $type = 'in_person', $notes = null, $reason = null) {
         try {
             $stmt = $this->db->prepare("
-                INSERT INTO appointments (patient_id, provider_id, appointment_date, start_time, status)
-                VALUES (?, ?, ?, ?, 'Scheduled')
+                INSERT INTO appointments (
+                    patient_id, provider_id, service_id, appointment_date, 
+                    start_time, end_time, status, type, notes, reason
+                )
+                VALUES (?, ?, ?, ?, ?, ?, 'scheduled', ?, ?, ?)
             ");
-            $stmt->bind_param("iiss", $patient_id, $provider_id, $appointment_date, $start_time);
+            $stmt->bind_param("iiissssss", $patient_id, $provider_id, $service_id, 
+                             $appointment_date, $start_time, $end_time, $type, $notes, $reason);
             return $stmt->execute();
         } catch (Exception $e) {
             error_log("Error scheduling appointment: " . $e->getMessage());
             return false;
         }
     }
-    public function isSlotAvailable($provider_id, $appointment_date, $appointment_time) {
+    public function isSlotAvailable($provider_id, $appointment_date, $start_time) {
         try {
             $stmt = $this->db->prepare("
-                SELECT COUNT(*) FROM appointments 
-                WHERE provider_id = ? AND appointment_date = ? AND start_time = ?
+                SELECT COUNT(*) FROM appointments
+                WHERE provider_id = ? AND appointment_date = ? AND start_time = ? 
+                AND status NOT IN ('canceled', 'no_show')
             ");
-            $stmt->bind_param("iss", $provider_id, $appointment_date, $appointment_time);
+            $stmt->bind_param("iss", $provider_id, $appointment_date, $start_time);
             $stmt->execute();
             $stmt->bind_result($count);
             $stmt->fetch();
@@ -42,11 +47,16 @@ class Appointment {
     public function getUpcomingAppointments($patient_id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT a.*, p.first_name AS provider_name, s.service_name 
+                SELECT a.*, 
+                       u.first_name AS provider_first_name, 
+                       u.last_name AS provider_last_name,
+                       s.name AS service_name
                 FROM appointments a
-                JOIN providers p ON a.provider_id = p.provider_id
-                JOIN provider_services s ON a.service_id = s.provider_service_id
-                WHERE a.patient_id = ? AND a.status = 'Scheduled'
+                JOIN users u ON a.provider_id = u.user_id
+                JOIN services s ON a.service_id = s.service_id
+                WHERE a.patient_id = ? 
+                AND a.status IN ('scheduled', 'confirmed')
+                AND a.appointment_date >= CURDATE()
                 ORDER BY a.appointment_date, a.start_time
             ");
             $stmt->bind_param("i", $patient_id);
@@ -63,11 +73,15 @@ class Appointment {
     public function getPastAppointments($patient_id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT a.*, p.first_name AS provider_name, s.service_name 
+                SELECT a.*, 
+                       u.first_name AS provider_first_name,
+                       u.last_name AS provider_last_name,
+                       s.name AS service_name
                 FROM appointments a
-                JOIN providers p ON a.provider_id = p.provider_id
-                JOIN provider_services s ON a.service_id = s.provider_service_id
-                WHERE a.patient_id = ? AND a.status = 'Completed'
+                JOIN users u ON a.provider_id = u.user_id
+                JOIN services s ON a.service_id = s.service_id
+                WHERE a.patient_id = ? 
+                AND (a.status = 'completed' OR a.appointment_date < CURDATE())
                 ORDER BY a.appointment_date DESC
             ");
             $stmt->bind_param("i", $patient_id);
@@ -84,10 +98,13 @@ class Appointment {
     public function getAppointmentById($appointment_id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT a.*, p.first_name AS provider_name, s.service_name 
+                SELECT a.*, 
+                       u.first_name AS provider_first_name,
+                       u.last_name AS provider_last_name,
+                       s.name AS service_name
                 FROM appointments a
-                JOIN providers p ON a.provider_id = p.provider_id
-                JOIN provider_services s ON a.service_id = s.provider_service_id
+                JOIN users u ON a.provider_id = u.user_id
+                JOIN services s ON a.service_id = s.service_id
                 WHERE a.appointment_id = ?
             ");
             $stmt->bind_param("i", $appointment_id);
@@ -100,15 +117,43 @@ class Appointment {
         }
     }
 
-    // Reschedule an appointment securely
-    public function rescheduleAppointment($appointment_id, $new_date, $new_time) {
+    // Add the missing getByProvider method
+    public function getByProvider($provider_id) {
         try {
             $stmt = $this->db->prepare("
-                UPDATE appointments 
-                SET appointment_date = ?, start_time = ?, status = 'Rescheduled'
+                SELECT a.*, 
+                       u.first_name AS patient_first_name,
+                       u.last_name AS patient_last_name,
+                       s.name AS service_name
+                FROM appointments a
+                JOIN users u ON a.patient_id = u.user_id
+                JOIN services s ON a.service_id = s.service_id
+                WHERE a.provider_id = ?
+                ORDER BY a.appointment_date, a.start_time
+            ");
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            return $result->fetch_all(MYSQLI_ASSOC) ?: [];
+        } catch (Exception $e) {
+            error_log("Error fetching provider appointments: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // Reschedule an appointment securely
+    public function rescheduleAppointment($appointment_id, $new_date, $new_start_time, $new_end_time) {
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE appointments
+                SET appointment_date = ?, 
+                    start_time = ?, 
+                    end_time = ?,
+                    status = 'scheduled',
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE appointment_id = ?
             ");
-            $stmt->bind_param("ssi", $new_date, $new_time, $appointment_id);
+            $stmt->bind_param("sssi", $new_date, $new_start_time, $new_end_time, $appointment_id);
             return $stmt->execute();
         } catch (Exception $e) {
             error_log("Error rescheduling appointment: " . $e->getMessage());
@@ -120,8 +165,11 @@ class Appointment {
     public function cancelAppointment($appointment_id, $reason) {
         try {
             $stmt = $this->db->prepare("
-                UPDATE appointments 
-                SET status = 'Canceled', cancel_reason = ?
+                UPDATE appointments
+                SET status = 'canceled', 
+                    reason = ?,
+                    canceled_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE appointment_id = ?
             ");
             $stmt->bind_param("si", $reason, $appointment_id);

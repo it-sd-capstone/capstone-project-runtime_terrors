@@ -97,12 +97,30 @@ class ProviderController {
             exit;
         }
     }
-
+    // Add this method to your ProviderController class
+    public function manage_availability() {
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get the provider's current availability/schedules
+        $schedules = $this->providerModel->getAvailability($provider_id);
+        $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+        
+        // Load the view
+        include VIEW_PATH . '/provider/schedule.php';
+    }
+    
     // Provider Services (CRUD)
     public function services() {
-        $provider_id = $_SESSION['user_id'];
-        $providerServices = $this->providerModel->getServices($provider_id);
-        include VIEW_PATH . '/provider/services.php';
+        // Assuming you have a Service model that can fetch services
+        require_once '../models/Services.php';
+        $serviceModel = new Service($this->db);
+        
+        // Get services for this provider
+        $provider_id = $_SESSION['user_id']; // Assuming you store user ID in session
+        $services = $serviceModel->getServicesByProvider($provider_id);
+        
+        // Pass data to the view
+        include '../views/provider/services.php';
     }
 
     public function addService() {
@@ -153,6 +171,29 @@ class ProviderController {
             }
             exit;
         }
+    }
+
+    // Add this method to your ProviderController class
+    public function appointments() {
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get all appointments for this provider
+        $appointments = $this->appointmentModel->getByProvider($provider_id);
+        
+        // Load the appointments view
+        include VIEW_PATH . '/provider/appointments.php';
+    }
+    
+    // Add this method to your ProviderController class
+    public function schedule() {
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get the provider's current availability/schedules
+        $availability = $this->providerModel->getAvailability($provider_id);
+        $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+        
+        // Load the view
+        include VIEW_PATH . '/provider/schedule.php';
     }
 
     // Scheduling & Availability Management

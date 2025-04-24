@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../../config.php';
+<?php require_once __DIR__ . '/../../config/config.php';
 include VIEW_PATH . '/partials/provider_header.php'; ?>
 
 <div class="container provider-dashboard">
