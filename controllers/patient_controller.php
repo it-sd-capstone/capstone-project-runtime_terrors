@@ -15,9 +15,16 @@ class PatientController {
     }
 
     // Load Dashboard
-    public function index($patient_id) {
+    public function index() {
+        if (!isset($_SESSION['patient_id'])) {
+            header("Location: /auth/login");
+            exit;
+        }
+    
+        $patient_id = $_SESSION['patient_id'];
         $patient = $this->userModel->getPatientById($patient_id);
         $appointments = $this->appointmentModel->getUpcomingAppointments($patient_id);
+        
         include VIEW_PATH . '/patient/index.php';
     }
 
@@ -29,13 +36,18 @@ class PatientController {
 
     // Confirm Booking
     public function confirmBooking() {
-        $patient_id = $_POST['patient_id'];
-        $provider_id = $_POST['provider_id'];
-        $appointment_date = $_POST['appointment_date'];
-        $appointment_time = $_POST['appointment_time'];
-
-        $this->appointmentModel->scheduleAppointment($patient_id, $provider_id, $appointment_date, $appointment_time);
-        header("Location: /patient");
+        $patient_id = intval($_POST['patient_id']);
+        $provider_id = intval($_POST['provider_id']);
+        $appointment_date = htmlspecialchars($_POST['appointment_date']);
+        $appointment_time = htmlspecialchars($_POST['appointment_time']);
+    
+        if ($patient_id && $provider_id && !empty($appointment_date) && !empty($appointment_time)) {
+            $this->appointmentModel->scheduleAppointment($patient_id, $provider_id, $appointment_date, $appointment_time);
+            header("Location: /patient");
+            exit;
+        }
+    
+        header("Location: /patient/book?error=Invalid input");
         exit;
     }
 
@@ -69,15 +81,22 @@ class PatientController {
 
     // Update Profile
     public function updateProfile() {
-        $user_id = $_POST['user_id'];
-        $data = [
-            'first_name' => $_POST['first_name'],
-            'last_name' => $_POST['last_name'],
-            'phone' => $_POST['phone']
-        ];
-
-        $this->userModel->updateUser($user_id, $data);
-        header("Location: /patient/profile");
-        exit;
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $user_id = $_SESSION['patient_id']; // Ensure session ID is used
+            $data = [
+                'first_name' => trim($_POST['first_name']),
+                'last_name' => trim($_POST['last_name']),
+                'phone' => trim($_POST['phone'])
+            ];
+    
+            $success = $this->userModel->updateUser($user_id, $data);
+    
+            if ($success) {
+                header("Location: /patient/profile?success=Profile updated");
+            } else {
+                header("Location: /patient/profile?error=Update failed");
+            }
+            exit;
+        }
     }
 }
