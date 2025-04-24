@@ -18,16 +18,12 @@ class ProviderController {
 
     // Load provider dashboard
     public function index($provider_id) {
-        var_dump($provider_id); // Debugging output
+        var_dump($provider_id); // Debug ID being passed
         die();
     
         $provider = $this->providerModel->getProviderById($provider_id);
-        if (!$provider) {
-            die("Error: Provider not found."); // Debugging missing provider issues
-        }
-    
-        $appointments = $this->appointmentModel->getByProvider($provider_id);
-        include VIEW_PATH . '/provider/index.php';
+        var_dump($provider); // Debug provider retrieval
+        die();
     }
 
     // Manage availability
