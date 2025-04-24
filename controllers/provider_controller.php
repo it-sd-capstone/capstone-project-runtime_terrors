@@ -7,7 +7,7 @@ class ProviderController {
     private $db;
     private $providerModel;
     private $appointmentModel;
-    private $userModel;  // ✅ Declare this at the start
+    private $userModel;
 
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
@@ -16,33 +16,49 @@ class ProviderController {
         $this->userModel = new User($this->db);
     }
 
-
-
-    // Load provider dashboard
+    // Load provider dashboard with provider & appointment data
     public function index($provider_id) {
+        $provider = $this->providerModel->getProviderById($provider_id);
         $appointments = $this->appointmentModel->getByProvider($provider_id);
+
         include VIEW_PATH . '/provider/index.php';
     }
 
-    // Manage availability
+    // View full details of a specific appointment
+    public function viewAppointment($appointment_id) {
+        $appointment = $this->appointmentModel->getById($appointment_id);
+        include VIEW_PATH . '/provider/view.php';
+    }
+
+    // Reschedule an appointment
+    public function rescheduleAppointment() {
+        $appointment_id = $_POST['appointment_id'];
+        $new_date = $_POST['new_date'];
+        $new_time = $_POST['new_time'];
+
+        $this->appointmentModel->rescheduleAppointment($appointment_id, $new_date, $new_time);
+
+        header("Location: /provider/appointments");
+        exit;
+    }
+
+    // Cancel an appointment
+    public function cancelAppointment() {
+        $appointment_id = $_POST['appointment_id'];
+        $reason = $_POST['reason'];
+
+        $this->appointmentModel->cancelAppointment($appointment_id, $reason, $_SESSION['user_id']);
+
+        header("Location: /provider/appointments");
+        exit;
+    }
+
+    // Manage provider availability
     public function schedule($provider_id) {
         $availability = $this->providerModel->getAvailability($provider_id);
         include VIEW_PATH . '/provider/schedule.php';
     }
 
-    // Get upcoming appointments
-    public function appointments($provider_id) {
-        $appointments = $this->appointmentModel->getByProvider($provider_id);
-        include VIEW_PATH . '/provider/appointments.php';
-    }
-
-    // Manage services
-    public function services($provider_id) {
-        $services = $this->providerModel->getServices($provider_id);
-        include VIEW_PATH . '/provider/services.php';
-    }
-
-    // Update availability
     public function updateAvailability() {
         $provider_id = $_POST['provider_id'];
         $availability_date = $_POST['availability_date'];
@@ -53,6 +69,12 @@ class ProviderController {
         $this->providerModel->updateAvailability($provider_id, $availability_date, $start_time, $end_time, $is_available);
         header("Location: /provider/schedule");
         exit;
+    }
+
+    // Manage provider services
+    public function services($provider_id) {
+        $services = $this->providerModel->getServices($provider_id);
+        include VIEW_PATH . '/provider/services.php';
     }
 
     // Update provider profile
