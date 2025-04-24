@@ -1,20 +1,17 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+// Load database config
+$config = require __DIR__ . '/../config/environments/development.php';
 
 class Database {
     private static $instance = null;
     private $conn;
 
     private function __construct() {
-        try {
-            $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
-            $options = [
-                PDO::ATTR_PERSISTENT => true,
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-            ];
-            $this->conn = new PDO($dsn, DB_USER, DB_PASS, $options);
-        } catch (PDOException $e) {
-            error_log('Database Connection Error: ' . $e->getMessage());
+        $this->conn = new mysqli($config['db_host'], $config['db_user'], $config['db_pass'], $config['db_name']);
+
+        // Check for connection errors
+        if ($this->conn->connect_error) {
+            error_log("MySQL Connection Error: " . $this->conn->connect_error);
             throw new Exception("Database connection failed.");
         }
     }
@@ -30,9 +27,11 @@ class Database {
         return $this->conn;
     }
 
-    // ✅ Optional: Allow manual disconnection
     public function disconnect() {
-        self::$instance = null;
+        if ($this->conn) {
+            $this->conn->close();
+            self::$instance = null;
+        }
     }
 }
 ?>

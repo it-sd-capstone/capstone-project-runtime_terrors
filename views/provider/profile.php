@@ -1,39 +1,56 @@
-<?php include '../layout/partials/header.php'; ?>
-<?php include '../layout/partials/navigation.php'; ?>
+<h4>Update Profile</h4>
 
-<div class="container mt-4">
-    <h2>Provider Profile</h2>
-    
-    <!-- Profile Update Form -->
-    <form id="profileForm" action="/provider/updateProfile" method="POST">
-        <label for="name">Full Name:</label>
-        <input type="text" name="name" value="<?= htmlspecialchars($provider['name']) ?>" required class="form-control">
+<form method="POST" action="<?= base_url('index.php/provider/processUpdateProfile') ?>">
+    <label>First Name:</label>
+    <input type="text" name="first_name" value="<?= htmlspecialchars($provider['first_name'] ?? '') ?>" required>
 
-        <label for="specialty">Specialty:</label>
-        <input type="text" name="specialty" value="<?= htmlspecialchars($provider['specialty']) ?>" class="form-control">
+    <label>Last Name:</label>
+    <input type="text" name="last_name" value="<?= htmlspecialchars($provider['last_name'] ?? '') ?>" required>
 
-        <label for="bio">Bio:</label>
-        <textarea name="bio" class="form-control"><?= htmlspecialchars($provider['bio']) ?></textarea>
+    <label>Specialty:</label>
+    <input type="text" name="specialty" value="<?= htmlspecialchars($provider['specialty'] ?? '') ?>" required>
 
-        <button type="submit" class="btn btn-primary mt-3">Save Profile</button>
-    </form>
+    <label>Phone:</label>
+    <input type="text" name="phone" value="<?= htmlspecialchars($provider['phone'] ?? '') ?>" required>
 
-    <!-- Redirect to Password Change -->
-    <p class="mt-3"><a href="/auth/changePassword">Change Password</a></p>
+    <label>Bio:</label>
+    <textarea name="bio"><?= htmlspecialchars($provider['bio'] ?? '') ?></textarea>
 
-</div>
+    <button type="submit" class="btn btn-success">Save Changes</button>
+</form>
 
+<h4>Change Password</h4>
+<form method="POST" action="<?= base_url('index.php/provider/processPasswordChange') ?>">
+    <label>Current Password:</label>
+    <input type="password" name="current_password" required>
+
+    <label>New Password:</label>
+    <input type="password" name="new_password" required>
+
+    <label>Confirm New Password:</label>
+    <input type="password" name="confirm_password" required>
+
+    <button type="submit" class="btn btn-warning">Change Password</button>
+</form>
+
+<!-- AJAX Script for Real-Time Updates -->
 <script>
 document.getElementById("profileForm").addEventListener("submit", function(event) {
-    let name = document.querySelector("input[name='name']").value.trim();
-    let specialty = document.querySelector("input[name='specialty']").value.trim();
-    let bio = document.querySelector("textarea[name='bio']").value.trim();
+    event.preventDefault();
+    var formData = new FormData(this);
 
-    if (!name || !specialty || !bio) {
-        alert("All fields are required!");
-        event.preventDefault();
-    }
+    fetch("<?= base_url('index.php/provider/processUpdateProfile') ?>", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById("statusMessage").innerHTML = "<p class='success'>Profile updated successfully!</p>";
+        } else {
+            document.getElementById("statusMessage").innerHTML = "<p class='error'>Update failed.</p>";
+        }
+    })
+    .catch(error => console.error("Error:", error));
 });
 </script>
-
-<?php include '../layout/partials/footer.php'; ?>
