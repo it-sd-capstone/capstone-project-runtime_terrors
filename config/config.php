@@ -1,5 +1,6 @@
 <?php
 // Base configuration (common to all environments)
+define('VIEW_PATH', __DIR__ . '/views');
 return [
     'app_name' => 'Appointment System',
     'debug' => false,

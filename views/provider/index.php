@@ -1,4 +1,5 @@
-<?php include VIEW_PATH . '/partials/provider_header.php'; ?>
+<?php require_once __DIR__ . '/../../config.php';
+include VIEW_PATH . '/partials/provider_header.php'; ?>
 
 <div class="container provider-dashboard">
     <h2>Welcome, Dr. <?= htmlspecialchars($provider['first_name'] ?? 'Provider') ?>!</h2>
