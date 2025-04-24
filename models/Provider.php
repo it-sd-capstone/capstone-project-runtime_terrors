@@ -9,7 +9,7 @@ class Provider {
     public function getProviderById($provider_id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT * FROM providers WHERE provider_id = ?
+                SELECT * FROM provider WHERE provider_id = ?
             ");
             $stmt->bindParam(1, $provider_id, PDO::PARAM_INT);
             $stmt->execute();
