@@ -27,7 +27,7 @@ class ProviderController {
         $this->appointmentModel = new Appointment($this->db);
     }
     
-    // ✅ Provider Dashboard
+    // Provider Dashboard
     public function index() {
         // Debug info
         error_log("Provider controller index method called");
@@ -77,7 +77,7 @@ class ProviderController {
         include VIEW_PATH . '/provider/index.php';
     }
     
-    // ✅ Upload provider availability
+    // Upload provider availability
     public function upload_availability() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Match the field names from your form
@@ -113,13 +113,13 @@ class ProviderController {
         exit;
     }
 
-    // ✅ Fetch provider profile details
+    // Fetch provider profile details
     public function profile() {
         $providerData = $this->providerModel->getProviderData($_SESSION['user_id']);
         include VIEW_PATH . '/provider/profile.php';
     }
 
-    // ✅ Update provider profile
+    // Update provider profile
     public function updateProfile() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $name = trim($_POST['name']);
@@ -135,7 +135,7 @@ class ProviderController {
         exit;
     }
 
-    // ✅ Validate appointment slot before booking
+    // Validate appointment slot before booking
     public function validateAppointment() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_POST['provider_id'];
@@ -153,7 +153,7 @@ class ProviderController {
         }
     }
 
-    // ✅ Provider Service Management (CRUD)
+    // Provider Service Management (CRUD)
     public function services() {
         $provider_id = $_SESSION['user_id'];
         $providerServices = $this->providerModel->getServices($provider_id);
@@ -192,7 +192,7 @@ class ProviderController {
         }
     }
 
-    // ✅ Manage Recurring Schedules (CRUD)
+    // Manage Recurring Schedules (CRUD)
     public function addRecurringSchedule() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'];
