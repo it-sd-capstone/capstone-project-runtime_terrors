@@ -26,6 +26,35 @@ class ProviderController {
         $appointments = $this->appointmentModel->getByProvider($provider_id);
         include VIEW_PATH . '/provider/index.php';
     }
+    // Load Services Management Page
+    public function services($provider_id) {
+        if (!$provider_id) {
+            die("Error: Provider ID missing.");
+        }
+
+        $services = $this->providerModel->getServices($provider_id);
+        include VIEW_PATH . '/provider/services.php';
+    }
+
+    // Load Appointments Page
+    public function appointments($provider_id) {
+        if (!$provider_id) {
+            die("Error: Provider ID missing.");
+        }
+
+        $appointments = $this->appointmentModel->getByProvider($provider_id);
+        include VIEW_PATH . '/provider/appointments.php';
+    }
+
+    // Load Requests Page
+    public function requests($provider_id) {
+        if (!$provider_id) {
+            die("Error: Provider ID missing.");
+        }
+
+        $requests = $this->appointmentModel->getRequests($provider_id);
+        include VIEW_PATH . '/provider/requests.php';
+    }
 
     // Display Schedule Settings
     public function schedule($provider_id) {
