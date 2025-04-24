@@ -18,7 +18,7 @@
             <p>
                 <?= htmlspecialchars($appointment['patient_name']) ?> - <?= htmlspecialchars($appointment['date']) ?> at <?= htmlspecialchars($appointment['time']) ?>
                 <br>
-                <a href="<?= base_url('index.php/provider/viewAppointment/' . $appointment['id']) ?>" class="btn btn-info">View Details</a>
+                <a href="<?= base_url('index.php/provider/appointment/' . $appointment['id']) ?>" class="btn btn-info">View Details</a>
             </p>
         <?php endforeach; ?>
     </div>
