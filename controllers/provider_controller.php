@@ -218,5 +218,75 @@ class ProviderController {
         header('Location: ' . base_url('index.php/provider/schedule?error=Invalid input'));
         exit;
     }
+
+    // Add this method to your ProviderController class
+    public function profile() {
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get the provider's profile data
+        $providerData = $this->providerModel->getProviderData($provider_id);
+        
+        // Load the profile view
+        include VIEW_PATH . '/provider/profile.php';
+    }
+
+    // Add this method to your ProviderController class
+    public function reports() {
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get appointment statistics for reports
+        $appointmentStats = $this->getAppointmentStatistics($provider_id);
+        
+        // You may want to get additional report data here
+        // For example: revenue data, patient demographics, etc.
+        
+        // Load the reports view
+        include VIEW_PATH . '/provider/reports.php';
+    }
+
+    // Helper method to calculate appointment statistics
+    private function getAppointmentStatistics($provider_id) {
+        // You'll need to implement appropriate methods in your Appointment model
+        // or use direct queries if these don't exist
+        
+        $stats = [
+            'total' => 0,
+            'completed' => 0,
+            'canceled' => 0,
+            'no_show' => 0,
+            'upcoming' => 0,
+            // You can add more statistics as needed
+        ];
+        
+        // Example query - adjust based on your actual database structure and model methods
+        $appointments = $this->appointmentModel->getByProvider($provider_id);
+        
+        if ($appointments) {
+            $stats['total'] = count($appointments);
+            
+            foreach ($appointments as $appointment) {
+                switch ($appointment['status']) {
+                    case 'completed':
+                        $stats['completed']++;
+                        break;
+                    case 'canceled':
+                        $stats['canceled']++;
+                        break;
+                    case 'no_show':
+                        $stats['no_show']++;
+                        break;
+                    case 'scheduled':
+                    case 'confirmed':
+                        // Check if appointment is in the future
+                        if (strtotime($appointment['appointment_date']) > time()) {
+                            $stats['upcoming']++;
+                        }
+                        break;
+                }
+            }
+        }
+        
+        return $stats;
+    }
 }
 ?>
