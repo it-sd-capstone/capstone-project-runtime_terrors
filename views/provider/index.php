@@ -6,9 +6,9 @@
     <!-- Navigation Tabs -->
     <div class="nav nav-tabs">
         <a class="nav-link active" href="<?= base_url('index.php/provider') ?>">Dashboard</a>
-        <a class="nav-link" href="<?= base_url('index.php/provider/schedule') ?>">Manage Schedule</a>
-        <a class="nav-link" href="<?= base_url('index.php/provider/appointments') ?>">View Appointments</a>
-        <a class="nav-link" href="<?= base_url('index.php/provider/services') ?>">Manage Services</a>
+        <a class="nav-link" href="<?= base_url('index.php/provider/schedule.php') ?>">Manage Schedule</a>
+        <a class="nav-link" href="<?= base_url('index.php/provider/appointments.php') ?>">View Appointments</a>
+        <a class="nav-link" href="<?= base_url('index.php/provider/services.php') ?>">Manage Services</a>
     </div>
 
     <!-- Upcoming Appointments -->
@@ -30,9 +30,9 @@
                         <td><?= htmlspecialchars($appointment['appointment_date']) ?></td>
                         <td><?= htmlspecialchars($appointment['start_time']) ?></td>
                         <td>
-                            <a href="<?= base_url('index.php/provider/viewAppointment/' . htmlspecialchars($appointment['appointment_id'] ?? '')) ?>" class="btn btn-info">View</a>
-                            <a href="<?= base_url('index.php/provider/reschedule/' . htmlspecialchars($appointment['appointment_id'] ?? '')) ?>" class="btn btn-warning">Reschedule</a>
-                            <form action="<?= base_url('index.php/provider/cancel') ?>" method="POST" style="display:inline;">
+                            <a href="<?= base_url('index.php/provider/vappointments.php/' . htmlspecialchars($appointment['appointment_id'] ?? '')) ?>" class="btn btn-info">View</a>
+                            <a href="<?= base_url('index.php/provider/reschedule.php/' . htmlspecialchars($appointment['appointment_id'] ?? '')) ?>" class="btn btn-warning">Reschedule</a>
+                            <form action="<?= base_url('index.php/provider/cancel.php') ?>" method="POST" style="display:inline;">
                                 <input type="hidden" name="appointment_id" value="<?= htmlspecialchars($appointment['appointment_id'] ?? '') ?>">
                                 <button type="submit" class="btn btn-danger">Cancel</button>
                             </form>
