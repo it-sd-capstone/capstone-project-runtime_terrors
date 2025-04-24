@@ -15,7 +15,7 @@ class ProviderController {
         $this->appointmentModel = new Appointment($this->db);
         $this->userModel = new User($this->db);
     }
-}
+
 
 
     // Load provider dashboard
