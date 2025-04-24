@@ -7,14 +7,15 @@ class ProviderController {
     private $db;
     private $providerModel;
     private $appointmentModel;
-    private $notificationModel;
+    private $userModel;  // ✅ Declare this at the start
 
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
         $this->providerModel = new Provider($this->db);
-        $this->appointmentModel = new Appointment($this->db);  // Error occurs here if `Appointment.php` is missing
+        $this->appointmentModel = new Appointment($this->db);
         $this->userModel = new User($this->db);
     }
+}
 
 
     // Load provider dashboard
