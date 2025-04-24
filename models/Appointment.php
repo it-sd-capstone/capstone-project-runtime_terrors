@@ -1,66 +1,95 @@
 <?php
-class AppointmentController {
+class Appointment {
     private $db;
-    private $appointmentModel;
-    private $notificationModel;
 
-    public function __construct() {
-        $this->db = Database::getInstance()->getConnection();
-        $this->appointmentModel = new Appointment($this->db);
-        $this->notificationModel = new Notification($this->db);
+    public function __construct($db) {
+        $this->db = $db;
     }
 
-    // Book an appointment
-    public function book() {
-        $providers = $this->appointmentModel->getProviders();
-        $services = $this->appointmentModel->getServices();
-        include VIEW_PATH . '/patient/book.php';
+    // Retrieve Appointments for a Specific Provider
+    public function getByProvider($provider_id) {
+        $stmt = $this->db->prepare("
+            SELECT a.*, p.first_name AS patient_name, s.name AS service_name
+            FROM appointments a
+            JOIN users p ON a.patient_id = p.user_id
+            JOIN services s ON a.service_id = s.service_id
+            WHERE a.provider_id = ?
+            ORDER BY a.appointment_date, a.start_time
+        ");
+        $stmt->execute([$provider_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function processBooking() {
-        $patient_id = $_POST['patient_id'];
-        $provider_id = $_POST['provider_id'];
-        $service_id = $_POST['service_id'];
-        $appointment_date = $_POST['appointment_date'];
-        $start_time = $_POST['start_time'];
-        $end_time = date('H:i:s', strtotime($start_time) + (30 * 60));
-
-        $this->appointmentModel->bookAppointment($patient_id, $provider_id, $service_id, $appointment_date, $start_time, $end_time, $_POST['notes']);
-
-        // Send notification
-        $this->notificationModel->createNotification($patient_id, null, "Appointment Scheduled", "Your appointment has been booked.", "email");
-
-        header("Location: /patient/index");
-        exit;
+    // Retrieve Appointments for a Specific Patient
+    public function getByPatient($patient_id) {
+        $stmt = $this->db->prepare("
+            SELECT a.*, pr.first_name AS provider_name, s.name AS service_name
+            FROM appointments a
+            JOIN users pr ON a.provider_id = pr.user_id
+            JOIN services s ON a.service_id = s.service_id
+            WHERE a.patient_id = ?
+            ORDER BY a.appointment_date, a.start_time
+        ");
+        $stmt->execute([$patient_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Reschedule an appointment
-    public function processReschedule() {
-        $appointment_id = $_POST['appointment_id'];
-        $new_date = $_POST['new_date'];
-        $new_time = $_POST['new_time'];
-
-        $this->appointmentModel->rescheduleAppointment($appointment_id, $new_date, $new_time);
-
-        // Send notification
-        $this->notificationModel->createNotification($_POST['patient_id'], $appointment_id, "Appointment Rescheduled", "Your appointment has been rescheduled.", "email");
-
-        header("Location: /patient/index");
-        exit;
+    // Book a New Appointment
+    public function bookAppointment($patient_id, $provider_id, $service_id, $date, $start_time, $end_time, $notes) {
+        $stmt = $this->db->prepare("
+            INSERT INTO appointments (patient_id, provider_id, service_id, appointment_date, start_time, end_time, status, notes)
+            VALUES (?, ?, ?, ?, ?, ?, 'scheduled', ?)
+        ");
+        return $stmt->execute([$patient_id, $provider_id, $service_id, $date, $start_time, $end_time, $notes]);
     }
 
-    // Cancel an appointment
-    public function processCancel() {
-        $appointment_id = $_POST['appointment_id'];
-        $reason = $_POST['reason'];
+    // Reschedule an Appointment
+    public function rescheduleAppointment($appointment_id, $new_date, $new_time) {
+        $stmt = $this->db->prepare("
+            UPDATE appointments SET appointment_date = ?, start_time = ?, status = 'rescheduled' 
+            WHERE appointment_id = ?
+        ");
+        return $stmt->execute([$new_date, $new_time, $appointment_id]);
+    }
 
-        $this->appointmentModel->cancelAppointment($appointment_id, $reason, $_SESSION['user_id']);
+    // Cancel an Appointment & Log History
+    public function cancelAppointment($appointment_id, $reason, $user_id) {
+        $stmt = $this->db->prepare("
+            UPDATE appointments SET status = 'canceled', reason = ? WHERE appointment_id = ?
+        ");
+        $stmt->execute([$reason, $appointment_id]);
 
-        // Log cancellation in history
-        $this->notificationModel->createNotification($_SESSION['user_id'], $appointment_id, "Appointment Cancelled", "Your appointment has been cancelled.", "email");
+        // Log cancellation in appointment_history
+        $stmt = $this->db->prepare("
+            INSERT INTO appointment_history (appointment_id, action, changed_fields, old_values, new_values, user_id) 
+            VALUES (?, 'canceled', 'status', 'scheduled', 'canceled', ?)
+        ");
+        return $stmt->execute([$appointment_id, $user_id]);
+    }
 
-        header("Location: /patient/index");
-        exit;
+    // Get Requests Pending Provider Approval
+    public function getRequests($provider_id) {
+        $stmt = $this->db->prepare("
+            SELECT * FROM appointments WHERE provider_id = ? AND status = 'pending'
+        ");
+        $stmt->execute([$provider_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Approve Appointment Request
+    public function approveRequest($request_id) {
+        $stmt = $this->db->prepare("
+            UPDATE appointments SET status = 'confirmed' WHERE appointment_id = ?
+        ");
+        return $stmt->execute([$request_id]);
+    }
+
+    // Decline Appointment Request
+    public function declineRequest($request_id) {
+        $stmt = $this->db->prepare("
+            UPDATE appointments SET status = 'canceled' WHERE appointment_id = ?
+        ");
+        return $stmt->execute([$request_id]);
     }
 }
 ?>
