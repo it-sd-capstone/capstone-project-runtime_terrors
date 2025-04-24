@@ -20,18 +20,18 @@ class ProviderController {
     public function index($provider_id) {
         $provider = $this->providerModel->getProviderById($provider_id);
         if (!$provider) {
-            die("Error: Provider not found."); // Error handling if provider doesn't exist
+            die("Error: Provider not found."); // ✅ Error handling for missing providers
         }
 
         $appointments = $this->appointmentModel->getByProvider($provider_id);
         include VIEW_PATH . '/provider/index.php';
     }
 
-    // View full details of a specific appointment
+    // View appointment details
     public function viewAppointment($appointment_id) {
         $appointment = $this->appointmentModel->getById($appointment_id);
         if (!$appointment) {
-            die("Error: Appointment not found."); // Error handling for missing appointment
+            die("Error: Appointment not found.");
         }
 
         include VIEW_PATH . '/provider/view.php';
@@ -60,15 +60,6 @@ class ProviderController {
         exit;
     }
 
-    // Delete an appointment
-    public function deleteAppointment() {
-        $appointment_id = $_POST['appointment_id'];
-        $this->appointmentModel->deleteAppointment($appointment_id);
-
-        header("Location: /provider/appointments");
-        exit;
-    }
-
     // Manage provider availability
     public function schedule($provider_id) {
         $availability = $this->providerModel->getAvailability($provider_id);
@@ -84,27 +75,6 @@ class ProviderController {
 
         $this->providerModel->updateAvailability($provider_id, $availability_date, $start_time, $end_time, $is_available);
         header("Location: /provider/schedule");
-        exit;
-    }
-
-    // Manage provider services
-    public function services($provider_id) {
-        $services = $this->providerModel->getServices($provider_id);
-        include VIEW_PATH . '/provider/services.php';
-    }
-
-    // Update provider profile
-    public function updateProfile() {
-        $provider_id = $_POST['provider_id'];
-        $data = [
-            'first_name' => $_POST['first_name'],
-            'last_name' => $_POST['last_name'],
-            'specialty' => $_POST['specialty'],
-            'phone' => $_POST['phone']
-        ];
-
-        $this->providerModel->updateProvider($provider_id, $data);
-        header("Location: /provider/profile");
         exit;
     }
 
