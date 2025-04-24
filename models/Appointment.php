@@ -43,5 +43,18 @@ class Appointment {
         ");
         return $stmt->execute([$patient_id, $provider_id, $service_id, $date, $start_time, $end_time, $notes]);
     }
+    public function cancelAppointment($appointment_id, $reason) {
+        $stmt = $this->db->prepare("
+            UPDATE appointments SET status = 'canceled', reason = ? WHERE appointment_id = ?
+        ");
+        $stmt->execute([$reason, $appointment_id]);
+    
+        // Log in `appointment_history`
+        $stmt = $this->db->prepare("
+            INSERT INTO appointment_history (appointment_id, action, changed_fields, old_values, new_values, user_id) 
+            VALUES (?, 'canceled', 'status', 'scheduled', 'canceled', ?)
+        ");
+        $stmt->execute([$appointment_id, $_SESSION['user_id'] ?? 1]); // Replace with actual user ID logic
+    }
 }
 ?>

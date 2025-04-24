@@ -31,7 +31,7 @@ class Provider {
             ");
             $stmt->bindParam(1, $provider_id, PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC); // ✅ Ensure this returns data
+            return $stmt->fetchAll(PDO::FETCH_ASSOC); // Ensure this returns data
         } catch (Exception $e) {
             error_log("Error in getAvailableSlots: " . $e->getMessage());
             return [];
