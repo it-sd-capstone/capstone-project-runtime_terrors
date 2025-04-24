@@ -49,14 +49,14 @@ class AuthController {
                         $_SESSION['role'] = $user['role'];
                         $_SESSION['logged_in'] = true;
                         
-                        // Redirect based on role
+                        // Redirect based on role - all go to home except admin
                         switch ($_SESSION['role']) {
                             case 'admin':
-                                header('Location: ' . base_url('index.php/admin'));                                break;
-                            case 'provider':
-                                header('Location: ' . base_url('index.php/provider'));                                break;
-                            default: // patient
-                                header('Location: ' . base_url('index.php/appointments'));                                break;
+                                header('Location: ' . base_url('index.php/admin'));
+                                break;
+                            default: // provider and patient both go to home
+                                header('Location: ' . base_url('index.php/home'));
+                                break;
                         }
                         exit;
                     } else {
@@ -82,8 +82,8 @@ class AuthController {
         $_SESSION = array();
         session_destroy();
         
-        // Redirect to login page
-        header('Location: ' . base_url('index.php/auth'));        
+        // Redirect to home page instead of login page
+        header('Location: ' . base_url('index.php/home'));        
         exit;
     }
     
@@ -110,21 +110,22 @@ class AuthController {
                 $_SESSION['logged_in'] = true;
                 $_SESSION['demo'] = true;
                 
-                // Redirect based on role
+                // Redirect based on role - all go to home except admin
                 switch ($_SESSION['role']) {
                     case 'admin':
-                        header('Location: ' . base_url('index.php/admin'));                        break;
-                    case 'provider':
-                        header('Location: ' . base_url('index.php/provider'));                        break;
-                    default: // patient
-                        header('Location: ' . base_url('index.php/appointments'));                        break;
+                        header('Location: ' . base_url('index.php/admin'));
+                        break;
+                    default: // provider and patient both go to home
+                        header('Location: ' . base_url('index.php/home'));
+                        break;
                 }
                 exit;
             }
         }
         
         // If we get here, role not found
-        header('Location: ' . base_url('index.php/auth'));        exit;
+        header('Location: ' . base_url('index.php/auth'));
+        exit;
     }
 }
 ?>
