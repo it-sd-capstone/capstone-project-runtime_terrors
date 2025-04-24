@@ -339,12 +339,28 @@ class AuthController {
                         $_SESSION['name'] = $user['first_name'] . ' ' . $user['last_name'];
                         $_SESSION['role'] = $user['role'];
                         $_SESSION['logged_in'] = true;
-                        
-                        // Remove temporary user ID
+                      
+                         // Remove temporary user ID
                         unset($_SESSION['temp_user_id']);
                         
+
+                        // Redirect based on role - all go to home except admin
+                        switch ($_SESSION['role']) {
+                            case 'admin':
+                                header('Location: ' . base_url('index.php/admin'));
+                                break;
+                            default: // provider and patient both go to home
+                                header('Location: ' . base_url('index.php/home'));
+                                break;
+                        }
+                        exit;
+
+                        // Remove temporary user ID
+                        //unset($_SESSION['temp_user_id']);
+                        
                         // Redirect based on role
-                        $this->redirectBasedOnRole($user['role']);
+                        //$this->redirectBasedOnRole($user['role']);
+
                     } else {
                         $success = 'Password changed successfully';
                     }
@@ -375,8 +391,11 @@ class AuthController {
         
         session_destroy();
         
+        // Redirect to home page instead of login page
+        header('Location: ' . base_url('index.php/home'));        
+
         // Redirect to login page
-        header('Location: ' . base_url('index.php/auth'));
+        //header('Location: ' . base_url('index.php/auth'));
         
         exit;
     }
@@ -406,16 +425,21 @@ class AuthController {
                 $_SESSION['logged_in'] = true;
                 $_SESSION['demo'] = true;
                 
-                // Redirect based on role
+                // Redirect based on role - all go to home except admin
                 switch ($_SESSION['role']) {
                     case 'admin':
                         header('Location: ' . base_url('index.php/admin'));
                         break;
-                    case 'provider':
-                        header('Location: ' . base_url('index.php/provider'));
-                        break;
-                    default: // patient
-                        header('Location: ' . base_url('index.php/appointments'));
+
+                    default: // provider and patient both go to home
+                        header('Location: ' . base_url('index.php/home'));
+
+//                     case 'provider':
+//                         header('Location: ' . base_url('index.php/provider'));
+//                         break;
+//                     default: // patient
+//                         header('Location: ' . base_url('index.php/appointments'));
+
                         break;
                 }
                 exit;
@@ -430,20 +454,20 @@ class AuthController {
     /**
     * Redirect user based on their role
     */
-    private function redirectBasedOnRole($role) {
-        switch ($role) {
-            case 'admin':
-                header('Location: ' . base_url('index.php/admin'));
-                break;
-            case 'provider':
-                header('Location: ' . base_url('index.php/provider'));
-                break;
-            default: // patient
-                header('Location: ' . base_url('index.php/appointments'));
-                break;
-        }
-        exit;
-    }
+//     private function redirectBasedOnRole($role) {
+//         switch ($role) {
+//             case 'admin':
+//                 header('Location: ' . base_url('index.php/admin'));
+//                 break;
+//             case 'provider':
+//                 header('Location: ' . base_url('index.php/provider'));
+//                 break;
+//             default: // patient
+//                 header('Location: ' . base_url('index.php/appointments'));
+//                 break;
+//         }
+//         exit;
+//     }
     
     /**
      * Handle account settings page
@@ -510,6 +534,7 @@ class AuthController {
         
         // Display settings page
         include VIEW_PATH . '/auth/settings.php';
+
     }
 }
 ?>

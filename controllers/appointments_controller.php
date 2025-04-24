@@ -13,15 +13,33 @@ class AppointmentsController {
         
         // Debug message to check connection type
         error_log("Using MySQLi connection in AppointmentsController");
+        
+        // Check if user is logged in - add this authentication check
+        $this->requireLogin();
+    }
+    
+    /**
+     * Require user to be logged in
+     */
+    private function requireLogin() {
+        // If not logged in, redirect to auth page
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+            // Store the requested URL so we can redirect back after login
+            $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
+            
+            // Redirect to login page
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
+        }
     }
     
     public function index() {
         error_log("APPOINTMENT controller index method called - this should appear if routing is correct");
         
-        // Check if user is logged in
-        $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['logged_in'] === true;
-        $userRole = $isLoggedIn ? $_SESSION['role'] : '';
-        $userId = $isLoggedIn ? $_SESSION['user_id'] : null;
+        // User is guaranteed to be logged in at this point
+        $isLoggedIn = true;
+        $userRole = $_SESSION['role'];
+        $userId = $_SESSION['user_id'];
         
         // Get available appointment slots
         $availableSlots = $this->getAvailableSlots();
@@ -30,14 +48,12 @@ class AppointmentsController {
         
         // Get user's appointments if logged in
         $userAppointments = [];
-        if ($isLoggedIn) {
-            if ($userRole === 'patient') {
-                $userAppointments = $this->getUserAppointments($userId);
-            } elseif ($userRole === 'provider') {
-                $userAppointments = $this->getProviderAppointments($userId);
-            } elseif ($userRole === 'admin') {
-                $userAppointments = $this->getAllAppointments();
-            }
+        if ($userRole === 'patient') {
+            $userAppointments = $this->getUserAppointments($userId);
+        } elseif ($userRole === 'provider') {
+            $userAppointments = $this->getProviderAppointments($userId);
+        } elseif ($userRole === 'admin') {
+            $userAppointments = $this->getAllAppointments();
         }
         error_log("Appointments: " . count($userAppointments));
         
@@ -46,12 +62,7 @@ class AppointmentsController {
     }
     
     public function book() {
-        // Require login for booking
-        if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['logged_in'] !== true) {
-            // Redirect to login
-            header('Location: ' . base_url('index.php/auth'));
-            exit;
-        }
+        // User is already authenticated by the constructor
         
         // Only patients can book appointments
         if ($_SESSION['role'] !== 'patient' && $_SESSION['role'] !== 'admin') {
@@ -182,11 +193,7 @@ class AppointmentsController {
     }
     
     public function cancel() {
-        // Require login for canceling
-        if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['logged_in'] !== true) {
-            header('Location: ' . base_url('index.php/auth'));
-            exit;
-        }
+        // User is already authenticated by the constructor
         
         $appointmentId = $_GET['id'] ?? null;
         
