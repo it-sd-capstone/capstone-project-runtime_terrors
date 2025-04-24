@@ -9,7 +9,8 @@ class Appointment {
     // Retrieve Appointments for a Specific Provider
     public function getByProvider($provider_id) {
         $stmt = $this->db->prepare("
-            SELECT a.*, p.first_name AS patient_name, s.name AS service_name
+            SELECT a.appointment_id, a.patient_id, a.appointment_date, a.start_time, a.end_time, 
+                   p.first_name AS patient_name, s.name AS service_name
             FROM appointments a
             JOIN users p ON a.patient_id = p.user_id
             JOIN services s ON a.service_id = s.service_id

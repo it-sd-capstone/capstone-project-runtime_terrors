@@ -25,7 +25,7 @@
                 <td><?= htmlspecialchars($appointment['appointment_date']) ?></td>
                 <td><?= htmlspecialchars($appointment['start_time']) ?></td>
                 <td>
-                    <a href="<?= base_url('index.php/provider/appointment/' . $appointment['appointment_id']) ?>" class="btn btn-info">View</a>
+                    <a href="<?= base_url('index.php/provider/appointments/' . $appointment['appointment_id']) ?>" class="btn btn-info">View</a>
                     <a href="<?= base_url('index.php/provider/reschedule/' . $appointment['appointment_id']) ?>" class="btn btn-warning">Reschedule</a>
                 </td>
             </tr>

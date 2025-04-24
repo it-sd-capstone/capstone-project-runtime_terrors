@@ -1,5 +1,5 @@
 <h4>Reschedule Appointment</h4>
-<form method="POST" action="<?= base_url('index.php/patient/processReschedule') ?>">
+<form method="POST" action="<?= base_url('index.php/patient/reschedule') ?>">
     <input type="hidden" name="appointment_id" value="<?= $appointment['appointment_id'] ?>">
     
     <label>Select New Date:</label>
