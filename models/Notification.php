@@ -12,7 +12,13 @@ class Notification {
             INSERT INTO notifications (user_id, appointment_id, subject, message, type, status, scheduled_for) 
             VALUES (?, ?, ?, ?, ?, 'pending', ?)
         ");
-        return $stmt->execute([$user_id, $appointment_id, $subject, $message, $type, $scheduled_for]);
+    
+        if (!$stmt->execute([$user_id, $appointment_id, $subject, $message, $type, $scheduled_for])) {
+            error_log("Notification creation failed: " . implode(" | ", $stmt->errorInfo()));
+            return false;
+        }
+    
+        return true;
     }
 
     // Retrieve pending notifications for processing
@@ -31,9 +37,29 @@ class Notification {
         $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
         foreach ($notifications as $notification) {
-            // Simulate sending notification
-            $this->markNotificationSent($notification['notification_id']);
+            if ($this->sendNotificationEmail($notification['user_id'], $notification['subject'], $notification['message'])) {
+                $this->markNotificationSent($notification['notification_id']);
+            }
         }
+    }
+    
+    // Add a method to send notifications via email
+    private function sendNotificationEmail($user_id, $subject, $message) {
+        $user_email = $this->getUserEmail($user_id); // Fetch email dynamically
+        if (!$user_email) {
+            return false;
+        }
+    
+        // Simulate sending email (Replace with actual email sending logic)
+        mail($user_email, $subject, $message);
+        return true;
+    }
+    
+    // Get user email dynamically
+    private function getUserEmail($user_id) {
+        $stmt = $this->db->prepare("SELECT email FROM users WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        return $stmt->fetchColumn();
     }
     
 
@@ -46,11 +72,11 @@ class Notification {
     }
 
     // Retrieve notifications for a user
-    public function getUserNotifications($user_id) {
+    public function getUserNotifications($user_id, $limit = 10, $offset = 0) {
         $stmt = $this->db->prepare("
-            SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC
+            SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?
         ");
-        $stmt->execute([$user_id]);
+        $stmt->execute([$user_id, $limit, $offset]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

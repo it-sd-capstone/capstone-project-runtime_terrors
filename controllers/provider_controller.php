@@ -18,6 +18,13 @@ class ProviderController {
 
     // Load provider dashboard
     public function index($provider_id) {
+        var_dump($provider_id);
+        die();
+        $provider = $this->providerModel->getProviderById($provider_id);
+        if (!$provider) {
+            die("Error: Provider not found.");
+        }
+    
         $appointments = $this->appointmentModel->getByProvider($provider_id);
         include VIEW_PATH . '/provider/index.php';
     }

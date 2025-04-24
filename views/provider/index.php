@@ -7,7 +7,7 @@
     <div class="nav nav-tabs">
         <a class="nav-link active" href="<?= base_url('index.php/provider') ?>">Dashboard</a>
         <a class="nav-link" href="<?= base_url('index.php/provider/schedule') ?>">Schedule</a>
-        <a class="nav-link" href="<?= base_url('index.php/provider/appointments') ?>">Appointments</a>
+        <a class="nav-link" href="<?= base_url('index.php/provider/appointments/' . htmlspecialchars($provider_id)) ?>">Appointments</a>
         <a class="nav-link" href="<?= base_url('index.php/provider/services') ?>">Services</a>
     </div>
 

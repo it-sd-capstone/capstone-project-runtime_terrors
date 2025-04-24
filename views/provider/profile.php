@@ -1,7 +1,7 @@
 <h4>Update Profile</h4>
 <form method="POST" action="<?= base_url('index.php/provider/processUpdateProfile') ?>">
     <label>First Name:</label>
-    <input type="text" name="first_name" value="<?= htmlspecialchars($provider['first_name']) ?>" required>
+    <input type="text" name="first_name" value="<?= htmlspecialchars($provider['first_name'] ?? '') ?>" required>
 
     <label>Last Name:</label>
     <input type="text" name="last_name" value="<?= htmlspecialchars($provider['last_name']) ?>" required>
