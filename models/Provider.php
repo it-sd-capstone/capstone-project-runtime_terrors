@@ -7,17 +7,16 @@ class Provider {
     }
 
     public function getProviderById($provider_id) {
-        try {
-            $stmt = $this->db->prepare("
-                SELECT * FROM provider WHERE provider_id = ?
-            ");
-            $stmt->bindParam(1, $provider_id, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC); //  Ensure this returns provider details
-        } catch (Exception $e) {
-            error_log("Error fetching provider details: " . $e->getMessage());
-            return null; // Return null if an error occurs
+        $stmt = $this->db->prepare("SELECT * FROM providers WHERE provider_id = ?");
+        $stmt->execute([$provider_id]);
+        $provider = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+        if (!$provider) {
+            error_log("No provider found for ID: " . $provider_id);
+            return null;
         }
+    
+        return $provider;
     }
     // Get provider's available slots, ensuring they are not booked
     public function getAvailableSlots($provider_id) {
