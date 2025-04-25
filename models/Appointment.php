@@ -45,28 +45,44 @@ class Appointment {
 
     // Get upcoming appointments for a patient
     public function getUpcomingAppointments($patient_id) {
-        try {
-            $stmt = $this->db->prepare("
-                SELECT a.*, 
-                       u.first_name AS provider_first_name, 
-                       u.last_name AS provider_last_name,
-                       s.name AS service_name
-                FROM appointments a
-                JOIN users u ON a.provider_id = u.user_id
-                JOIN services s ON a.service_id = s.service_id
-                WHERE a.patient_id = ? 
-                AND a.status IN ('scheduled', 'confirmed')
-                AND a.appointment_date >= CURDATE()
-                ORDER BY a.appointment_date, a.start_time
-            ");
+        if ($this->db instanceof mysqli) {
+            $query = "SELECT a.*, s.name as service_name, 
+                  CONCAT(u.first_name, ' ', u.last_name) as provider_name
+                  FROM appointments a
+                  JOIN services s ON a.service_id = s.service_id
+                  JOIN users u ON a.provider_id = u.user_id
+                  WHERE a.patient_id = ? AND a.appointment_date >= CURDATE()
+                  ORDER BY a.appointment_date, a.start_time";
+        
+            $stmt = $this->db->prepare($query);
+            // Debug the SQL error if prepare fails
+            if (!$stmt) {
+                error_log("SQL Error in getUpcomingAppointments: " . $this->db->error);
+                return [];
+            }
+        
             $stmt->bind_param("i", $patient_id);
-            $stmt->execute();
+            $result = $stmt->execute();
+        
+            // Debug execution error
+            if (!$result) {
+                error_log("Execute Error in getUpcomingAppointments: " . $stmt->error);
+                return [];
+            }
+        
             $result = $stmt->get_result();
-            return $result->fetch_all(MYSQLI_ASSOC) ?: [];
-        } catch (Exception $e) {
-            error_log("Error fetching upcoming appointments: " . $e->getMessage());
-            return [];
+        
+            $appointments = [];
+            while ($row = $result->fetch_assoc()) {
+                $appointments[] = $row;
+            }
+        
+            return $appointments;
         }
+    
+        // Add PDO implementation if needed
+    
+        return [];
     }
 
     // Get past appointments for a patient
@@ -96,25 +112,27 @@ class Appointment {
 
     // Retrieve an appointment by ID
     public function getAppointmentById($appointment_id) {
-        try {
-            $stmt = $this->db->prepare("
-                SELECT a.*, 
-                       u.first_name AS provider_first_name,
-                       u.last_name AS provider_last_name,
-                       s.name AS service_name
-                FROM appointments a
-                JOIN users u ON a.provider_id = u.user_id
-                JOIN services s ON a.service_id = s.service_id
-                WHERE a.appointment_id = ?
-            ");
+        $query = "SELECT a.*, 
+              CONCAT(u.first_name, ' ', u.last_name) as provider_name,
+              s.name as service_name
+              FROM appointments a
+              JOIN users u ON a.provider_id = u.user_id
+              JOIN services s ON a.service_id = s.service_id
+              WHERE a.appointment_id = ?";
+              
+        if ($this->db instanceof mysqli) {
+            $stmt = $this->db->prepare($query);
             $stmt->bind_param("i", $appointment_id);
             $stmt->execute();
             $result = $stmt->get_result();
-            return $result->fetch_assoc() ?: [];
-        } catch (Exception $e) {
-            error_log("Error fetching appointment details: " . $e->getMessage());
-            return [];
+            return $result->fetch_assoc();
+        } elseif ($this->db instanceof PDO) {
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$appointment_id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
         }
+    
+        return null;
     }
 
     // Add the missing getByProvider method

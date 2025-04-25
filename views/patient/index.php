@@ -1,3 +1,5 @@
+<?php 
+include VIEW_PATH . '/partials/patient_header.php'; ?>
 <!-- Patient Dashboard Content -->
 <h2>Welcome back, <?= htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']) ?>!</h2>
 
@@ -18,7 +20,7 @@
                 <?php foreach ($upcomingAppointments as $appointment) : ?>
                     <tr>
                         <td><?= htmlspecialchars($appointment['appointment_date']) ?></td>
-                        <td>Dr. <?= htmlspecialchars($appointment['provider_name']) ?></td>
+                        <td>Dr. <?= htmlspecialchars($appointment['provider_name'] ?? 'Unknown') ?></td>
                         <td><?= htmlspecialchars($appointment['service_name']) ?></td>
                         <td><?= htmlspecialchars($appointment['status']) ?></td>
                         <td>
@@ -54,3 +56,7 @@ setInterval(() => {
         });
 }, 60000); // Refresh every 60 seconds
 </script>
+<!-- Make sure to include Bootstrap JS at the end of your body tag -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

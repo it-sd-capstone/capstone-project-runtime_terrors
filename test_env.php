@@ -1,7 +1,9 @@
 <?php
-// Load the Database class
-require_once 'models/Database.php';
+// Include bootstrap first - let it define all constants
+require_once __DIR__ . '/public_html/bootstrap.php';
 
+// Now bootstrap.php has defined all constants and loaded get_db()
+// Start your environment tests
 echo "<h1>Environment Test</h1>";
 
 // PHP Version
@@ -12,7 +14,6 @@ echo "Version: " . phpversion() . "<br>";
 echo "<h2>Required Extensions</h2>";
 $required = ['mysqli', 'pdo_mysql', 'json'];
 $all_pass = true;
-
 foreach ($required as $ext) {
     if (extension_loaded($ext)) {
         echo "$ext: <span style='color:green'>✓</span><br>";
@@ -25,13 +26,16 @@ foreach ($required as $ext) {
 // Database
 echo "<h2>Database Connection</h2>";
 try {
-    $database = new Database();
-    $conn = $database->getConnection();
+    // Get database connection
+    $conn = get_db();
     echo "Connection: <span style='color:green'>✓ Success</span><br>";
     
     // Test query
-    $stmt = $conn->query("SHOW TABLES");
-    $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $result = $conn->query("SHOW TABLES");
+    $tables = [];
+    while ($row = $result->fetch_row()) {
+        $tables[] = $row[0];
+    }
     
     echo "Tables found:<br>";
     echo "<ul>";
@@ -41,16 +45,18 @@ try {
     echo "</ul>";
     
     // Test users table
-    $stmt = $conn->query("SELECT COUNT(*) FROM users");
-    $user_count = $stmt->fetchColumn();
+    $result = $conn->query("SELECT COUNT(*) FROM users");
+    $row = $result->fetch_row();
+    $user_count = $row[0];
     echo "Users in database: $user_count<br>";
     
     // Test appointments table
-    $stmt = $conn->query("SELECT COUNT(*) FROM appointments");
-    $appt_count = $stmt->fetchColumn();
+    $result = $conn->query("SELECT COUNT(*) FROM appointments");
+    $row = $result->fetch_row();
+    $appt_count = $row[0];
     echo "Appointments in database: $appt_count<br>";
     
-} catch(PDOException $e) {
+} catch(Exception $e) {
     echo "Connection: <span style='color:red'>✗ Failed</span><br>";
     echo "Error: " . $e->getMessage();
     $all_pass = false;

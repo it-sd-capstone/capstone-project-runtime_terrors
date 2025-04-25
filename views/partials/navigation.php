@@ -42,7 +42,11 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
                             <a class="nav-link" href="<?= base_url('index.php/provider') ?>">Provider Portal</a>
                         </li>
                     <?php endif; ?>
-                    
+                    <?php if ($userRole === 'patient'): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?= base_url('index.php/patient') ?>">Patient Portal</a>
+                        </li>
+                    <?php endif; ?>
                     <?php if ($userRole === 'admin'): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="<?= base_url('index.php/admin') ?>">Admin Dashboard</a>

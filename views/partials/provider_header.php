@@ -46,11 +46,16 @@
                         <ul class="navbar-nav ms-auto">
                             <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="providerNavDropdown" role="button" data-bs-toggle="dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="providerNavDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <span class="badge bg-success">Provider</span>
                                         <?= htmlspecialchars($_SESSION['name'] ?? 'Provider') ?>
                                     </a>
                                     <ul class="dropdown-menu dropdown-menu-end">
+                                        <!-- Add Home and Profile links -->
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/home') ?>">Home</a></li>
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/provider/profile') ?>">My Profile</a></li>
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/provider/notifications') ?>">Notifications</a></li>
+                                        <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>">Logout</a></li>
                                     </ul>
                                 </li>

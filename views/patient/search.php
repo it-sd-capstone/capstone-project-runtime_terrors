@@ -41,10 +41,6 @@
                         <a href="<?= base_url('index.php/patient/viewProvider/' . $provider['provider_id']) ?>" class="btn btn-info">View Profile</a>
                         <a href="<?= base_url('index.php/patient/book/' . $provider['provider_id']) ?>" class="btn btn-success">Book Appointment</a>
                     </td>
-                    <td>
-                        <a href="<?= base_url('index.php/patient/viewProvider/' . $provider['provider_id']) ?>" class="btn btn-info">View Profile</a>
-                        <a href="<?= base_url('index.php/patient/book/' . $provider['provider_id']) ?>" class="btn btn-success">Book Appointment</a>
-                    </td>
                 </tr>
             <?php endforeach; ?>
         </tbody>
