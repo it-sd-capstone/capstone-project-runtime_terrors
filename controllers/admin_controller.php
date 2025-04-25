@@ -1,10 +1,12 @@
 <?php
 require_once MODEL_PATH . '/User.php';
+require_once MODEL_PATH . '/ActivityLog.php';
 
 class AdminController {
     protected $db;
     protected $userModel;
     protected $adminModel;
+    protected $activityLogModel;
     
     public function __construct() {
         // Start session if not already started
@@ -17,6 +19,9 @@ class AdminController {
         
         // Debug message to check connection type
         error_log("Using MySQLi connection in admin_Controller");
+        
+        // Initialize ActivityLog model
+        $this->activityLogModel = new ActivityLog($this->db);
     }
     
     // ✅ Admin Dashboard Overview
@@ -171,25 +176,10 @@ class AdminController {
      */
     private function getRecentActivity($limit = 10) {
         try {
-            // This assumes you have an activity_log table
-            // Adjust the query based on your actual schema
-            $query = "SELECT a.activity_id, a.activity_type, a.description, 
-                    a.created_at as date, CONCAT(u.first_name, ' ', u.last_name) as user
-                    FROM activity_log a
-                    LEFT JOIN users u ON a.user_id = u.user_id
-                    ORDER BY a.created_at DESC
-                    LIMIT ?";
-            
-            $stmt = $this->db->prepare($query);
-            // MySQLi uses bind_param instead of bindValue
-            $stmt->bind_param("i", $limit);
-            $stmt->execute();
-            
-            // MySQLi requires you to get the result first
-            $result = $stmt->get_result();
-            return $result->fetch_all(MYSQLI_ASSOC);
+            // Use the ActivityLog model to get recent activity
+            return $this->activityLogModel->getRecentActivity($limit);
         } catch (Exception $e) {
-            error_log("Database error in getRecentActivity: " . $e->getMessage());
+            error_log("Error in getRecentActivity: " . $e->getMessage());
             return [];
         }
     }
@@ -1679,7 +1669,68 @@ class AdminController {
         
         include VIEW_PATH . '/admin/manage_availability.php';
     }
-    
+    /**
+     * Run a test from the tests directory
+     */
+    public function runTest() {
+        // Check if user is admin
+        if (!$this->isUserAdmin()) {
+            http_response_code(403);
+            echo "Access denied. Only administrators can run tests.";
+            exit;
+        }
+        
+        // Get test name from query parameter
+        $testName = isset($_GET['test']) ? $_GET['test'] : null;
+        
+        if (!$testName) {
+            http_response_code(400);
+            echo "No test specified.";
+            exit;
+        }
+        
+        // Sanitize test name to prevent directory traversal
+        $testName = basename($testName);
+        $testFile = APP_ROOT . '/tests/' . $testName . '.php';
+        
+        if (!file_exists($testFile)) {
+            http_response_code(404);
+            echo "Test file not found: " . htmlspecialchars($testName);
+            exit;
+        }
+        
+        // Capture output from the test
+        ob_start();
+        try {
+            include $testFile;
+        } catch (Exception $e) {
+            echo "<div class='alert alert-danger'>";
+            echo "<h4>Error Running Test</h4>";
+            echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
+            echo "</div>";
+        }
+        $output = ob_get_clean();
+        
+        // Return the output
+        echo $output;
+    }
+    /**
+     * Helper method for tests to access private statistics methods
+     * @param string $method Method name to call
+     * @param array $args Arguments to pass to the method
+     * @return mixed Result of the method call
+     */
+    public function getTestData($method, $args = []) {
+        if (method_exists($this, $method) && in_array($method, [
+            'getCount', 'getCountByRole', 'getCountByStatus', 
+            'getTopServices', 'getTopProviders', 'getAvailableSlotsCount',
+            'getBookedSlotsCount', 'getRecentActivity'
+        ])) {
+            return call_user_func_array([$this, $method], $args);
+        }
+        return null;
+    }
+
     private function isUserAdmin() {
         return isset($_SESSION['user_id'], $_SESSION['role']) && $_SESSION['role'] === 'admin';
     }
