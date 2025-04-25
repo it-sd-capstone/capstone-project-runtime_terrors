@@ -2,6 +2,7 @@
 class AuthController {
     private $db;
     private $userModel;
+    private $activityLogModel;
     
     public function __construct() {
         // Start session if not already started
@@ -12,9 +13,12 @@ class AuthController {
         // Get database connection
         $this->db = get_db();
         
-        // Initialize the User model
+        // Initialize models
         require_once MODEL_PATH . '/User.php';
         $this->userModel = new User($this->db);
+        
+        require_once MODEL_PATH . '/ActivityLog.php';
+        $this->activityLogModel = new ActivityLog($this->db);
     }
     
     private function setError($message) {
@@ -73,6 +77,9 @@ class AuthController {
                         $_SESSION['role'] = $user['role'];
                         $_SESSION['logged_in'] = true;
                         
+                        // Log the successful login
+                        $this->activityLogModel->logAuth($user['user_id'], 'login_success');
+                        
                         // Redirect based on role
                         switch ($user['role']) {
                             case 'admin':
@@ -96,6 +103,9 @@ class AuthController {
                         
                         // Additional helper message for demo purposes
                         $errors[] = "For testing, try the demo logins below or use 'password' as the password.";
+                        
+                        // Log failed login attempt
+                        $this->activityLogModel->logAuth(null, 'login_failed', "Email: $email");
                     }
                 } catch (Exception $e) {
                     error_log("Login error: " . $e->getMessage());
@@ -172,6 +182,10 @@ class AuthController {
                     
                     // For demonstration purposes:
                     $success .= " <a href='$verifyUrl'>Verify now</a> (for demonstration only)";
+                    
+                    // Log the registration
+                    $this->activityLogModel->logAuth(null, 'registered', "New {$_POST['role']} account");
+                    $this->activityLogModel->logUserActivity(null, 'created', $result['user_id']);
                 } else {
                     $error = $result['error'] ?? 'Registration failed';
                 }
@@ -377,6 +391,12 @@ class AuthController {
      * Handle user logout
      */
     public function logout() {
+        // Add this at the beginning:
+        if (isset($_SESSION['user_id'])) {
+            // Log the logout
+            $this->activityLogModel->logAuth($_SESSION['user_id'], 'logout');
+        }
+        
         // Destroy the session
         $_SESSION = array();
         

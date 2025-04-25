@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../../config.php';
+<?php 
 include VIEW_PATH . '/partials/provider_header.php'; ?>
 
 <div class="container provider-dashboard">
@@ -30,7 +30,6 @@ include VIEW_PATH . '/partials/provider_header.php'; ?>
             <h4>Quick Actions</h4>
             <a href="<?= base_url('index.php/provider/profile') ?>" class="btn btn-info">Edit Profile</a>
             <a href="<?= base_url('index.php/provider/services') ?>" class="btn btn-secondary">Manage Services</a>
-            <a href="<?= base_url('index.php/provider/reports') ?>" class="btn btn-warning">View Reports</a>
         </div>
     </div>
 </div>

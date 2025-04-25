@@ -1,7 +1,6 @@
 <?php
 require_once MODEL_PATH . '/User.php';
 require_once MODEL_PATH . '/Appointment.php';
-require_once '../config/Database.php';
 
 class PatientController {
     private $db;
@@ -18,7 +17,7 @@ class PatientController {
             exit;
         }
 
-        $this->db = Database::getInstance()->getConnection();
+        $this->db = get_db();
         $this->userModel = new User($this->db);
         $this->appointmentModel = new Appointment($this->db);
     }
@@ -26,14 +25,45 @@ class PatientController {
     // Load Dashboard
     public function index() {
         $patient_id = $_SESSION['user_id'];
-        $patient = $this->userModel->getPatientById($patient_id);
-        $appointments = $this->appointmentModel->getUpcomingAppointments($patient_id);
+        $patient = $this->userModel->getUserById($patient_id);
+        $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments($patient_id);
+        $pastAppointments = $this->appointmentModel->getPastAppointments($patient_id);
+        
+        if (!$upcomingAppointments) $upcomingAppointments = [];
+        if (!$pastAppointments) $pastAppointments = [];
+        
+        // Debug the appointment data structure
+        if (count($upcomingAppointments) > 0) {
+            error_log("Appointment data keys: " . implode(", ", array_keys($upcomingAppointments[0])));
+        }
+        
         include VIEW_PATH . '/patient/index.php';
     }
 
     // Show Booking Form
-    public function bookAppointment() {
-        $providers = $this->userModel->getAvailableProviders();
+    public function book() {
+        // Get providers
+        $rawProviders = $this->userModel->getAvailableProviders();
+        
+        // Format providers to include provider_name
+        $providers = [];
+        foreach ($rawProviders as $provider) {
+            // Make sure to preserve user_id as provider_id
+            $providers[] = [
+                'provider_id' => $provider['user_id'], // This key was missing
+                'provider_name' => $provider['first_name'] . ' ' . $provider['last_name'] . ' - ' . 
+                                  ($provider['title'] ?? 'Practitioner'),
+                'specialization' => $provider['specialization'] ?? '',
+                'title' => $provider['title'] ?? ''
+            ];
+        }
+        
+        // Get services - fix the file name (Service vs Services)
+        require_once MODEL_PATH . '/Services.php'; // Changed from '/Services.php'
+        $serviceModel = new Service($this->db);
+        $services = $serviceModel->getAllServices();
+        
+        // Pass both variables to the view
         include VIEW_PATH . '/patient/book.php';
     }
 
@@ -75,8 +105,8 @@ class PatientController {
     
     }
 
-    // Load Reschedule Form
-    public function rescheduleAppointment($appointment_id) {
+    // Rename from rescheduleAppointment() to reschedule()
+    public function reschedule($appointment_id = null) {
         $appointment = $this->appointmentModel->getAppointmentById($appointment_id);
         include VIEW_PATH . '/patient/reschedule.php';
     }
@@ -99,8 +129,8 @@ class PatientController {
         }
     }
 
-    // Cancel Appointment
-    public function cancelAppointment($appointment_id) {
+    // Rename from cancelAppointment() to cancel()
+    public function cancel($appointment_id = null) {
         $appointment = $this->appointmentModel->getAppointmentById($appointment_id);
         include VIEW_PATH . '/patient/cancel.php';
     }
@@ -132,37 +162,201 @@ class PatientController {
 
     // View Profile
     public function profile() {
-        $patient_id = $_SESSION['user_id'];
-        $patient = $this->userModel->getPatientById($patient_id);
+        // Get the current user ID from session
+        $user_id = $_SESSION['user_id'] ?? null;
+        
+        if (!$user_id) {
+            // Redirect if not logged in
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+        
+        // Initialize the patient array with defaults to avoid null values
+        $patient = [
+            'user_id' => $user_id,
+            'first_name' => '',
+            'last_name' => '',
+            'email' => '',
+            'phone' => '',
+            'medical_history' => ''
+        ];
+        
+        // Get basic user data
+        $userData = $this->userModel->getUserById($user_id);
+        if ($userData) {
+            // Merge user data into patient array
+            $patient['first_name'] = $userData['first_name'] ?? '';
+            $patient['last_name'] = $userData['last_name'] ?? '';
+            $patient['email'] = $userData['email'] ?? '';
+            $patient['phone'] = $userData['phone'] ?? '';
+        }
+        
+        // Get patient-specific profile data
+        try {
+            if ($this->db instanceof mysqli) {
+                $query = "SELECT * FROM patient_profiles WHERE patient_id = ?";
+                $stmt = $this->db->prepare($query);
+                $stmt->bind_param("i", $user_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $patientProfile = $result->fetch_assoc();
+            } elseif ($this->db instanceof PDO) {
+                $query = "SELECT * FROM patient_profiles WHERE patient_id = ?";
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([$user_id]);
+                $patientProfile = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            
+            // Merge patient profile data if found
+            if ($patientProfile) {
+                $patient['medical_history'] = $patientProfile['medical_notes'] ?? '';
+                // Add any other patient profile fields you need
+            }
+        } catch (Exception $e) {
+            error_log("Error fetching patient profile: " . $e->getMessage());
+        }
+        
+        // Load the view with the complete patient data
         include VIEW_PATH . '/patient/profile.php';
     }
 
     // Update Profile
     public function updateProfile() {
-        if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            $patient_id = $_SESSION['user_id'];
-            $data = [
-                'first_name' => htmlspecialchars(trim($_POST['first_name'])),
-                'last_name' => htmlspecialchars(trim($_POST['last_name'])),
-                'phone' => htmlspecialchars(trim($_POST['phone']))
-            ];
-
-            $success = $this->userModel->updateUser($patient_id, $data);
-
-            if ($success) {
-                header("Location: " . base_url("index.php/patient/profile?success=Profile updated"));
-            } else {
-                header("Location: " . base_url("index.php/patient/profile?error=Update failed"));
-            }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . base_url('index.php/patient/profile'));
             exit;
         }
+        
+        $user_id = $_SESSION['user_id'] ?? null;
+        
+        if (!$user_id) {
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+        
+        // Get form data
+        $first_name = htmlspecialchars($_POST['first_name'] ?? '');
+        $last_name = htmlspecialchars($_POST['last_name'] ?? '');
+        $phone = htmlspecialchars($_POST['phone'] ?? '');
+        $medical_history = htmlspecialchars($_POST['medical_history'] ?? '');
+        
+        // Update user data
+        $userUpdated = $this->userModel->updateUser($user_id, [
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'phone' => $phone
+        ]);
+        
+        // Update patient profile data
+        $profileUpdated = false;
+        try {
+            if ($this->db instanceof mysqli) {
+                // Check if profile exists
+                $checkQuery = "SELECT COUNT(*) as count FROM patient_profiles WHERE patient_id = ?";
+                $checkStmt = $this->db->prepare($checkQuery);
+                $checkStmt->bind_param("i", $user_id);
+                $checkStmt->execute();
+                $checkResult = $checkStmt->get_result();
+                $exists = ($checkResult->fetch_assoc()['count'] > 0);
+                
+                if ($exists) {
+                    $query = "UPDATE patient_profiles SET medical_notes = ? WHERE patient_id = ?";
+                    $stmt = $this->db->prepare($query);
+                    $stmt->bind_param("si", $medical_history, $user_id);
+                } else {
+                    $query = "INSERT INTO patient_profiles (patient_id, medical_notes) VALUES (?, ?)";
+                    $stmt = $this->db->prepare($query);
+                    $stmt->bind_param("is", $user_id, $medical_history);
+                }
+                $profileUpdated = $stmt->execute();
+            } elseif ($this->db instanceof PDO) {
+                // Check if profile exists
+                $checkStmt = $this->db->prepare("SELECT COUNT(*) FROM patient_profiles WHERE patient_id = ?");
+                $checkStmt->execute([$user_id]);
+                $exists = ($checkStmt->fetchColumn() > 0);
+                
+                if ($exists) {
+                    $stmt = $this->db->prepare("UPDATE patient_profiles SET medical_notes = ? WHERE patient_id = ?");
+                    $profileUpdated = $stmt->execute([$medical_history, $user_id]);
+                } else {
+                    $stmt = $this->db->prepare("INSERT INTO patient_profiles (patient_id, medical_notes) VALUES (?, ?)");
+                    $profileUpdated = $stmt->execute([$user_id, $medical_history]);
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Error updating patient profile: " . $e->getMessage());
+        }
+        
+        // Redirect with success or error message
+        if ($userUpdated || $profileUpdated) {
+            header('Location: ' . base_url('index.php/patient/profile?success=1'));
+        } else {
+            header('Location: ' . base_url('index.php/patient/profile?error=1'));
+        }
+        exit;
     }
 
     // Patient Search for Providers
     public function search() {
+        // Get filter values from request
         $specialty = htmlspecialchars($_GET['specialty'] ?? '');
         $location = htmlspecialchars($_GET['location'] ?? '');
+        
+        // Get specialties in the format expected by the view (array of arrays with 'name' key)
+        $specialties = [];
+        try {
+            if ($this->db instanceof mysqli) {
+                $query = "SELECT DISTINCT specialization as name FROM provider_profiles WHERE specialization IS NOT NULL";
+                $result = $this->db->query($query);
+                while ($row = $result->fetch_assoc()) {
+                    if (!empty($row['name'])) {
+                        $specialties[] = $row;  // Each row has 'name' key
+                    }
+                }
+            } elseif ($this->db instanceof PDO) {
+                $query = "SELECT DISTINCT specialization as name FROM provider_profiles WHERE specialization IS NOT NULL";
+                $stmt = $this->db->prepare($query);
+                $stmt->execute();
+                $specialties = $stmt->fetchAll(PDO::FETCH_ASSOC);  // Array of arrays with 'name' key
+            }
+        } catch (Exception $e) {
+            error_log("Error getting specialties: " . $e->getMessage());
+        }
+        
+        // Get providers based on filters
         $providers = $this->userModel->searchProviders($specialty, $location);
+        
+        // Format provider data to ensure all required keys exist
+        if (!empty($providers)) {
+            foreach ($providers as &$provider) {
+                // Format provider name if not already set
+                if (!isset($provider['name'])) {
+                    $provider['name'] = ($provider['first_name'] ?? '') . ' ' . ($provider['last_name'] ?? '');
+                }
+                
+                // Ensure specialty is set
+                if (!isset($provider['specialty'])) {
+                    $provider['specialty'] = $provider['specialization'] ?? 'General';
+                }
+                
+                // Ensure location is set
+                if (!isset($provider['location'])) {
+                    $provider['location'] = 'Local Area';  // Default or you could use a field from your database
+                }
+                
+                // Map user_id to provider_id if needed
+                if (!isset($provider['provider_id']) && isset($provider['user_id'])) {
+                    $provider['provider_id'] = $provider['user_id'];
+                }
+                
+                // Optionally set next_available_date if you have this data
+                if (!isset($provider['next_available_date'])) {
+                    // You could fetch this from your availability table if needed
+                    // $provider['next_available_date'] = $this->getNextAvailableDate($provider['provider_id']);
+                }
+            }
+        }
+        
         include VIEW_PATH . '/patient/search.php';
     }
 }

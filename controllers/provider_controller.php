@@ -1,6 +1,7 @@
 <?php
 require_once MODEL_PATH . '/Provider.php';
 require_once MODEL_PATH . '/Appointment.php';
+require_once MODEL_PATH . '/Services.php';
 
 class ProviderController {
     private $db;
@@ -52,6 +53,10 @@ class ProviderController {
         echo json_encode($events);
         exit;
     }
+    public function getAvailableSlots($provider_id) {
+        $available_slots = $this->providerModel->getAvailability($provider_id);
+        return $available_slots;
+    }
 
     // Update Provider Profile
     public function updateProfile() {
@@ -97,33 +102,35 @@ class ProviderController {
             exit;
         }
     }
+    // Add this method to your ProviderController class
+public function manage_availability() {
+    $provider_id = $_SESSION['user_id'];
 
+    // Retrieve provider availability & recurring schedules
+    $available_slots = $this->getAvailableSlots($provider_id);
+    $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+
+    // Load the schedule view with data
+    include VIEW_PATH . '/provider/schedule.php';
+}
+    
     // Provider Services (CRUD)
     public function services() {
-        $provider_id = $_SESSION['user_id'];
-        $providerServices = $this->providerModel->getServices($provider_id);
-        include VIEW_PATH . '/provider/services.php';
+        // Assuming you have a Service model that can fetch services
+        require_once '../models/Services.php';
+        $serviceModel = new Service($this->db);
+        
+        // Get services for this provider
+        $provider_id = $_SESSION['user_id']; // Assuming you store user ID in session
+        $services = $serviceModel->getServicesByProvider($provider_id);
+        
+        // Pass data to the view
+        include '../views/provider/services.php';
     }
+
+
 
     public function addService() {
-        if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            $provider_id = $_SESSION['user_id'];
-            $service_name = htmlspecialchars(trim($_POST['service_name']));
-            $description = htmlspecialchars(trim($_POST['description']));
-            $price = floatval($_POST['price']);
-
-            $success = $this->providerModel->addService($provider_id, $service_name, $description, $price);
-
-            if ($success) {
-                header('Location: ' . base_url('index.php/provider/services?success=Service added'));
-            } else {
-                header('Location: ' . base_url('index.php/provider/services?error=Failed to add service'));
-            }
-            exit;
-        }
-    }
-
-    public function updateService() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'];
             $service_id = intval($_POST['service_id']);
@@ -133,12 +140,31 @@ class ProviderController {
     
             $success = $this->providerModel->updateService($service_id, $provider_id, $service_name, $description, $price);
     
+            if ($success) {
+                header('Location: ' . base_url('index.php/provider/services?success=Service added'));
+            } else {
+                header('Location: ' . base_url('index.php/provider/services?error=Failed to add service'));
+            }
+    
             header("Content-Type: application/json");
             echo json_encode(["success" => $success]);
             exit;
         }
     }
-
+    public function manage_services() {
+        // Ensure the user is logged in as a provider
+        $provider_id = $_SESSION['user_id'];
+    
+        // Load the Services model
+        require_once MODEL_PATH . '/Services.php';
+        $serviceModel = new Services($this->db);
+    
+        // Fetch all services for this provider
+        $services = $serviceModel->getServicesByProvider($provider_id);
+    
+        // Load the view and pass the services data
+        include VIEW_PATH . '/provider/services.php';
+    }
     public function deleteService() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'];
@@ -153,6 +179,29 @@ class ProviderController {
             }
             exit;
         }
+    }
+
+    // Add this method to your ProviderController class
+    public function appointments() {
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get all appointments for this provider
+        $appointments = $this->appointmentModel->getByProvider($provider_id);
+        
+        // Load the appointments view
+        include VIEW_PATH . '/provider/appointments.php';
+    }
+    
+    // Add this method to your ProviderController class
+    public function schedule() {
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get the provider's current availability/schedules
+        $availability = $this->providerModel->getAvailability($provider_id);
+        $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+        
+        // Load the view
+        include VIEW_PATH . '/provider/schedule.php';
     }
 
     // Scheduling & Availability Management
@@ -176,6 +225,76 @@ class ProviderController {
         }
         header('Location: ' . base_url('index.php/provider/schedule?error=Invalid input'));
         exit;
+    }
+
+    // Add this method to your ProviderController class
+    public function profile() {
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get the provider's profile data
+        $providerData = $this->providerModel->getProviderData($provider_id);
+        
+        // Load the profile view
+        include VIEW_PATH . '/provider/profile.php';
+    }
+
+    // Add this method to your ProviderController class
+    public function reports() {
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get appointment statistics for reports
+        $appointmentStats = $this->getAppointmentStatistics($provider_id);
+        
+        // You may want to get additional report data here
+        // For example: revenue data, patient demographics, etc.
+        
+        // Load the reports view
+        include VIEW_PATH . '/provider/reports.php';
+    }
+
+    // Helper method to calculate appointment statistics
+    private function getAppointmentStatistics($provider_id) {
+        // You'll need to implement appropriate methods in your Appointment model
+        // or use direct queries if these don't exist
+        
+        $stats = [
+            'total' => 0,
+            'completed' => 0,
+            'canceled' => 0,
+            'no_show' => 0,
+            'upcoming' => 0,
+            // You can add more statistics as needed
+        ];
+        
+        // Example query - adjust based on your actual database structure and model methods
+        $appointments = $this->appointmentModel->getByProvider($provider_id);
+        
+        if ($appointments) {
+            $stats['total'] = count($appointments);
+            
+            foreach ($appointments as $appointment) {
+                switch ($appointment['status']) {
+                    case 'completed':
+                        $stats['completed']++;
+                        break;
+                    case 'canceled':
+                        $stats['canceled']++;
+                        break;
+                    case 'no_show':
+                        $stats['no_show']++;
+                        break;
+                    case 'scheduled':
+                    case 'confirmed':
+                        // Check if appointment is in the future
+                        if (strtotime($appointment['appointment_date']) > time()) {
+                            $stats['upcoming']++;
+                        }
+                        break;
+                }
+            }
+        }
+        
+        return $stats;
     }
 }
 ?>
