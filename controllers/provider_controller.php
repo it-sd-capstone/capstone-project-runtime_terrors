@@ -103,33 +103,65 @@ class ProviderController {
             exit;
         }
     }
-    // Add this method to your ProviderController class
-public function manage_availability() {
-    $provider_id = $_SESSION['user_id'];
+    // Provider Availability Management
+    public function manage_availability() {
+        $provider_id = $_SESSION['user_id'];
 
-    // Retrieve provider availability & recurring schedules
-    $available_slots = $this->getAvailableSlots($provider_id);
-    $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+        // Get the provider's current availability/schedules
+        $schedules = $this->providerModel->getAvailability($provider_id);
+        $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
 
-    // Load the schedule view with data
-    include VIEW_PATH . '/provider/schedule.php';
-}
-    
-    // Provider Services (CRUD)
-    public function services() {
-        // Assuming you have a Service model that can fetch services
-        require_once '../models/Services.php';
-        $servicesModel = new Service($this->db);
-        
-        // Get services for this provider
-        $provider_id = $_SESSION['user_id']; // Assuming you store user ID in session
-        $services = $serviceModel->getServicesByProvider($provider_id);
-        
-        // Pass data to the view
-        include '../views/provider/services.php';
+        // Load the view
+        include VIEW_PATH . '/provider/schedule.php';
     }
 
+    // Provider Services (CRUD)
+    public function services() {
+        // Check if user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            $_SESSION['error'] = "You must be logged in to access this page";
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
+        }
 
+        // Determine if this is an admin managing a provider's services
+        $isAdminManaging = isset($_SESSION['admin_managing_provider_id']);
+        $providerId = $isAdminManaging ? $_SESSION['admin_managing_provider_id'] : $_SESSION['user_id'];
+
+        // If admin is managing, verify they are actually an admin
+        if ($isAdminManaging && (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin')) {
+            unset($_SESSION['admin_managing_provider_id']);
+            $_SESSION['error'] = "You don't have permission to manage provider services";
+            header('Location: ' . base_url('index.php/admin'));
+            exit;
+        }
+
+        // Get provider details
+        $provider = $this->userModel->getUserById($providerId);
+
+        if (!$provider || $provider['role'] !== 'provider') {
+            $_SESSION['error'] = "Provider not found";
+            if ($isAdminManaging) {
+                unset($_SESSION['admin_managing_provider_id']);
+                header('Location: ' . base_url('index.php/admin/providers'));
+            } else {
+                header('Location: ' . base_url('index.php/auth'));
+            }
+            exit;
+        }
+
+        // Get services for this provider
+        $services = $this->serviceModel->getServicesByProvider($providerId);
+
+        // After processing, clear the admin management session variable if it exists
+        if ($isAdminManaging) {
+            unset($_SESSION['admin_managing_provider_id']);
+        }
+
+        // Load the view with a flag indicating if this is admin management
+        $isAdmin = $isAdminManaging;
+        include VIEW_PATH . '/provider/services.php';
+    }
 
     public function addService() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {

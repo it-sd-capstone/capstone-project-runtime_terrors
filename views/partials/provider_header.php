@@ -7,6 +7,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <link rel="stylesheet" href="<?= base_url('css/style.css') ?>">
+
     <style>
         body {
             padding-top: 20px;
@@ -35,7 +37,7 @@
                                 <a class="nav-link" href="<?= base_url('index.php/provider') ?>">Dashboard</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="<?= base_url('index.php/provider/manage_services') ?>">Manage Services</a>
+                                <a class="nav-link" href="<?= base_url('index.php/provider/services') ?>">Manage Services</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="<?= base_url('index.php/provider/manage_availability') ?>">Manage Availability</a>
@@ -47,11 +49,16 @@
                         <ul class="navbar-nav ms-auto">
                             <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="providerNavDropdown" role="button" data-bs-toggle="dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="providerNavDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <span class="badge bg-success">Provider</span>
                                         <?= htmlspecialchars($_SESSION['name'] ?? 'Provider') ?>
                                     </a>
                                     <ul class="dropdown-menu dropdown-menu-end">
+                                        <!-- Add Home and Profile links -->
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/home') ?>">Home</a></li>
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/provider/profile') ?>">My Profile</a></li>
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/provider/notifications') ?>">Notifications</a></li>
+                                        <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>">Logout</a></li>
                                     </ul>
                                 </li>

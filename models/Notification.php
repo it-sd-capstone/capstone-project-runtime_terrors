@@ -1,26 +1,30 @@
 <?php
+/**
+ * Notification Model
+ * Handles data operations for notifications
+ */
 class Notification {
     private $db;
-
+    
     public function __construct($db) {
         $this->db = $db;
     }
-
+    
     // Store a new notification
     public function createNotification($user_id, $appointment_id, $subject, $message, $type, $scheduled_for = null) {
         $stmt = $this->db->prepare("
-            INSERT INTO notifications (user_id, appointment_id, subject, message, type, status, scheduled_for) 
+            INSERT INTO notifications (user_id, appointment_id, subject, message, type, status, scheduled_for)
             VALUES (?, ?, ?, ?, ?, 'pending', ?)
         ");
-    
+        
         if (!$stmt->execute([$user_id, $appointment_id, $subject, $message, $type, $scheduled_for])) {
             error_log("Notification creation failed: " . implode(" | ", $stmt->errorInfo()));
             return false;
         }
-    
+        
         return true;
     }
-
+    
     // Retrieve pending notifications for processing
     public function getPendingNotifications() {
         $stmt = $this->db->prepare("
@@ -29,40 +33,14 @@ class Notification {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    public function sendNotifications() {
-        $stmt = $this->db->prepare("
-            SELECT * FROM notifications WHERE status = 'pending' AND scheduled_for <= NOW()
-        ");
-        $stmt->execute();
-        $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-        foreach ($notifications as $notification) {
-            if ($this->sendNotificationEmail($notification['user_id'], $notification['subject'], $notification['message'])) {
-                $this->markNotificationSent($notification['notification_id']);
-            }
-        }
-    }
-    
-    // Add a method to send notifications via email
-    private function sendNotificationEmail($user_id, $subject, $message) {
-        $user_email = $this->getUserEmail($user_id); // Fetch email dynamically
-        if (!$user_email) {
-            return false;
-        }
-    
-        // Simulate sending email (Replace with actual email sending logic)
-        mail($user_email, $subject, $message);
-        return true;
-    }
     
     // Get user email dynamically
-    private function getUserEmail($user_id) {
+    public function getUserEmail($user_id) {
         $stmt = $this->db->prepare("SELECT email FROM users WHERE user_id = ?");
         $stmt->execute([$user_id]);
         return $stmt->fetchColumn();
     }
     
-
     // Mark a notification as sent
     public function markNotificationSent($notification_id) {
         $stmt = $this->db->prepare("
@@ -70,7 +48,7 @@ class Notification {
         ");
         return $stmt->execute([$notification_id]);
     }
-
+    
     // Retrieve notifications for a user
     public function getUserNotifications($user_id, $limit = 10, $offset = 0) {
         $stmt = $this->db->prepare("
@@ -80,7 +58,7 @@ class Notification {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
+     /**
      * Get latest system notifications for admin dashboard
      * 
      * @param int $limit Maximum number of notifications to retrieve
@@ -93,120 +71,115 @@ class Notification {
             // Make sure the notifications table exists with all required columns
             $this->ensureNotificationsTable();
             
-            // Let's inspect the table structure to see what columns we have
-            try {
-                if ($this->db instanceof mysqli) {
-                    $columns = $this->db->query("SHOW COLUMNS FROM notifications");
-                    $columnList = [];
-                    while ($column = $columns->fetch_assoc()) {
-                        $columnList[] = $column['Field'];
-                    }
-                    error_log("Notification table columns: " . implode(", ", $columnList));
-                    
-                    // Check if is_system column exists
-                    $hasIsSystemColumn = in_array('is_system', $columnList);
-                    
-                    // Build the query based on available columns
-                    if ($hasIsSystemColumn) {
-                        $query = "
-                            SELECT * FROM notifications 
-                            WHERE is_system = 1
-                            ORDER BY created_at DESC 
-                            LIMIT ?
-                        ";
-                    } else {
-                        // Fallback query if is_system column doesn't exist
-                        $query = "
-                            SELECT * FROM notifications 
-                            WHERE user_id IS NULL
-                            ORDER BY created_at DESC 
-                            LIMIT ?
-                        ";
-                    }
-                    
-                    error_log("Using query: $query");
-                    
-                    $stmt = $this->db->prepare($query);
-                    if (!$stmt) {
-                        error_log("Prepare statement error: " . $this->db->error);
-                        return $this->createSampleNotifications();
-                    }
-                    
-                    $stmt->bind_param("i", $limit);
-                    $execResult = $stmt->execute();
-                    
-                    if (!$execResult) {
-                        error_log("Execute error: " . $stmt->error);
-                        return $this->createSampleNotifications();
-                    }
-                    
-                    $result = $stmt->get_result();
-                    $notifications = $result->fetch_all(MYSQLI_ASSOC);
-                    
-                    // If no notifications found, return sample notifications
-                    if (empty($notifications)) {
-                        error_log("No notifications found in database, returning samples");
-                        return $this->createSampleNotifications();
-                    }
-                    
-                    error_log("Retrieved " . count($notifications) . " notifications from database");
-                    return $notifications;
-                } else {
-                    // Handle PDO connection
-                    error_log("Using PDO connection");
-                    
-                    $columns = $this->db->query("SHOW COLUMNS FROM notifications")->fetchAll(PDO::FETCH_COLUMN);
-                    $hasIsSystemColumn = in_array('is_system', $columns);
-                    
-                    if ($hasIsSystemColumn) {
-                        $query = "
-                            SELECT * FROM notifications 
-                            WHERE is_system = 1
-                            ORDER BY created_at DESC 
-                            LIMIT ?
-                        ";
-                    } else {
-                        // Fallback query if is_system column doesn't exist
-                        $query = "
-                            SELECT * FROM notifications 
-                            WHERE user_id IS NULL
-                            ORDER BY created_at DESC 
-                            LIMIT ?
-                        ";
-                    }
-                    
-                    $stmt = $this->db->prepare($query);
-                    $stmt->execute([$limit]);
-                    $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                    
-                    // If no notifications found, return sample notifications
-                    if (empty($notifications)) {
-                        error_log("No notifications found in database, returning samples");
-                        return $this->createSampleNotifications();
-                    }
-                    
-                    error_log("Retrieved " . count($notifications) . " notifications from database");
-                    return $notifications;
+            // Check if is_system column exists
+            if ($this->db instanceof mysqli) {
+                $columns = $this->db->query("SHOW COLUMNS FROM notifications");
+                $columnList = [];
+                while ($column = $columns->fetch_assoc()) {
+                    $columnList[] = $column['Field'];
                 }
-            } catch (Exception $e) {
-                error_log("Error querying notifications: " . $e->getMessage());
-                return $this->createSampleNotifications();
+                error_log("Notification table columns: " . implode(", ", $columnList));
+                
+                // Check if is_system column exists
+                $hasIsSystemColumn = in_array('is_system', $columnList);
+                
+                // Build the query based on available columns
+                if ($hasIsSystemColumn) {
+                    $query = "
+                        SELECT * FROM notifications 
+                        WHERE is_system = 1
+                        ORDER BY created_at DESC 
+                        LIMIT ?
+                    ";
+                } else {
+                    // Fallback query if is_system column doesn't exist
+                    $query = "
+                        SELECT * FROM notifications 
+                        WHERE user_id IS NULL
+                        ORDER BY created_at DESC 
+                        LIMIT ?
+                    ";
+                }
+                
+                error_log("Using query: $query");
+                
+                $stmt = $this->db->prepare($query);
+                if (!$stmt) {
+                    error_log("Prepare statement error: " . $this->db->error);
+                    return $this->getSampleNotifications();
+                }
+                
+                $stmt->bind_param("i", $limit);
+                $execResult = $stmt->execute();
+                
+                if (!$execResult) {
+                    error_log("Execute error: " . $stmt->error);
+                    return $this->getSampleNotifications();
+                }
+                
+                $result = $stmt->get_result();
+                $notifications = $result->fetch_all(MYSQLI_ASSOC);
+                
+                // If no notifications found, return sample notifications
+                if (empty($notifications)) {
+                    error_log("No notifications found in database, returning samples");
+                    return $this->getSampleNotifications();
+                }
+                
+                error_log("Retrieved " . count($notifications) . " notifications from database");
+                return $notifications;
+            } else {
+                // Handle PDO connection
+                error_log("Using PDO connection");
+                
+                $columns = $this->db->query("SHOW COLUMNS FROM notifications")->fetchAll(PDO::FETCH_COLUMN);
+                $hasIsSystemColumn = in_array('is_system', $columns);
+                
+                if ($hasIsSystemColumn) {
+                    $query = "
+                        SELECT * FROM notifications 
+                        WHERE is_system = 1
+                        ORDER BY created_at DESC 
+                        LIMIT ?
+                    ";
+                } else {
+                    // Fallback query if is_system column doesn't exist
+                    $query = "
+                        SELECT * FROM notifications 
+                        WHERE user_id IS NULL
+                        ORDER BY created_at DESC 
+                        LIMIT ?
+                    ";
+                }
+                
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([$limit]);
+                $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // If no notifications found, return sample notifications
+                if (empty($notifications)) {
+                    error_log("No notifications found in database, returning samples");
+                    return $this->getSampleNotifications();
+                }
+                
+                error_log("Retrieved " . count($notifications) . " notifications from database");
+                return $notifications;
             }
         } catch (Exception $e) {
             // If there's an error, log it and return some sample notifications
             error_log("Error in getLatestSystemNotifications: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());
             
-            return $this->createSampleNotifications();
+            return $this->getSampleNotifications();
         }
     }
     
-    /**
-     * Create sample notifications for testing when database access fails
-     * 
+      /**
+     * Get sample notifications for fallback
+     *
      * @return array Sample notifications
      */
-    private function createSampleNotifications() {
+    public function getSampleNotifications() {
         error_log("Creating sample notifications for testing");
         
         // Create current timestamp
@@ -294,12 +267,13 @@ class Notification {
             if ($this->db instanceof mysqli) {
                 $query = "
                     INSERT INTO notifications 
-                    (user_id, appointment_id, subject, message, type, status, scheduled_for, is_system, is_read, audience) 
+                    (user_id, appointment_id, subject, message, type, status, scheduled_for, is_system, is_read, audience)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ";
                 
                 $stmt = $this->db->prepare($query);
                 $stmt->bind_param(
+
                     "iisssssiss", 
                     $params['user_id'], 
                     $params['appointment_id'], 
@@ -316,13 +290,14 @@ class Notification {
                 return $stmt->execute();
             } else {
                 $query = "
-                    INSERT INTO notifications 
-                    (user_id, appointment_id, subject, message, type, status, scheduled_for, is_system, is_read, audience) 
+                    INSERT INTO notifications
+                    (user_id, appointment_id, subject, message, type, status, scheduled_for, is_system, is_read, audience)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ";
                 
                 $stmt = $this->db->prepare($query);
                 return $stmt->execute([
+
                     $params['user_id'], 
                     $params['appointment_id'], 
                     $params['subject'], 
@@ -336,19 +311,23 @@ class Notification {
                 ]);
             }
         } catch (Exception $e) {
+
             // If error occurs (likely due to missing columns), try with minimal fields
+            // Try with minimal fields if full insert fails
+
             error_log("Error adding notification: " . $e->getMessage());
             
             try {
                 if ($this->db instanceof mysqli) {
                     $fallbackQuery = "
-                        INSERT INTO notifications 
-                        (user_id, subject, message, type, status) 
+                        INSERT INTO notifications
+                        (user_id, subject, message, type, status)
                         VALUES (?, ?, ?, ?, ?)
                     ";
                     
                     $stmt = $this->db->prepare($fallbackQuery);
                     $stmt->bind_param(
+
                         "issss", 
                         $params['user_id'], 
                         $params['subject'], 
@@ -360,13 +339,14 @@ class Notification {
                     return $stmt->execute();
                 } else {
                     $fallbackQuery = "
-                        INSERT INTO notifications 
-                        (user_id, subject, message, type, status) 
+                        INSERT INTO notifications
+                        (user_id, subject, message, type, status)
                         VALUES (?, ?, ?, ?, ?)
                     ";
                     
                     $stmt = $this->db->prepare($fallbackQuery);
                     return $stmt->execute([
+                      
                         $params['user_id'], 
                         $params['subject'], 
                         $params['message'], 
@@ -624,7 +604,7 @@ class Notification {
      */
     private function addSampleNotificationsToDb() {
         try {
-            $sampleNotifications = $this->createSampleNotifications();
+            $sampleNotifications = $this->getSampleNotifications();
             
             foreach ($sampleNotifications as $notification) {
                 if ($this->db instanceof mysqli) {
@@ -680,7 +660,9 @@ class Notification {
     
     /**
      * Mark all notifications as read for a user
+
      * 
+
      * @param int $userId User ID
      * @return bool Success status
      */
@@ -689,6 +671,7 @@ class Notification {
             // Make sure the notifications table exists with all required columns
             $this->ensureNotificationsTable();
             
+
             if ($this->db instanceof mysqli) {
                 $stmt = $this->db->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?");
                 $stmt->bind_param("i", $userId);
@@ -703,62 +686,65 @@ class Notification {
         }
     }
     
-    /**
-     * Log system activity for audit trail
-     * 
-     * @param string $action Action performed
-     * @param string $details Additional details
-     * @param int $userId User who performed the action
-     * @return bool Success status
-     */
-    public function logActivity($action, $details, $userId = null) {
-        try {
-            // First check if activity_log table exists
-            if ($this->db instanceof mysqli) {
-                $result = $this->db->query("SHOW TABLES LIKE 'activity_log'");
-                $tableExists = $result->num_rows > 0;
-            } else {
-                $result = $this->db->query("SHOW TABLES LIKE 'activity_log'");
-                $tableExists = $result->rowCount() > 0;
-            }
-            
-            if (!$tableExists) {
-                // Create activity_log table if it doesn't exist
-                $createTableQuery = "
-                    CREATE TABLE activity_log (
-                        log_id INT AUTO_INCREMENT PRIMARY KEY,
-                        user_id INT NULL,
-                        action VARCHAR(100) NOT NULL,
-                        details TEXT,
-                        ip_address VARCHAR(45),
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                ";
-                
-                $this->db->query($createTableQuery);
-            }
-            
-            // Get client IP address
-            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
-            
-            if ($this->db instanceof mysqli) {
-                $stmt = $this->db->prepare("
-                    INSERT INTO activity_log (user_id, action, details, ip_address)
-                    VALUES (?, ?, ?, ?)
-                ");
-                $stmt->bind_param("isss", $userId, $action, $details, $ipAddress);
-                return $stmt->execute();
-            } else {
-                $stmt = $this->db->prepare("
-                    INSERT INTO activity_log (user_id, action, details, ip_address)
-                    VALUES (?, ?, ?, ?)
-                ");
-                return $stmt->execute([$userId, $action, $details, $ipAddress]);
-            }
-        } catch (Exception $e) {
-            error_log("Error logging activity: " . $e->getMessage());
-            return false;
-        }
-    }
+      /**
+       * Log system activity for audit trail
+       *
+       * @param string $action Action performed
+       * @param string $details Additional details
+       * @param int $userId User who performed the action
+       * @param string $ipAddress IP address of the client (optional)
+       * @return bool Success status
+       */
+      public function logActivity($action, $details, $userId = null, $ipAddress = null) {
+          try {
+              // First check if activity_log table exists
+              if ($this->db instanceof mysqli) {
+                  $result = $this->db->query("SHOW TABLES LIKE 'activity_log'");
+                  $tableExists = $result->num_rows > 0;
+              } else {
+                  $result = $this->db->query("SHOW TABLES LIKE 'activity_log'");
+                  $tableExists = $result->rowCount() > 0;
+              }
+
+              if (!$tableExists) {
+                  // Create activity_log table if it doesn't exist
+                  $createTableQuery = "
+                      CREATE TABLE activity_log (
+                          log_id INT AUTO_INCREMENT PRIMARY KEY,
+                          user_id INT NULL,
+                          action VARCHAR(100) NOT NULL,
+                          details TEXT,
+                          ip_address VARCHAR(45),
+                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                      )
+                  ";
+
+                  $this->db->query($createTableQuery);
+              }
+
+              // Get client IP address if not provided
+              if ($ipAddress === null) {
+                  $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+              }
+
+              if ($this->db instanceof mysqli) {
+                  $stmt = $this->db->prepare("
+                      INSERT INTO activity_log (user_id, action, details, ip_address)
+                      VALUES (?, ?, ?, ?)
+                  ");
+                  $stmt->bind_param("isss", $userId, $action, $details, $ipAddress);
+                  return $stmt->execute();
+              } else {
+                  $stmt = $this->db->prepare("
+                      INSERT INTO activity_log (user_id, action, details, ip_address)
+                      VALUES (?, ?, ?, ?)
+                  ");
+                  return $stmt->execute([$userId, $action, $details, $ipAddress]);
+              }
+          } catch (Exception $e) {
+              error_log("Error logging activity: " . $e->getMessage());
+              return false;
+          }
+      }
 }
 ?>

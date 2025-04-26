@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 23, 2025 at 09:33 PM
+-- Generation Time: Apr 25, 2025 at 06:48 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -35,8 +35,20 @@ CREATE TABLE `activity_log` (
   `log_id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
   `description` text NOT NULL,
+  `category` varchar(50) DEFAULT 'general',
   `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `activity_log`
+--
+
+INSERT INTO `activity_log` (`log_id`, `user_id`, `description`, `category`, `created_at`) VALUES
+(1, 3, 'Admin logged in', 'general', '2025-04-25 12:38:20'),
+(2, 3, 'Created new provider account: Dr. Jane Smith', 'general', '2025-04-25 11:08:20'),
+(3, 3, 'Updated system settings: appointment reminder time changed to 24 hours', 'general', '2025-04-25 09:08:20'),
+(4, 2, 'Provider logged in', 'general', '2025-04-24 13:08:20'),
+(5, 1, 'Patient logged in', 'general', '2025-04-23 13:08:20');
 
 -- --------------------------------------------------------
 
@@ -69,7 +81,8 @@ CREATE TABLE `appointments` (
 --
 
 INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `service_id`, `appointment_date`, `start_time`, `end_time`, `status`, `type`, `notes`, `reason`, `reminder_sent`, `confirmed_at`, `canceled_at`, `created_at`, `updated_at`) VALUES
-(1, 1, 16, 2, '2025-04-24', '17:55:00', '18:25:00', 'confirmed', 'in_person', 'Notes', 'Visit', 0, NULL, NULL, '2025-04-23 16:16:55', '2025-04-23 16:16:55');
+(1, 1, 16, 2, '2025-04-24', '17:55:00', '18:25:00', 'confirmed', 'in_person', 'Notes', 'Visit', 0, NULL, NULL, '2025-04-23 16:16:55', '2025-04-23 16:16:55'),
+(2, 10, 16, 1, '2025-04-26', '13:32:00', '14:02:00', 'confirmed', 'in_person', 'notes', 'reason', 0, NULL, NULL, '2025-04-25 13:32:49', '2025-04-25 13:32:49');
 
 -- --------------------------------------------------------
 
@@ -159,16 +172,27 @@ CREATE TABLE `notifications` (
   `status` enum('pending','sent','failed','read') NOT NULL DEFAULT 'pending',
   `scheduled_for` datetime DEFAULT NULL,
   `sent_at` datetime DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  `is_system` tinyint(1) DEFAULT 0,
+  `is_read` tinyint(1) DEFAULT 0,
+  `audience` enum('all','admin','provider','patient') DEFAULT 'all'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `notifications`
 --
 
-INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `subject`, `message`, `type`, `status`, `scheduled_for`, `sent_at`, `created_at`) VALUES
-(1, 1, 1, 'Appointment Confirmation', 'Your appointment on April 15, 2025 at 10:00 AM has been scheduled.', 'email', 'sent', '2025-04-17 09:00:00', '2025-04-17 09:00:05', '2025-04-17 08:59:28'),
-(0, 16, NULL, 'Your Provider Account Has Been Created', 'Hello john doe,\n\nAn account has been created for you as a provider in our appointment system.\n\nYour temporary login credentials are:\nEmail: john@doe.com\nPassword: c1291205\n\nPlease login and change your password as soon as possible at: http://localhost/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth\n\nThank you,\nAppointment System Admin', 'email', 'pending', NULL, NULL, '2025-04-22 20:16:51');
+INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `subject`, `message`, `type`, `status`, `scheduled_for`, `sent_at`, `created_at`, `is_system`, `is_read`, `audience`) VALUES
+(1, 1, 1, 'Appointment Confirmation', 'Your appointment on April 15, 2025 at 10:00 AM has been scheduled.', 'email', 'sent', '2025-04-17 09:00:00', '2025-04-17 09:00:05', '2025-04-17 08:59:28', 0, 0, 'patient'),
+(0, 16, NULL, 'Your Provider Account Has Been Created', 'Hello john doe,\n\nAn account has been created for you as a provider in our appointment system.\n\nYour temporary login credentials are:\nEmail: john@doe.com\nPassword: c1291205\n\nPlease login and change your password as soon as possible at: http://localhost/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth\n\nThank you,\nAppointment System Admin', 'email', 'pending', NULL, NULL, '2025-04-22 20:16:51', 0, 0, 'provider'),
+(100, 0, NULL, 'System Update', 'The appointment system has been updated to version 2.0', 'system', 'sent', NULL, NULL, '2025-04-25 12:04:04', 1, 0, 'all'),
+(101, 0, NULL, 'New Provider', 'Dr. Jane Smith has joined the practice', 'system', 'sent', NULL, NULL, '2025-04-25 11:04:04', 1, 0, 'admin'),
+(102, 0, NULL, 'Maintenance Notice', 'The system will be undergoing maintenance tonight at 11 PM', 'system', 'sent', NULL, NULL, '2025-04-25 10:04:04', 1, 0, 'all'),
+(103, 0, NULL, 'Holiday Hours', 'The practice will be closed on December 25th for Christmas', 'system', 'sent', NULL, NULL, '2025-04-24 13:04:04', 1, 0, 'all'),
+(100, 0, NULL, 'System Update', 'The appointment system has been updated to version 2.0', 'system', 'sent', NULL, NULL, '2025-04-25 12:05:49', 1, 0, 'all'),
+(101, 0, NULL, 'New Provider', 'Dr. Jane Smith has joined the practice', 'system', 'sent', NULL, NULL, '2025-04-25 11:05:49', 1, 0, 'admin'),
+(102, 0, NULL, 'Maintenance Notice', 'The system will be undergoing maintenance tonight at 11 PM', 'system', 'sent', NULL, NULL, '2025-04-25 10:05:49', 1, 0, 'all'),
+(103, 0, NULL, 'Holiday Hours', 'The practice will be closed on December 25th for Christmas', 'system', 'sent', NULL, NULL, '2025-04-24 13:05:49', 1, 0, 'all');
 
 -- --------------------------------------------------------
 
@@ -419,7 +443,8 @@ CREATE TABLE `waitlist` (
 --
 ALTER TABLE `activity_log`
   ADD PRIMARY KEY (`log_id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `category` (`category`);
 
 --
 -- Indexes for table `appointments`
@@ -466,13 +491,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `activity_log`
 --
 ALTER TABLE `activity_log`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `patient_profiles`

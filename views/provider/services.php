@@ -1,3 +1,19 @@
+<!-- At the top of the file, add a back button for admin -->
+<?php if (isset($isAdmin) && $isAdmin): ?>
+<div class="mb-3">
+    <a href="<?= base_url('index.php/admin/providers') ?>" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Providers
+    </a>
+</div>
+<?php endif; ?>
+
+<!-- Maybe add a heading indicating admin management -->
+<?php if (isset($isAdmin) && $isAdmin): ?>
+<div class="alert alert-info">
+    You are managing services for provider: <?= htmlspecialchars($provider['first_name'] . ' ' . $provider['last_name']) ?>
+</div>
+<?php endif; ?>
+
 <h4>Manage Your Services</h4>
 
 <table class="table">

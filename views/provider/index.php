@@ -1,5 +1,6 @@
 <?php 
-include VIEW_PATH . '/partials/provider_header.php'; ?>
+  include VIEW_PATH . '/partials/provider_header.php'; 
+?>
 
 <div class="container provider-dashboard">
     <h2>Welcome, Dr. <?= htmlspecialchars($provider['first_name'] ?? 'Provider') ?>!</h2>
@@ -34,4 +35,6 @@ include VIEW_PATH . '/partials/provider_header.php'; ?>
     </div>
 </div>
 
-<?php include VIEW_PATH . '/partials/footer.php'; ?>
+<?php 
+  include VIEW_PATH . '/partials/footer.php'; 
+?>
