@@ -901,7 +901,7 @@ class User {
                 $medicalConditions = $data['medical_conditions'] ?? '';
             
                 $stmt->bind_param(
-                    "iissssss", 
+                    "iisssssssi", 
                     $patientId,
                     $patientId, // user_id is the same as patient_id
                     $phone,

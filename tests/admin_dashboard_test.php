@@ -1,42 +1,4 @@
 <?php
-// Include your database connection
-
-$db = get_db();
-
-// Get all patient profiles
-$result = $db->query("SELECT patient_id, medical_history FROM patient_profiles WHERE medical_history IS NOT NULL");
-
-if ($result && $result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $patientId = $row['patient_id'];
-        $medicalHistory = $row['medical_history'];
-        
-        // Try to decode the JSON
-        $data = json_decode($medicalHistory, true);
-        if (is_array($data)) {
-            // Extract the data
-            $emergencyContact = $data['emergency_contact_name'] ?? '';
-            $emergencyPhone = $data['emergency_contact_phone'] ?? '';
-            $conditions = $data['conditions'] ?? '';
-            
-            // Update the record with the extracted data
-            $stmt = $db->prepare("
-                UPDATE patient_profiles 
-                SET emergency_contact = ?,
-                    emergency_contact_phone = ?,
-                    medical_conditions = ?
-                WHERE patient_id = ?
-            ");
-            $stmt->bind_param("sssi", $emergencyContact, $emergencyPhone, $conditions, $patientId);
-            $stmt->execute();
-            
-            echo "Updated patient ID: $patientId<br>";
-        }
-    }
-    echo "Migration completed.";
-} else {
-    echo "No records to migrate.";
-}
 
 /**
  * Enhanced Admin Dashboard Test

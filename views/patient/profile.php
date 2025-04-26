@@ -26,45 +26,46 @@
                     <?php endif; ?>
                     
                     <form method="POST" action="<?= base_url('index.php/patient/updateProfile') ?>">
+                        <!-- Basic Information -->
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="first_name" class="form-label">First Name</label>
-                                <input type="text" class="form-control" id="first_name" name="first_name" 
-                                       value="<?= htmlspecialchars($patient['first_name']) ?>" required>
+                                <input type="text" class="form-control" id="first_name" name="first_name"
+                                       value="<?= htmlspecialchars($patient['first_name'] ?? '') ?>" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="last_name" class="form-label">Last Name</label>
-                                <input type="text" class="form-control" id="last_name" name="last_name" 
-                                       value="<?= htmlspecialchars($patient['last_name']) ?>" required>
+                                <input type="text" class="form-control" id="last_name" name="last_name"
+                                       value="<?= htmlspecialchars($patient['last_name'] ?? '') ?>" required>
                             </div>
                         </div>
                         
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control bg-light" id="email" name="email" 
-                                   value="<?= htmlspecialchars($patient['email']) ?>" readonly>
+                            <input type="email" class="form-control bg-light" id="email" name="email"
+                                   value="<?= htmlspecialchars($patient['email'] ?? '') ?>" readonly>
                             <div class="form-text text-muted">Email cannot be changed. Contact support if you need to update your email.</div>
                         </div>
                         
                         <div class="mb-3">
                             <label for="phone" class="form-label">Phone</label>
-                            <input type="tel" class="form-control" id="phone" name="phone" 
-                                   value="<?= htmlspecialchars($patient['phone']) ?>" required>
+                            <input type="tel" class="form-control" id="phone" name="phone"
+                                   value="<?= htmlspecialchars($patient['phone'] ?? '') ?>" required>
                         </div>
                         
                         <div class="mb-3">
                             <label for="date_of_birth" class="form-label">Date of Birth</label>
-                            <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
+                            <input type="date" class="form-control" id="date_of_birth" name="date_of_birth"
                                    value="<?= htmlspecialchars($patient['date_of_birth'] ?? '') ?>">
                         </div>
                         
                         <div class="mb-3">
                             <label for="address" class="form-label">Address</label>
-                            <input type="text" class="form-control" id="address" name="address" 
+                            <input type="text" class="form-control" id="address" name="address"
                                    value="<?= htmlspecialchars($patient['address'] ?? '') ?>">
                         </div>
                         
-                        <!-- Emergency Contact Information - Now separated -->
+                        <!-- Emergency Contact Information -->
                         <h5 class="mt-4 mb-3">Emergency Contact</h5>
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -79,26 +80,38 @@
                             </div>
                         </div>
                         
-                        <!-- Medical Information - Now separated -->
+                        <!-- Medical Information -->
                         <h5 class="mt-4 mb-3">Medical Information</h5>
                         <div class="mb-3">
-                            <label for="medical_conditions" class="form-label">Medical History</label>
+                            <label for="medical_conditions" class="form-label">Medical Conditions</label>
                             <textarea class="form-control" id="medical_conditions" name="medical_conditions" rows="4"><?= htmlspecialchars($patient['medical_conditions'] ?? '') ?></textarea>
                             <div class="form-text text-muted">Please include any allergies, chronic conditions, or previous surgeries.</div>
                         </div>
                         
                         <!-- Insurance Information -->
                         <h5 class="mt-4 mb-3">Insurance Information</h5>
+                        <?php 
+                        // Extract insurance info from JSON
+                        $insuranceProvider = '';
+                        $insurancePolicyNumber = '';
+                        if (!empty($patient['insurance_info'])) {
+                            $insuranceInfo = json_decode($patient['insurance_info'], true);
+                            if (is_array($insuranceInfo)) {
+                                $insuranceProvider = $insuranceInfo['provider'] ?? '';
+                                $insurancePolicyNumber = $insuranceInfo['policy_number'] ?? '';
+                            }
+                        }
+                        ?>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="insurance_provider" class="form-label">Insurance Provider</label>
                                 <input type="text" class="form-control" id="insurance_provider" name="insurance_provider"
-                                       value="<?= htmlspecialchars($patient['insurance_provider'] ?? '') ?>">
+                                       value="<?= htmlspecialchars($insuranceProvider) ?>">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="insurance_policy_number" class="form-label">Policy Number</label>
                                 <input type="text" class="form-control" id="insurance_policy_number" name="insurance_policy_number"
-                                       value="<?= htmlspecialchars($patient['insurance_policy_number'] ?? '') ?>">
+                                       value="<?= htmlspecialchars($insurancePolicyNumber) ?>">
                             </div>
                         </div>
                         

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 25, 2025 at 06:48 PM
+-- Generation Time: Apr 27, 2025 at 12:53 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -36,19 +36,30 @@ CREATE TABLE `activity_log` (
   `user_id` int(11) DEFAULT NULL,
   `description` text NOT NULL,
   `category` varchar(50) DEFAULT 'general',
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  `ip_address` varchar(45) DEFAULT NULL,
+  `details` text DEFAULT NULL,
+  `related_id` int(11) DEFAULT NULL,
+  `related_type` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `activity_log`
 --
 
-INSERT INTO `activity_log` (`log_id`, `user_id`, `description`, `category`, `created_at`) VALUES
-(1, 3, 'Admin logged in', 'general', '2025-04-25 12:38:20'),
-(2, 3, 'Created new provider account: Dr. Jane Smith', 'general', '2025-04-25 11:08:20'),
-(3, 3, 'Updated system settings: appointment reminder time changed to 24 hours', 'general', '2025-04-25 09:08:20'),
-(4, 2, 'Provider logged in', 'general', '2025-04-24 13:08:20'),
-(5, 1, 'Patient logged in', 'general', '2025-04-23 13:08:20');
+INSERT INTO `activity_log` (`log_id`, `user_id`, `description`, `category`, `created_at`, `ip_address`, `details`, `related_id`, `related_type`) VALUES
+(1, 3, 'Admin logged in', 'general', '2025-04-25 12:38:20', NULL, NULL, NULL, NULL),
+(2, 3, 'Created new provider account: Dr. Jane Smith', 'general', '2025-04-25 11:08:20', NULL, NULL, NULL, NULL),
+(3, 3, 'Updated system settings: appointment reminder time changed to 24 hours', 'general', '2025-04-25 09:08:20', NULL, NULL, NULL, NULL),
+(4, 2, 'Provider logged in', 'general', '2025-04-24 13:08:20', NULL, NULL, NULL, NULL),
+(5, 1, 'Patient logged in', 'general', '2025-04-23 13:08:20', NULL, NULL, NULL, NULL),
+(6, 1, 'Auth: logout', 'authentication', '2025-04-26 13:44:32', '::1', NULL, NULL, NULL),
+(7, 1, 'Auth: logout', 'authentication', '2025-04-26 13:45:12', '::1', NULL, NULL, NULL),
+(8, 2, 'Auth: logout', 'authentication', '2025-04-26 13:56:36', '::1', NULL, NULL, NULL),
+(9, 2, 'Auth: logout', 'authentication', '2025-04-26 13:58:41', '::1', NULL, NULL, NULL),
+(10, 3, 'Auth: logout', 'authentication', '2025-04-26 14:00:11', '::1', NULL, NULL, NULL),
+(11, 2, 'Auth: logout', 'authentication', '2025-04-26 14:18:36', '::1', NULL, NULL, NULL),
+(19, 1, 'Auth: logout', 'authentication', '2025-04-26 17:27:49', '::1', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -82,7 +93,10 @@ CREATE TABLE `appointments` (
 
 INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `service_id`, `appointment_date`, `start_time`, `end_time`, `status`, `type`, `notes`, `reason`, `reminder_sent`, `confirmed_at`, `canceled_at`, `created_at`, `updated_at`) VALUES
 (1, 1, 16, 2, '2025-04-24', '17:55:00', '18:25:00', 'confirmed', 'in_person', 'Notes', 'Visit', 0, NULL, NULL, '2025-04-23 16:16:55', '2025-04-23 16:16:55'),
-(2, 10, 16, 1, '2025-04-26', '13:32:00', '14:02:00', 'confirmed', 'in_person', 'notes', 'reason', 0, NULL, NULL, '2025-04-25 13:32:49', '2025-04-25 13:32:49');
+(2, 10, 16, 1, '2025-04-26', '13:32:00', '14:02:00', 'confirmed', 'in_person', 'notes', 'reason', 0, NULL, NULL, '2025-04-25 13:32:49', '2025-04-25 13:32:49'),
+(8, 1, 2, 2, '2025-04-30', '09:58:00', '10:43:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:23', '2025-04-26 15:58:58'),
+(9, 1, 16, 1, '2025-04-30', '09:30:00', '10:00:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:55', '2025-04-26 15:41:55'),
+(10, 1, 16, 2, '2025-04-30', '09:32:00', '10:17:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 16:32:36', '2025-04-26 16:32:36');
 
 -- --------------------------------------------------------
 
@@ -183,7 +197,7 @@ CREATE TABLE `notifications` (
 --
 
 INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `subject`, `message`, `type`, `status`, `scheduled_for`, `sent_at`, `created_at`, `is_system`, `is_read`, `audience`) VALUES
-(1, 1, 1, 'Appointment Confirmation', 'Your appointment on April 15, 2025 at 10:00 AM has been scheduled.', 'email', 'sent', '2025-04-17 09:00:00', '2025-04-17 09:00:05', '2025-04-17 08:59:28', 0, 0, 'patient'),
+(1, 1, 1, 'Appointment Confirmation', 'Your appointment on April 15, 2025 at 10:00 AM has been scheduled.', 'email', 'sent', '2025-04-17 09:00:00', '2025-04-17 09:00:05', '2025-04-17 08:59:28', 0, 1, 'patient'),
 (0, 16, NULL, 'Your Provider Account Has Been Created', 'Hello john doe,\n\nAn account has been created for you as a provider in our appointment system.\n\nYour temporary login credentials are:\nEmail: john@doe.com\nPassword: c1291205\n\nPlease login and change your password as soon as possible at: http://localhost/appointment-system/capstone-project-runtime_terrors/public_html/index.php/auth\n\nThank you,\nAppointment System Admin', 'email', 'pending', NULL, NULL, '2025-04-22 20:16:51', 0, 0, 'provider'),
 (100, 0, NULL, 'System Update', 'The appointment system has been updated to version 2.0', 'system', 'sent', NULL, NULL, '2025-04-25 12:04:04', 1, 0, 'all'),
 (101, 0, NULL, 'New Provider', 'Dr. Jane Smith has joined the practice', 'system', 'sent', NULL, NULL, '2025-04-25 11:04:04', 1, 0, 'admin'),
@@ -193,6 +207,25 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `su
 (101, 0, NULL, 'New Provider', 'Dr. Jane Smith has joined the practice', 'system', 'sent', NULL, NULL, '2025-04-25 11:05:49', 1, 0, 'admin'),
 (102, 0, NULL, 'Maintenance Notice', 'The system will be undergoing maintenance tonight at 11 PM', 'system', 'sent', NULL, NULL, '2025-04-25 10:05:49', 1, 0, 'all'),
 (103, 0, NULL, 'Holiday Hours', 'The practice will be closed on December 25th for Christmas', 'system', 'sent', NULL, NULL, '2025-04-24 13:05:49', 1, 0, 'all');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notification_preferences`
+--
+
+DROP TABLE IF EXISTS `notification_preferences`;
+CREATE TABLE `notification_preferences` (
+  `preference_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `email_notifications` tinyint(1) NOT NULL DEFAULT 1,
+  `sms_notifications` tinyint(1) NOT NULL DEFAULT 0,
+  `appointment_reminders` tinyint(1) NOT NULL DEFAULT 1,
+  `system_updates` tinyint(1) NOT NULL DEFAULT 1,
+  `reminder_time` int(11) NOT NULL DEFAULT 24,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -207,8 +240,10 @@ CREATE TABLE `patient_profiles` (
   `phone` varchar(20) DEFAULT NULL,
   `date_of_birth` date DEFAULT NULL,
   `address` text DEFAULT NULL,
+  `emergency_contact` varchar(255) DEFAULT NULL,
+  `emergency_contact_phone` varchar(50) DEFAULT NULL,
+  `medical_conditions` text DEFAULT NULL,
   `insurance_info` text DEFAULT NULL,
-  `medical_history` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -217,8 +252,8 @@ CREATE TABLE `patient_profiles` (
 -- Dumping data for table `patient_profiles`
 --
 
-INSERT INTO `patient_profiles` (`patient_id`, `user_id`, `phone`, `date_of_birth`, `address`, `insurance_info`, `medical_history`, `created_at`, `updated_at`) VALUES
-(1, 0, NULL, NULL, NULL, NULL, NULL, '2025-04-23 00:49:59', '2025-04-23 00:49:59');
+INSERT INTO `patient_profiles` (`patient_id`, `user_id`, `phone`, `date_of_birth`, `address`, `emergency_contact`, `emergency_contact_phone`, `medical_conditions`, `insurance_info`, `created_at`, `updated_at`) VALUES
+(1, 0, '2120001234', '1997-10-31', '123 Main Street', 'example', '1112223333', 'Na', '{\"provider\":\"Example\",\"policy_number\":\"8778599455d\"}', '2025-04-23 00:49:59', '2025-04-26 22:46:30');
 
 -- --------------------------------------------------------
 
@@ -408,7 +443,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `email`, `password_hash`, `first_name`, `last_name`, `phone`, `role`, `is_active`, `email_verified_at`, `created_at`, `last_login`, `verification_token`, `reset_token`, `reset_token_expires`, `token_expires`, `password_change_required`) VALUES
-(1, 'patient@example.com', '$2y$10$example_hash', 'John', 'Doe', NULL, 'patient', 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
+(1, 'patient@example.com', '$2y$10$example_hash', 'John', 'Doe', '2120001234', 'patient', 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
 (2, 'provider@example.com', '$2y$10$example_hash', 'Dr. Smith', 'MD', NULL, 'provider', 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
 (3, 'admin@example.com', '$2y$10$example_hash', 'Admin', 'User', NULL, 'admin', 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
 (10, 'Kholley@student.cvtc.edu', '$2y$10$xiDwOmotNFAOn.5R0XJ1huUpLb681/phtw/TCkT9wlddp9s1DiRnG', 'Kaleb', 'Holley', '7156191363', 'patient', 1, '2025-04-22 09:54:17', '2025-04-22 09:54:02', '2025-04-22 09:54:47', NULL, 'd9472a925ebd1c3138bb4731edcaf0a207e72c66c1bd00be9783e31f632bb69e', '2025-04-22 15:55:40', '2025-04-23 14:54:02', 0),
@@ -444,7 +479,8 @@ CREATE TABLE `waitlist` (
 ALTER TABLE `activity_log`
   ADD PRIMARY KEY (`log_id`),
   ADD KEY `user_id` (`user_id`),
-  ADD KEY `category` (`category`);
+  ADD KEY `category` (`category`),
+  ADD KEY `related_id` (`related_id`,`related_type`);
 
 --
 -- Indexes for table `appointments`
@@ -457,6 +493,13 @@ ALTER TABLE `appointments`
   ADD KEY `idx_appointment_date` (`appointment_date`),
   ADD KEY `idx_status` (`status`),
   ADD KEY `idx_type` (`type`);
+
+--
+-- Indexes for table `notification_preferences`
+--
+ALTER TABLE `notification_preferences`
+  ADD PRIMARY KEY (`preference_id`),
+  ADD UNIQUE KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `patient_profiles`
@@ -491,13 +534,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `activity_log`
 --
 ALTER TABLE `activity_log`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `notification_preferences`
+--
+ALTER TABLE `notification_preferences`
+  MODIFY `preference_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `patient_profiles`
