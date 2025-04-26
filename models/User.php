@@ -827,6 +827,106 @@ class User {
             return false;
         }
     }
+    /**
+     * Update patient profile information
+     * 
+     * @param int $patientId The patient's user ID
+     * @param array $data The profile data to update
+     * @return bool True on success, false on failure
+     */
+    public function updatePatientProfile($patientId, $data) {
+        try {
+            // Format insurance info as JSON
+            $insuranceInfo = json_encode([
+                'provider' => $data['insurance_provider'] ?? '',
+                'policy_number' => $data['insurance_policy_number'] ?? ''
+            ]);
+            
+            // First check if a profile already exists
+            $stmt = $this->db->prepare("SELECT * FROM patient_profiles WHERE patient_id = ?");
+            $stmt->bind_param("i", $patientId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                // Update existing profile
+                $query = "UPDATE patient_profiles SET 
+                    phone = ?,
+                    date_of_birth = ?, 
+                    address = ?, 
+                    emergency_contact = ?,
+                    emergency_contact_phone = ?,
+                    medical_conditions = ?,
+                    insurance_info = ?,
+                    updated_at = NOW()
+                    WHERE patient_id = ?";
+                
+                $stmt = $this->db->prepare($query);
+                $phone = $data['phone'] ?? '';
+                $emergencyContact = $data['emergency_contact'] ?? '';
+                $emergencyPhone = $data['emergency_contact_phone'] ?? '';
+                $medicalConditions = $data['medical_conditions'] ?? '';
+            
+                $stmt->bind_param(
+                    "sssssssi", 
+                    $phone,
+                    $data['date_of_birth'],
+                    $data['address'],
+                    $emergencyContact,
+                    $emergencyPhone,
+                    $medicalConditions,
+                    $insuranceInfo,
+                    $patientId
+                );
+            } else {
+                // Insert new profile
+                $query = "INSERT INTO patient_profiles (
+                    patient_id, 
+                    user_id,
+                    phone,
+                    date_of_birth, 
+                    address,
+                    emergency_contact,
+                    emergency_contact_phone,
+                    medical_conditions,
+                    insurance_info,
+                    created_at,
+                    updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                
+                $stmt = $this->db->prepare($query);
+                $phone = $data['phone'] ?? '';
+                $emergencyContact = $data['emergency_contact'] ?? '';
+                $emergencyPhone = $data['emergency_contact_phone'] ?? '';
+                $medicalConditions = $data['medical_conditions'] ?? '';
+            
+                $stmt->bind_param(
+                    "iissssss", 
+                    $patientId,
+                    $patientId, // user_id is the same as patient_id
+                    $phone,
+                    $data['date_of_birth'],
+                    $data['address'],
+                    $emergencyContact,
+                    $emergencyPhone,
+                    $medicalConditions,
+                    $insuranceInfo
+                );
+            }
+            
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                error_log("Error updating patient profile: " . $stmt->error);
+                return false;
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Exception updating patient profile: " . $e->getMessage());
+            return false;
+        }
+    }
 
     /**
      * Change user password with current password verification
@@ -1173,7 +1273,7 @@ class User {
     }
     /**
      * Get patient profile data
-     * 
+     *
      * @param int $patientId The patient's user ID
      * @return array|null Patient profile data or null if not found
      */
@@ -1187,13 +1287,39 @@ class User {
             $result = $stmt->get_result();
             
             if ($result->num_rows > 0) {
-                // Profile exists, return it
-                return $result->fetch_assoc();
+                // Profile exists, get it
+                $profile = $result->fetch_assoc();
+                
+                // Extract insurance info from JSON
+                if (!empty($profile['insurance_info'])) {
+                    $insuranceInfo = json_decode($profile['insurance_info'], true);
+                    if (is_array($insuranceInfo)) {
+                        $profile['insurance_provider'] = $insuranceInfo['provider'] ?? '';
+                        $profile['insurance_policy_number'] = $insuranceInfo['policy_number'] ?? '';
+                    }
+                }
+                
+                // If emergency contact fields are empty but we have data in medical_history JSON,
+                // extract it for backward compatibility
+                if (empty($profile['emergency_contact']) && !empty($profile['medical_history'])) {
+                    $medicalHistory = json_decode($profile['medical_history'], true);
+                    if (is_array($medicalHistory)) {
+                        $profile['emergency_contact'] = $medicalHistory['emergency_contact_name'] ?? '';
+                        $profile['emergency_contact_phone'] = $medicalHistory['emergency_contact_phone'] ?? '';
+                        
+                        // If medical_conditions is empty, populate it from the JSON
+                        if (empty($profile['medical_conditions'])) {
+                            $profile['medical_conditions'] = $medicalHistory['conditions'] ?? '';
+                        }
+                    }
+                }
+                
+                return $profile;
             }
             
             // If no profile exists, get basic user data
-            $query = "SELECT user_id, first_name, last_name, email, phone, created_at 
-                    FROM users 
+            $query = "SELECT user_id, first_name, last_name, email, phone, created_at
+                    FROM users
                     WHERE user_id = ? AND role = 'patient'";
             $stmt = $this->db->prepare($query);
             $stmt->bind_param("i", $patientId);
@@ -1205,11 +1331,10 @@ class User {
                 $userData = $result->fetch_assoc();
                 // Add empty profile fields
                 $userData['date_of_birth'] = null;
-                $userData['gender'] = null;
                 $userData['address'] = null;
-                $userData['emergency_contact_name'] = null;
+                $userData['emergency_contact'] = null;
                 $userData['emergency_contact_phone'] = null;
-                $userData['medical_history'] = null;
+                $userData['medical_conditions'] = null;
                 $userData['insurance_provider'] = null;
                 $userData['insurance_policy_number'] = null;
                 return $userData;

@@ -127,7 +127,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                 <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-light btn-lg px-4 fw-bold">Book Appointment</a>
             <?php elseif ($userRole === 'provider'): ?>
                 <p class="lead mb-4">Manage your schedule and patient appointments</p>
-                <a href="<?= base_url('index.php/provider') ?>" class="btn btn-light btn-lg px-4 fw-bold">Manage Schedule</a>
+                <a href="<?= base_url('index.php/provider/schedule') ?>" class="btn btn-light btn-lg px-4 fw-bold">Manage Schedule</a>
             <?php elseif ($userRole === 'admin'): ?>
                 <p class="lead mb-4">Manage the appointment system</p>
                 <a href="<?= base_url('index.php/admin') ?>" class="btn btn-light btn-lg px-4 fw-bold">Admin Dashboard</a>
@@ -183,7 +183,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                                     <?= htmlspecialchars($appointment['provider_last_name'] ?? '') ?>
                                 </p>
                                 <div class="mt-2">
-                                    <a href="<?= base_url('index.php/appointments/details/' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-primary">Details</a>
+                                    <a href="<?= base_url('index.php/provider/appointments/view/' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-primary">Details</a>
                                     <a href="<?= base_url('index.php/appointments/cancel/' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-danger ms-1">Cancel</a>
                                 </div>
                             </div>
@@ -247,13 +247,13 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                    <a href="<?= base_url('index.php/provider') ?>" class="btn btn-success mt-3">Manage Availability</a>
+                    <a href="<?= base_url('index.php/provider/manage_availability') ?>" class="btn btn-success mt-3">Manage Availability</a>
                 </div>
                 <div class="col-md-6">
                     <h3>Quick Actions</h3>
                     <div class="d-grid gap-2">
                         <a href="<?= base_url('index.php/provider/appointments') ?>" class="btn btn-primary">View All Appointments</a>
-                        <a href="<?= base_url('index.php/provider/availability/add') ?>" class="btn btn-success">Add New Availability</a>
+                        <a href="<?= base_url('index.php/provider/schedule') ?>" class="btn btn-success">Add New Availability</a>
                         <a href="<?= base_url('index.php/provider/profile') ?>" class="btn btn-outline-secondary">Update Profile</a>
                     </div>
                 </div>
@@ -565,7 +565,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                     <?php elseif ($userRole === 'provider'): ?>
                         <h2 class="card-title mb-3">Update your availability</h2>
                         <p class="card-text mb-4">Keep your schedule up-to-date to ensure patients can book appointments when you're available.</p>
-                        <a href="<?= base_url('index.php/provider') ?>" class="btn btn-light btn-lg">Manage Availability</a>
+                        <a href="<?= base_url('index.php/provider/manage_availability') ?>" class="btn btn-light btn-lg">Manage Availability</a>
                     <?php elseif ($userRole === 'admin'): ?>
                         <h2 class="card-title mb-3">Manage your healthcare system</h2>
                         <p class="card-text mb-4">Access the administrative dashboard to manage users, services, and system settings.</p>
@@ -624,7 +624,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
             <hr class="my-4 bg-light">
             
             <div class="text-center">
-                <p>&copy; <?= date('Y') ?> Patient Appointment System. All rights reserved.</p>
+                <p>© <?= date('Y') ?> Patient Appointment System. All rights reserved.</p>
             </div>
         </div>
     </footer>

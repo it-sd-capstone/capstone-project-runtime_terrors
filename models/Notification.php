@@ -651,7 +651,99 @@ class Notification {
             error_log("Error adding sample notifications: " . $e->getMessage());
         }
     }
-    
+    /**
+     * Get notification preferences for a user
+     * 
+     * @param int $userId The user ID
+     * @return array The notification preferences
+     */
+    public function getNotificationPreferences($userId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT * FROM notification_preferences 
+                WHERE user_id = ?
+            ");
+            $stmt->bind_param("i", $userId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                return $result->fetch_assoc();
+            } else {
+                // Return default preferences if none exist
+                return [
+                    'email_notifications' => 1,
+                    'sms_notifications' => 0,
+                    'appointment_reminders' => 1,
+                    'system_updates' => 1,
+                    'reminder_time' => 24
+                ];
+            }
+        } catch (Exception $e) {
+            error_log("Error getting notification preferences: " . $e->getMessage());
+            return [
+                'email_notifications' => 1,
+                'sms_notifications' => 0,
+                'appointment_reminders' => 1,
+                'system_updates' => 1,
+                'reminder_time' => 24
+            ];
+        }
+    }
+
+    /**
+     * Update notification preferences for a user
+     * 
+     * @param int $userId The user ID
+     * @param int $emailNotifications Whether to send email notifications (1 or 0)
+     * @param int $smsNotifications Whether to send SMS notifications (1 or 0)
+     * @param int $appointmentReminders Whether to send appointment reminders (1 or 0)
+     * @param int $systemUpdates Whether to send system updates (1 or 0)
+     * @param int $reminderTime Hours before appointment to send reminder (default 24)
+     * @return bool Whether the update was successful
+     */
+    public function updateNotificationPreferences($userId, $emailNotifications, $smsNotifications, $appointmentReminders, $systemUpdates, $reminderTime = 24) {
+        try {
+            // Check if preferences already exist for this user
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as count FROM notification_preferences 
+                WHERE user_id = ?
+            ");
+            $stmt->bind_param("i", $userId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            
+            if ($row['count'] > 0) {
+                // Update existing preferences
+                $stmt = $this->db->prepare("
+                    UPDATE notification_preferences 
+                    SET email_notifications = ?, 
+                        sms_notifications = ?, 
+                        appointment_reminders = ?, 
+                        system_updates = ?,
+                        reminder_time = ?,
+                        updated_at = NOW()
+                    WHERE user_id = ?
+                ");
+                $stmt->bind_param("iiiiii", $emailNotifications, $smsNotifications, $appointmentReminders, $systemUpdates, $reminderTime, $userId);
+            } else {
+                // Insert new preferences
+                $stmt = $this->db->prepare("
+                    INSERT INTO notification_preferences 
+                    (user_id, email_notifications, sms_notifications, appointment_reminders, system_updates, reminder_time, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+                ");
+                $stmt->bind_param("iiiiii", $userId, $emailNotifications, $smsNotifications, $appointmentReminders, $systemUpdates, $reminderTime);
+            }
+            
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Error updating notification preferences: " . $e->getMessage());
+            return false;
+        }
+    }
+
     /**
      * Mark a notification as read
      * 

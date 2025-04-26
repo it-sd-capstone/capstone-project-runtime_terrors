@@ -326,172 +326,50 @@ class NotificationController {
       
       return $subjects[$type] ?? 'System Notification';
   }
-
+  
   /**
-   * Get latest system notifications for admin dashboard
-   * 
-   * @return void Outputs JSON response
+   * Display and manage notification settings for the current user
    */
-  public function getAdminNotifications() {
-      error_log("NotificationController::getAdminNotifications called");
-      
-      // Ensure user is admin
-      if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-          error_log("Access denied: User role is " . ($_SESSION['role'] ?? 'not set'));
-          header('Content-Type: application/json');
-          echo json_encode([
-              'error' => 'Unauthorized access',
-              'success' => false
-          ]);
+  public function settings() {
+      // Check if user is logged in
+      if (!isset($_SESSION['user_id'])) {
+          $_SESSION['error'] = "You must be logged in to manage notification settings";
+          header('Location: ' . base_url('index.php/auth'));
           exit;
       }
       
-      try {
-          error_log("Attempting to get latest system notifications");
+      $user_id = $_SESSION['user_id'];
+      
+      // Handle form submission to update settings
+      if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+          $emailNotifications = isset($_POST['email_notifications']) ? 1 : 0;
+          $smsNotifications = isset($_POST['sms_notifications']) ? 1 : 0;
+          $appointmentReminders = isset($_POST['appointment_reminders']) ? 1 : 0;
+          $systemUpdates = isset($_POST['system_updates']) ? 1 : 0;
+          $reminderTime = isset($_POST['reminder_time']) ? intval($_POST['reminder_time']) : 24;
           
-          // Get latest system notifications
-          $notifications = $this->notificationModel->getLatestSystemNotifications(10);
-          error_log("Retrieved " . count($notifications) . " notifications");
+          // Update notification preferences in the database
+          $success = $this->notificationModel->updateNotificationPreferences(
+              $user_id, 
+              $emailNotifications, 
+              $smsNotifications, 
+              $appointmentReminders, 
+              $systemUpdates,
+              $reminderTime
+          );
           
-          // Format notifications for display
-          $formattedNotifications = [];
-          foreach ($notifications as $notification) {
-              // Debug notification data
-              error_log("Processing notification: " . json_encode($notification));
-              
-              // Determine alert type based on notification type
-              $alertType = 'info'; // Default
-              
-              switch ($notification['type']) {
-                  case 'appointment_created':
-                  case 'user_registered':
-                      $alertType = 'info';
-                      break;
-                  case 'appointment_confirmed':
-                  case 'appointment_completed':
-                      $alertType = 'success';
-                      break;
-                  case 'appointment_canceled':
-                  case 'system_warning':
-                      $alertType = 'warning';
-                      break;
-                  case 'system_error':
-                  case 'security_alert':
-                      $alertType = 'danger';
-                      break;
-              }
-              
-              // Calculate time difference
-              $created = new DateTime($notification['created_at']);
-              $now = new DateTime();
-              $diff = $now->diff($created);
-              
-              if ($diff->d > 0) {
-                  $timeAgo = $diff->d . ' day' . ($diff->d > 1 ? 's' : '') . ' ago';
-              } elseif ($diff->h > 0) {
-                  $timeAgo = $diff->h . ' hour' . ($diff->h > 1 ? 's' : '') . ' ago';
-              } elseif ($diff->i > 0) {
-                  $timeAgo = $diff->i . ' minute' . ($diff->i > 1 ? 's' : '') . ' ago';
-              } else {
-                  $timeAgo = 'just now';
-              }
-              
-              $formattedNotifications[] = [
-                  'id' => $notification['notification_id'],
-                  'type' => $alertType,
-                  'message' => $notification['message'],
-                  'time' => $timeAgo,
-                  'is_read' => (bool)$notification['is_read']
-              ];
+          if ($success) {
+              $_SESSION['success'] = "Notification settings updated successfully";
+          } else {
+              $_SESSION['error'] = "Failed to update notification settings";
           }
-          
-          // Debug the results
-          error_log("Formatted " . count($formattedNotifications) . " notifications for response");
-          
-          $unreadCount = $this->notificationModel->getUnreadCount('admin');
-          error_log("Unread count: " . $unreadCount);
-          
-          // Return JSON response
-          header('Content-Type: application/json');
-          echo json_encode([
-              'notifications' => $formattedNotifications,
-              'success' => true,
-              'total_unread' => $unreadCount
-          ]);
-          exit;
-      } catch (Exception $e) {
-          error_log("Error in getAdminNotifications: " . $e->getMessage());
-          error_log("Stack trace: " . $e->getTraceAsString());
-          
-          header('Content-Type: application/json');
-          echo json_encode([
-              'error' => 'Internal server error: ' . $e->getMessage(),
-              'success' => false
-          ]);
-          exit;
-      }
-  }
-  
-  /**
-   * Mark notifications as read
-   */
-  public function markAsRead() {
-      if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-          header('HTTP/1.1 405 Method Not Allowed');
-          exit;
       }
       
-      $notificationId = $_POST['notification_id'] ?? null;
-      $markAll = isset($_POST['mark_all']) && $_POST['mark_all'] === '1';
+      // Get current notification settings
+      $settings = $this->notificationModel->getNotificationPreferences($user_id);
       
-      if ($markAll) {
-          // Mark all notifications as read for this user
-          $userId = $_SESSION['user_id'] ?? 0;
-          $success = $this->notificationModel->markAllAsRead($userId);
-      } elseif ($notificationId) {
-          // Mark specific notification as read
-          $success = $this->notificationModel->markAsRead($notificationId);
-      } else {
-          $success = false;
-      }
-      
-      // Return JSON response
-      header('Content-Type: application/json');
-      echo json_encode(['success' => $success]);
-      exit;
-  }
-  
-  /**
-   * Add a new system notification
-   * 
-   * @param string $type Notification type
-   * @param string $message Notification message
-   * @param int $userId User ID (if applicable)
-   * @return bool Success status
-   */
-  public function addSystemNotification($type, $message, $userId = null) {
-      return $this->notificationModel->addNotification([
-          'type' => $type,
-          'message' => $message,
-          'user_id' => $userId,
-          'is_system' => true
-      ]);
-  }
-  
-  /**
-   * Log system activities for audit trail
-   * 
-   * @param string $action Action performed
-   * @param string $details Additional details
-   * @param int $userId User who performed the action
-   * @return bool Success status
-   */
-  public function logActivity($action, $details, $userId = null) {
-      if (!$userId && isset($_SESSION['user_id'])) {
-          $userId = $_SESSION['user_id'];
-      }
-      
-      return $this->notificationModel->logActivity($action, $details, $userId);
+      // Include the view
+      include VIEW_PATH . '/patient/notification_settings.php';
   }
 }
 ?>

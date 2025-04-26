@@ -132,27 +132,31 @@ class Appointment {
 
     // Retrieve an appointment by ID
     public function getAppointmentById($appointment_id) {
-        $query = "SELECT a.*, 
-              CONCAT(u.first_name, ' ', u.last_name) as provider_name,
-              s.name as service_name
-              FROM appointments a
-              JOIN users u ON a.provider_id = u.user_id
-              JOIN services s ON a.service_id = s.service_id
-              WHERE a.appointment_id = ?";
-              
-        if ($this->db instanceof mysqli) {
+        try {
+            $query = "SELECT a.*, 
+                  s.name as service_name, s.duration,
+                  CONCAT(u.first_name, ' ', u.last_name) as provider_name,
+                  u.user_id as provider_id
+                  FROM appointments a
+                  JOIN services s ON a.service_id = s.service_id
+                  JOIN users u ON a.provider_id = u.user_id
+                  WHERE a.appointment_id = ?";
+        
             $stmt = $this->db->prepare($query);
             $stmt->bind_param("i", $appointment_id);
             $stmt->execute();
             $result = $stmt->get_result();
+        
+            if ($result->num_rows === 0) {
+                error_log("No appointment found with ID: $appointment_id");
+                return null;
+            }
+        
             return $result->fetch_assoc();
-        } elseif ($this->db instanceof PDO) {
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$appointment_id]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getAppointmentById: " . $e->getMessage());
+            return null;
         }
-    
-        return null;
     }
 
     // Add the missing getByProvider method
@@ -835,6 +839,44 @@ class Appointment {
         } catch (Exception $e) {
             error_log("Database error in getBookedSlotsCount: " . $e->getMessage());
             return 0;
+        }
+    }
+
+    /**
+     * Check if patient already has an appointment at the specified time
+     */
+    public function getPatientAppointmentAtTime($patient_id, $date, $time) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT appointment_id 
+                FROM appointments 
+                WHERE patient_id = ? 
+                AND appointment_date = ? 
+                AND start_time = ?
+                AND status NOT IN ('canceled', 'no_show')
+            ");
+            $stmt->bind_param("iss", $patient_id, $date, $time);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            return $result->fetch_assoc();
+        } catch (Exception $e) {
+            error_log("Error checking patient appointment: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function updateAppointmentNotes($appointment_id, $notes) {
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE appointments
+                SET notes = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE appointment_id = ?
+            ");
+            $stmt->bind_param("si", $notes, $appointment_id);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Error updating appointment notes: " . $e->getMessage());
+            return false;
         }
     }
 }

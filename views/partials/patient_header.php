@@ -53,9 +53,10 @@
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <!-- Add profile link here -->
                                         <li><a class="dropdown-item" href="<?= base_url('index.php/home') ?>"><i class="fas fa-home"></i> Home</a></li>
-                                        <li><a class="dropdown-item" href="<?= base_url('index.php/patient/profile') ?>">My Profile</a></li>
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/patient/profile') ?>"><i class="fas fa-user"></i> My Profile</a></li>
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/notification/notifications/' . $_SESSION['user_id']) ?>"><i class="fas fa-bell"></i> Notifications</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>">Logout</a></li>
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                                     </ul>
                                 </li>
                             <?php endif; ?>
