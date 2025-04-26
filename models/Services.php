@@ -1,8 +1,8 @@
 <?php
-/**
+/** 
  * Service Model
- * 
- * Handles business logic related to medical services
+ *  
+ * Handles business logic related to medical services 
  */
 class Service {
     private $db;
@@ -29,6 +29,12 @@ class Service {
         $services = [];
         
         try {
+            // Validate orderBy to prevent SQL injection
+            $allowedOrderFields = ['name', 'service_id', 'price', 'duration', 'created_at'];
+            if (!in_array($orderBy, $allowedOrderFields)) {
+                $orderBy = 'name'; // Default to safe value
+            }
+            
             // Determine fields to select
             $selectedFields = empty($fields) ? '*' : implode(', ', $fields);
             
@@ -173,49 +179,7 @@ class Service {
         
         return null;
     }
-    
-    /**
-     * Get all services offered by a specific provider
-     *
-     * @param int $provider_id Provider ID to get services for
-     * @return array List of services with provider-specific customizations
-     */
-    public function getServicesByProvider($provider_id) {
-        $services = [];
         
-        try {
-            // Query that joins provider_services with services table
-            $query = "SELECT s.*, s.name AS service_name, ps.provider_service_id, ps.custom_duration, ps.custom_notes
-                    FROM services s
-                    JOIN provider_services ps ON s.service_id = ps.service_id
-                    WHERE ps.provider_id = ? AND s.is_active = 1
-                    ORDER BY s.name";
-            
-            if ($this->db instanceof mysqli) {
-                $stmt = $this->db->prepare($query);
-                $stmt->bind_param("i", $provider_id);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                if ($result) {
-                    while ($row = $result->fetch_assoc()) {
-                        $services[] = $this->enrichServiceData($row);
-                    }
-                }
-            } elseif ($this->db instanceof PDO) {
-                $stmt = $this->db->prepare($query);
-                $stmt->bindParam(1, $provider_id, PDO::PARAM_INT);
-                $stmt->execute();
-                
-                $services = array_map([$this, 'enrichServiceData'], $stmt->fetchAll(PDO::FETCH_ASSOC));
-            }
-        } catch (Exception $e) {
-            error_log("Error in getServicesByProvider: " . $e->getMessage());
-        }
-        
-        return $services;
-    }
-    
     /**
      * Search services by name or description
      * 
@@ -228,8 +192,8 @@ class Service {
         
         try {
             $searchTerm = "%$searchTerm%";
-            $query = "SELECT * FROM services 
-                     WHERE (name LIKE ? OR description LIKE ?)";
+            $query = "SELECT * FROM services
+                      WHERE (name LIKE ? OR description LIKE ?)";
             
             if ($activeOnly) {
                 $query .= " AND is_active = 1";
@@ -262,7 +226,50 @@ class Service {
         
         return $services;
     }
-
+    
+    /**
+     * Get all services offered by a specific provider
+     *
+     * @param int $provider_id Provider ID to get services for
+     * @return array List of services with provider-specific customizations
+     */
+    public function getServicesByProvider($provider_id) {
+        $services = [];
+        
+        try {
+            // Query that joins provider_services with services table
+            // Note the added alias "s.name AS service_name" to match what the view expects
+            $query = "SELECT s.*, s.name AS service_name, ps.provider_service_id, ps.custom_duration, ps.custom_notes
+                    FROM services s
+                    JOIN provider_services ps ON s.service_id = ps.service_id
+                    WHERE ps.provider_id = ? AND s.is_active = 1
+                    ORDER BY s.name";
+            
+            if ($this->db instanceof mysqli) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bind_param("i", $provider_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result) {
+                    while ($row = $result->fetch_assoc()) {
+                        $services[] = $this->enrichServiceData($row);
+                    }
+                }
+            } elseif ($this->db instanceof PDO) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(1, $provider_id, PDO::PARAM_INT);
+                $stmt->execute();
+                
+                $services = array_map([$this, 'enrichServiceData'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+            }
+        } catch (Exception $e) {
+            error_log("Error in getServicesByProvider: " . $e->getMessage());
+        }
+        
+        return $services;
+    }
+    
     /**
      * Add icon and other metadata to service records
      * 
@@ -279,14 +286,14 @@ class Service {
             $minutes = $service['duration'] % 60;
             
             if ($minutes > 0) {
-                $service['duration_formatted'] = "{$hours} hour" . ($hours > 1 ? 's' : '') . 
-                                                " {$minutes} minute" . ($minutes > 1 ? 's' : '');
+                $service['duration_formatted'] = "{$hours} hour" . ($hours > 1 ? 's' : '') .
+                                             " {$minutes} minute" . ($minutes > 1 ? 's' : '');
             } else {
                 $service['duration_formatted'] = "{$hours} hour" . ($hours > 1 ? 's' : '');
             }
         } else {
-            $service['duration_formatted'] = $service['duration'] . " minute" . 
-                                             ($service['duration'] != 1 ? 's' : '');
+            $service['duration_formatted'] = $service['duration'] . " minute" .
+                                          ($service['duration'] != 1 ? 's' : '');
         }
         
         return $service;
@@ -344,8 +351,8 @@ class Service {
             $price = $serviceData['price'] ?? 0;
             $isActive = $serviceData['is_active'] ?? 1;
             
-            $query = "INSERT INTO services (name, description, duration, price, is_active) 
-                     VALUES (?, ?, ?, ?, ?)";
+            $query = "INSERT INTO services (name, description, duration, price, is_active)
+                      VALUES (?, ?, ?, ?, ?)";
             
             if ($this->db instanceof mysqli) {
                 $stmt = $this->db->prepare($query);
@@ -393,7 +400,7 @@ class Service {
             
             $stmt = $this->db->query($query);
             if ($stmt) {
-                $result = $stmt->fetch_assoc();
+                                $result = $stmt->fetch_assoc();
                 return $result['count'];
             }
         } catch (Exception $e) {
@@ -495,8 +502,7 @@ class Service {
         
         return false;
     }
-    
-    
+        
     /**
      * Delete a service (or deactivate it)
      * 
@@ -540,6 +546,29 @@ class Service {
         }
         
         return false;
+    }
+
+    /**
+     * Add a service for a provider
+     * 
+     * @param int $provider_id Provider ID
+     * @param string $name Service name
+     * @param string $description Service description
+     * @param float $price Service price
+     * @return bool Success flag
+     */
+    public function addService($provider_id, $name, $description, $price) {
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO provider_services (provider_id, name, description, price) 
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->bind_param("issd", $provider_id, $name, $description, $price);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Error adding service: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**

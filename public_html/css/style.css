@@ -124,3 +124,9 @@ h1, h2 {
 
 .btn-warning { background-color: #f0ad4e; }
 .btn-danger { background-color: #d9534f; }
+
+#calendar {
+  max-width: 800px; /* Adjust width */
+  height: 400px; /* Set a fixed height */
+  margin: auto;
+}

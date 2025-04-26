@@ -8,6 +8,8 @@ class Provider {
     }
 
     // Get provider's profile details securely
+    // This replaces getProviderData with the method name your controller expects
+
     public function getById($provider_id) {
         try {
             $stmt = $this->db->prepare("
@@ -30,17 +32,14 @@ class Provider {
     public function getProviderData($provider_id) {
         return $this->getById($provider_id);
     }
-
     // Get provider with complete profile
     public function getProviderWithProfile($provider_id) {
         return $this->getById($provider_id);
     }
 
-    // Update provider profile securely with transactions
     public function updateProfile($provider_id, $profileData) {
         try {
             $this->db->begin_transaction();
-
             // If we have a full profile update with user data
             if (isset($profileData['first_name'])) {
                 // Update users table
@@ -50,13 +49,12 @@ class Provider {
                     WHERE user_id = ? AND role = 'provider'
                 ");
                 $stmt->bind_param("sssi", 
-                    $profileData['first_name'], 
-                    $profileData['last_name'], 
-                    $profileData['phone'], 
+                    $profileData['first_name'],
+                    $profileData['last_name'],
+                    $profileData['phone'],
                     $provider_id
                 );
                 $success = $stmt->execute();
-
                 if (!$success) {
                     throw new Exception("Profile update failed (users table).");
                 }
@@ -66,56 +64,55 @@ class Provider {
             $query = "UPDATE provider_profiles SET ";
             $params = [];
             $types = "";
-            
+
             if (isset($profileData['specialization'])) {
                 $query .= "specialization = ?, ";
                 $params[] = $profileData['specialization'];
                 $types .= "s";
             }
-            
+
             if (isset($profileData['title'])) {
                 $query .= "title = ?, ";
                 $params[] = $profileData['title'];
                 $types .= "s";
             }
-            
+
             if (isset($profileData['bio'])) {
                 $query .= "bio = ?, ";
                 $params[] = $profileData['bio'];
                 $types .= "s";
             }
-            
+
             if (isset($profileData['accepting_new_patients'])) {
                 $query .= "accepting_new_patients = ?, ";
                 $params[] = $profileData['accepting_new_patients'];
                 $types .= "i";
             }
-            
+
             if (isset($profileData['max_patients_per_day'])) {
                 $query .= "max_patients_per_day = ?, ";
                 $params[] = $profileData['max_patients_per_day'];
                 $types .= "i";
             }
-            
+
             // Remove trailing comma and space
             $query = rtrim($query, ", ");
-            
+
             $query .= " WHERE provider_id = ?";
             $params[] = $provider_id;
             $types .= "i";
-            
+
             $stmt = $this->db->prepare($query);
-            
+
             // Only bind parameters if we have fields to update
             if (!empty($params)) {
                 $stmt->bind_param($types, ...$params);
                 $success = $stmt->execute();
-                
+
                 if (!$success) {
                     throw new Exception("Profile update failed (provider_profiles table).");
                 }
             }
-
             $this->db->commit();
             return true;
         } catch (Exception $e) {
@@ -136,7 +133,6 @@ class Provider {
         ];
         return $this->updateProfile($provider_id, $profileData);
     }
-
     // Update profile image
     public function updateProfileImage($provider_id, $image_path) {
         try {
@@ -202,6 +198,9 @@ class Provider {
             return [];
         }
     }
+    public function getAvailableSlots($provider_id) {
+        return $this->getAvailability($provider_id);
+    }
 
     // Add provider availability
     public function addAvailability($availabilityData) {
@@ -226,6 +225,39 @@ class Provider {
         }
     }
 
+    // Provider Services Management
+    public function addService($serviceData) {
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO provider_services
+                (provider_id, service_id, custom_duration, notes)
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->bind_param(
+                "iiis",
+                $serviceData['provider_id'],
+                $serviceData['service_id'],
+                $serviceData['custom_duration'],
+                $serviceData['notes']
+            );
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Error adding service: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Legacy method for backward compatibility
+    public function addService_old($provider_id, $service_id, $custom_duration = null, $custom_notes = null) {
+        $serviceData = [
+            'provider_id' => $provider_id,
+            'service_id' => $service_id,
+            'custom_duration' => $custom_duration,
+            'notes' => $custom_notes
+        ];
+        return $this->addService($serviceData);
+    }
+
     // Legacy method for backward compatibility
     public function addAvailability_old($provider_id, $date, $start_time, $end_time) {
         $availabilityData = [
@@ -242,7 +274,7 @@ class Provider {
     public function deleteAvailability($availability_id, $provider_id) {
         try {
             $stmt = $this->db->prepare("
-                DELETE FROM provider_availability 
+                DELETE FROM provider_availability
                 WHERE availability_id = ? AND provider_id = ?
             ");
             $stmt->bind_param("ii", $availability_id, $provider_id);
@@ -263,10 +295,10 @@ class Provider {
                  (start_time < ? AND end_time >= ?) OR
                  (start_time >= ? AND end_time <= ?))
             ");
-            $stmt->bind_param("isssssss", 
-                $provider_id, $date, 
-                $end_time, $start_time, 
-                $end_time, $start_time, 
+            $stmt->bind_param("isssssss",
+                $provider_id, $date,
+                $end_time, $start_time,
+                $end_time, $start_time,
                 $start_time, $end_time
             );
             $stmt->execute();
@@ -279,38 +311,6 @@ class Provider {
         }
     }
 
-    // Provider Services Management
-    public function addService($serviceData) {
-        try {
-            $stmt = $this->db->prepare("
-                INSERT INTO provider_services 
-                (provider_id, service_id, custom_duration, notes)
-                VALUES (?, ?, ?, ?)
-            ");
-            $stmt->bind_param(
-                "iiis", 
-                $serviceData['provider_id'], 
-                $serviceData['service_id'], 
-                $serviceData['custom_duration'], 
-                $serviceData['notes']
-            );
-            return $stmt->execute();
-        } catch (Exception $e) {
-            error_log("Error adding service: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    // Legacy method for backward compatibility
-    public function addService_old($provider_id, $service_id, $custom_duration = null, $custom_notes = null) {
-        $serviceData = [
-            'provider_id' => $provider_id,
-            'service_id' => $service_id,
-            'custom_duration' => $custom_duration,
-            'notes' => $custom_notes
-        ];
-        return $this->addService($serviceData);
-    }
 
     // Check if provider has a specific service
     public function hasService($provider_id, $service_id) {
@@ -355,6 +355,7 @@ class Provider {
         }
     }
 
+
     // Update provider service
     public function updateService($provider_service_id, $provider_id, $custom_duration, $custom_notes) {
         try {
@@ -370,6 +371,7 @@ class Provider {
             return false;
         }
     }
+
 
     // Remove service from provider
     public function removeService($provider_service_id, $provider_id) {
@@ -391,7 +393,8 @@ class Provider {
         }
     }
 
-    // Get all providers
+
+    // Get all providers (needed for listing providers)
     public function getAll() {
         try {
             $stmt = $this->db->prepare("
@@ -409,25 +412,24 @@ class Provider {
             return [];
         }
     }
-
     // Get recurring schedules
     public function getRecurringSchedules($provider_id) {
         try {
             $query = "SELECT * FROM recurring_schedules
                     WHERE provider_id = ?
                     ORDER BY day_of_week, start_time";
-            
+
             $stmt = $this->db->prepare($query);
             $stmt->bind_param("i", $provider_id);
             $stmt->execute();
-            
+
             $result = $stmt->get_result();
             $schedules = [];
-            
+
             while ($row = $result->fetch_assoc()) {
                 $schedules[] = $row;
             }
-            
+
             return $schedules;
         } catch (Exception $e) {
             error_log("Error fetching recurring schedules: " . $e->getMessage());
@@ -435,6 +437,7 @@ class Provider {
         }
     }
 
+    
     // Get booked appointments for a provider
     public function getBookedAppointments($provider_id) {
         try {
@@ -458,6 +461,7 @@ class Provider {
             return [];
         }
     }
+
 
     /**
      * Get top providers by appointment count
@@ -1226,18 +1230,20 @@ class Provider {
         try {
             // Get average appointment duration
             $durationQuery = "
-                SELECT 
+                SELECT
+                    a.service_id,
+                    s.name as service_name,
                     AVG(TIME_TO_SEC(TIMEDIFF(end_time, start_time))) as avg_duration_seconds,
                     s.duration as expected_duration_minutes
-                FROM 
+                FROM
                     appointments a
-                JOIN 
+                JOIN
                     services s ON a.service_id = s.service_id
-                WHERE 
+                WHERE
                     a.provider_id = ? AND
                     a.status = 'completed'
-                GROUP BY 
-                    s.service_id, s.duration
+                GROUP BY
+                    s.service_id, s.name, s.duration
             ";
             
             $durationStmt = $this->db->prepare($durationQuery);

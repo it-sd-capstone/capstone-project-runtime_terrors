@@ -45,18 +45,26 @@ include VIEW_PATH . '/partials/patient_header.php'; ?>
 <script>
 setInterval(() => {
     fetch("<?= base_url('index.php/patient/fetchAppointments') ?>")
-        .then(response => response.json())
+        .then(response => 
+        if (!response.ok) {
+                throw new Error("Failed to fetch appointment data.");
+            }
+            return response.json();
+        })
         .then(data => {
             document.querySelector(".appointment-stats").innerHTML = `
                 <h3>Your Appointment Stats</h3>
-                <p>**Total Appointments:** ${data.total}</p>
-                <p>**Completed:** ${data.completed}</p>
-                <p>**Upcoming:** ${data.upcoming}</p>
+                <p><strong>Total Appointments:</strong> <?= count($upcomingAppointments) + count($pastAppointments) ?></p>
+                <p><strong>Completed:</strong> <?= count($pastAppointments) ?></p>
+                <p><strong>Upcoming:</strong> <?= count($upcomingAppointments) ?></p>
             `;
-        });
+        })
+        .catch(error => console.error("Error updating stats:", error.message));
 }, 60000); // Refresh every 60 seconds
+
 </script>
 <!-- Make sure to include Bootstrap JS at the end of your body tag -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

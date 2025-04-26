@@ -1,3 +1,6 @@
+<?php 
+include VIEW_PATH . '/partials/patient_header.php'; ?>
+
 <h4>Edit Profile</h4>
 <form method="POST" action="<?= base_url('index.php/patient/updateProfile') ?>">
     <label>First Name:</label>

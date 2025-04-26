@@ -3,6 +3,7 @@ class AppointmentsController {
     private $db;
     private $appointmentModel;
     private $activityLogModel;
+    private $serviceModel;
     
     public function __construct() {
         // Start session if not already started
@@ -119,9 +120,16 @@ class AppointmentsController {
                     $this->activityLogModel->logAppointment(
                         $_SESSION['user_id'], 
                         'created', 
-                        $bookingResult['appointment_id'], 
+                        $bookingResult['appointment_id'],
                         $details
                     );
+                    
+                    // Mark the availability as no longer available
+                    $updateStmt = $this->db->prepare("UPDATE provider_availability 
+                                                      SET is_available = 0 
+                                                      WHERE availability_id = ?");
+                    $updateStmt->bind_param("i", $availabilityId);
+                    $updateStmt->execute();
                     
                     $_SESSION['success'] = "Appointment booked successfully!";
                     header('Location: ' . base_url('index.php/appointments?success=booked'));
@@ -562,5 +570,96 @@ class AppointmentsController {
         fclose($output);
         exit;
     }
+    
+//     // Add a new method for updating appointment status that includes logging
+//     public function updateStatus() {
+//         // Only admin and providers can update appointment status
+//         if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'provider') {
+//             header('Location: ' . base_url('index.php/appointments'));
+//             exit;
+//         }
+        
+//         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+//             header('Location: ' . base_url('index.php/appointments'));
+//             exit;
+//         }
+        
+//         $appointmentId = $_POST['appointment_id'] ?? null;
+//         $newStatus = $_POST['status'] ?? null;
+        
+//         if (!$appointmentId || !$newStatus) {
+//             header('Location: ' . base_url('index.php/appointments?error=missing_data'));
+//             exit;
+//         }
+        
+//         // Get current appointment details
+//         $stmt = $this->db->prepare("SELECT * FROM appointments WHERE appointment_id = ?");
+//         $stmt->bind_param("i", $appointmentId);
+//         $stmt->execute();
+//         $result = $stmt->get_result();
+//         $appointment = $result->fetch_assoc();
+        
+//         // Update appointment status
+//         $stmt = $this->db->prepare("UPDATE appointments SET status = ? WHERE appointment_id = ?");
+//         $stmt->bind_param("si", $newStatus, $appointmentId);
+        
+//         if ($stmt->execute()) {
+//             // Log the status change with detailed information
+//             $details = json_encode([
+//                 'previous_status' => $appointment['status'],
+//                 'new_status' => $newStatus,
+//                 'changed_by' => $_SESSION['user_id'],
+//                 'changed_by_role' => $_SESSION['role'],
+//                 'appointment_date' => $appointment['appointment_date'],
+//                 'reason' => $_POST['reason'] ?? 'No reason provided'
+//             ]);
+//             $this->activityLogModel->logAppointment($_SESSION['user_id'], "status_changed", $appointmentId, $details);
+            
+//             header('Location: ' . base_url('index.php/appointments?success=updated'));
+//         } else {
+//             header('Location: ' . base_url('index.php/appointments?error=update_failed'));
+//         }
+//         exit;
+//     }
+    
+//     // View appointment history with detailed logs
+//     public function history() {
+//         // Only admins can see complete history
+//         if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'provider') {
+//             header('Location: ' . base_url('index.php/appointments'));
+//             exit;
+//         }
+        
+//         $appointmentId = $_GET['id'] ?? null;
+        
+//         if (!$appointmentId) {
+//             header('Location: ' . base_url('index.php/appointments'));
+//             exit;
+//         }
+        
+//         // Get appointment details
+//         $stmt = $this->db->prepare("
+//             SELECT a.*, 
+//                    u_patient.first_name as patient_first_name, 
+//                    u_patient.last_name as patient_last_name,
+//                    u_provider.first_name as provider_first_name, 
+//                    u_provider.last_name as provider_last_name,
+//                    s.name as service_name
+//             FROM appointments a
+//             JOIN users u_patient ON a.patient_id = u_patient.user_id
+//             JOIN users u_provider ON a.provider_id = u_provider.user_id
+//             JOIN services s ON a.service_id = s.service_id
+//             WHERE a.appointment_id = ?
+//         ");
+//         $stmt->bind_param("i", $appointmentId);
+//         $stmt->execute();
+//         $appointment = $stmt->get_result()->fetch_assoc();
+        
+//         // Get activity logs for this appointment
+//         $logs = $this->activityLogModel->getAppointmentLogs($appointmentId);
+        
+//         // Load view
+//         include VIEW_PATH . '/appointments/history.php';
+//     }
 }
 ?>

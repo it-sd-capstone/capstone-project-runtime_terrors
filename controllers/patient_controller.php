@@ -47,6 +47,30 @@ class PatientController {
         include VIEW_PATH . '/patient/index.php';
     }
 
+//  AddedSarah
+//     // Show Booking Form
+//     public function book() {
+//         // Get providers
+//         $rawProviders = $this->userModel->getAvailableProviders();
+        
+//         // Format providers to include provider_name
+//         $providers = [];
+//         foreach ($rawProviders as $provider) {
+//             // Make sure to preserve user_id as provider_id
+//             $providers[] = [
+//                 'provider_id' => $provider['user_id'], // This key was missing
+//                 'provider_name' => $provider['first_name'] . ' ' . $provider['last_name'] . ' - ' . 
+//                                   ($provider['title'] ?? 'Practitioner'),
+//                 'specialization' => $provider['specialization'] ?? '',
+//                 'title' => $provider['title'] ?? ''
+//             ];
+//         }
+        
+//         // Get services - fix the file name (Service vs Services)
+//         require_once MODEL_PATH . '/Services.php'; // Changed from '/Services.php'
+//         $serviceModel = new Service($this->db);
+//         $services = $serviceModel->getAllServices();
+
     // Show Booking Form - Use Provider model instead of User model
     public function book() {
         // Get providers from Provider model instead of User model
@@ -57,6 +81,30 @@ class PatientController {
         
         // Pass both variables to the view
         include VIEW_PATH . '/patient/book.php';
+    }
+    public function processBooking() {
+        require_once MODEL_PATH . '/Appointments.php';
+        $appointmentModel = new Appointments($this->db);
+    
+        $patient_id = $_SESSION['user_id'];
+        $provider_id = $_POST['provider_id'];
+        $date = $_POST['appointment_date'];
+        $time_slot = $_POST['start_time'];
+    
+        // Check if slot is already booked
+        if ($appointmentModel->isSlotTaken($provider_id, $date, $time_slot)) {
+            header("Location: " . base_url("index.php/patient/book?provider_id=$provider_id&error=Time slot unavailable"));
+            exit;
+        }
+    
+        $success = $appointmentModel->createAppointment($patient_id, $provider_id, $date, $time_slot);
+    
+        if ($success) {
+            header("Location: " . base_url("index.php/patient/appointments?success=Appointment booked"));
+        } else {
+            header("Location: " . base_url("index.php/patient/book?provider_id=$provider_id&error=Booking failed"));
+        }
+        exit;
     }
 
     // Confirm Booking - Add service_id parameter
@@ -192,28 +240,47 @@ class PatientController {
 
     // View Profile - Use User model for patient profile
     public function profile() {
+        // Get the current user ID from session
         $user_id = $_SESSION['user_id'] ?? null;
         
         if (!$user_id) {
+            // Redirect if not logged in
             header('Location: ' . base_url('index.php/auth/login'));
             exit;
         }
         
-        // Get basic user data
-        $userData = $this->userModel->getUserById($user_id);
-        
-        // Get patient profile data using User model
-        $patientProfile = $this->userModel->getPatientProfile($user_id);
-        
-        // Combine data for the view
+        // Initialize the patient array with defaults to avoid null values
         $patient = [
             'user_id' => $user_id,
-            'first_name' => $userData['first_name'] ?? '',
-            'last_name' => $userData['last_name'] ?? '',
-            'email' => $userData['email'] ?? '',
-            'phone' => $userData['phone'] ?? '',
-            'medical_history' => $patientProfile['medical_notes'] ?? ''
+            'first_name' => '',
+            'last_name' => '',
+            'email' => '',
+            'phone' => '',
+            'medical_history' => ''
         ];
+        
+        // Get basic user data
+        $userData = $this->userModel->getUserById($user_id);
+        if ($userData) {
+            // Merge user data into patient array
+            $patient['first_name'] = $userData['first_name'] ?? '';
+            $patient['last_name'] = $userData['last_name'] ?? '';
+            $patient['email'] = $userData['email'] ?? '';
+            $patient['phone'] = $userData['phone'] ?? '';
+        }
+        
+      try {
+           // Get patient-specific profile data using User model
+          $patientProfile = $this->userModel->getPatientProfile($user_id);
+            
+            // Merge patient profile data if found
+            if ($patientProfile) {
+                $patient['medical_history'] = $patientProfile['medical_notes'] ?? '';
+                // Add any other patient profile fields you need
+            }
+        } catch (Exception $e) {
+            error_log("Error fetching patient profile: " . $e->getMessage());
+        }
         
         include VIEW_PATH . '/patient/profile.php';
     }
@@ -263,18 +330,51 @@ class PatientController {
         exit;
     }
 
-    // Patient Search for Providers - Use Provider model
-    public function search() {
-        $specialty = htmlspecialchars($_GET['specialty'] ?? '');
-        $location = htmlspecialchars($_GET['location'] ?? '');
-        
-        // Get specialties using Provider model
-        $specialties = $this->providerModel->getDistinctSpecializations();
-        
-        // Get providers based on filters using Provider model
-        $providers = $this->providerModel->searchProviders($specialty, $location);
-        
-        include VIEW_PATH . '/patient/search.php';
-    }
+  // Patient Search for Providers - Use Provider model
+  public function search() {
+      // Get filter values from request
+      $specialty = htmlspecialchars($_GET['specialty'] ?? '');
+      $location = htmlspecialchars($_GET['location'] ?? '');
+
+      // Get specialties using Provider model
+      $specialties = $this->providerModel->getDistinctSpecializations();
+
+      // Get providers based on filters using Provider model
+      $providers = $this->providerModel->searchProviders($specialty, $location);
+
+      // Format provider data to ensure all required keys exist
+      if (!empty($providers)) {
+          foreach ($providers as &$provider) {
+              // Format provider name if not already set
+              if (!isset($provider['name'])) {
+                  $provider['name'] = ($provider['first_name'] ?? '') . ' ' . ($provider['last_name'] ?? '');
+              }
+
+              // Ensure specialty is set
+              if (!isset($provider['specialty'])) {
+                  $provider['specialty'] = $provider['specialization'] ?? 'General';
+              }
+
+              // Ensure location is set
+              if (!isset($provider['location'])) {
+                  $provider['location'] = 'Local Area';  // Default or you could use a field from your database
+              }
+
+              // Map user_id to provider_id if needed
+              if (!isset($provider['provider_id']) && isset($provider['user_id'])) {
+                  $provider['provider_id'] = $provider['user_id'];
+              }
+          }
+      }
+
+      // Optional validation for search criteria
+      if (empty($specialty) && empty($location)) {
+          error_log("Search called with no filters.");
+          header("Location: " . base_url("index.php/patient/search?error=Please enter search criteria"));
+          exit;
+      }
+
+      include VIEW_PATH . '/patient/search.php';
+  }
 }
 ?>

@@ -26,21 +26,41 @@ class Appointment {
         }
     }
     public function isSlotAvailable($provider_id, $appointment_date, $start_time) {
-        try {
-            $stmt = $this->db->prepare("
-                SELECT COUNT(*) FROM appointments
-                WHERE provider_id = ? AND appointment_date = ? AND start_time = ? 
-                AND status NOT IN ('canceled', 'no_show')
-            ");
-            $stmt->bind_param("iss", $provider_id, $appointment_date, $start_time);
-            $stmt->execute();
-            $stmt->bind_result($count);
-            $stmt->fetch();
-            return $count == 0; // True if slot is available
-        } catch (Exception $e) {
-            error_log("Error checking availability: " . $e->getMessage());
-            return false;
-        }
+      try {
+          $stmt = $this->db->prepare("
+              SELECT COUNT(*) FROM appointments
+              WHERE provider_id = ? AND appointment_date = ? AND start_time = ? 
+              AND status NOT IN ('canceled', 'no_show')
+          ");
+          $stmt->bind_param("iss", $provider_id, $appointment_date, $start_time);
+
+          if (!$stmt->execute()) {
+              error_log("SQL Execution Error: " . $stmt->error);
+              return false;
+          }
+
+          // Initialize variable
+          $count = 0; 
+          $stmt->store_result(); // Required for accurate fetching
+          $stmt->bind_result($count);
+          $stmt->fetch();
+
+          return isset($count) && $count == 0; // True if slot is available
+      } catch (Exception $e) {
+          error_log("Error checking availability: " . $e->getMessage());
+          return false;
+      }
+  }
+    public function isSlotTaken($provider_id, $date, $time_slot) {
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*) FROM appointments 
+            WHERE provider_id = ? AND appointment_date = ? AND time_slot = ?
+        ");
+        $stmt->bind_param("iss", $provider_id, $date, $time_slot);
+        $stmt->execute();
+        
+        $result = $stmt->get_result()->fetch_array();
+        return $result[0] > 0;
     }
 
     // Get upcoming appointments for a patient
@@ -197,6 +217,23 @@ class Appointment {
             return false;
         }
     }
+
+    public function fetchAppointments() {
+        require_once MODEL_PATH . '/Appointments.php';
+        $appointmentModel = new Appointments($this->db);
+    
+        $patient_id = $_SESSION['user_id'];
+        $total = $appointmentModel->countAppointments($patient_id);
+        $completed = $appointmentModel->countCompletedAppointments($patient_id);
+        $upcoming = $appointmentModel->countUpcomingAppointments($patient_id);
+    
+        header("Content-Type: application/json");
+        echo json_encode([
+            "total" => $total,
+            "completed" => $completed,
+            "upcoming" => $upcoming
+        ]);
+        exit;
 
     // Get all appointments with patient and provider details
     public function getAllAppointments() {

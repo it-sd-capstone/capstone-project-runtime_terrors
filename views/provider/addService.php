@@ -1,3 +1,5 @@
+<?php 
+include VIEW_PATH . '/partials/provider_header.php'; ?>
 <h4>Add a New Service</h4>
 <form method="POST" action="<?= base_url('index.php/provider/processAddService') ?>">
     <label>Service Name:</label>

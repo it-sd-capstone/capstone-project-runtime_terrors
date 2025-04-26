@@ -1,6 +1,8 @@
 <?php
 require_once MODEL_PATH . '/Provider.php';
 require_once MODEL_PATH . '/Appointment.php';
+require_once MODEL_PATH . '/Services.php';
+
 
 class ProviderController {
     private $db;
@@ -52,6 +54,10 @@ class ProviderController {
         echo json_encode($events);
         exit;
     }
+    public function getAvailableSlots($provider_id) {
+        $available_slots = $this->providerModel->getAvailability($provider_id);
+        return $available_slots;
+    }
 
     // Update Provider Profile
     public function updateProfile() {
@@ -97,18 +103,18 @@ class ProviderController {
             exit;
         }
     }
-    // Add this method to your ProviderController class
+    // Provider Availability Management
     public function manage_availability() {
         $provider_id = $_SESSION['user_id'];
-        
+
         // Get the provider's current availability/schedules
         $schedules = $this->providerModel->getAvailability($provider_id);
         $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
-        
+
         // Load the view
         include VIEW_PATH . '/provider/schedule.php';
     }
-    
+
     // Provider Services (CRUD)
     public function services() {
         // Check if user is logged in
@@ -117,11 +123,11 @@ class ProviderController {
             header('Location: ' . base_url('index.php/auth'));
             exit;
         }
-        
+
         // Determine if this is an admin managing a provider's services
         $isAdminManaging = isset($_SESSION['admin_managing_provider_id']);
         $providerId = $isAdminManaging ? $_SESSION['admin_managing_provider_id'] : $_SESSION['user_id'];
-        
+
         // If admin is managing, verify they are actually an admin
         if ($isAdminManaging && (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin')) {
             unset($_SESSION['admin_managing_provider_id']);
@@ -129,10 +135,10 @@ class ProviderController {
             header('Location: ' . base_url('index.php/admin'));
             exit;
         }
-        
+
         // Get provider details
         $provider = $this->userModel->getUserById($providerId);
-        
+
         if (!$provider || $provider['role'] !== 'provider') {
             $_SESSION['error'] = "Provider not found";
             if ($isAdminManaging) {
@@ -143,39 +149,21 @@ class ProviderController {
             }
             exit;
         }
-        
-        // Rest of the method remains the same, but use $providerId instead of $_SESSION['user_id']
-        // for all database operations
-        
+
+        // Get services for this provider
+        $services = $this->serviceModel->getServicesByProvider($providerId);
+
         // After processing, clear the admin management session variable if it exists
         if ($isAdminManaging) {
             unset($_SESSION['admin_managing_provider_id']);
         }
-        
+
         // Load the view with a flag indicating if this is admin management
         $isAdmin = $isAdminManaging;
         include VIEW_PATH . '/provider/services.php';
     }
 
     public function addService() {
-        if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            $provider_id = $_SESSION['user_id'];
-            $service_name = htmlspecialchars(trim($_POST['service_name']));
-            $description = htmlspecialchars(trim($_POST['description']));
-            $price = floatval($_POST['price']);
-
-            $success = $this->providerModel->addService($provider_id, $service_name, $description, $price);
-
-            if ($success) {
-                header('Location: ' . base_url('index.php/provider/services?success=Service added'));
-            } else {
-                header('Location: ' . base_url('index.php/provider/services?error=Failed to add service'));
-            }
-            exit;
-        }
-    }
-
-    public function updateService() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'];
             $service_id = intval($_POST['service_id']);
@@ -185,12 +173,25 @@ class ProviderController {
     
             $success = $this->providerModel->updateService($service_id, $provider_id, $service_name, $description, $price);
     
+            if ($success) {
+                header('Location: ' . base_url('index.php/provider/services?success=Service added'));
+            } else {
+                header('Location: ' . base_url('index.php/provider/services?error=Failed to add service'));
+            }
+    
             header("Content-Type: application/json");
             echo json_encode(["success" => $success]);
             exit;
         }
     }
-
+    public function manage_services() {
+        require_once MODEL_PATH . '/Services.php';
+        $servicesModel = new Services($this->db);
+    
+        $services = $servicesModel->getAllServices(); // Fetch services from the database
+        
+        require VIEW_PATH . '/provider/services.php'; // Pass `$services` to the view
+    }
     public function deleteService() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'];
