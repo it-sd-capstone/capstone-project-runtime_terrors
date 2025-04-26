@@ -10,76 +10,133 @@ class Service {
     /**
      * Constructor - initialize with database connection
      * 
-     * @param mysqli $db Database connection
+     * @param mysqli|PDO $db Database connection
      */
     public function __construct($db) {
         $this->db = $db;
     }
     
     /**
-     * Get all active services
-     * 
+     * Get services with flexible filtering options
+     *
+     * @param bool $activeOnly Whether to include only active services
+     * @param int $limit Limit the number of services returned (0 for no limit)
+     * @param string $orderBy Field to order by (default: 'name')
+     * @param array $fields Specific fields to retrieve (empty for all fields)
      * @return array List of services
      */
-    public function getAllServices() {
+    public function getServices($activeOnly = true, $limit = 0, $orderBy = 'name', $fields = []) {
         $services = [];
         
         try {
-            $query = "SELECT * FROM services WHERE is_active = 1 ORDER BY name";
+            // Determine fields to select
+            $selectedFields = empty($fields) ? '*' : implode(', ', $fields);
             
-            if ($this->db instanceof mysqli) {
-                $result = $this->db->query($query);
-                if ($result) {
-                    while ($row = $result->fetch_assoc()) {
-                        $services[] = $this->enrichServiceData($row);
+            // Start building the query
+            $query = "SELECT $selectedFields FROM services";
+            
+            // Add WHERE clause if activeOnly is true
+            if ($activeOnly) {
+                $query .= " WHERE is_active = 1";
+            }
+            
+            // Add ORDER BY clause
+            $query .= " ORDER BY $orderBy";
+            
+            // Add LIMIT clause if limit is specified
+            if ($limit > 0) {
+                $query .= " LIMIT ?";
+                
+                if ($this->db instanceof mysqli) {
+                    $stmt = $this->db->prepare($query);
+                    $stmt->bind_param("i", $limit);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    
+                    if ($result) {
+                        while ($row = $result->fetch_assoc()) {
+                            // Only enrich data if we're selecting all fields
+                            $services[] = ($selectedFields === '*') ? 
+                                $this->enrichServiceData($row) : $row;
+                        }
+                    }
+                } elseif ($this->db instanceof PDO) {
+                    $stmt = $this->db->prepare($query);
+                    $stmt->bindParam(1, $limit, PDO::PARAM_INT);
+                    $stmt->execute();
+                    
+                    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    if ($selectedFields === '*') {
+                        $services = array_map([$this, 'enrichServiceData'], $rows);
+                    } else {
+                        $services = $rows;
                     }
                 }
-            } elseif ($this->db instanceof PDO) {
-                $stmt = $this->db->query($query);
-                $services = array_map([$this, 'enrichServiceData'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+            } else {
+                // No limit
+                if ($this->db instanceof mysqli) {
+                    $result = $this->db->query($query);
+                    if ($result) {
+                        while ($row = $result->fetch_assoc()) {
+                            // Only enrich data if we're selecting all fields
+                            $services[] = ($selectedFields === '*') ? 
+                                $this->enrichServiceData($row) : $row;
+                        }
+                    }
+                } elseif ($this->db instanceof PDO) {
+                    $stmt = $this->db->query($query);
+                    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    if ($selectedFields === '*') {
+                        $services = array_map([$this, 'enrichServiceData'], $rows);
+                    } else {
+                        $services = $rows;
+                    }
+                }
             }
+            
+            error_log("Found " . count($services) . " services");
         } catch (Exception $e) {
-            error_log("Error in getAllServices: " . $e->getMessage());
+            error_log("Error in getServices: " . $e->getMessage());
         }
         
         return $services;
     }
     
     /**
-     * Get featured services for homepage display
-     * 
+     * Get all active services - WRAPPER for backward compatibility
+     *
+     * @return array List of services
+     */
+    public function getAllServices() {
+        return $this->getServices(true);
+    }
+    
+    /**
+     * Get all services including inactive ones - WRAPPER for backward compatibility
+     *
+     * @return array List of all services
+     */
+    public function getAllServicesWithInactive() {
+        return $this->getServices(false);
+    }
+    
+    /**
+     * Get featured services for homepage display - WRAPPER for backward compatibility
+     *
      * @param int $limit Number of services to return
      * @return array List of featured services
      */
     public function getFeaturedServices($limit = 3) {
-        $services = [];
-        
-        try {
-            $query = "SELECT * FROM services WHERE is_active = 1 ORDER BY service_id LIMIT ?";
-            
-            if ($this->db instanceof mysqli) {
-                $stmt = $this->db->prepare($query);
-                $stmt->bind_param("i", $limit);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                if ($result) {
-                    while ($row = $result->fetch_assoc()) {
-                        $services[] = $this->enrichServiceData($row);
-                    }
-                }
-            } elseif ($this->db instanceof PDO) {
-                $stmt = $this->db->prepare($query);
-                $stmt->bindParam(1, $limit, PDO::PARAM_INT);
-                $stmt->execute();
-                
-                $services = array_map([$this, 'enrichServiceData'], $stmt->fetchAll(PDO::FETCH_ASSOC));
-            }
-        } catch (Exception $e) {
-            error_log("Error in getFeaturedServices: " . $e->getMessage());
-        }
-        
-        return $services;
+        return $this->getServices(true, $limit, 'service_id');
+    }
+    
+    /**
+     * Get simplified list of active services - WRAPPER for backward compatibility
+     *
+     * @return array List of active services with basic fields
+     */
+    public function getServicesBasic() {
+        return $this->getServices(true, 0, 'name', ['service_id', 'name', 'description', 'duration', 'price']);
     }
     
     /**
@@ -116,6 +173,7 @@ class Service {
         
         return null;
     }
+    
     /**
      * Get all services offered by a specific provider
      *
@@ -127,7 +185,6 @@ class Service {
         
         try {
             // Query that joins provider_services with services table
-            // Note the added alias "s.name AS service_name" to match what the view expects
             $query = "SELECT s.*, s.name AS service_name, ps.provider_service_id, ps.custom_duration, ps.custom_notes
                     FROM services s
                     JOIN provider_services ps ON s.service_id = ps.service_id
@@ -154,6 +211,53 @@ class Service {
             }
         } catch (Exception $e) {
             error_log("Error in getServicesByProvider: " . $e->getMessage());
+        }
+        
+        return $services;
+    }
+    
+    /**
+     * Search services by name or description
+     * 
+     * @param string $searchTerm Term to search for
+     * @param bool $activeOnly Whether to include only active services
+     * @return array Matching services
+     */
+    public function searchServices($searchTerm, $activeOnly = true) {
+        $services = [];
+        
+        try {
+            $searchTerm = "%$searchTerm%";
+            $query = "SELECT * FROM services 
+                     WHERE (name LIKE ? OR description LIKE ?)";
+            
+            if ($activeOnly) {
+                $query .= " AND is_active = 1";
+            }
+            
+            $query .= " ORDER BY name";
+            
+            if ($this->db instanceof mysqli) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bind_param("ss", $searchTerm, $searchTerm);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result) {
+                    while ($row = $result->fetch_assoc()) {
+                        $services[] = $this->enrichServiceData($row);
+                    }
+                }
+            } elseif ($this->db instanceof PDO) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(1, $searchTerm, PDO::PARAM_STR);
+                $stmt->bindParam(2, $searchTerm, PDO::PARAM_STR);
+                $stmt->execute();
+                
+                $services = array_map([$this, 'enrichServiceData'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+            }
+        } catch (Exception $e) {
+            error_log("Error in searchServices: " . $e->getMessage());
         }
         
         return $services;
@@ -229,15 +333,28 @@ class Service {
      */
     public function createService($serviceData) {
         try {
-            $query = "INSERT INTO services (name, description, duration) 
-                     VALUES (?, ?, ?)";
+            // Validate required fields
+            if (empty($serviceData['name']) || empty($serviceData['description'])) {
+                error_log("Missing required fields for service creation");
+                return false;
+            }
+            
+            // Set defaults for optional fields
+            $duration = $serviceData['duration'] ?? 30;
+            $price = $serviceData['price'] ?? 0;
+            $isActive = $serviceData['is_active'] ?? 1;
+            
+            $query = "INSERT INTO services (name, description, duration, price, is_active) 
+                     VALUES (?, ?, ?, ?, ?)";
             
             if ($this->db instanceof mysqli) {
                 $stmt = $this->db->prepare($query);
-                $stmt->bind_param("ssi", 
+                $stmt->bind_param("ssidi", 
                     $serviceData['name'],
                     $serviceData['description'],
-                    $serviceData['duration']
+                    $duration,
+                    $price,
+                    $isActive
                 );
                 
                 if ($stmt->execute()) {
@@ -247,7 +364,9 @@ class Service {
                 $stmt = $this->db->prepare($query);
                 $stmt->bindParam(1, $serviceData['name'], PDO::PARAM_STR);
                 $stmt->bindParam(2, $serviceData['description'], PDO::PARAM_STR);
-                $stmt->bindParam(3, $serviceData['duration'], PDO::PARAM_INT);
+                $stmt->bindParam(3, $duration, PDO::PARAM_INT);
+                $stmt->bindParam(4, $price, PDO::PARAM_STR);
+                $stmt->bindParam(5, $isActive, PDO::PARAM_INT);
                 
                 if ($stmt->execute()) {
                     return $this->db->lastInsertId();
@@ -261,6 +380,29 @@ class Service {
     }
     
     /**
+     * Get the total count of services
+     * @param bool $activeOnly Whether to count only active services
+     * @return int Total number of services
+     */
+    public function getTotalCount($activeOnly = false) {
+        try {
+            $query = "SELECT COUNT(*) as count FROM services";
+            if ($activeOnly) {
+                $query .= " WHERE is_active = 1";
+            }
+            
+            $stmt = $this->db->query($query);
+            if ($stmt) {
+                $result = $stmt->fetch_assoc();
+                return $result['count'];
+            }
+        } catch (Exception $e) {
+            error_log("Error in getTotalCount: " . $e->getMessage());
+        }
+        return 0;
+    }
+
+    /**
      * Update an existing service
      * 
      * @param int $serviceId Service ID to update
@@ -269,28 +411,81 @@ class Service {
      */
     public function updateService($serviceId, $serviceData) {
         try {
-            $query = "UPDATE services 
-                     SET name = ?, description = ?, duration = ?, is_active = ? 
-                     WHERE service_id = ?";
+            // Validate service ID
+            if (empty($serviceId)) {
+                error_log("Missing service ID for update");
+                return false;
+            }
+            
+            // Build query dynamically based on provided fields
+            $updateFields = [];
+            $params = [];
+            $types = '';
+            
+            // Check each possible field and add to update if present
+            if (isset($serviceData['name'])) {
+                $updateFields[] = "name = ?";
+                $params[] = $serviceData['name'];
+                $types .= 's';
+            }
+            
+            if (isset($serviceData['description'])) {
+                $updateFields[] = "description = ?";
+                $params[] = $serviceData['description'];
+                $types .= 's';
+            }
+            
+            if (isset($serviceData['duration'])) {
+                $updateFields[] = "duration = ?";
+                $params[] = $serviceData['duration'];
+                $types .= 'i';
+            }
+            
+            if (isset($serviceData['price'])) {
+                $updateFields[] = "price = ?";
+                $params[] = $serviceData['price'];
+                $types .= 'd';
+            }
+            
+            if (isset($serviceData['is_active'])) {
+                $updateFields[] = "is_active = ?";
+                $params[] = $serviceData['is_active'];
+                $types .= 'i';
+            }
+            
+            // If no fields to update, return false
+            if (empty($updateFields)) {
+                error_log("No fields provided for service update");
+                return false;
+            }
+            
+            // Add service ID to params
+            $params[] = $serviceId;
+            $types .= 'i';
+            
+            $query = "UPDATE services SET " . implode(", ", $updateFields) . " WHERE service_id = ?";
             
             if ($this->db instanceof mysqli) {
                 $stmt = $this->db->prepare($query);
-                $stmt->bind_param("ssiii", 
-                    $serviceData['name'],
-                    $serviceData['description'],
-                    $serviceData['duration'],
-                    $serviceData['is_active'],
-                    $serviceId
-                );
+                
+                // Dynamically bind parameters
+                $bindParams = array_merge([$types], $params);
+                $stmt->bind_param(...$bindParams);
                 
                 return $stmt->execute();
             } elseif ($this->db instanceof PDO) {
                 $stmt = $this->db->prepare($query);
-                $stmt->bindParam(1, $serviceData['name'], PDO::PARAM_STR);
-                $stmt->bindParam(2, $serviceData['description'], PDO::PARAM_STR);
-                $stmt->bindParam(3, $serviceData['duration'], PDO::PARAM_INT);
-                $stmt->bindParam(4, $serviceData['is_active'], PDO::PARAM_INT);
-                $stmt->bindParam(5, $serviceId, PDO::PARAM_INT);
+                
+                // Bind each parameter with its appropriate type
+                foreach ($params as $i => $param) {
+                    $paramType = PDO::PARAM_STR;
+                    if ($types[$i] === 'i') {
+                        $paramType = PDO::PARAM_INT;
+                    } elseif ($types[$i] === 'd') {
+                        $paramType = PDO::PARAM_STR; // PDO doesn't have PARAM_FLOAT
+                    }
+                    $stmt->bindValue($i + 1, $param, $paramType);
+                }
                 
                 return $stmt->execute();
             }
@@ -301,6 +496,7 @@ class Service {
         return false;
     }
     
+    
     /**
      * Delete a service (or deactivate it)
      * 
@@ -310,6 +506,20 @@ class Service {
      */
     public function deleteService($serviceId, $permanent = false) {
         try {
+            // Check if service is in use
+            $query = "SELECT COUNT(*) as count FROM appointments WHERE service_id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("i", $serviceId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            
+            // If service is in use and permanent deletion requested, don't allow it
+            if ($permanent && $row['count'] > 0) {
+                error_log("Cannot permanently delete service ID $serviceId - it is used in appointments");
+                return false;
+            }
+            
             if ($permanent) {
                 $query = "DELETE FROM services WHERE service_id = ?";
             } else {
@@ -330,5 +540,118 @@ class Service {
         }
         
         return false;
+    }
+    
+    /**
+     * Get top services by usage
+     * @param int $limit Number of services to return
+     * @return array Top services with usage counts
+     */
+    public function getTopServicesByUsage($limit = 5) {
+        try {
+            $query = "SELECT s.service_id, s.name, COUNT(a.appointment_id) as usage_count
+                    FROM services s
+                    LEFT JOIN appointments a ON s.service_id = a.service_id
+                    GROUP BY s.service_id, s.name
+                    ORDER BY usage_count DESC
+                    LIMIT ?";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("i", $limit);
+            $stmt->execute();
+            
+            $result = $stmt->get_result();
+            return $result->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            error_log("Database error in getTopServicesByUsage: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Toggle service active status
+     * @param int $serviceId Service ID to toggle
+     * @return bool Success flag
+     */
+    public function toggleServiceStatus($serviceId) {
+        try {
+            // First get current status
+            $stmt = $this->db->prepare("SELECT is_active FROM services WHERE service_id = ?");
+            $stmt->bind_param("i", $serviceId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result && $row = $result->fetch_assoc()) {
+                $newStatus = $row['is_active'] ? 0 : 1; // Toggle status
+                
+                // Update status
+                $updateStmt = $this->db->prepare("UPDATE services SET is_active = ? WHERE service_id = ?");
+                $updateStmt->bind_param("ii", $newStatus, $serviceId);
+                return $updateStmt->execute();
+            }
+            return false;
+        } catch (Exception $e) {
+            error_log("Error toggling service status: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Check if a service exists
+     * @param int $serviceId Service ID to check
+     * @return bool Whether the service exists
+     */
+    public function serviceExists($serviceId) {
+        try {
+            $stmt = $this->db->prepare("SELECT service_id FROM services WHERE service_id = ?");
+            $stmt->bind_param("i", $serviceId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            return $result->num_rows > 0;
+        } catch (Exception $e) {
+            error_log("Error checking if service exists: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get services by category
+     * @param string $category Category name
+     * @return array Services in the category
+     */
+    public function getServicesByCategory($category) {
+        $services = [];
+        
+        try {
+            $query = "SELECT s.* FROM services s
+                     JOIN service_categories sc ON s.service_id = sc.service_id
+                     JOIN categories c ON sc.category_id = c.category_id
+                     WHERE c.name = ? AND s.is_active = 1
+                     ORDER BY s.name";
+            
+            if ($this->db instanceof mysqli) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bind_param("s", $category);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result) {
+                    while ($row = $result->fetch_assoc()) {
+                        $services[] = $this->enrichServiceData($row);
+                    }
+                }
+            } elseif ($this->db instanceof PDO) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(1, $category, PDO::PARAM_STR);
+                $stmt->execute();
+                
+                $services = array_map([$this, 'enrichServiceData'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+            }
+        } catch (Exception $e) {
+            error_log("Error in getServicesByCategory: " . $e->getMessage());
+        }
+        
+        return $services;
     }
 }

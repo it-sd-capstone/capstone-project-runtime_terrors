@@ -1,10 +1,17 @@
 <?php
 require_once MODEL_PATH . '/Notification.php';
 
+/**
+ * NotificationController
+ * Handles notification-related requests and operations
+ */
 class NotificationController {
   private $db;
   private $notificationModel;
 
+  /**
+   * Initialize controller with database connection and models
+   */
   public function __construct() {
       // Start session if not already started
       if (session_status() === PHP_SESSION_NONE) {
@@ -15,24 +22,68 @@ class NotificationController {
       $this->db = get_db();
       
       // Initialize Notification model
-      require_once MODEL_PATH . '/Notification.php';
       $this->notificationModel = new Notification($this->db);
   }
 
-  // Retrieve notifications for a user
+  /**
+   * Retrieve and display notifications for a user
+   * 
+   * @param int $user_id The user ID
+   * @return void Loads the notifications view
+   */
   public function notifications($user_id) {
+      // Authorize access
+      if (!$this->canAccessUserNotifications($user_id)) {
+          $_SESSION['error'] = "You don't have permission to view these notifications";
+          header('Location: ' . base_url('index.php'));
+          exit;
+      }
+      
       $notifications = $this->notificationModel->getUserNotifications($user_id);
       include VIEW_PATH . '/patient/notifications.php';
   }
 
-  // Send pending notifications (automated task)
+  /**
+   * Send pending notifications (automated task)
+   * Can be called from a cron job or task scheduler
+   * 
+   * @return void
+   */
   public function sendPendingNotifications() {
-      $pendingNotifications = $this->notificationModel->getPendingNotifications();
-
-      foreach ($pendingNotifications as $notification) {
-          // Simulated sending logic (email, SMS, etc.)
-          $this->notificationModel->markNotificationSent($notification['notification_id']);
+      // For automated tasks, add security check
+      $apiKey = $_GET['api_key'] ?? $_POST['api_key'] ?? null;
+      if (!$this->isValidApiRequest($apiKey)) {
+          header('HTTP/1.1 403 Forbidden');
+          echo json_encode(['error' => 'Unauthorized access']);
+          exit;
       }
+      
+      $stats = ['processed' => 0, 'sent' => 0, 'failed' => 0];
+      $pendingNotifications = $this->notificationModel->getPendingNotifications();
+      $stats['processed'] = count($pendingNotifications);
+      
+      foreach ($pendingNotifications as $notification) {
+          // Here you would call your email/SMS service
+          // For now, we're just marking them as sent
+          if ($this->notificationModel->markNotificationSent($notification['notification_id'])) {
+              $stats['sent']++;
+          } else {
+              $stats['failed']++;
+          }
+      }
+      
+      // Log the activity
+      $this->logActivity(
+          'send_notifications',
+          "Processed {$stats['processed']} notifications. Sent: {$stats['sent']}, Failed: {$stats['failed']}"
+      );
+      
+      // Return result
+      header('Content-Type: application/json');
+      echo json_encode([
+          'success' => true,
+          'stats' => $stats
+      ]);
   }
 
   /**
@@ -142,25 +193,40 @@ class NotificationController {
   
   /**
    * Mark notifications as read
+   * 
+   * @return void Outputs JSON response
    */
   public function markAsRead() {
       if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
           header('HTTP/1.1 405 Method Not Allowed');
+          echo json_encode(['error' => 'Method not allowed']);
+          exit;
+      }
+      
+      // Validate session
+      if (!isset($_SESSION['user_id'])) {
+          header('HTTP/1.1 401 Unauthorized');
+          echo json_encode(['error' => 'User not authenticated']);
           exit;
       }
       
       $notificationId = $_POST['notification_id'] ?? null;
       $markAll = isset($_POST['mark_all']) && $_POST['mark_all'] === '1';
+      $userId = $_SESSION['user_id'] ?? 0;
+      $success = false;
       
       if ($markAll) {
           // Mark all notifications as read for this user
-          $userId = $_SESSION['user_id'] ?? 0;
           $success = $this->notificationModel->markAllAsRead($userId);
+          
+          // Log the activity
+          $this->logActivity('mark_all_read', "User marked all notifications as read");
       } elseif ($notificationId) {
           // Mark specific notification as read
           $success = $this->notificationModel->markAsRead($notificationId);
-      } else {
-          $success = false;
+          
+          // Log the activity
+          $this->logActivity('mark_read', "User marked notification #$notificationId as read");
       }
       
       // Return JSON response
@@ -178,8 +244,12 @@ class NotificationController {
    * @return bool Success status
    */
   public function addSystemNotification($type, $message, $userId = null) {
+      // Construct a proper subject line based on the type
+      $subject = $this->getSubjectFromType($type);
+      
       return $this->notificationModel->addNotification([
           'type' => $type,
+          'subject' => $subject,
           'message' => $message,
           'user_id' => $userId,
           'is_system' => true
@@ -199,7 +269,61 @@ class NotificationController {
           $userId = $_SESSION['user_id'];
       }
       
-      return $this->notificationModel->logActivity($action, $details, $userId);
+      // Get IP address for better tracking
+      $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+      
+      return $this->notificationModel->logActivity($action, $details, $userId, $ipAddress);
+  }
+  
+  /**
+   * Check if the current user can access notifications for a specific user
+   * 
+   * @param int $user_id The user ID to check
+   * @return bool True if access is allowed
+   */
+  private function canAccessUserNotifications($user_id) {
+      // Admin can access all notifications
+      if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+          return true;
+      }
+      
+      // Users can only access their own notifications
+      return isset($_SESSION['user_id']) && $_SESSION['user_id'] == $user_id;
+  }
+  
+  /**
+   * Validate API requests for automated tasks
+   * 
+   * @param string $apiKey API key from request
+   * @return bool True if request is valid
+   */
+  private function isValidApiRequest($apiKey) {
+      // In production, use a secure API key validation mechanism
+      // For this example, we're using a simple check
+      $validApiKey = getenv('API_KEY') ?: 'your-secure-api-key-here';
+      
+      return $apiKey === $validApiKey;
+  }
+  
+  /**
+   * Generate a subject line from notification type
+   * 
+   * @param string $type Notification type
+   * @return string Subject line
+   */
+  private function getSubjectFromType($type) {
+      $subjects = [
+          'appointment_created' => 'New Appointment Created',
+          'appointment_confirmed' => 'Appointment Confirmed',
+          'appointment_completed' => 'Appointment Completed',
+          'appointment_canceled' => 'Appointment Canceled',
+          'user_registered' => 'New User Registration',
+          'system_warning' => 'System Warning',
+          'system_error' => 'System Error',
+          'security_alert' => 'Security Alert'
+      ];
+      
+      return $subjects[$type] ?? 'System Notification';
   }
 }
 ?>

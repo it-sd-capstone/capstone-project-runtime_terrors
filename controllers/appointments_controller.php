@@ -16,10 +16,14 @@ class AppointmentsController {
         // Debug message to check connection type
         error_log("Using MySQLi connection in AppointmentsController");
         
-        // Initialize ActivityLog model
+        // Initialize models
         require_once MODEL_PATH . '/ActivityLog.php';
-        $this->activityLogModel = new ActivityLog($this->db);
+        require_once MODEL_PATH . '/Appointment.php';
+        require_once MODEL_PATH . '/Services.php';
         
+        $this->activityLogModel = new ActivityLog($this->db);
+        $this->appointmentModel = new Appointment($this->db);
+        $this->serviceModel = new Service($this->db);
         // Check if user is logged in - add this authentication check
         $this->requireLogin();
     }
@@ -47,19 +51,19 @@ class AppointmentsController {
         $userRole = $_SESSION['role'];
         $userId = $_SESSION['user_id'];
         
-        // Get available appointment slots
-        $availableSlots = $this->getAvailableSlots();
+        // Get available appointment slots using the model method
+        $availableSlots = $this->appointmentModel->getAvailableSlots();
         error_log("Successfully retrieved available slots: " . count($availableSlots));
         error_log("Available slots: " . count($availableSlots));
         
-        // Get user's appointments if logged in
+        // Get user's appointments if logged in using the model methods
         $userAppointments = [];
         if ($userRole === 'patient') {
-            $userAppointments = $this->getUserAppointments($userId);
+            $userAppointments = $this->appointmentModel->getUpcomingAppointments($userId);
         } elseif ($userRole === 'provider') {
-            $userAppointments = $this->getProviderAppointments($userId);
+            $userAppointments = $this->appointmentModel->getByProvider($userId);
         } elseif ($userRole === 'admin') {
-            $userAppointments = $this->getAllAppointments();
+            $userAppointments = $this->appointmentModel->getAllAppointments();
         }
         error_log("Appointments: " . count($userAppointments));
         
@@ -85,93 +89,45 @@ class AppointmentsController {
             // Process booking form
             $availabilityId = $_POST['availability_id'] ?? null;
             $serviceId = $_POST['service_id'] ?? null;
+            $type = $_POST['type'] ?? 'in_person';
+            $notes = $_POST['notes'] ?? '';
+            $reason = $_POST['reason'] ?? '';
             
             if (!$availabilityId || !$serviceId) {
                 $error = "Missing required booking information";
             } else {
-                // Get availability details
-                $stmt = $this->db->prepare("SELECT provider_id, available_date, start_time, end_time 
-                                           FROM provider_availability 
-                                           WHERE availability_id = ? AND is_available = 1");
-                $stmt->bind_param("i", $availabilityId);
-                $stmt->execute();
-                $result = $stmt->get_result();
+                // Use the model method to book the appointment
+                $bookingResult = $this->appointmentModel->bookAppointment(
+                    $_SESSION['user_id'],     // patientId
+                    $availabilityId,          // availabilityId
+                    $serviceId,               // serviceId
+                    $type,                    // type
+                    $notes,                   // notes
+                    $reason                   // reason
+                );
                 
-                if ($result && $result->num_rows > 0) {
-                    $availability = $result->fetch_assoc();
+                if ($bookingResult && isset($bookingResult['appointment_id'])) {
+                    // Log appointment creation with detailed information
+                    $details = json_encode([
+                        'service_id' => $serviceId,
+                        'appointment_date' => $bookingResult['appointment_date'],
+                        'start_time' => $bookingResult['start_time'],
+                        'end_time' => $bookingResult['end_time'],
+                        'provider_id' => $bookingResult['provider_id']
+                    ]);
                     
-                    // Get service duration
-                    $stmtService = $this->db->prepare("SELECT duration FROM services WHERE service_id = ?");
-                    $stmtService->bind_param("i", $serviceId);
-                    $stmtService->execute();
-                    $serviceResult = $stmtService->get_result();
-                    $service = $serviceResult->fetch_assoc();
-                    
-                    // Calculate end time based on service duration
-                    $startTime = new DateTime($availability['start_time']);
-                    $endTime = clone $startTime;
-                    $endTime->add(new DateInterval('PT' . $service['duration'] . 'M'));
-                    $endTimeStr = $endTime->format('H:i:s');
-                    
-                    // Create the appointment
-                    $query = "INSERT INTO appointments (
-                        patient_id, provider_id, service_id, 
-                        appointment_date, start_time, end_time,
-                        status, type, notes, reason
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                    
-                    $stmt = $this->db->prepare($query);
-                    
-                    $patientId = $_SESSION['user_id'];
-                    $providerId = $availability['provider_id'];
-                    $appointmentDate = $availability['available_date'];
-                    $startTimeStr = $availability['start_time'];
-                    $status = $_POST['status'] ?? 'scheduled';
-                    $type = $_POST['type'] ?? 'in_person';
-                    $notes = $_POST['notes'] ?? '';
-                    $reason = $_POST['reason'] ?? '';
-                    
-                    $stmt->bind_param(
-                        "iiissssss", 
-                        $patientId, 
-                        $providerId, 
-                        $serviceId, 
-                        $appointmentDate, 
-                        $startTimeStr, 
-                        $endTimeStr,
-                        $status, $type, $notes, $reason
+                    $this->activityLogModel->logAppointment(
+                        $_SESSION['user_id'], 
+                        'created', 
+                        $bookingResult['appointment_id'], 
+                        $details
                     );
                     
-                    if ($stmt->execute()) {
-                        // Get the new appointment ID
-                        $appointmentId = $this->db->insert_id;
-                        
-                        // Log appointment creation with detailed information
-                        $details = json_encode([
-                            'service_id' => $serviceId,
-                            'appointment_date' => $appointmentDate,
-                            'start_time' => $startTimeStr,
-                            'end_time' => $endTimeStr,
-                            'provider_id' => $providerId
-                        ]);
-                        $this->activityLogModel->logAppointment($_SESSION['user_id'], 'created', $appointmentId, $details);
-                        
-                        // Mark the availability as no longer available
-                        $updateStmt = $this->db->prepare("UPDATE provider_availability 
-                                                         SET is_available = 0 
-                                                         WHERE availability_id = ?");
-                        $updateStmt->bind_param("i", $availabilityId);
-                        $updateStmt->execute();
-                        
-                        $success = "Appointment booked successfully!";
-                        // Redirect to appointments list
-                        header('Location: ' . base_url('index.php/appointments?success=booked'));
-                        exit;
-                    } else {
-                        $error = "Failed to book appointment: " . $this->db->error;
-                    }
+                    $_SESSION['success'] = "Appointment booked successfully!";
+                    header('Location: ' . base_url('index.php/appointments?success=booked'));
+                    exit;
                 } else {
-                    $error = "Selected time slot is no longer available";
+                    $error = $bookingResult['message'] ?? "Failed to book appointment";
                 }
             }
         }
@@ -179,19 +135,17 @@ class AppointmentsController {
         // Get available slot details for the form
         $availabilityDetails = null;
         if ($availabilityId) {
-            $stmt = $this->db->prepare("
-                SELECT pa.*, u.first_name, u.last_name 
-                FROM provider_availability pa
-                JOIN users u ON pa.provider_id = u.user_id
-                WHERE availability_id = ? AND is_available = 1
-            ");
-            $stmt->bind_param("i", $availabilityId);
-            $stmt->execute();
-            $result = $stmt->get_result();
+            // Using the model to get availability details
+            $slots = $this->appointmentModel->getAvailableSlots();
             
-            if ($result && $result->num_rows > 0) {
-                $availabilityDetails = $result->fetch_assoc();
-            } else {
+            foreach ($slots as $slot) {
+                if ($slot['availability_id'] == $availabilityId) {
+                    $availabilityDetails = $slot;
+                    break;
+                }
+            }
+            
+            if (!$availabilityDetails) {
                 $error = "Selected time slot not found or no longer available";
             }
         } else {
@@ -199,13 +153,13 @@ class AppointmentsController {
         }
         
         // Get all services for dropdown
-        $services = [];
-        $stmt = $this->db->query("SELECT service_id, name, description, duration FROM services WHERE is_active = 1");
-        if ($stmt) {
-            while ($row = $stmt->fetch_assoc()) {
-                $services[] = $row;
-            }
-        }
+        // This would need a Service model, but we can use a simplified approach for now
+        // In a complete implementation, this should use a ServiceModel
+        $services = $this->serviceModel->getAllServices();
+        // Or if you need only active services:
+        $services = array_filter($services, function($service) {
+            return $service['is_active'] == 1;
+        });
         
         // Load booking form view
         include VIEW_PATH . '/appointments/book.php';
@@ -215,6 +169,7 @@ class AppointmentsController {
         // User is already authenticated by the constructor
         
         $appointmentId = $_GET['id'] ?? null;
+        $reason = $_GET['reason'] ?? 'No reason provided';
         
         if (!$appointmentId) {
             header('Location: ' . base_url('index.php/appointments'));
@@ -222,41 +177,28 @@ class AppointmentsController {
         }
         
         // Check appointment belongs to user or user is admin/provider
-        $stmt = $this->db->prepare("SELECT * FROM appointments WHERE appointment_id = ?");
-        $stmt->bind_param("i", $appointmentId);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $appointment = $this->appointmentModel->getAppointmentById($appointmentId);
         
-        if ($result && $result->num_rows > 0) {
-            $appointment = $result->fetch_assoc();
-            
+        if ($appointment) {
             // Only the patient who booked it, the provider assigned to it, or an admin can cancel
-            if ($_SESSION['user_id'] == $appointment['patient_id'] || 
-                $_SESSION['user_id'] == $appointment['provider_id'] || 
+            if ($_SESSION['user_id'] == $appointment['patient_id'] ||
+                $_SESSION['user_id'] == $appointment['provider_id'] ||
                 $_SESSION['role'] === 'admin') {
                 
-                // Update appointment status
-                $updateStmt = $this->db->prepare("UPDATE appointments SET status = 'canceled' WHERE appointment_id = ?");
-                $updateStmt->bind_param("i", $appointmentId);
-                
-                if ($updateStmt->execute()) {
+                // Use the model to cancel the appointment
+                if ($this->appointmentModel->cancelAppointment($appointmentId, $reason)) {
                     // Log appointment cancellation with details
-                    $cancelReason = $_GET['reason'] ?? 'No reason provided';
                     $details = json_encode([
                         'previous_status' => $appointment['status'],
-                        'cancellation_reason' => $cancelReason,
+                        'cancellation_reason' => $reason,
                         'canceled_by_role' => $_SESSION['role'],
                         'appointment_date' => $appointment['appointment_date'],
                         'start_time' => $appointment['start_time']
                     ]);
                     $this->activityLogModel->logAppointment($_SESSION['user_id'], 'canceled', $appointmentId, $details);
                     
-                    // Free up the availability slot again
-                    if ($appointment['availability_id']) {
-                        $freeSlot = $this->db->prepare("UPDATE provider_availability SET is_available = 1 WHERE availability_id = ?");
-                        $freeSlot->bind_param("i", $appointment['availability_id']);
-                        $freeSlot->execute();
-                    }
+                    // Restore availability using model method
+                    $this->appointmentModel->restoreAvailabilitySlot($appointmentId);
                     
                     header('Location: ' . base_url('index.php/appointments?success=canceled'));
                     exit;
@@ -267,112 +209,6 @@ class AppointmentsController {
         // If we get here, something went wrong
         header('Location: ' . base_url('index.php/appointments?error=cancel_failed'));
         exit;
-    }
-    
-    private function getAvailableSlots() {
-        $slots = [];
-        
-        $stmt = $this->db->query("
-            SELECT pa.*, u.first_name, u.last_name 
-            FROM provider_availability pa
-            JOIN users u ON pa.provider_id = u.user_id
-            WHERE pa.is_available = 1 
-              AND pa.available_date >= CURDATE()
-            ORDER BY pa.available_date, pa.start_time
-        ");
-        
-        if ($stmt) {
-            while ($row = $stmt->fetch_assoc()) {
-                $slots[] = $row;
-            }
-        }
-        
-        return $slots;
-    }
-    
-    private function getUserAppointments($userId) {
-        $appointments = [];
-        
-        $stmt = $this->db->prepare("
-            SELECT a.*, 
-                   u_provider.first_name as provider_first_name, 
-                   u_provider.last_name as provider_last_name,
-                   s.name as service_name, 
-                   s.duration as service_duration
-            FROM appointments a
-            JOIN users u_provider ON a.provider_id = u_provider.user_id
-            JOIN services s ON a.service_id = s.service_id
-            WHERE a.patient_id = ?
-            ORDER BY a.appointment_date, a.start_time
-        ");
-        
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $appointments[] = $row;
-            }
-        }
-        
-        return $appointments;
-    }
-    
-    private function getProviderAppointments($userId) {
-        $appointments = [];
-        
-        $stmt = $this->db->prepare("
-            SELECT a.*, 
-                   u_patient.first_name as patient_first_name, 
-                   u_patient.last_name as patient_last_name,
-                   s.name as service_name, 
-                   s.duration as service_duration
-            FROM appointments a
-            JOIN users u_patient ON a.patient_id = u_patient.user_id
-            JOIN services s ON a.service_id = s.service_id
-            WHERE a.provider_id = ?
-            ORDER BY a.appointment_date, a.start_time
-        ");
-        
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $appointments[] = $row;
-            }
-        }
-        
-        return $appointments;
-    }
-    
-    private function getAllAppointments() {
-        $appointments = [];
-        
-        $stmt = $this->db->query("
-            SELECT a.*, 
-                   u_patient.first_name as patient_first_name, 
-                   u_patient.last_name as patient_last_name,
-                   u_provider.first_name as provider_first_name, 
-                   u_provider.last_name as provider_last_name,
-                   s.name as service_name, 
-                   s.duration as service_duration
-            FROM appointments a
-            JOIN users u_patient ON a.patient_id = u_patient.user_id
-            JOIN users u_provider ON a.provider_id = u_provider.user_id
-            JOIN services s ON a.service_id = s.service_id
-            ORDER BY a.appointment_date, a.start_time
-        ");
-        
-        if ($stmt) {
-            while ($row = $stmt->fetch_assoc()) {
-                $appointments[] = $row;
-            }
-        }
-        
-        return $appointments;
     }
     
     // Add a new method for updating appointment status that includes logging
@@ -397,17 +233,15 @@ class AppointmentsController {
         }
         
         // Get current appointment details
-        $stmt = $this->db->prepare("SELECT * FROM appointments WHERE appointment_id = ?");
-        $stmt->bind_param("i", $appointmentId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $appointment = $result->fetch_assoc();
+        $appointment = $this->appointmentModel->getAppointmentById($appointmentId);
         
-        // Update appointment status
-        $stmt = $this->db->prepare("UPDATE appointments SET status = ? WHERE appointment_id = ?");
-        $stmt->bind_param("si", $newStatus, $appointmentId);
+        if (!$appointment) {
+            header('Location: ' . base_url('index.php/appointments?error=appointment_not_found'));
+            exit;
+        }
         
-        if ($stmt->execute()) {
+        // Use the model's updateStatus method
+        if ($this->appointmentModel->updateStatus($appointmentId, $newStatus)) {
             // Log the status change with detailed information
             $details = json_encode([
                 'previous_status' => $appointment['status'],
@@ -441,29 +275,292 @@ class AppointmentsController {
             exit;
         }
         
-        // Get appointment details
-        $stmt = $this->db->prepare("
-            SELECT a.*, 
-                   u_patient.first_name as patient_first_name, 
-                   u_patient.last_name as patient_last_name,
-                   u_provider.first_name as provider_first_name, 
-                   u_provider.last_name as provider_last_name,
-                   s.name as service_name
-            FROM appointments a
-            JOIN users u_patient ON a.patient_id = u_patient.user_id
-            JOIN users u_provider ON a.provider_id = u_provider.user_id
-            JOIN services s ON a.service_id = s.service_id
-            WHERE a.appointment_id = ?
-        ");
-        $stmt->bind_param("i", $appointmentId);
-        $stmt->execute();
-        $appointment = $stmt->get_result()->fetch_assoc();
+        // Get appointment details using the model
+        $appointment = $this->appointmentModel->getAppointmentById($appointmentId);
+        
+        if (!$appointment) {
+            $_SESSION['error'] = "Appointment not found";
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
         
         // Get activity logs for this appointment
         $logs = $this->activityLogModel->getAppointmentLogs($appointmentId);
         
         // Load view
         include VIEW_PATH . '/appointments/history.php';
+    }
+    
+    /**
+     * Add a method for rescheduling appointments
+     */
+    public function reschedule() {
+        // Only the patient, provider, or admin can reschedule
+        if (!in_array($_SESSION['role'], ['patient', 'provider', 'admin'])) {
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        $appointmentId = $_GET['id'] ?? null;
+        
+        if (!$appointmentId) {
+            $_SESSION['error'] = "Appointment ID is required";
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        // Get the current appointment details
+        $appointment = $this->appointmentModel->getAppointmentById($appointmentId);
+        
+        if (!$appointment) {
+            $_SESSION['error'] = "Appointment not found";
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        // Check permissions - only patient who booked, provider assigned, or admin can reschedule
+        if ($_SESSION['user_id'] != $appointment['patient_id'] &&
+            $_SESSION['user_id'] != $appointment['provider_id'] &&
+            $_SESSION['role'] !== 'admin') {
+            $_SESSION['error'] = "You don't have permission to reschedule this appointment";
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        // Handle form submission
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $newDate = $_POST['appointment_date'] ?? '';
+            $newTime = $_POST['appointment_time'] ?? '';
+            
+            if (empty($newDate) || empty($newTime)) {
+                $_SESSION['error'] = "New date and time are required";
+            } else {
+                // Calculate end time based on service duration
+                $startTime = new DateTime($newTime);
+                $endTime = clone $startTime;
+                $serviceId = $appointment['service_id'];
+                
+                // Find available slots - this will calculate end time based on service duration
+                $availableSlots = $this->appointmentModel->findAvailableSlots(
+                    $appointment['provider_id'], 
+                    $newDate,
+                    $serviceId
+                );
+                
+                // Find an available slot that matches the requested time
+                $matchingSlot = null;
+                foreach ($availableSlots as $slot) {
+                    if ($slot['start_time'] == $newTime) {
+                        $matchingSlot = $slot;
+                        break;
+                    }
+                }
+                
+                if (!$matchingSlot) {
+                    $_SESSION['error'] = "Selected time slot is not available";
+                } else {
+                    // Extract end time from the matching slot
+                    $endTimeStr = $matchingSlot['end_time'];
+                    
+                    // Use the model to reschedule the appointment
+                    $result = $this->appointmentModel->rescheduleAppointment(
+                        $appointmentId, $newDate, $newTime, $endTimeStr
+                    );
+                    
+                    if ($result) {
+                        // Log the rescheduling
+                        $details = json_encode([
+                            'previous_date' => $appointment['appointment_date'],
+                            'previous_time' => $appointment['start_time'],
+                            'new_date' => $newDate,
+                            'new_time' => $newTime,
+                            'rescheduled_by' => $_SESSION['user_id'],
+                            'rescheduled_by_role' => $_SESSION['role']
+                        ]);
+                        
+                        $this->activityLogModel->logAppointment(
+                            $_SESSION['user_id'], 'rescheduled', $appointmentId, $details
+                        );
+                        
+                        $_SESSION['success'] = "Appointment rescheduled successfully";
+                        header('Location: ' . base_url('index.php/appointments'));
+                        exit;
+                    } else {
+                        $_SESSION['error'] = "Failed to reschedule appointment";
+                    }
+                }
+            }
+        }
+        
+        // Get available dates for the provider
+        $providerId = $appointment['provider_id'];
+        $availableDates = [];
+        
+        // Use the model to get available dates
+        $nextTwoWeeks = [];
+        $startDate = date('Y-m-d');
+        $endDate = date('Y-m-d', strtotime('+14 days'));
+        
+        // Get available slots for the next 14 days
+        $availableSlots = $this->appointmentModel->getAppointmentsByDateRange($startDate, $endDate, $providerId);
+        
+        // Extract unique dates from available slots
+        if (!empty($availableSlots)) {
+            foreach ($availableSlots as $slot) {
+                if (!in_array($slot['appointment_date'], $availableDates)) {
+                    $availableDates[] = $slot['appointment_date'];
+                }
+            }
+        }
+        
+        // Include the reschedule form
+        include VIEW_PATH . '/appointments/reschedule.php';
+    }
+    
+    /**
+     * AJAX endpoint to get available time slots for a date
+     */
+    public function getTimeSlots() {
+        // This should be an AJAX request
+        if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || $_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid request']);
+            exit;
+        }
+        
+        $providerId = $_GET['provider_id'] ?? null;
+        $date = $_GET['date'] ?? null;
+        $serviceId = $_GET['service_id'] ?? null;
+        
+        if (!$providerId || !$date) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Provider ID and date are required']);
+            exit;
+        }
+        
+        // Use the model method to find available slots
+        $slots = $this->appointmentModel->findAvailableSlots($providerId, $date, $serviceId);
+        
+        header('Content-Type: application/json');
+        echo json_encode(['slots' => $slots]);
+        exit;
+    }
+    
+    /**
+     * Method to view detailed appointment information
+     */
+    public function view() {
+        $appointmentId = $_GET['id'] ?? null;
+        
+        if (!$appointmentId) {
+            $_SESSION['error'] = "Appointment ID is required";
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        // Get appointment details using the model
+        $appointment = $this->appointmentModel->getAppointmentById($appointmentId);
+        
+        if (!$appointment) {
+            $_SESSION['error'] = "Appointment not found";
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        // Check permissions - only related parties can view details
+        if ($_SESSION['user_id'] != $appointment['patient_id'] && 
+            $_SESSION['user_id'] != $appointment['provider_id'] && 
+            $_SESSION['role'] !== 'admin') {
+            $_SESSION['error'] = "You don't have permission to view this appointment";
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        // Get appointment history/logs
+        $logs = $this->activityLogModel->getAppointmentLogs($appointmentId);
+        
+        // Include view
+        include VIEW_PATH . '/appointments/view.php';
+    }
+    
+    /**
+     * Get statistics for appointments (for provider or admin dashboards)
+     */
+    public function statistics() {
+        // Only providers and admins can see statistics
+        if ($_SESSION['role'] !== 'provider' && $_SESSION['role'] !== 'admin') {
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        $period = $_GET['period'] ?? 'weekly';
+        $startDate = $_GET['start_date'] ?? date('Y-m-d');
+        $limit = $_GET['limit'] ?? 8;
+        
+        // Use the model to get statistics
+        $stats = $this->appointmentModel->getAppointmentStatistics($period, $startDate, $limit);
+        
+        if (isset($_GET['format']) && $_GET['format'] === 'json') {
+            header('Content-Type: application/json');
+            echo json_encode(['statistics' => $stats]);
+            exit;
+        }
+        
+        // Include view
+        include VIEW_PATH . '/appointments/statistics.php';
+    }
+    
+    /**
+     * Export appointments to CSV
+     */
+    public function export() {
+        // Only admins can export data
+        if ($_SESSION['role'] !== 'admin') {
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        $startDate = $_GET['start_date'] ?? date('Y-m-d', strtotime('-1 month'));
+        $endDate = $_GET['end_date'] ?? date('Y-m-d');
+        
+        // Get appointments using the model
+        $appointments = $this->appointmentModel->getAppointmentsByDateRange($startDate, $endDate);
+        
+        // Set headers for CSV download
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="appointments_' . date('Y-m-d') . '.csv"');
+        
+        // Open output stream
+        $output = fopen('php://output', 'w');
+        
+        // Add CSV headers
+        fputcsv($output, [
+            'Appointment ID', 'Patient', 'Provider', 'Service', 
+            'Date', 'Start Time', 'End Time', 'Status', 
+            'Type', 'Reason', 'Notes', 'Created At'
+        ]);
+        
+        // Add appointment data
+        foreach ($appointments as $appointment) {
+            fputcsv($output, [
+                $appointment['appointment_id'],
+                $appointment['patient_name'] ?? 'Unknown',
+                $appointment['provider_name'] ?? 'Unknown',
+                $appointment['service_name'] ?? 'Unknown',
+                $appointment['appointment_date'],
+                $appointment['start_time'],
+                $appointment['end_time'],
+                $appointment['status'],
+                $appointment['type'],
+                $appointment['reason'],
+                $appointment['notes'],
+                $appointment['created_at']
+            ]);
+        }
+        
+        // Close the output stream
+        fclose($output);
+        exit;
     }
 }
 ?>
