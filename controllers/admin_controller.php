@@ -806,14 +806,48 @@ class AdminController {
      * @return mixed Result of the method call
      */
     public function getTestData($method, $args = []) {
-        if (method_exists($this, $method) && in_array($method, [
-            'getCount', 'getCountByRole', 'getCountByStatus', 
-            'getTopServices', 'getTopProviders', 'getAvailableSlotsCount',
-            'getBookedSlotsCount', 'getRecentActivity'
-        ])) {
-            return call_user_func_array([$this, $method], $args);
+        switch ($method) {
+            case 'getCount':
+                $table = $args[0] ?? '';
+                // Use the appropriate model's getTotalCount method
+                if ($table === 'users') {
+                    return $this->userModel->getTotalCount();
+                } elseif ($table === 'appointments') {
+                    return $this->appointmentModel->getTotalCount();
+                } elseif ($table === 'services') {
+                    return $this->serviceModel->getTotalCount();
+                }
+                return 0;
+        
+            case 'getCountByRole':
+                $role = $args[0] ?? '';
+                return $this->userModel->getCountByRole($role);
+        
+            case 'getCountByStatus':
+                $status = $args[0] ?? '';
+                return $this->appointmentModel->getCountByStatus($status);
+        
+            case 'getTopServices':
+                $limit = $args[0] ?? 5;
+                return $this->serviceModel->getTopServicesByUsage($limit);
+        
+            case 'getTopProviders':
+                $limit = $args[0] ?? 5;
+                return $this->providerModel->getTopProviders($limit);
+        
+            case 'getAvailableSlotsCount':
+                return $this->providerModel->getAvailableSlotsCount();
+        
+            case 'getBookedSlotsCount':
+                return $this->appointmentModel->getBookedSlotsCount();
+        
+            case 'getRecentActivity':
+                $limit = $args[0] ?? 10;
+                return $this->activityLogModel->getRecentActivity($limit);
+        
+            default:
+                return null;
         }
-        return null;
     }
     
     private function isUserAdmin() {
@@ -829,5 +863,216 @@ class AdminController {
 
     private function getServices() {
         return $this->serviceModel->getAllServices();
+    }
+    
+    /**
+     * Add a new provider
+     */
+    public function addProvider() {
+        // Check if user is admin
+        if (!$this->isUserAdmin()) {
+            $_SESSION['error'] = "You don't have permission to access this page";
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
+        }
+        
+        // Handle form submission
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Get form data
+            $userData = [
+                'first_name' => $_POST['first_name'] ?? '',
+                'last_name' => $_POST['last_name'] ?? '',
+                'email' => $_POST['email'] ?? '',
+                'password' => $_POST['password'] ?? '',
+                'phone' => $_POST['phone'] ?? '',
+                'role' => 'provider' // Force role to be provider
+            ];
+            
+            // Provider-specific data
+            $providerData = [
+                'specialization' => $_POST['specialization'] ?? '',
+                'title' => $_POST['title'] ?? '',
+                'bio' => $_POST['bio'] ?? '',
+                'accepting_new_patients' => isset($_POST['accepting_new_patients']) ? 1 : 0,
+                'max_patients_per_day' => $_POST['max_patients_per_day'] ?? 0
+            ];
+            
+            // Validate data
+            $errors = [];
+            if (empty($userData['first_name'])) $errors[] = "First name is required";
+            if (empty($userData['last_name'])) $errors[] = "Last name is required";
+            if (empty($userData['email'])) $errors[] = "Email is required";
+            if (empty($userData['password'])) $errors[] = "Password is required";
+            
+            if (!empty($errors)) {
+                $_SESSION['error'] = implode("<br>", $errors);
+                header('Location: ' . base_url('index.php/admin/addProvider'));
+                exit;
+            }
+            
+            try {
+                // Begin transaction
+                $this->db->begin_transaction();
+                
+                // Register the user first
+                $userId = $this->userModel->register(
+                    $userData['email'],
+                    password_hash($userData['password'], PASSWORD_DEFAULT),
+                    $userData['first_name'],
+                    $userData['last_name'],
+                    $userData['phone'],
+                    'provider'
+                );
+                
+                if (!$userId) {
+                    throw new Exception("Failed to create user account");
+                }
+                
+                // Create provider profile
+                $profileCreated = $this->providerModel->createProviderProfile($userId, $providerData);
+                
+                if (!$profileCreated) {
+                    throw new Exception("Failed to create provider profile");
+                }
+                
+                // Commit transaction
+                $this->db->commit();
+                
+                // Log the activity
+                $this->activityLogModel->logActivity(
+                    'provider_created',
+                    "Admin created new provider: {$userData['first_name']} {$userData['last_name']}",
+                    $_SESSION['user_id']
+                );
+                
+                $_SESSION['success'] = "Provider created successfully";
+                header('Location: ' . base_url('index.php/admin/providers'));
+                exit;
+                
+            } catch (Exception $e) {
+                // Rollback transaction on error
+                $this->db->rollback();
+                error_log("Error creating provider: " . $e->getMessage());
+                $_SESSION['error'] = "Error creating provider: " . $e->getMessage();
+                header('Location: ' . base_url('index.php/admin/addProvider'));
+                exit;
+            }
+        }
+        
+        // Display the add provider form
+        include VIEW_PATH . '/admin/add_provider.php';
+    }
+
+    /**
+     * Manage services offered by a provider
+     * 
+     * @return void
+     */
+    public function manageProviderServices() {
+        // Check if user is admin
+        if (!$this->isUserAdmin()) {
+            $_SESSION['error'] = "You don't have permission to access this page";
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
+        }
+        
+        // Get provider ID from URL parameters
+        $segments = explode('/', trim($_SERVER['PATH_INFO'] ?? '', '/'));
+        $providerId = $segments[2] ?? null; // admin/manageProviderServices/[providerId]
+        
+        if (!$providerId) {
+            $_SESSION['error'] = "Provider ID is required";
+            header('Location: ' . base_url('index.php/admin/providers'));
+            exit;
+        }
+        
+        // Get provider details
+        $provider = $this->userModel->getUserById($providerId);
+        
+        if (!$provider || $provider['role'] !== 'provider') {
+            $_SESSION['error'] = "Provider not found or user is not a provider";
+            header('Location: ' . base_url('index.php/admin/providers'));
+            exit;
+        }
+        
+        // Handle form submission for adding/removing services
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = $_POST['action'] ?? '';
+            
+            if ($action === 'add_service') {
+                $serviceId = $_POST['service_id'] ?? null;
+                $customPrice = $_POST['custom_price'] ?? null;
+                
+                if (!$serviceId) {
+                    $_SESSION['error'] = "Service is required";
+                } else {
+                    // Add service to provider
+                    $result = $this->providerModel->addServiceToProvider($providerId, $serviceId, $customPrice);
+                    
+                    if ($result) {
+                        $_SESSION['success'] = "Service added to provider successfully";
+                    } else {
+                        $_SESSION['error'] = "Failed to add service to provider";
+                    }
+                }
+            } elseif ($action === 'remove_service') {
+                $serviceId = $_POST['service_id'] ?? null;
+                
+                if (!$serviceId) {
+                    $_SESSION['error'] = "Service ID is required";
+                } else {
+                    // Remove service from provider
+                    $result = $this->providerModel->removeServiceFromProvider($providerId, $serviceId);
+                    
+                    if ($result) {
+                        $_SESSION['success'] = "Service removed from provider successfully";
+                    } else {
+                        $_SESSION['error'] = "Failed to remove service from provider";
+                    }
+                }
+            } elseif ($action === 'update_price') {
+                $serviceId = $_POST['service_id'] ?? null;
+                $customPrice = $_POST['custom_price'] ?? null;
+                
+                if (!$serviceId || !is_numeric($customPrice)) {
+                    $_SESSION['error'] = "Service ID and valid price are required";
+                } else {
+                    // Update service price for provider
+                    $result = $this->providerModel->updateProviderServicePrice($providerId, $serviceId, $customPrice);
+                    
+                    if ($result) {
+                        $_SESSION['success'] = "Service price updated successfully";
+                    } else {
+                        $_SESSION['error'] = "Failed to update service price";
+                    }
+                }
+            }
+            
+            // Redirect to refresh the page
+            header('Location: ' . base_url('index.php/admin/manageProviderServices/' . $providerId));
+            exit;
+        }
+        
+        // Get services offered by this provider
+        $services = $this->providerModel->getProviderServices($providerId);
+        
+        // Get all available services for adding
+        $allServices = $this->serviceModel->getAllServices();
+        
+        // Create a list of service IDs already offered by the provider
+        $providerServiceIds = array_column($services, 'service_id');
+        
+        // Filter out services already offered by the provider
+        $availableServices = array_filter($allServices, function($service) use ($providerServiceIds) {
+            return !in_array($service['service_id'], $providerServiceIds);
+        });
+        
+        // Include the admin header
+        include VIEW_PATH . '/partials/admin_header.php';
+        
+        include VIEW_PATH . '/admin/provider_services.php';
+        
+        // Include the footer
+        include VIEW_PATH . '/partials/footer.php';
     }
 }

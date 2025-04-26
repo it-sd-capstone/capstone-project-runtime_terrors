@@ -591,6 +591,53 @@ class User {
             return false;
         }
     }
+    /**
+     * Get users by role
+     *
+     * @param string $role Role to filter by (patient, provider, admin)
+     * @return array Array of users with the specified role
+     */
+    public function getUsersByRole($role) {
+        try {
+            if ($this->db instanceof mysqli) {
+                $stmt = $this->db->prepare("
+                    SELECT user_id, email, first_name, last_name, phone, role, is_active,
+                        email_verified_at, created_at, last_login
+                    FROM users
+                    WHERE role = ? AND is_active = 1
+                    ORDER BY last_name, first_name
+                ");
+                $stmt->bind_param("s", $role);
+                $stmt->execute();
+                
+                $result = $stmt->get_result();
+                $users = [];
+                while ($row = $result->fetch_assoc()) {
+                    $users[] = $row;
+                }
+                return $users;
+                
+            } elseif ($this->db instanceof PDO) {
+                $stmt = $this->db->prepare("
+                    SELECT user_id, email, first_name, last_name, phone, role, is_active,
+                        email_verified_at, created_at, last_login
+                    FROM users
+                    WHERE role = :role AND is_active = 1
+                    ORDER BY last_name, first_name
+                ");
+                $stmt->bindParam(':role', $role, PDO::PARAM_STR);
+                $stmt->execute();
+                
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            return [];
+            
+        } catch (Exception $e) {
+            error_log("Get users by role error: " . $e->getMessage());
+            return [];
+        }
+    }
 
     /**
      * Get user by ID
