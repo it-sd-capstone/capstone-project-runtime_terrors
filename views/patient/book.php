@@ -1,19 +1,35 @@
-<h4>Book an Appointment</h4>
+<!-- At the top of book.php, add this code to handle the provider data -->
+<?php
+$selectedProviderId = isset($provider) && isset($provider['user_id']) ? $provider['user_id'] : null;
+$selectedProviderName = isset($provider) ? 
+    htmlspecialchars($provider['first_name'] . ' ' . $provider['last_name']) : 
+    'Select a provider';
+?>
+
+<!-- Then in your form, use these variables -->
+<input type="hidden" name="provider_id" value="<?= $selectedProviderId ?>">
+<h2>Book Appointment with <?= $selectedProviderName ?></h2>
+
+<!-- If no provider is selected, show a dropdown to select one -->
+<?php if (!$selectedProviderId): ?>
+<div class="mb-3">
+    <label for="provider_select" class="form-label">Select Provider</label>
+    <select class="form-select" id="provider_select" name="provider_id" required>
+        <option value="">-- Select a Provider --</option>
+        <?php foreach ($providers as $p): ?>
+            <option value="<?= $p['user_id'] ?>">
+                <?= htmlspecialchars($p['first_name'] . ' ' . $p['last_name']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+</div>
+<?php endif; ?>
 
 <!-- Calendar for Available Slots -->
 <div id="calendar"></div>
 
 <!-- Appointment Booking Form -->
 
-<form id="book form" method="POST" action="<?= base_url('index.php/patient/confirmBooking') ?>">
-    <label>Select Provider:</label>
-    <select name="provider_id" required>
-        <?php foreach ($providers as $provider) : ?>
-            <option value="<?= $provider['provider_id'] ?>">
-                <?= htmlspecialchars($provider['provider_name']) ?> - <?= htmlspecialchars($provider['specialization']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
 
     <label>Select Service:</label>
     <select name="service_id" required>

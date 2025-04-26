@@ -827,6 +827,36 @@ class Provider {
             ];
         }
     }
+    /**
+     * Get a list of distinct specializations from all providers
+     * 
+     * @return array List of unique specializations
+     */
+    public function getDistinctSpecializations() {
+        try {
+            $query = "SELECT DISTINCT specialization 
+                    FROM provider_profiles 
+                    WHERE specialization IS NOT NULL AND specialization != '' 
+                    ORDER BY specialization";
+                    
+            $result = $this->db->query($query);
+            
+            if (!$result) {
+                error_log("Error getting specializations: " . $this->db->error);
+                return [];
+            }
+            
+            $specializations = [];
+            while ($row = $result->fetch_assoc()) {
+                $specializations[] = $row['specialization'];
+            }
+            
+            return $specializations;
+        } catch (Exception $e) {
+            error_log("Error in getDistinctSpecializations: " . $e->getMessage());
+            return [];
+        }
+    }
 
     /**
      * Get all provider specializations with count

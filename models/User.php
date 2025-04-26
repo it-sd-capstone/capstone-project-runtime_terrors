@@ -904,64 +904,7 @@ class User {
             }
         }
     
-    /**
-     * Get all available providers for booking
-     * 
-     * @return array List of available providers
-     */
-    public function getAvailableProviders() {
-        try {
-            if ($this->db instanceof mysqli) {
-                // MySQL implementation
-                $query = "SELECT u.user_id, u.first_name, u.last_name,
-                     p.specialization, p.title, p.bio, p.accepting_new_patients
-                     FROM users u
-                     JOIN provider_profiles p ON u.user_id = p.provider_id
-                     WHERE u.role = 'provider'
-                     AND u.is_active = 1
-                     AND p.accepting_new_patients = 1
-                     ORDER BY u.last_name, u.first_name";
-                
-                $stmt = $this->db->prepare($query);
-                if (!$stmt) {
-                    error_log("Prepare failed: " . $this->db->error);
-                    return [];
-                }
-                
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                $providers = [];
-                while ($row = $result->fetch_assoc()) {
-                    $providers[] = $row;
-                }
-                
-                return $providers;
-                
-            } elseif ($this->db instanceof PDO) {
-                // PDO implementation
-                $query = "SELECT u.user_id, u.first_name, u.last_name,
-                     p.specialization, p.title, p.bio, p.accepting_new_patients
-                     FROM users u
-                     JOIN provider_profiles p ON u.user_id = p.provider_id
-                     WHERE u.role = 'provider'
-                     AND u.is_active = 1
-                     AND p.accepting_new_patients = 1
-                     ORDER BY u.last_name, u.first_name";
-                
-                $stmt = $this->db->prepare($query);
-                $stmt->execute();
-                
-                return $stmt->fetchAll(PDO::FETCH_ASSOC);
-            } else {
-                throw new Exception("Unsupported database connection type");
-            }
-        } catch (Exception $e) {
-            error_log("Error getting available providers: " . $e->getMessage());
-            return [];
-        }
-    }
-    
+
     /**
      * Get all patients (users with role 'patient')
      * 
@@ -1229,160 +1172,109 @@ class User {
         }
     }
     /**
+     * Get patient profile data
+     * 
+     * @param int $patientId The patient's user ID
+     * @return array|null Patient profile data or null if not found
+     */
+    public function getPatientProfile($patientId) {
+        try {
+            // First check if the patient profile exists
+            $query = "SELECT * FROM patient_profiles WHERE patient_id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("i", $patientId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                // Profile exists, return it
+                return $result->fetch_assoc();
+            }
+            
+            // If no profile exists, get basic user data
+            $query = "SELECT user_id, first_name, last_name, email, phone, created_at 
+                    FROM users 
+                    WHERE user_id = ? AND role = 'patient'";
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("i", $patientId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                // Return basic user data
+                $userData = $result->fetch_assoc();
+                // Add empty profile fields
+                $userData['date_of_birth'] = null;
+                $userData['gender'] = null;
+                $userData['address'] = null;
+                $userData['emergency_contact_name'] = null;
+                $userData['emergency_contact_phone'] = null;
+                $userData['medical_history'] = null;
+                $userData['insurance_provider'] = null;
+                $userData['insurance_policy_number'] = null;
+                return $userData;
+            }
+            
+            return null;
+        } catch (Exception $e) {
+            error_log("Error in getPatientProfile: " . $e->getMessage());
+            return null;
+        }
+    }
+     /**
      * Get all available providers for booking
+     * 
+     * @return array List of available providers
      */
     public function getAvailableProviders() {
         try {
             if ($this->db instanceof mysqli) {
                 // MySQL implementation
-                $query = "SELECT u.user_id, u.first_name, u.last_name, 
+                $query = "SELECT u.user_id, u.first_name, u.last_name,
                      p.specialization, p.title, p.bio, p.accepting_new_patients
                      FROM users u
                      JOIN provider_profiles p ON u.user_id = p.provider_id
-                     WHERE u.role = 'provider' 
+                     WHERE u.role = 'provider'
                      AND u.is_active = 1
                      AND p.accepting_new_patients = 1
                      ORDER BY u.last_name, u.first_name";
-            
+                
                 $stmt = $this->db->prepare($query);
                 if (!$stmt) {
                     error_log("Prepare failed: " . $this->db->error);
                     return [];
                 }
-            
+                
                 $stmt->execute();
                 $result = $stmt->get_result();
-            
+                
                 $providers = [];
                 while ($row = $result->fetch_assoc()) {
                     $providers[] = $row;
                 }
-            
+                
                 return $providers;
-            
+                
             } elseif ($this->db instanceof PDO) {
                 // PDO implementation
-                $query = "SELECT u.user_id, u.first_name, u.last_name, 
+                $query = "SELECT u.user_id, u.first_name, u.last_name,
                      p.specialization, p.title, p.bio, p.accepting_new_patients
                      FROM users u
                      JOIN provider_profiles p ON u.user_id = p.provider_id
-                     WHERE u.role = 'provider' 
+                     WHERE u.role = 'provider'
                      AND u.is_active = 1
                      AND p.accepting_new_patients = 1
                      ORDER BY u.last_name, u.first_name";
-            
+                
                 $stmt = $this->db->prepare($query);
                 $stmt->execute();
-            
+                
                 return $stmt->fetchAll(PDO::FETCH_ASSOC);
             } else {
                 throw new Exception("Unsupported database connection type");
             }
         } catch (Exception $e) {
             error_log("Error getting available providers: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    /**
-     * Get patient profile by ID
-     */
-    public function getPatientById($patient_id) {
-        try {
-            if ($this->db instanceof mysqli) {
-                $query = "SELECT u.*, p.date_of_birth, p.insurance_info, p.medical_notes,
-                     p.preferences, p.emergency_contact
-                     FROM users u
-                     LEFT JOIN patient_profiles p ON u.user_id = p.patient_id
-                     WHERE u.user_id = ? AND u.role = 'patient'";
-            
-                $stmt = $this->db->prepare($query);
-                $stmt->bind_param("i", $patient_id);
-                $stmt->execute();
-            
-                $result = $stmt->get_result();
-                return $result->fetch_assoc();
-            
-            } elseif ($this->db instanceof PDO) {
-                $query = "SELECT u.*, p.date_of_birth, p.insurance_info, p.medical_notes,
-                     p.preferences, p.emergency_contact
-                     FROM users u
-                     LEFT JOIN patient_profiles p ON u.user_id = p.patient_id
-                     WHERE u.user_id = :id AND u.role = 'patient'";
-            
-                $stmt = $this->db->prepare($query);
-                $stmt->bindParam(':id', $patient_id, PDO::PARAM_INT);
-                $stmt->execute();
-            
-                return $stmt->fetch(PDO::FETCH_ASSOC);
-            }
-        
-            return null;
-        } catch (Exception $e) {
-            error_log("Error getting patient: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Search providers by specialty and location
-     */
-    public function searchProviders($specialty = '', $location = '') {
-        try {
-            if ($this->db instanceof mysqli) {
-                $conditions = [];
-                $params = [];
-                $types = "";
-            
-                $query = "SELECT u.user_id, u.first_name, u.last_name, 
-                     p.specialization, p.title, p.bio, p.accepting_new_patients
-                     FROM users u
-                     JOIN provider_profiles p ON u.user_id = p.provider_id
-                     WHERE u.role = 'provider' AND u.is_active = 1";
-            
-                if (!empty($specialty)) {
-                    $query .= " AND p.specialization LIKE ?";
-                    $specialty = "%$specialty%";
-                    $params[] = $specialty;
-                    $types .= "s";
-                }
-            
-                if (!empty($location)) {
-                    // Assuming you have location data in users table or provider_profiles
-                    $query .= " AND (u.address LIKE ? OR u.city LIKE ?)";
-                    $location = "%$location%";
-                    $params[] = $location;
-                    $params[] = $location;
-                    $types .= "ss";
-                }
-            
-                $query .= " ORDER BY u.last_name, u.first_name";
-            
-                $stmt = $this->db->prepare($query);
-            
-                if (!empty($params)) {
-                    $stmt->bind_param($types, ...$params);
-                }
-            
-                $stmt->execute();
-                $result = $stmt->get_result();
-            
-                $providers = [];
-                while ($row = $result->fetch_assoc()) {
-                    $providers[] = $row;
-                }
-            
-                return $providers;
-            
-            } elseif ($this->db instanceof PDO) {
-                // PDO implementation would go here
-                // Similar structure to the mysqli implementation
-                return [];
-            }
-        
-            return [];
-        } catch (Exception $e) {
-            error_log("Error searching providers: " . $e->getMessage());
             return [];
         }
     }

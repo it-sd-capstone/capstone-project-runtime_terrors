@@ -234,6 +234,7 @@ class Appointment {
             "upcoming" => $upcoming
         ]);
         exit;
+    }
 
     // Get all appointments with patient and provider details
     public function getAllAppointments() {

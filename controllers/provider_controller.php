@@ -2,14 +2,20 @@
 require_once MODEL_PATH . '/Provider.php';
 require_once MODEL_PATH . '/Appointment.php';
 require_once MODEL_PATH . '/Services.php';
+require_once MODEL_PATH . '/User.php';
+require_once MODEL_PATH . '/Notification.php';
 
 
 class ProviderController {
-    private $db;
-    private $providerModel;
-    private $appointmentModel;
+    protected $db;
+    protected $providerModel;
+    protected $appointmentModel;
+    protected $serviceModel;
+    protected $userModel; 
+    protected $notificationModel;
     
     public function __construct() {
+        // Start session if not already started
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -21,8 +27,13 @@ class ProviderController {
         }
 
         $this->db = get_db();
+        
+        // Initialize models
         $this->providerModel = new Provider($this->db);
         $this->appointmentModel = new Appointment($this->db);
+        $this->serviceModel = new Service($this->db);
+        $this->userModel = new User($this->db); 
+        $this->notificationModel = new Notification($this->db); 
     }
 
     // Load Provider Dashboard
@@ -184,6 +195,29 @@ class ProviderController {
             exit;
         }
     }
+    /**
+     * Display provider notifications
+     */
+    public function notifications() {
+        // Check if user is logged in and is a provider
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            $_SESSION['error'] = "You must be logged in as a provider to view notifications";
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get notifications for this provider
+        $notifications = $this->notificationModel->getUserNotifications($provider_id);
+        
+        // Get unread count
+        $unreadCount = $this->notificationModel->getUnreadCount($provider_id);
+        
+        // Include the notifications view
+        include VIEW_PATH . '/provider/notifications.php';
+    }
+
     public function manage_services() {
         require_once MODEL_PATH . '/Services.php';
         $servicesModel = new Services($this->db);

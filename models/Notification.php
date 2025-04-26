@@ -50,12 +50,31 @@ class Notification {
     }
     
     // Retrieve notifications for a user
-    public function getUserNotifications($user_id, $limit = 10, $offset = 0) {
-        $stmt = $this->db->prepare("
-            SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?
-        ");
-        $stmt->execute([$user_id, $limit, $offset]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    public function getUserNotifications($userId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT * FROM notifications 
+                WHERE user_id = ? OR user_id IS NULL 
+                ORDER BY created_at DESC
+            ");
+            
+            $stmt->bind_param("i", $userId);
+            $stmt->execute();
+            
+            // Get the result set
+            $result = $stmt->get_result();
+            
+            // Fetch all rows as an associative array
+            $notifications = [];
+            while ($row = $result->fetch_assoc()) {
+                $notifications[] = $row;
+            }
+            
+            return $notifications;
+        } catch (Exception $e) {
+            error_log("Error getting user notifications: " . $e->getMessage());
+            return [];
+        }
     }
 
      /**
