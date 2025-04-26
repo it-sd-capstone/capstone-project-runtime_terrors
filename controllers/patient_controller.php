@@ -1,6 +1,7 @@
 <?php
 require_once MODEL_PATH . '/User.php';
 require_once MODEL_PATH . '/Appointment.php';
+require_once MODEL_PATH . '/Provider.php';
 
 class PatientController {
     private $db;
@@ -65,6 +66,30 @@ class PatientController {
         
         // Pass both variables to the view
         include VIEW_PATH . '/patient/book.php';
+    }
+    public function processBooking() {
+        require_once MODEL_PATH . '/Appointments.php';
+        $appointmentModel = new Appointments($this->db);
+    
+        $patient_id = $_SESSION['user_id'];
+        $provider_id = $_POST['provider_id'];
+        $date = $_POST['appointment_date'];
+        $time_slot = $_POST['start_time'];
+    
+        // Check if slot is already booked
+        if ($appointmentModel->isSlotTaken($provider_id, $date, $time_slot)) {
+            header("Location: " . base_url("index.php/patient/book?provider_id=$provider_id&error=Time slot unavailable"));
+            exit;
+        }
+    
+        $success = $appointmentModel->createAppointment($patient_id, $provider_id, $date, $time_slot);
+    
+        if ($success) {
+            header("Location: " . base_url("index.php/patient/appointments?success=Appointment booked"));
+        } else {
+            header("Location: " . base_url("index.php/patient/book?provider_id=$provider_id&error=Booking failed"));
+        }
+        exit;
     }
 
     // Confirm Booking
@@ -347,6 +372,12 @@ class PatientController {
                 // Map user_id to provider_id if needed
                 if (!isset($provider['provider_id']) && isset($provider['user_id'])) {
                     $provider['provider_id'] = $provider['user_id'];
+                }
+                // optional to make it be faster when they search to require more information
+                if (empty($specialty) && empty($location)) {
+                    error_log("Search called with no filters.");
+                    header("Location: " . base_url("index.php/patient/search?error=Please enter search criteria"));
+                    exit;
                 }
                 
                 // Optionally set next_available_date if you have this data

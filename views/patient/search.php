@@ -33,14 +33,10 @@
         <tbody>
             <?php foreach ($providers as $provider) : ?>
                 <tr>
-                    <td>Dr. <?= htmlspecialchars($provider['name']) ?></td>
-                    <td><?= htmlspecialchars($provider['specialty']) ?></td>
-                    <td><?= htmlspecialchars($provider['location']) ?></td>
+                    <td><?= htmlspecialchars($provider['name'] ?? 'Unknown') ?></td>
+                    <td><?= htmlspecialchars($provider['specialty'] ?? 'General') ?></td>
+                    <td><?= htmlspecialchars($provider['location'] ?? 'Local Area') ?></td>
                     <td><?= htmlspecialchars($provider['next_available_date'] ?? 'No upcoming slots') ?></td>
-                    <td>
-                        <a href="<?= base_url('index.php/patient/viewProvider/' . $provider['provider_id']) ?>" class="btn btn-info">View Profile</a>
-                        <a href="<?= base_url('index.php/patient/book/' . $provider['provider_id']) ?>" class="btn btn-success">Book Appointment</a>
-                    </td>
                     <td>
                         <a href="<?= base_url('index.php/patient/viewProvider/' . $provider['provider_id']) ?>" class="btn btn-info">View Profile</a>
                         <a href="<?= base_url('index.php/patient/book/' . $provider['provider_id']) ?>" class="btn btn-success">Book Appointment</a>

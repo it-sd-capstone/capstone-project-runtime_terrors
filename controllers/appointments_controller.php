@@ -269,14 +269,21 @@ class AppointmentsController {
         exit;
     }
     private function getAvailableSlots() {
+        error_log("Executing getAvailableSlots()...");
         $slots = [];
     
         // Ensure provider ID exists
-        if (!isset($_SESSION['user_id'])) {
-            error_log("User ID missing from session.");
+        if (!isset($_SESSION['user_id']) || !is_numeric($_SESSION['user_id'])) {
+            error_log("Invalid provider ID found in session");
             return [];
         }
-        $provider_id = $_SESSION['user_id'];
+        $provider_id = intval($_SESSION['user_id']); 
+    
+        // Check database connection
+        if (!$this->db) {
+            error_log("Database connection missing.");
+            return [];
+        }
     
         // Fetch availability from the database
         $stmt = $this->db->prepare("
@@ -287,23 +294,32 @@ class AppointmentsController {
               AND pa.available_date >= CURDATE()
             ORDER BY pa.available_date, pa.start_time
         ");
+    
+        if (!$stmt) {
+            error_log("SQL Prepare Error: " . $this->db->error);
+            return [];
+        }
+        error_log("Checking provider availability...");
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        if (!$result) {
+            $stmt->store_result();
+        }
         
-        if ($stmt) {
-            $stmt->execute();
-            $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
                 $slots[] = $row;
             }
         } else {
-            error_log("Database query failed: " . $this->db->error);
-            return [];
+            error_log("No available slots found—this may be expected if no providers have open times.");
         }
-    
-        // Debugging output
+        
+            
         error_log("Fetched availability: " . print_r($slots, true));
-    
         return $slots;
-    }
+        }
     
     private function getUserAppointments($userId) {
         $appointments = [];

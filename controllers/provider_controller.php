@@ -3,6 +3,7 @@ require_once MODEL_PATH . '/Provider.php';
 require_once MODEL_PATH . '/Appointment.php';
 require_once MODEL_PATH . '/Services.php';
 
+
 class ProviderController {
     private $db;
     private $providerModel;
@@ -118,7 +119,7 @@ public function manage_availability() {
     public function services() {
         // Assuming you have a Service model that can fetch services
         require_once '../models/Services.php';
-        $serviceModel = new Service($this->db);
+        $servicesModel = new Service($this->db);
         
         // Get services for this provider
         $provider_id = $_SESSION['user_id']; // Assuming you store user ID in session
@@ -152,18 +153,12 @@ public function manage_availability() {
         }
     }
     public function manage_services() {
-        // Ensure the user is logged in as a provider
-        $provider_id = $_SESSION['user_id'];
-    
-        // Load the Services model
         require_once MODEL_PATH . '/Services.php';
-        $serviceModel = new Services($this->db);
+        $servicesModel = new Services($this->db);
     
-        // Fetch all services for this provider
-        $services = $serviceModel->getServicesByProvider($provider_id);
-    
-        // Load the view and pass the services data
-        include VIEW_PATH . '/provider/services.php';
+        $services = $servicesModel->getAllServices(); // Fetch services from the database
+        
+        require VIEW_PATH . '/provider/services.php'; // Pass `$services` to the view
     }
     public function deleteService() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
