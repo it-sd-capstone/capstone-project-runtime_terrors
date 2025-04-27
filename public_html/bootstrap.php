@@ -27,6 +27,8 @@ require_once APP_ROOT . '/core/helpers.php';
 
 // Load environment configuration
 require_once CONFIG_PATH . '/environment.php';
+// Load helper functions
+require_once CORE_PATH . '/helpers.php';
 $env = Environment::detect();
 
 // Load environment-specific configuration
@@ -118,4 +120,3 @@ spl_autoload_register(function($class_name) {
 
 // Return true to indicate bootstrap loaded successfully
 return true;
-

@@ -1,98 +1,266 @@
 <?php
 // Debugging
-if (!isset($available_slots)) {
-    echo "<p>Error: \$available_slots is not set. Controller method may not be executing.</p>";
-    $available_slots = []; // Prevent foreach error
+if (!isset($availableSlots)) {
+    echo "<p>Error: \$availableSlots is not set. Controller method may not be executing.</p>";
+    $availableSlots = []; // Prevent foreach error
 }
 // Debug the actual data
 echo "<pre>Available slots: ";
-var_dump($available_slots);
+var_dump($availableSlots);
 echo "</pre>";
 // Prevent direct access to view files
-if (!defined('APP_ROOT')) {
+if (!defined('BASE_PATH')) {
     die("Direct access to views is not allowed");
 }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Appointments</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-</head>
-<body class="container mt-5">
-    <?php include_once VIEW_PATH . '/partials/navigation.php'; ?>
-    <?php if (isset($_SESSION['success'])): ?>
+<?php include VIEW_PATH . '/partials/header.php'; ?>
+
+<div class="container mt-4">
+    <?php if (isset($_GET['success'])): ?>
         <div class="alert alert-success">
-            <?= $_SESSION['success'] ?>
-            <?php unset($_SESSION['success']); ?>
+            <?php 
+                $message = '';
+                switch ($_GET['success']) {
+                    case 'booked':
+                        $message = 'Appointment successfully booked!';
+                        break;
+                    case 'canceled':
+                        $message = 'Appointment has been canceled.';
+                        break;
+                    case 'updated':
+                        $message = 'Appointment status has been updated.';
+                        break;
+                    default:
+                        $message = 'Operation completed successfully.';
+                }
+                echo $message;
+            ?>
         </div>
     <?php endif; ?>
-    <?php if (isset($_SESSION['error'])): ?>
+    
+    <?php if (isset($_GET['error'])): ?>
         <div class="alert alert-danger">
-            <?= $_SESSION['error'] ?>
-            <?php unset($_SESSION['error']); ?>
+            <?php 
+                $message = '';
+                switch ($_GET['error']) {
+                    case 'cancel_failed':
+                        $message = 'Failed to cancel appointment.';
+                        break;
+                    case 'missing_data':
+                        $message = 'Missing required information.';
+                        break;
+                    case 'update_failed':
+                        $message = 'Failed to update appointment status.';
+                        break;
+                    default:
+                        $message = 'An error occurred.';
+                }
+                echo $message;
+            ?>
         </div>
     <?php endif; ?>
-    <h2>Book an Appointment</h2>
-    <table class="table mt-3">
-        <tr>
-            <th>Provider</th>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Action</th>
-        </tr>
-        <?php foreach ($available_slots as $slot) : ?>
-        <tr>
-            <td><?= htmlspecialchars($slot['provider_name']) ?></td>
-            <td><?= htmlspecialchars($slot['available_date']) ?></td>
-            <td><?= htmlspecialchars($slot['start_time']) ?> - <?= htmlspecialchars($slot['end_time']) ?></td>
-            <td>
-                <form action="<?= base_url('index.php/appointments/create') ?>" method="POST">
-                    <input type="hidden" name="availability_id" value="<?= $slot['availability_id'] ?>">
-                    <button type="submit" class="btn btn-primary">Book Now</button>
-                </form>
-            </td>
-        </tr>
-        <?php endforeach; ?>
-    </table>
-    <h3 class="mt-4">Scheduled Appointments</h3>
-    <div id="appointments-calendar" style="height: 500px; padding-bottom: 50px;"></div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("Initializing appointments calendar...");
-            var calendarEl = document.getElementById('appointments-calendar');
-            
-            if (!calendarEl) {
-                console.error("Calendar element not found!");
-                return;
-            }
-            
-            var appointments = <?= json_encode($appointments ?? []) ?>;
-            console.log("Appointment data:", appointments);
-            
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                height: 500,
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,listMonth'
-                },
-                events: <?= json_encode(array_map(function($appt) {
-                    return [
-                        'title' => 'Appointment with ' . ($appt['provider_name'] ?? 'Provider'),
-                        'start' => $appt['appointment_date'] . 'T' . $appt['start_time'],
-                        'end' => $appt['appointment_date'] . 'T' . $appt['end_time'],
-                        'color' => '#dc3545'
-                    ];
-                }, $appointments ?? [])) ?>
+
+    <h1 class="mb-4">Appointment Management</h1>
+    
+    <!-- Available Appointment Slots -->
+    <?php if ($_SESSION['role'] === 'patient' || $_SESSION['role'] === 'admin'): ?>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Available Appointment Slots</h5>
+            </div>
+            <div class="card-body">
+                <?php if (!empty($availableSlots)): ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Provider</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($availableSlots as $slot): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($slot['first_name'] . ' ' . $slot['last_name']) ?></td>
+                                    <td><?= htmlspecialchars(date('F j, Y', strtotime($slot['available_date']))) ?></td>
+                                    <td><?= htmlspecialchars(date('g:i A', strtotime($slot['start_time']))) ?> - 
+                                        <?= htmlspecialchars(date('g:i A', strtotime($slot['end_time']))) ?></td>
+                                    <td>
+                                        <a href="<?= base_url('index.php/appointments/book?id=' . $slot['availability_id']) ?>" 
+                                           class="btn btn-primary btn-sm">Book</a>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <p class="mb-0">No available appointment slots found.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endif; ?>
+    
+    <!-- User's Appointments -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Your Appointments</h5>
+        </div>
+        <div class="card-body">
+            <?php if (!empty($userAppointments)): ?>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <?php if ($_SESSION['role'] === 'patient'): ?>
+                                    <th>Provider</th>
+                                <?php elseif ($_SESSION['role'] === 'provider'): ?>
+                                    <th>Patient</th>
+                                <?php else: ?>
+                                    <th>Provider</th>
+                                    <th>Patient</th>
+                                <?php endif; ?>
+                                <th>Service</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($userAppointments as $appointment): ?>
+                            <tr>
+                                <td><?= htmlspecialchars(date('F j, Y', strtotime($appointment['appointment_date']))) ?></td>
+                                <td><?= htmlspecialchars(date('g:i A', strtotime($appointment['start_time']))) ?> - 
+                                    <?= htmlspecialchars(date('g:i A', strtotime($appointment['end_time']))) ?></td>
+                                
+                                <?php if ($_SESSION['role'] === 'patient'): ?>
+                                    <td><?= htmlspecialchars($appointment['provider_first_name'] . ' ' . $appointment['provider_last_name']) ?></td>
+                                <?php elseif ($_SESSION['role'] === 'provider'): ?>
+                                    <td><?= htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']) ?></td>
+                                <?php else: ?>
+                                    <td><?= htmlspecialchars($appointment['provider_first_name'] . ' ' . $appointment['provider_last_name']) ?></td>
+                                    <td><?= htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']) ?></td>
+                                <?php endif; ?>
+                                
+                                <td><?= htmlspecialchars($appointment['service_name']) ?></td>
+                                <td>
+                                    <span class="badge bg-<?= getStatusBadgeClass($appointment['status']) ?>">
+                                        <?= htmlspecialchars(ucfirst($appointment['status'])) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex">
+                                        <?php if ($appointment['status'] === 'scheduled' && ($appointment['patient_id'] == $_SESSION['user_id'] || $_SESSION['role'] === 'admin')): ?>
+                                            <a href="<?= base_url('index.php/appointments/cancel?id=' . $appointment['appointment_id']) ?>" 
+                                               class="btn btn-danger btn-sm me-2">Cancel</a>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'provider'): ?>
+                                            <button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" 
+                                                    data-bs-target="#statusModal" 
+                                                    data-appointment-id="<?= $appointment['appointment_id'] ?>" 
+                                                    data-current-status="<?= $appointment['status'] ?>">
+                                                Update Status
+                                            </button>
+                                        <?php endif; ?>
+                                        
+                                        <a href="<?= base_url('index.php/appointments/history?id=' . $appointment['appointment_id']) ?>" 
+                                           class="btn btn-info btn-sm">History</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <p class="mb-0">No appointments found.</p>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusModalLabel">Update Appointment Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="<?= base_url('index.php/appointments/updateStatus') ?>" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="appointment_id" id="modal-appointment-id">
+                    
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" id="status" class="form-select" required>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="no_show">No Show</option>
+                            <option value="canceled">Canceled</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason for Change (Optional)</label>
+                        <textarea name="reason" id="reason" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize the modal with appointment data
+    document.addEventListener('DOMContentLoaded', function() {
+        var statusModal = document.getElementById('statusModal');
+        if (statusModal) {
+            statusModal.addEventListener('show.bs.modal', function(event) {
+                var button = event.relatedTarget;
+                var appointmentId = button.getAttribute('data-appointment-id');
+                var currentStatus = button.getAttribute('data-current-status');
+                
+                var modalAppointmentId = document.getElementById('modal-appointment-id');
+                var statusSelect = document.getElementById('status');
+                
+                modalAppointmentId.value = appointmentId;
+                statusSelect.value = currentStatus;
             });
-            
-            console.log("Rendering calendar...");
-            calendar.render();
-        });
-    </script>
-</body>
-</html>
+        }
+    });
+</script>
+
+<?php
+// Helper function for status badge color
+function getStatusBadgeClass($status) {
+    switch ($status) {
+        case 'scheduled':
+            return 'primary';
+        case 'confirmed':
+            return 'info';
+        case 'in_progress':
+            return 'warning';
+        case 'completed':
+            return 'success';
+        case 'canceled':
+            return 'danger';
+        case 'no_show':
+            return 'secondary';
+        default:
+            return 'secondary';
+    }
+}
+?>
+
+<?php include VIEW_PATH . '/partials/footer.php'; ?>
