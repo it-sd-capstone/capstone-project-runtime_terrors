@@ -124,7 +124,41 @@ INSERT INTO `appointment_history` (`history_id`, `appointment_id`, `action`, `ch
 (1, 1, 'created', NULL, NULL, NULL, 1, '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
+--
+-- Table structure for table `appointment_ratings`
+--
 
+CREATE TABLE `appointment_ratings` (
+  `rating_id` int(11) NOT NULL,
+  `appointment_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `provider_id` int(11) NOT NULL,
+  `rating` int(11) NOT NULL CHECK (`rating` between 1 and 5),
+  `comment` text DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `appointment_ratings`
+--
+
+INSERT INTO `appointment_ratings` (`rating_id`, `appointment_id`, `patient_id`, `provider_id`, `rating`, `comment`, `created_at`) VALUES
+(5, 1, 1, 16, 4, 'Virtual appointment went smoothly, doctor was attentive', '2025-04-27 05:08:47'),
+(6, 2, 10, 16, 3, 'Average experience, long wait time before appointment', '2025-04-27 05:08:47'),
+(7, 3, 1, 16, 5, 'Excellent experience, highly recommend!', '2025-04-27 05:08:47'),
+(8, 4, 1, 16, 4, 'Good appointment, doctor was knowledgeable.', '2025-04-27 05:08:47'),
+(9, 5, 1, 2, 5, 'The doctor answered all my questions thoroughly', '2025-04-27 05:08:47'),
+(10, 6, 1, 2, 4, 'Short wait time and professional service', '2025-04-27 05:08:47'),
+(11, 7, 1, 2, 4, 'Appointment ran slightly late but care was excellent', '2025-04-27 05:08:47'),
+(12, 1, 1, 16, 5, 'Great service! The doctor was very thorough.', '2025-04-27 05:09:53'),
+(13, 2, 10, 16, 4, 'Very professional, but had to wait a bit.', '2025-04-27 05:09:53'),
+(14, 3, 1, 16, 5, 'Excellent experience, highly recommend!', '2025-04-27 05:09:53'),
+(15, 4, 1, 16, 4, 'Good appointment, doctor was knowledgeable.', '2025-04-27 05:09:53'),
+(16, 5, 1, 2, 5, 'The doctor answered all my questions thoroughly', '2025-04-27 05:09:53'),
+(17, 6, 1, 2, 4, 'Short wait time and professional service', '2025-04-27 05:09:53'),
+(18, 7, 1, 2, 4, 'Appointment ran slightly late but care was excellent', '2025-04-27 05:09:53');
+
+-- --------------------------------------------------------
 --
 -- Table structure for table `auth_sessions`
 --
@@ -243,6 +277,7 @@ CREATE TABLE `patient_profiles` (
   `emergency_contact` varchar(255) DEFAULT NULL,
   `emergency_contact_phone` varchar(50) DEFAULT NULL,
   `medical_conditions` text DEFAULT NULL,
+  `medical_history` text DEFAULT NULL,
   `insurance_info` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -448,7 +483,6 @@ INSERT INTO `users` (`user_id`, `email`, `password_hash`, `first_name`, `last_na
 (3, 'admin@example.com', '$2y$10$example_hash', 'Admin', 'User', NULL, 'admin', 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
 (10, 'Kholley@student.cvtc.edu', '$2y$10$xiDwOmotNFAOn.5R0XJ1huUpLb681/phtw/TCkT9wlddp9s1DiRnG', 'Kaleb', 'Holley', '7156191363', 'patient', 1, '2025-04-22 09:54:17', '2025-04-22 09:54:02', '2025-04-22 09:54:47', NULL, 'd9472a925ebd1c3138bb4731edcaf0a207e72c66c1bd00be9783e31f632bb69e', '2025-04-22 15:55:40', '2025-04-23 14:54:02', 0),
 (16, 'john@doe.com', '$2y$10$nxPUCopIWXPZw442f6B4UOJv.H/6wty9qrJmSqXzYPCmo6i6Zn8sW', 'john', 'doe', '1234567897', 'provider', 1, NULL, '2025-04-22 20:16:51', '2025-04-22 20:25:22', NULL, NULL, NULL, NULL, 0);
-
 -- --------------------------------------------------------
 
 --
@@ -495,6 +529,15 @@ ALTER TABLE `appointments`
   ADD KEY `idx_type` (`type`);
 
 --
+-- Indexes for table `appointment_ratings`
+--
+ALTER TABLE `appointment_ratings`
+  ADD PRIMARY KEY (`rating_id`),
+  ADD KEY `appointment_id` (`appointment_id`),
+  ADD KEY `patient_id` (`patient_id`),
+  ADD KEY `provider_id` (`provider_id`);
+
+--
 -- Indexes for table `notification_preferences`
 --
 ALTER TABLE `notification_preferences`
@@ -531,16 +574,22 @@ ALTER TABLE `users`
 --
 
 --
--- AUTO_INCREMENT for table `activity_log`
+-- AUTO_INCREMENT for table `activity_log` 
 --
 ALTER TABLE `activity_log`
   MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
--- AUTO_INCREMENT for table `appointments`
+-- AUTO_INCREMENT for table `appointments` 
 --
 ALTER TABLE `appointments`
   MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `appointment_ratings`
+--
+ALTER TABLE `appointment_ratings`
+  MODIFY `rating_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `notification_preferences`
@@ -581,6 +630,14 @@ ALTER TABLE `users`
 --
 ALTER TABLE `activity_log`
   ADD CONSTRAINT `activity_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+
+--
+-- Constraints for table `appointment_ratings`
+--
+ALTER TABLE `appointment_ratings`
+  ADD CONSTRAINT `appointment_ratings_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`),
+  ADD CONSTRAINT `appointment_ratings_ibfk_2` FOREIGN KEY (`patient_id`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `appointment_ratings_ibfk_3` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`);
 
 --
 -- Constraints for table `provider_profiles`
