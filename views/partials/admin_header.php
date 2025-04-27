@@ -55,6 +55,7 @@
                                         <?= htmlspecialchars($_SESSION['name'] ?? 'Admin') ?>
                                     </a>
                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminNavDropdown">
+                                        <li><a class="dropdown-item" href="<?= base_url('index.php/home') ?>">Home</a></li>
                                         <li><a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>">Logout</a></li>
                                     </ul>
                                 </li>
