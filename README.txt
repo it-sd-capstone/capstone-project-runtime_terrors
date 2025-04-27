@@ -22,13 +22,20 @@ clone: git clone https://github.com/it-sd-capstone/capstone-project-runtime_terr
   Open the XAMPP Control Panel and start both Apache and MySQL.
  
 3. Create the Database
-  Access phpMyAdmin using one of these methods:
-     - Standard path: http://localhost/phpmyadmin
-     - If using a custom port: http://localhost:8080/phpmyadmin (common alternative port)
-     - Alternatively: Open XAMPP Control Panel → Click "Admin" button next to MySQL
-  Create a new database named:
- kholley_appointment_system
-  Import the database_setup.sql file provided in the repository using the Import tab in phpMyAdmin to import the database schema and sample data.
+   Access phpMyAdmin using one of these methods:
+      - Standard path: http://localhost/phpmyadmin
+      - If using a custom port: http://localhost:8080/phpmyadmin (common alternative port)
+      - Alternatively: Open XAMPP Control Panel → Click "Admin" button next to MySQL
+
+   Create a new database named:
+   kholley_appointment_system
+
+   Import the database files in the following order:
+   1. First, import the schema structure by selecting the `sql/schema.sql` file in the Import tab of phpMyAdmin
+   2. Then, import the basic data by selecting the `sql/basic_data.sql` file
+   3. Finally, import the sample data by selecting the `sql/sample_data.sql` file
+
+   Note: Each file must be imported separately in the specified order to ensure proper database setup. Wait for each import to complete before starting the next one.
  
 4. Configure Database Connection
   For basic installation with default settings, no changes are needed as the system will use these defaults:
