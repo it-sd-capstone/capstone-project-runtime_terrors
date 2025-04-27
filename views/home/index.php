@@ -110,7 +110,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
 </head>
 
 <body>
-    <!-- Navigation Bar (from the existing system) -->
+    <!-- Navigation Bar -->
     <?php if (file_exists(VIEW_PATH . '/partials/navigation.php')): ?>
         <?php include_once VIEW_PATH . '/partials/navigation.php'; ?>
     <?php endif; ?>
@@ -154,11 +154,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                 <div class="alert alert-info">
                     <p class="mb-0">You have no upcoming appointments scheduled. Would you like to book one?</p>
                 </div>
-                <?php if ($isLoggedIn): ?>
-                    <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-primary">Book Now</a>
-                <?php else: ?>
-                    <a href="<?= base_url('index.php/auth') ?>" class="btn btn-primary">Sign In to Book</a>
-                <?php endif; ?>
+                <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-primary">Book Now</a>
             <?php else: ?>
                 <div class="row">
                     <?php foreach ($upcomingAppointments as $appointment): ?>
@@ -314,6 +310,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
             </div>
             
             <div class="row g-4">
+                <!-- Appointment Trends Card -->
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="card-body text-center">
@@ -321,17 +318,35 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                                 <i class="fas fa-chart-line"></i>
                             </div>
                             <h3 class="h4">Appointment Trends</h3>
-                            <p>Monday and Wednesday mornings are your busiest times with 65% of appointments scheduled between 9-11 AM.</p>
+                            <p>
+                                <?php if (!empty($patientInsights['trends']['busiest_days'])): ?>
+                                    <?= implode(' and ', $patientInsights['trends']['busiest_days']) ?> 
+                                    <?= count($patientInsights['trends']['busiest_days']) > 1 ? 'are' : 'is' ?> your busiest 
+                                    <?= count($patientInsights['trends']['busiest_days']) > 1 ? 'days' : 'day' ?> with 
+                                    <?= $patientInsights['trends']['busiest_times']['percentage'] ?>% of appointments scheduled during the 
+                                    <?= $patientInsights['trends']['busiest_times']['time'] ?>.
+                                <?php else: ?>
+                                    Monday and Wednesday mornings are your busiest times with 65% of appointments scheduled between 9-11 AM.
+                                <?php endif; ?>
+                            </p>
                             <div class="mt-3">
                                 <div class="progress mb-2">
-                                    <div class="progress-bar bg-primary" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65%</div>
+                                    <div class="progress-bar bg-primary" role="progressbar" 
+                                         style="width: <?= $patientInsights['trends']['busiest_times']['percentage'] ?? 65 ?>%" 
+                                         aria-valuenow="<?= $patientInsights['trends']['busiest_times']['percentage'] ?? 65 ?>" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        <?= $patientInsights['trends']['busiest_times']['percentage'] ?? 65 ?>%
+                                    </div>
                                 </div>
-                                <small class="text-muted">Morning appointment concentration</small>
+                                <small class="text-muted">
+                                    <?= ucfirst($patientInsights['trends']['busiest_times']['time'] ?? 'Morning') ?> appointment concentration
+                                </small>
                             </div>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Demographics Card -->
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="card-body text-center">
@@ -339,36 +354,81 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                                 <i class="fas fa-user-friends"></i>
                             </div>
                             <h3 class="h4">Demographics</h3>
-                            <p>Your patient base is primarily ages 35-65 (72%), with growing numbers in the 25-35 age range.</p>
+                            <?php
+                            // Find largest age group
+                            $largest_group = '';
+                            $largest_percentage = 0;
+                            foreach ($patientInsights['demographics']['age_groups'] ?? [] as $group => $data) {
+                                if ($data['percentage'] > $largest_percentage) {
+                                    $largest_percentage = $data['percentage'];
+                                    $largest_group = $group;
+                                }
+                            }
+                            ?>
+                            <p>
+                                <?php if (!empty($patientInsights['demographics']['age_groups']) && $largest_percentage > 0): ?>
+                                    Your patient base is primarily ages <?= $largest_group ?> (<?= $largest_percentage ?>%),
+                                    with growing numbers in the 25-35 age range.
+                                <?php else: ?>
+                                    Your patient base is primarily ages 35-65 (72%), with growing numbers in the 25-35 age range.
+                                <?php endif; ?>
+                            </p>
                             <div class="mt-3 text-start">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>Ages 25-35</span>
-                                    <span>18%</span>
-                                </div>
-                                <div class="progress mb-2" style="height: 10px;">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: 18%" aria-valuenow="18" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
+                                <?php foreach ($patientInsights['demographics']['age_groups'] ?? [] as $group => $data): 
+                                    if ($data['percentage'] > 0): 
+                                        // Set color based on age group
+                                        $color = $group === '25-35' ? 'success' : 
+                                               ($group === '35-65' ? 'primary' : 'warning');
+                                ?>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Ages <?= $group ?></span>
+                                        <span><?= $data['percentage'] ?>%</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 10px;">
+                                        <div class="progress-bar bg-<?= $color ?>" role="progressbar" 
+                                             style="width: <?= $data['percentage'] ?>%" 
+                                             aria-valuenow="<?= $data['percentage'] ?>" 
+                                             aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                <?php 
+                                    endif;
+                                endforeach; 
                                 
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>Ages 35-65</span>
-                                    <span>72%</span>
-                                </div>
-                                <div class="progress mb-2" style="height: 10px;">
-                                    <div class="progress-bar bg-primary" role="progressbar" style="width: 72%" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                                
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>Ages 65+</span>
-                                    <span>10%</span>
-                                </div>
-                                <div class="progress mb-2" style="height: 10px;">
-                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 10%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
+                                // If no data, show fallback values
+                                if (empty($patientInsights['demographics']['age_groups']) || 
+                                    count(array_filter($patientInsights['demographics']['age_groups'], 
+                                        function($g) { return $g['percentage'] > 0; })) === 0): 
+                                ?>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Ages 25-35</span>
+                                        <span>18%</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 10px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 18%" aria-valuenow="18" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Ages 35-65</span>
+                                        <span>72%</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 10px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: 72%" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Ages 65+</span>
+                                        <span>10%</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 10px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 10%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Satisfaction Rating Card -->
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="card-body text-center">
@@ -376,16 +436,43 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                                 <i class="fas fa-star"></i>
                             </div>
                             <h3 class="h4">Satisfaction Rating</h3>
-                            <p>Your patient satisfaction rating is 4.8/5, with especially high marks for appointment timeliness.</p>
+                            <p>
+                                <?php if (isset($patientInsights['satisfaction']) && $patientInsights['satisfaction']['average'] > 0): ?>
+                                    Your patient satisfaction rating is <?= $patientInsights['satisfaction']['average'] ?>/5.0
+                                    <?php if ($patientInsights['satisfaction']['average'] >= 4.5): ?>
+                                        , with especially high marks for appointment timeliness.
+                                    <?php elseif ($patientInsights['satisfaction']['average'] >= 4.0): ?>
+                                        , showing consistent quality of care.
+                                    <?php else: ?>
+                                        . There's room for improvement in patient experience.
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    Your patient satisfaction rating is 4.8/5, with especially high marks for appointment timeliness.
+                                <?php endif; ?>
+                            </p>
                             <div class="mt-3">
                                 <div class="d-flex justify-content-center">
-                                    <?php for ($i = 0; $i < 4; $i++): ?>
-                                        <i class="fas fa-star text-warning fs-3 mx-1"></i>
-                                    <?php endfor; ?>
-                                    <i class="fas fa-star-half-alt text-warning fs-3 mx-1"></i>
+                                    <?php
+                                    $rating = $patientInsights['satisfaction']['average'] ?? 4.8;
+                                    $full_stars = floor($rating);
+                                    $half_star = ($rating - $full_stars) >= 0.3;
+                                    
+                                    for ($i = 0; $i < $full_stars; $i++) {
+                                        echo '<i class="fas fa-star text-warning fs-3 mx-1"></i>';
+                                    }
+                                    
+                                    if ($half_star) {
+                                        echo '<i class="fas fa-star-half-alt text-warning fs-3 mx-1"></i>';
+                                    }
+                                    
+                                    $empty_stars = 5 - $full_stars - ($half_star ? 1 : 0);
+                                    for ($i = 0; $i < $empty_stars; $i++) {
+                                        echo '<i class="far fa-star text-warning fs-3 mx-1"></i>';
+                                    }
+                                    ?>
                                 </div>
-                                <p class="mt-2 mb-0 fw-bold">4.8/5.0</p>
-                                <small class="text-muted">Based on 125 patient reviews</small>
+                                <p class="mt-2 mb-0 fw-bold"><?= $patientInsights['satisfaction']['average'] ?? 4.8 ?>/5.0</p>
+                                <small class="text-muted">Based on <?= $patientInsights['satisfaction']['count'] ?? 125 ?> patient reviews</small>
                             </div>
                         </div>
                     </div>
@@ -413,7 +500,11 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                             <h3 class="h4"><?= htmlspecialchars($service['name']) ?></h3>
                             <p><?= htmlspecialchars($service['description']) ?></p>
                             <p><i class="fas fa-clock me-2"></i> <?= $service['duration'] ?> minutes</p>
-                            <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-primary">Book Now</a>
+                            <?php if ($isLoggedIn): ?>
+                                <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-primary">Book Now</a>
+                            <?php else: ?>
+                                <a href="<?= base_url('index.php/auth') ?>" class="btn btn-primary">Sign In to Book</a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -491,7 +582,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                 <div class="col-md-4">
                     <div class="card h-100">
                         <?php 
-                        // Define some avatar colors for variety
+                        // Define avatar colors for variety
                         $avatarColors = ['primary', 'success', 'info'];
                         $colorIndex = $key % count($avatarColors);
                         $avatarColor = $avatarColors[$colorIndex];
@@ -530,7 +621,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                     <div class="card-body">
                         <p class="mb-3">"<?= htmlspecialchars($testimonial['text']) ?>"</p>
                         <div class="d-flex align-items-center">
-                            <!-- Generic avatar with color variation based on index -->
                             <?php 
                             // Define some avatar colors for variety
                             $avatarColors = ['primary', 'success', 'danger', 'warning', 'info'];
