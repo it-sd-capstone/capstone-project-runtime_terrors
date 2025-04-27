@@ -32,25 +32,34 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
                 <?php endif; ?>
                 
                 <?php if ($isLoggedIn): ?>
-                <!-- Only show Appointments link if logged in -->
-                <li class="nav-item">
-                    <a class="nav-link" href="<?= base_url('index.php/appointments') ?>">Appointments</a>
-                </li>
-                
-                    <?php if ($userRole === 'provider' || $userRole === 'admin'): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?= base_url('index.php/provider') ?>">Provider Portal</a>
-                        </li>
-                    <?php endif; ?>
-                    <?php if ($userRole === 'patient'): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?= base_url('index.php/patient') ?>">Patient Portal</a>
-                        </li>
-                    <?php endif; ?>
                     <?php if ($userRole === 'admin'): ?>
+                        <!-- Admin only sees Admin Dashboard -->
                         <li class="nav-item">
                             <a class="nav-link" href="<?= base_url('index.php/admin') ?>">Admin Dashboard</a>
                         </li>
+                    <?php else: ?>
+                        <!-- Non-admin users see role-specific Appointments links -->
+                        <li class="nav-item">
+                            <?php if ($userRole === 'provider'): ?>
+                                <a class="nav-link" href="<?= base_url('index.php/provider/appointments') ?>">Appointments</a>
+                            <?php elseif ($userRole === 'patient'): ?>
+                                <a class="nav-link" href="<?= base_url('index.php/patient/history') ?>">Appointments</a>
+                            <?php else: ?>
+                                <a class="nav-link" href="<?= base_url('index.php/appointments') ?>">Appointments</a>
+                            <?php endif; ?>
+                        </li>
+                        
+                        <?php if ($userRole === 'provider'): ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="<?= base_url('index.php/provider') ?>">Provider Portal</a>
+                            </li>
+                        <?php endif; ?>
+                        
+                        <?php if ($userRole === 'patient'): ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="<?= base_url('index.php/patient') ?>">Patient Portal</a>
+                            </li>
+                        <?php endif; ?>
                     <?php endif; ?>
                 <?php endif; ?>
             </ul>
@@ -69,6 +78,7 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
                             <?php if ($userRole === 'patient'): ?>
                                 <li><a class="dropdown-item" href="<?= base_url('index.php/profile') ?>">My Profile</a></li>
                             <?php endif; ?>
+                            <li><a class="dropdown-item" href="<?= base_url('index.php/home') ?>">Home</a></li>
                             <li><a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>">Logout</a></li>
                         </ul>
                     </li>
