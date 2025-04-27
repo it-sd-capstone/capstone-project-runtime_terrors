@@ -1,6 +1,6 @@
 <?php
-// Include bootstrap first - let it define all constants
-require_once __DIR__ . '/public_html/bootstrap.php';
+// Fix the path to bootstrap.php
+require_once __DIR__ . '/../public_html/bootstrap.php';
 
 // Now bootstrap.php has defined all constants and loaded get_db()
 // Start your environment tests

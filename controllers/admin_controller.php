@@ -760,7 +760,7 @@ class AdminController {
         // Check if user is admin
         if (!$this->isUserAdmin()) {
             http_response_code(403);
-            echo "Access denied. Only administrators can run tests.";
+            echo "<div class='alert alert-danger'>Access denied. Only administrators can run tests.</div>";
             exit;
         }
         
@@ -769,7 +769,7 @@ class AdminController {
         
         if (!$testName) {
             http_response_code(400);
-            echo "No test specified.";
+            echo "<div class='alert alert-danger'>No test specified.</div>";
             exit;
         }
         
@@ -779,21 +779,73 @@ class AdminController {
         
         if (!file_exists($testFile)) {
             http_response_code(404);
-            echo "Test file not found: " . htmlspecialchars($testName);
+            echo "<div class='alert alert-danger'>";
+            echo "<h4>Test File Not Found</h4>";
+            echo "<p>Test file not found: " . htmlspecialchars($testName) . "</p>";
+            echo "</div>";
             exit;
         }
         
-        // Capture output from the test
+        // Set error handler to capture PHP errors
+        set_error_handler(function($errno, $errstr, $errfile, $errline) {
+            // Only handle errors that match the error_reporting setting
+            if (!(error_reporting() & $errno)) {
+                return false;
+            }
+            
+            $errorType = match($errno) {
+                E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR => 'Fatal Error',
+                E_WARNING, E_CORE_WARNING, E_COMPILE_WARNING, E_USER_WARNING => 'Warning',
+                E_NOTICE, E_USER_NOTICE => 'Notice',
+                E_DEPRECATED, E_USER_DEPRECATED => 'Deprecated',
+                default => 'Unknown Error'
+            };
+            
+            echo "<div class='alert alert-danger'>";
+            echo "<h4>{$errorType}</h4>";
+            echo "<p>" . htmlspecialchars($errstr) . "</p>";
+            echo "<p>File: " . htmlspecialchars($errfile) . " on line " . $errline . "</p>";
+            echo "</div>";
+            
+            // Don't execute PHP's internal error handler
+            return true;
+        });
+        
+        // Start output buffering
         ob_start();
+        
         try {
+            // Include the test file
             include $testFile;
+            
+            // If no output was generated but the test didn't throw an exception,
+            // we'll consider it a success
+            if (ob_get_length() == 0) {
+                echo "<div class='alert alert-success'>";
+                echo "<h4>Test Completed</h4>";
+                echo "<p>The test completed successfully with no output.</p>";
+                echo "</div>";
+            }
         } catch (Exception $e) {
             echo "<div class='alert alert-danger'>";
-            echo "<h4>Error Running Test</h4>";
+            echo "<h4>Exception</h4>";
             echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
+            echo "<pre>" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
+            echo "</div>";
+        } catch (Error $e) {
+            // Also catch PHP 7+ errors
+            echo "<div class='alert alert-danger'>";
+            echo "<h4>Fatal Error</h4>";
+            echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
+            echo "<pre>" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
             echo "</div>";
         }
+        
+        // Get the output
         $output = ob_get_clean();
+        
+        // Restore the previous error handler
+        restore_error_handler();
         
         // Return the output
         echo $output;
