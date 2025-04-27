@@ -71,13 +71,14 @@ Testing
    The public_html/tech_integration_test.php performs comprehensive testing of all system components, verifying that PHP, MySQL, 
    Bootstrap, and FullCalendar.js are properly integrated and functional. 
 
-   To run these tests, ensure your local web server (Apache, Nginx, etc.) is running with the project files in your document root, 
+   To run these tests, ensure your local web server (Apache, Nginx, etc.) is running with the project files in your document root,
+   You can access this through http://localhost/[your-project-path]/index.php/auth
    1. Log in as an administrator
    2. Navigate to the Admin Dashboard
    3. Scroll to the bottom of the dashboard page to find the "Test Container" section
    Select and run the desired test from the dropdown menu
    (e.g., test_env.php, env_bridge_test.php, bootstrap_test.php, tech_integration_test.php).
-   
+
    These tests will display detailed information about your environment configuration and will help identify any issues that need to be 
    addressed before working with the application.
    Check that all tests pass as shown in the following files:
