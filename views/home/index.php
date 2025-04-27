@@ -124,7 +124,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
             
             <?php if ($userRole === 'patient'): ?>
                 <p class="lead mb-4">Ready to schedule your next appointment?</p>
-                <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-light btn-lg px-4 fw-bold">Book Appointment</a>
+                <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-light btn-lg px-4 fw-bold">Book Appointment</a>
             <?php elseif ($userRole === 'provider'): ?>
                 <p class="lead mb-4">Manage your schedule and patient appointments</p>
                 <a href="<?= base_url('index.php/provider/schedule') ?>" class="btn btn-light btn-lg px-4 fw-bold">Manage Schedule</a>
@@ -154,7 +154,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                 <div class="alert alert-info">
                     <p class="mb-0">You have no upcoming appointments scheduled. Would you like to book one?</p>
                 </div>
-                <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-primary">Book Now</a>
+                <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-primary">Book Now</a>
             <?php else: ?>
                 <div class="row">
                     <?php foreach ($upcomingAppointments as $appointment): ?>
@@ -179,14 +179,14 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                                     <?= htmlspecialchars($appointment['provider_last_name'] ?? '') ?>
                                 </p>
                                 <div class="mt-2">
-                                    <a href="<?= base_url('index.php/provider/appointments/view/' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-primary">Details</a>
-                                    <a href="<?= base_url('index.php/appointments/cancel/' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-danger ms-1">Cancel</a>
+                                    <a href="<?= base_url('index.php/patient/history/' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-primary">Details</a>
+                                    <a href="<?= base_url('index.php/patient/cancel/' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-danger ms-1">Cancel</a>
                                 </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-primary mt-3">View All Appointments</a>
+                <a href="<?= base_url('index.php/patient/history/') ?>" class="btn btn-primary mt-3">View All Appointments</a>
             <?php endif; ?>
 
         <?php elseif ($userRole === 'provider'): ?>
@@ -501,7 +501,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                             <p><?= htmlspecialchars($service['description']) ?></p>
                             <p><i class="fas fa-clock me-2"></i> <?= $service['duration'] ?> minutes</p>
                             <?php if ($isLoggedIn): ?>
-                                <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-primary">Book Now</a>
+                                <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-primary">Book Now</a>
                             <?php else: ?>
                                 <a href="<?= base_url('index.php/auth') ?>" class="btn btn-primary">Sign In to Book</a>
                             <?php endif; ?>
@@ -651,7 +651,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                     <?php if ($userRole === 'patient'): ?>
                         <h2 class="card-title mb-3">Ready to schedule your next appointment?</h2>
                         <p class="card-text mb-4">Take control of your healthcare journey by scheduling your next appointment.</p>
-                        <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-light btn-lg">Book Now</a>
+                        <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-light btn-lg">Book Now</a>
                     <?php elseif ($userRole === 'provider'): ?>
                         <h2 class="card-title mb-3">Update your availability</h2>
                         <p class="card-text mb-4">Keep your schedule up-to-date to ensure patients can book appointments when you're available.</p>
