@@ -64,6 +64,10 @@ h1, h2 {
 .btn-primary {
   background-color: #007bff;
   border: none;
+  font-size: 16px;
+  padding: 12px;
+  width: 100%;
+
 }
 
 .btn-primary:hover {
