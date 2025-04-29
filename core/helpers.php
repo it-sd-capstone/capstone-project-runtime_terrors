@@ -4,6 +4,20 @@
  */
 
 /**
+ * CSRF Protection System
+ * 
+ * This application implements Cross-Site Request Forgery (CSRF) protection through
+ * token-based validation. All forms include a hidden CSRF token field, and all 
+ * POST requests are validated against the stored token in the session.
+ * 
+ * The implementation includes:
+ * - Token generation with 32 bytes of entropy
+ * - Constant-time comparison for validation (prevents timing attacks)
+ * - Token expiration after 1 hour
+ * - Automatic redirection on failed validation
+ */
+
+/**
  * Get the base URL for the application
  *
  * @param string $path Path to append to the base URL
