@@ -118,6 +118,13 @@ class AuthController {
     }
     
     public function register() {
+
+        $old = [
+            'first_name' => $_POST['first_name'] ?? '',
+            'last_name' => $_POST['last_name'] ?? '',
+            'email' => $_POST['email'] ?? '',
+            'phone' => $_POST['phone'] ?? ''
+        ];
         error_log("Register method called");
         error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
         $error = '';
@@ -134,32 +141,57 @@ class AuthController {
             $phone = $_POST['phone'] ?? '';
             $role = 'patient'; // Default role for new users
             
-            // Password validation
-            if (strlen($password) < 8) {
-                $errors[] = "Password must be at least 8 characters long";
+            // Basic field validation
+            if (empty($email)) {
+                $errors[] = "Email address is required";
+            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Invalid email format";
             }
-            if (!preg_match('/[A-Z]/', $password)) {
-                $errors[] = "Password must contain at least one uppercase letter";
+
+            if (empty($firstName)) {
+                $errors[] = "First name is required";
             }
-            if (!preg_match('/[a-z]/', $password)) {
-                $errors[] = "Password must contain at least one lowercase letter";
+
+            if (empty($lastName)) {
+                $errors[] = "Last name is required";
             }
-            if (!preg_match('/[0-9]/', $password)) {
-                $errors[] = "Password must contain at least one number";
+
+            // Check if email already exists
+            if (!empty($email) && $this->userModel->emailExists($email)) {
+                $errors[] = "Email address is already registered";
             }
-            error_log("Password validation errors: " . print_r($errors, true));
-            if (count($errors) > 0) {
-                // Return errors to the view
-                include VIEW_PATH . '/auth/register.php';
-                return;
-            }
-            
-            // Basic validation
-            if (empty($email) || empty($password) || empty($firstName) || empty($lastName)) {
-                $error = 'All required fields must be filled';
-            } elseif ($password !== $confirmPassword) {
-                $error = 'Passwords do not match';
+
+            // Password validation - collect all errors
+            if (empty($password)) {
+                $errors[] = "Password is required";
             } else {
+                if (strlen($password) < 8) {
+                    $errors[] = "Password must be at least 8 characters long";
+                }
+                if (!preg_match('/[A-Z]/', $password)) {
+                    $errors[] = "Password must contain at least one uppercase letter";
+                }
+                if (!preg_match('/[a-z]/', $password)) {
+                    $errors[] = "Password must contain at least one lowercase letter";
+                }
+                if (!preg_match('/[0-9]/', $password)) {
+                    $errors[] = "Password must contain at least one number";
+                }
+                if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+                    $errors[] = "Password must contain at least one special character";
+                }
+            }
+
+            if ($password !== $confirmPassword) {
+                $errors[] = "Passwords do not match";
+            }
+
+            if (!isset($_POST['terms'])) {
+                $errors[] = "You must agree to the Terms of Service";
+            }
+
+            // Only proceed if no errors
+            if (empty($errors)) {
                 // Hash password before registration
                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
                 
@@ -184,7 +216,7 @@ class AuthController {
                     $success .= " <a href='$verifyUrl'>Verify now</a> (for demonstration only)";
                     
                     // Log the registration
-                    $this->activityLogModel->logAuth(null, 'registered', "New {$_POST['role']} account");
+                    $this->activityLogModel->logAuth(null, 'registered', "New {$role} account");
                     $this->activityLogModel->logUserActivity(null, 'created', $result['user_id']);
                 } else {
                     $error = $result['error'] ?? 'Registration failed';

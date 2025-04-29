@@ -58,12 +58,15 @@ if (!defined('APP_ROOT')) {
                 <form action="<?= base_url('index.php/auth/login') ?>" method="post">
                     <div class="mb-3">
                         <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
+                        <input type="email" class="form-control" id="email" name="email" required 
+                               data-bs-toggle="tooltip" data-bs-placement="right" 
+                               title="For admin access, use admin@example.com">
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                        <small class="text-muted">For demo purposes, use "demo" or "password" as the password</small>
+                        <input type="password" class="form-control" id="password" name="password" required
+                               data-bs-toggle="tooltip" data-bs-placement="right" 
+                               title="For admin access, use 'Admin123@'">
                     </div>
                     
                     <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
@@ -89,5 +92,12 @@ if (!defined('APP_ROOT')) {
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Initialize tooltips -->
+    <script>
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    </script>
 </body>
 </html>
