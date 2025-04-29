@@ -31,9 +31,8 @@ clone: git clone https://github.com/it-sd-capstone/capstone-project-runtime_terr
    kholley_appointment_system
 
    Import the database files in the following order:
-   1. First, import the schema structure by selecting the `sql/schema.sql` file in the Import tab of phpMyAdmin
-   2. Then, import the basic data by selecting the `sql/basic_data.sql` file
-   3. Finally, import the sample data by selecting the `sql/sample_data.sql` file
+   1. First, import the schema structure by selecting the `sql/kholley_appointment_system.sql` file in the Import tab of phpMyAdmin
+   2. Then, import the basic sample data by selecting the `sql/kholley_appointment_systemdata.sql` file
 
    Note: Each file must be imported separately in the specified order to ensure proper database setup. Wait for each import to complete before starting the next one.
  
