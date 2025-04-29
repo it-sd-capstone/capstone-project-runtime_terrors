@@ -35,6 +35,11 @@ class AuthController {
         $errors = [];
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Verify CSRF token
+            if (!verify_csrf_token()) {
+                return;
+            }
+            
             error_log("Login attempt for email: " . ($_POST['email'] ?? 'none'));
             
             $email = $_POST['email'] ?? '';

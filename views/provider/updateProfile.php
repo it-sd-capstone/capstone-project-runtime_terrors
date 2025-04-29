@@ -1,5 +1,6 @@
 <h4>Update Profile</h4>
 <form method="POST" action="<?= base_url('index.php/provider/processUpdateProfile') ?>">
+    <?= csrf_field() ?>
     <label>First Name:</label>
     <input type="text" name="first_name" value="<?= htmlspecialchars($provider['first_name']) ?>" required>
 

@@ -43,6 +43,7 @@ if (!defined('APP_ROOT')) {
                         <a href="<?= base_url('index.php/auth') ?>" class="btn btn-primary">Go to Login</a>
                     </div>                <?php else: ?>
                     <form action="<?= base_url('index.php/auth/reset_password?token=' . htmlspecialchars($token ?? '')) ?>" method="post">
+                        <?= csrf_field() ?>
                         <div class="mb-3">
                             <label for="password" class="form-label">New Password</label>
                             <input type="password" class="form-control" id="password" name="password" required>

@@ -21,6 +21,7 @@
 
                     <!-- Appointment Booking Form -->
                     <form id="bookForm" method="POST" action="<?= base_url('index.php/patient/processBooking') ?>">
+                        <?= csrf_field() ?>
                         <input type="hidden" name="provider_id" value="<?= $selectedProviderId ?>">
                         
                         <!-- If no provider is selected, show a dropdown to select one -->

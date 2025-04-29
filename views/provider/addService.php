@@ -2,6 +2,7 @@
 include VIEW_PATH . '/partials/provider_header.php'; ?>
 <h4>Add a New Service</h4>
 <form method="POST" action="<?= base_url('index.php/provider/processAddService') ?>">
+    <?= csrf_field() ?>
     <label>Service Name:</label>
     <input type="text" name="name" required>
 

@@ -33,6 +33,7 @@
 
                     <!-- Confirmation Form -->
                     <form method="POST" action="<?= base_url('index.php/patient/processCancel') ?>">
+                        <?= csrf_field() ?>
                         <input type="hidden" name="appointment_id" value="<?= $appointment['appointment_id'] ?>">
                         
                         <div class="mb-3">

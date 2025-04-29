@@ -29,6 +29,7 @@
                     <?php endif; ?>
 
                     <form action="<?= base_url('index.php/admin/appointments/edit/' . $appointment['appointment_id']) ?>" method="post">
+                        <?= csrf_field() ?>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="patient_id" class="form-label">Patient</label>

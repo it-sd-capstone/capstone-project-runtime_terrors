@@ -87,6 +87,11 @@ class AppointmentsController {
         $success = null;
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Verify CSRF token
+            if (!verify_csrf_token()) {
+                return;
+            }
+            
             // Process booking form
             $availabilityId = $_POST['availability_id'] ?? null;
             $serviceId = $_POST['service_id'] ?? null;

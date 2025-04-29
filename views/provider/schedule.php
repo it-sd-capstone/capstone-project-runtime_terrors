@@ -16,6 +16,7 @@
 <!-- Availability Form -->
 <h4>Update Availability</h4>
 <form method="POST" action="<?= base_url('index.php/provider/processUpdateAvailability') ?>">
+    <?= csrf_field() ?>
     <label>Select Date:</label>
     <input type="date" name="availability_date" required>
 

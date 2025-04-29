@@ -128,8 +128,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="emailForm">
+                <?= csrf_field() ?>
+                <input type="hidden" id="appointment_id" name="appointment_id">
                 <div class="modal-body">
-                    <input type="hidden" id="appointment_id" name="appointment_id">
                     <div class="mb-3">
                         <label for="email_type" class="form-label">Notification Type</label>
                         <select class="form-select" id="email_type" name="email_type" required>
