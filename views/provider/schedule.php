@@ -110,6 +110,14 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
+        // 🔍 Debug: Verify if calendar events are correctly fetched
+        fetch("<?= base_url('index.php/provider/getProviderSchedules') ?>")
+        .then(response => response.json())
+        .then(data => {
+            console.log("Calendar Events:", data); // ✅ Check the browser console for received events
+        })
+        .catch(error => console.error("Error fetching provider schedules:", error));
+
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',

@@ -311,6 +311,22 @@ class Provider {
             return false;
         }
     }
+    public function getRecurringSchedulesByProvider($provider_id) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT provider_id, day_of_week, start_time, end_time, is_active 
+                FROM provider_recurring_schedules 
+                WHERE provider_id = ? AND is_active = 1
+            ");
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            return $result->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error fetching recurring schedules: " . $e->getMessage());
+            return [];
+        }
+    }
 
     // Check for overlapping availability
     public function hasOverlappingAvailability($provider_id, $date, $start_time, $end_time) {

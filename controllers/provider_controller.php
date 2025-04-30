@@ -72,18 +72,27 @@ class ProviderController {
             ];
         }
     
-        // Recurring availability (generate multiple entries)
-        foreach ($recurringSchedules as $recurring) {
-            for ($i = 0; $i < 30; $i++) { // Show next 30 days
-                $date = date('Y-m-d', strtotime("this {$recurring['day_of_week']} +{$i} weeks"));
-                $events[] = [
-                    'title' => 'Recurring Availability',
-                    'start' => $date . 'T' . $recurring['start_time'],
-                    'end' => $date . 'T' . $recurring['end_time'],
-                    'color' => '#17a2b8' // Different color for recurring slots
-                ];
-            }
-        }
+// Mapping numeric day_of_week values to actual weekday names
+$dayOfWeekMap = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+foreach ($recurringSchedules as $recurring) {
+    if (!isset($dayOfWeekMap[$recurring['day_of_week'] - 1])) {
+        continue; // Skip invalid days
+    }
+    
+    $dayLabel = $dayOfWeekMap[$recurring['day_of_week'] - 1]; // Convert numeric day to a string
+
+    for ($i = 0; $i < 30; $i++) { // Generate events for the next 30 occurrences
+        $date = date('Y-m-d', strtotime("next $dayLabel +{$i} weeks"));
+
+        $events[] = [
+            'title' => 'Recurring Availability',
+            'start' => $date . 'T' . $recurring['start_time'],
+            'end' => $date . 'T' . $recurring['end_time'],
+            'color' => '#17a2b8' // Color coding for recurring slots
+        ];
+    }
+}
     
         header('Content-Type: application/json');
         echo json_encode($events);
