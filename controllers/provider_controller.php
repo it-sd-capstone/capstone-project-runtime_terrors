@@ -48,22 +48,73 @@ class ProviderController {
         include VIEW_PATH . '/provider/index.php';
     }
     public function getProviderSchedules() {
-        $provider_id = $_SESSION['user_id'];
-        $schedules = $this->providerModel->getAvailability($provider_id);
+        $provider_id = $_SESSION['user_id'] ?? null;
+        if (!$provider_id) {
+            header('Content-Type: application/json');
+            echo json_encode([]);
+            exit;
+        }
     
+        $schedules = $this->providerModel->getSchedulesByProvider($provider_id);
+        $recurringSchedules = $this->providerModel->getRecurringSchedulesByProvider($provider_id);
+    
+        // Format response for FullCalendar
         $events = [];
+    
+        // Regular availability
         foreach ($schedules as $schedule) {
             $events[] = [
-                'id' => $schedule['schedule_id'],
-                'title' => 'Available',
-                'start' => $schedule['availability_date'] . 'T' . $schedule['start_time'],
-                'end' => $schedule['availability_date'] . 'T' . $schedule['end_time']
+                'id' => $schedule['id'],
+                'title' => $schedule['is_booked'] ? 'Booked' : 'Available',
+                'start' => $schedule['date'] . 'T' . $schedule['start_time'],
+                'end' => $schedule['date'] . 'T' . $schedule['end_time'],
+                'color' => $schedule['is_booked'] ? '#dc3545' : '#28a745'
             ];
         }
     
-        header("Content-Type: application/json");
+        // Recurring availability (generate multiple entries)
+        foreach ($recurringSchedules as $recurring) {
+            for ($i = 0; $i < 30; $i++) { // Show next 30 days
+                $date = date('Y-m-d', strtotime("this {$recurring['day_of_week']} +{$i} weeks"));
+                $events[] = [
+                    'title' => 'Recurring Availability',
+                    'start' => $date . 'T' . $recurring['start_time'],
+                    'end' => $date . 'T' . $recurring['end_time'],
+                    'color' => '#17a2b8' // Different color for recurring slots
+                ];
+            }
+        }
+    
+        header('Content-Type: application/json');
         echo json_encode($events);
         exit;
+    }
+    public function processRecurringSchedule() {
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $provider_id = $_SESSION['user_id'] ?? null;
+            $start_date = $_POST['start_date'] ?? null;
+            $end_date = $_POST['end_date'] ?? null;
+            $days_of_week = $_POST['days_of_week'] ?? [];
+            $start_time = $_POST['start_time'] ?? null;
+            $end_time = $_POST['end_time'] ?? null;
+    
+            if (!$provider_id || !$start_date || !$end_date || empty($days_of_week) || !$start_time || !$end_time) {
+                $_SESSION['error'] = "All required fields must be filled.";
+                header("Location: " . base_url("index.php/provider/schedule"));
+                exit;
+            }
+    
+            $success = $this->scheduleModel->createRecurringSchedule(
+                $provider_id, $start_date, $end_date, $days_of_week, $start_time, $end_time
+            );
+    
+            $_SESSION[$success ? 'success' : 'error'] = $success 
+                ? "Recurring schedule created successfully!" 
+                : "Failed to create recurring schedule.";
+    
+            header("Location: " . base_url("index.php/provider/schedule"));
+            exit;
+        }
     }
     public function getAvailableSlots($provider_id) {
         $available_slots = $this->providerModel->getAvailability($provider_id);
@@ -288,6 +339,24 @@ class ProviderController {
         exit;
     }
 
+    public function updateSchedule() {
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $input = json_decode(file_get_contents("php://input"), true);
+            $schedule_id = intval($input['id'] ?? 0);
+            $date = htmlspecialchars($input['date'] ?? '');
+            $start_time = htmlspecialchars($input['start_time'] ?? '');
+            $end_time = htmlspecialchars($input['end_time'] ?? '');
+    
+            if (!$schedule_id || !$date || !$start_time || !$end_time) {
+                echo json_encode(["success" => false, "message" => "Invalid data"]);
+                exit;
+            }
+    
+            $success = $this->scheduleModel->updateAvailability($schedule_id, $date, $start_time, $end_time);
+            echo json_encode(["success" => $success]);
+            exit;
+        }
+    }
     // Add this method to your ProviderController class
     public function profile() {
         $provider_id = $_SESSION['user_id'];

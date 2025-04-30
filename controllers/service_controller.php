@@ -4,73 +4,80 @@ require_once MODEL_PATH . '/Services.php';
 class ServiceController {
     protected $db;
     protected $serviceModel;
-    
+
     public function __construct() {
-        // Start session if not already started
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
-        
-        // Get database connection
+
         $this->db = get_db();
-        
-        // Initialize models
         $this->serviceModel = new Service($this->db);
     }
-    
+
     /**
-     * Process form submission to add a service
+     * Process service actions (add, edit, delete)
      */
-    public function addService() {
-        // Check if form was submitted
+    public function processService() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = $_POST['action'] ?? '';
+
+            // Validate common input fields
             $name = $_POST['name'] ?? '';
             $description = $_POST['description'] ?? '';
             $price = $_POST['price'] ?? 0;
             $duration = $_POST['duration'] ?? 30;
-            
-            // Validate inputs
+            $serviceId = $_POST['service_id'] ?? null;
+
             $errors = [];
-            
-            if (empty($name)) {
-                $errors[] = "Service name is required";
+
+            // Validate fields unless deleting
+            if ($action !== 'delete') {
+                if (empty($name)) $errors[] = "Service name is required";
+                if (empty($description)) $errors[] = "Description is required";
+                if (empty($price) || !is_numeric($price)) $errors[] = "Valid price is required";
             }
-            
-            if (empty($description)) {
-                $errors[] = "Description is required";
-            }
-            
-            if (empty($price) || !is_numeric($price)) {
-                $errors[] = "Valid price is required";
-            }
-            
-            // If no errors, insert service
+
+            // Perform action based on request
             if (empty($errors)) {
-                $serviceData = [
-                    'name' => $name,
-                    'description' => $description,
-                    'price' => $price,
-                    'duration' => $duration,
-                    'is_active' => 1
-                ];
-                
-                $result = $this->serviceModel->createService($serviceData);
-                
-                if ($result) {
-                    $_SESSION['success'] = "Service added successfully";
-                    header('Location: ' . base_url('index.php/admin/services'));
-                    exit;
-                } else {
-                    $errors[] = "Error adding service";
+                switch ($action) {
+                    case 'add':
+                        $serviceData = compact('name', 'description', 'price', 'duration');
+                        $result = $this->serviceModel->createService($serviceData);
+                        break;
+
+                    case 'edit':
+                        if (!$serviceId) {
+                            $_SESSION['errors'][] = "Service ID is missing";
+                            break;
+                        }
+                        $serviceData = compact('name', 'description', 'price', 'duration', 'serviceId');
+                        $result = $this->serviceModel->updateService($serviceData);
+                        break;
+
+                    case 'delete':
+                        if (!$serviceId) {
+                            $_SESSION['errors'][] = "Service ID is missing";
+                            break;
+                        }
+                        $result = $this->serviceModel->deleteService($serviceId);
+                        break;
+
+                    default:
+                        $_SESSION['errors'][] = "Invalid service action";
+                        $result = false;
                 }
+
+                if ($result) {
+                    $_SESSION['success'] = ucfirst($action) . " service successful";
+                } else {
+                    $_SESSION['errors'][] = "Error processing service operation";
+                }
+            } else {
+                $_SESSION['errors'] = $errors;
             }
-            
-            // If there are errors, include them in the session
-            $_SESSION['errors'] = $errors;
         }
-        
-        // Redirect back to services page
-        header('Location: ' . base_url('index.php/admin/services'));
+
+        header('Location: ' . base_url('index.php/provider/services'));
         exit;
     }
 }

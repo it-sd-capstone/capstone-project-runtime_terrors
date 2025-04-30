@@ -197,11 +197,8 @@ class Provider {
             error_log("Error fetching availability: " . $e->getMessage());
             return [];
         }
-    }
-    public function getAvailableSlots($provider_id) {
-        return $this->getAvailability($provider_id);
-    }
-
+    } // Closing bracket for getAvailability()
+    
     // Add provider availability
     public function addAvailability($availabilityData) {
         try {
@@ -210,12 +207,11 @@ class Provider {
                 (provider_id, availability_date, start_time, end_time, max_appointments, is_available)
                 VALUES (?, ?, ?, ?, ?, 1)
             ");
-            $stmt->bind_param(
-                "isssi", 
+            $stmt->bind_param("isssi", 
                 $availabilityData['provider_id'], 
                 $availabilityData['availability_date'], 
                 $availabilityData['start_time'], 
-                $availabilityData['end_time'],
+                $availabilityData['end_time'], 
                 $availabilityData['max_appointments']
             );
             return $stmt->execute();
@@ -259,6 +255,24 @@ class Provider {
     }
 
     // Legacy method for backward compatibility
+    public function getSchedulesByProvider($provider_id) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT availability_id AS id, availability_date AS date, 
+                       start_time, end_time, max_appointments, 
+                       (CASE WHEN max_appointments = 0 THEN 1 ELSE 0 END) AS is_booked
+                FROM provider_availability
+                WHERE provider_id = ?
+            ");
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            return $result->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error fetching availability: " . $e->getMessage());
+            return [];
+        }
+    }
     public function addAvailability_old($provider_id, $date, $start_time, $end_time) {
         $availabilityData = [
             'provider_id' => $provider_id,
@@ -281,6 +295,19 @@ class Provider {
             return $stmt->execute();
         } catch (Exception $e) {
             error_log("Error deleting availability: " . $e->getMessage());
+            return false;
+        }
+    }
+    public function addRecurringSchedule($provider_id, $day_of_week, $start_time, $end_time, $is_active) {
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO provider_recurring_schedules (provider_id, day_of_week, start_time, end_time, is_active) 
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            $stmt->bind_param("isssi", $provider_id, $day_of_week, $start_time, $end_time, $is_active);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Error adding recurring schedule: " . $e->getMessage());
             return false;
         }
     }
@@ -596,14 +623,15 @@ class Provider {
      */
     public function searchProviders($criteria = []) {
         try {
-            $query = "
-                SELECT u.user_id, u.first_name, u.last_name, u.email, u.phone,
-                       pp.specialization, pp.title, pp.bio, pp.accepting_new_patients,
-                       pp.profile_image
-                FROM users u
-                JOIN provider_profiles pp ON u.user_id = pp.provider_id
-                WHERE u.role = 'provider' AND u.is_active = 1
-            ";
+            $query = "SELECT u.user_id AS provider_id, u.first_name, u.last_name, u.email, u.phone,
+                            COALESCE(pp.specialization, 'General') AS specialization, 
+                            COALESCE(pp.title, 'Provider') AS title, 
+                            COALESCE(pp.bio, 'No bio available') AS bio, 
+                            COALESCE(pp.accepting_new_patients, 0) AS accepting_new_patients, 
+                            COALESCE(pp.profile_image, 'default.jpg') AS profile_image
+                    FROM users u
+                    LEFT JOIN provider_profiles pp ON u.user_id = pp.provider_id
+                    WHERE u.role = 'provider' AND u.is_active = 1";
             
             $params = [];
             $types = "";

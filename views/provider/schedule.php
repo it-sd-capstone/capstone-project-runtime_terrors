@@ -1,92 +1,167 @@
+<?php include VIEW_PATH . '/partials/provider_header.php'; ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Your Schedule</title>
+<div class="container mt-4">
+    <!-- Title Section -->
+    <div class="alert alert-info text-center">
+        <h2 class="h4 mb-0">
+            <i class="fas fa-calendar-alt text-primary"></i> Manage Your Schedule
+        </h2>
+        <p class="text-muted">Set availability and view upcoming appointments.</p>
+    </div>
 
-    <!-- Include Bootstrap & FullCalendar -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-</head>
-<body>
+    <!-- Availability Update Form -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5>Update Availability</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="<?= base_url('index.php/provider/processUpdateAvailability') ?>">
+                        <div class="mb-3">
+                            <label>Select Date:</label>
+                            <input type="date" class="form-control" name="availability_date" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Start Time:</label>
+                                <input type="time" class="form-control" name="start_time" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>End Time:</label>
+                                <input type="time" class="form-control" name="end_time" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label>Availability:</label>
+                            <select class="form-select" name="is_available">
+                                <option value="1">Available</option>
+                                <option value="0">Unavailable</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Update Availability</button>
+                    </form>
+                </div>
+            </div>
+        </div>
 
-<!-- Availability Form -->
-<h4>Update Availability</h4>
-<form method="POST" action="<?= base_url('index.php/provider/processUpdateAvailability') ?>">
-    <label>Select Date:</label>
-    <input type="date" name="availability_date" required>
+        <!-- Recurring Schedule Form -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5>Set Recurring Availability</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="<?= base_url('index.php/provider/processRecurringSchedule') ?>">
+                        <div class="mb-3">
+                            <label>Day of Week:</label>
+                            <select class="form-select" name="day_of_week" required>
+                                <option value="1">Monday</option>
+                                <option value="2">Tuesday</option>
+                                <option value="3">Wednesday</option>
+                                <option value="4">Thursday</option>
+                                <option value="5">Friday</option>
+                                <option value="6">Saturday</option>
+                                <option value="7">Sunday</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Start Time:</label>
+                                <input type="time" class="form-control" name="start_time" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>End Time:</label>
+                                <input type="time" class="form-control" name="end_time" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label>Active:</label>
+                            <select class="form-select" name="is_active">
+                                <option value="1">Available</option>
+                                <option value="0">Unavailable</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Save Recurring Schedule</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <label>Start Time:</label>
-    <input type="time" name="start_time" required>
+    <!-- Calendar View -->
+    <div class="mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5>View Your Availability</h5>
+            </div>
+            <div class="card-body">
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <label>End Time:</label>
-    <input type="time" name="end_time" required>
+<!-- Bootstrap & FullCalendar -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
 
-    <label>Available:</label>
-    <select name="is_available">
-        <option value="1">Available</option>
-        <option value="0">Unavailable</option>
-    </select>
-
-    <button type="submit" class="btn btn-success">Update Availability</button>
-</form>
-<h4>Set Recurring Availability</h4>
-
-< id="scheduleForm">
-    <label>Day of Week:</label>
-    <select name="day_of_week" required>
-        <option value="1">Monday</option>
-        <option value="2">Tuesday</option>
-        <option value="3">Wednesday</option>
-        <option value="4">Thursday</option>
-        <option value="5">Friday</option>
-        <option value="6">Saturday</option>
-        <option value="7">Sunday</option>
-    </select>
-
-    <label>Start Time:</label>
-    <input type="time" name="start_time" required>
-
-    <label>End Time:</label>
-    <input type="time" name="end_time" required>
-
-    <label>Active:</label>
-    <select name="is_active">
-        <option value="1">Available</option>
-        <option value="0">Unavailable</option>
-    </select>
-
-    <button type="submit" class="btn btn-success">Save Recurring Schedule</button>
-</form>
-
-<!--Calendar View (Added Below the Schedule Forms) -->
-<h4>View Your Availability</h4>
-<div id="calendar"></div>
-
-<!-- FullCalendar Initialization -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        height: "auto", // Adjust height dynamically
-        contentHeight: 200, // Limit calendar height
-        events: '<?= base_url("index.php/provider/getProviderSchedules") ?>', // Fetch availability dynamically
-        editable: true,
-        eventClick: function(info) {
+        height: "auto",
+        editable: true, // Allow providers to modify availability directly
+        events: '<?= base_url("index.php/provider/getProviderSchedules") ?>',
+        eventResize: function(info) { // Handle when an event is resized
+            updateAvailability(info.event);
+        },
+        eventDrop: function(info) { // Handle when an event is moved to another date
+            updateAvailability(info.event);
+        },
+        eventClick: function(info) { // Handle event removal dynamically
             if (confirm("Do you want to remove this availability?")) {
-                window.location.href = "<?= base_url('index.php/provider/deleteSchedule/') ?>" + info.event.id;
+                fetch("<?= base_url('index.php/provider/deleteSchedule/') ?>" + info.event.id, { method: "POST" })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            info.event.remove();
+                        } else {
+                            alert("Failed to remove availability.");
+                        }
+                    });
             }
         }
     });
 
     calendar.render();
+
+    // Function to update provider availability in the backend
+    function updateAvailability(event) {
+        var updatedData = {
+            id: event.id,
+            date: event.start.toISOString().split('T')[0], // Get updated date
+            start_time: event.start.toISOString().split('T')[1].substring(0, 5), // Get new start time
+            end_time: event.end ? event.end.toISOString().split('T')[1].substring(0, 5) : event.start.toISOString().split('T')[1].substring(0, 5) // Get new end time
+        };
+
+        fetch("<?= base_url('index.php/provider/updateSchedule') ?>", {
+            method: "POST",
+            body: JSON.stringify(updatedData),
+            headers: { "Content-Type": "application/json" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert("Failed to update availability.");
+            }
+        });
+    }
 });
+
 </script>
 
-</body>
-</html>
+<?php include VIEW_PATH . '/partials/footer.php'; ?>
