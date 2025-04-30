@@ -95,7 +95,7 @@
             <div class="card-header bg-info text-white">
                 <h5>View Your Availability</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body calendar-container">
                 <div id="calendar"></div>
             </div>
         </div>
@@ -121,10 +121,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        height: "auto",
-        editable: true, // Allow providers to modify availability directly
-        events: '<?= base_url("index.php/provider/getProviderSchedules") ?>',
-        eventResize: function(info) { // Handle when an event is resized
+
+
+
+        height: 650,
+        aspectRatio: 1.35,
+        contentHeight: "auto",
+        editable: true,
+        events: '<?= base_url("index.php/provider/getProviderSchedules") ?>',        eventResize: function(info) { // Handle when an event is resized
             updateAvailability(info.event);
         },
         eventDrop: function(info) { // Handle when an event is moved to another date

@@ -27,6 +27,11 @@ h1, h2 {
   text-align: center;
   color: #333;
 }
+/* Target only the calendar's card body */
+.calendar-container {
+  padding: 1.5rem;
+  min-height: 650px;
+}
 
 /* Buttons */
 .btn {
