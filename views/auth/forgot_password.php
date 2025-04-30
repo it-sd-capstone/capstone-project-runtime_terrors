@@ -42,9 +42,15 @@ if (!defined('APP_ROOT')) {
                 <?php else: ?>
                     <p class="mb-3">Enter your email address and we'll send you a link to reset your password.</p>
                     <form action="<?= base_url('index.php/auth/forgot_password') ?>" method="post">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="input-group">
+                                <input type="email" class="form-control" id="email" name="email" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 py-2">Send Reset Link</button>
                     </form>
