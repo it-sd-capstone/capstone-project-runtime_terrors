@@ -187,14 +187,25 @@ CREATE TABLE `users` (
   `phone` varchar(20) DEFAULT null,
   `role` ENUM ('patient', 'provider', 'admin', 'staff') NOT NULL,
   `is_active` tinyint(1) DEFAULT 1,
+  `is_verified` tinyint(1) DEFAULT 0,
   `email_verified_at` datetime DEFAULT null,
   `created_at` datetime DEFAULT (current_timestamp()),
   `last_login` datetime DEFAULT null,
   `verification_token` varchar(64) DEFAULT null,
   `reset_token` varchar(64) DEFAULT null,
-  `reset_token_expires` datetime DEFAULT null,
+  `token_expires_reset` datetime DEFAULT null,
   `token_expires` datetime DEFAULT null,
   `password_change_required` tinyint(1) DEFAULT 0
+);
+
+CREATE TABLE `user_tokens` (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  selector VARCHAR(16) NOT NULL,
+  token VARCHAR(64) NOT NULL,
+  expires DATETIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE `waitlist` (
