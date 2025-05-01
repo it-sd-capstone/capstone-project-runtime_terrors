@@ -1,10 +1,12 @@
 <?php
+require_once dirname(__DIR__) . '/vendor/autoload.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
+
 /**
  * Email Service
- * 
+ *
  * Handles email delivery for the application including verification emails,
  * password reset emails, and general notifications.
  */
@@ -16,26 +18,50 @@ class EmailService {
     private $smtpUser;
     private $smtpPass;
     private $smtpSecure;
+    private $config;
     
-    /**
+/**
      * Constructor
      */
     public function __construct() {
-        // Load email configuration
-        $this->fromEmail = defined('EMAIL_FROM') ? EMAIL_FROM : 'noreply@appointmentsystem.com';
-        $this->fromName = defined('EMAIL_NAME') ? EMAIL_NAME : 'Patient Appointment System';
+        // Load email configuration from file
+        $this->config = require APP_ROOT . '/config/email_config.php';
         
-        // SMTP configuration
-        $this->smtpHost = defined('SMTP_HOST') ? SMTP_HOST : '';
-        $this->smtpPort = defined('SMTP_PORT') ? SMTP_PORT : 587;
-        $this->smtpUser = defined('SMTP_USER') ? SMTP_USER : '';
-        $this->smtpPass = defined('SMTP_PASS') ? SMTP_PASS : '';
-        $this->smtpSecure = defined('SMTP_SECURE') ? SMTP_SECURE : 'tls';
+        // Debug: Check if SendGrid API key is loaded
+        error_log("SendGrid API Key in constructor: " . (getenv('SENDGRID_API_KEY') ? substr(getenv('SENDGRID_API_KEY'), 0, 5) . '...' : 'NOT FOUND'));
+        
+        // Set up from array-based config
+        if (isset($this->config['smtp'])) {
+            $smtp = $this->config['smtp'];
+            
+            // Set SMTP configuration from array
+            $this->fromEmail = $smtp['from_email'] ?? 'noreply@appointmentsystem.com';
+            $this->fromName = $smtp['from_name'] ?? 'Patient Appointment System';
+            $this->smtpHost = $smtp['host'] ?? '';
+            $this->smtpPort = $smtp['port'] ?? 587;
+            $this->smtpUser = $smtp['username'] ?? '';
+            $this->smtpPass = $smtp['password'] ?? '';
+            $this->smtpSecure = $smtp['secure'] ?? 'tls';
+            
+            // Debug: Log SMTP settings
+            error_log("SMTP Host: {$this->smtpHost}");
+            error_log("SMTP User: {$this->smtpUser}");
+            error_log("SMTP Password: " . ($this->smtpPass ? substr($this->smtpPass, 0, 5) . '...' : 'EMPTY'));
+        } else {
+            // Fallback to constants if config file doesn't have SMTP section
+            $this->fromEmail = defined('EMAIL_FROM') ? EMAIL_FROM : 'noreply@appointmentsystem.com';
+            $this->fromName = defined('EMAIL_NAME') ? EMAIL_NAME : 'Patient Appointment System';
+            $this->smtpHost = defined('SMTP_HOST') ? SMTP_HOST : '';
+            $this->smtpPort = defined('SMTP_PORT') ? SMTP_PORT : 587;
+            $this->smtpUser = defined('SMTP_USER') ? SMTP_USER : '';
+            $this->smtpPass = defined('SMTP_PASS') ? SMTP_PASS : '';
+            $this->smtpSecure = defined('SMTP_SECURE') ? SMTP_SECURE : 'tls';
+        }
     }
     
     /**
      * Send verification email to a newly registered user
-     * 
+     *
      * @param string $email Recipient email address
      * @param string $name Recipient name
      * @param string $token Verification token
@@ -58,7 +84,7 @@ class EmailService {
     
     /**
      * Send password reset email
-     * 
+     *
      * @param string $email Recipient email address
      * @param string $name Recipient name
      * @param string $token Reset token
@@ -81,7 +107,7 @@ class EmailService {
     
     /**
      * Send appointment confirmation email
-     * 
+     *
      * @param string $email Recipient email address
      * @param string $name Recipient name
      * @param array $appointment Appointment details
@@ -104,7 +130,7 @@ class EmailService {
     
     /**
      * Send an email
-     * 
+     *
      * @param string $to Recipient email address
      * @param string $subject Email subject
      * @param string $message Email body (HTML)
@@ -112,7 +138,8 @@ class EmailService {
      */
     private function send($to, $subject, $message) {
         // For development/testing without sending actual emails
-        if (ENVIRONMENT === 'development' && !defined('SEND_EMAILS')) {
+        // Fixed: Check if ENVIRONMENT is defined first
+        if ((defined('ENVIRONMENT') && ENVIRONMENT === 'development') && !defined('SEND_EMAILS')) {
             error_log("Email would be sent to: $to, Subject: $subject");
             return true;
         }
@@ -146,41 +173,55 @@ class EmailService {
         
         return $result;
     }
-    
+    /**
+     * Get configuration
+     * 
+     * @return array Configuration array
+     */
+    private function getConfig() {
+        return $this->config;
+    }
     /**
      * Send email using SMTP
      */
     private function sendSmtp($to, $subject, $message, $altMessage = '') {
-        $config = $this->getConfig();
-        $smtp = $config['smtp'];
+        // Debug - remove in production
+        // error_log("Using SMTP Host: {$this->smtpHost}");
+        // error_log("Using SMTP User: {$this->smtpUser}");
+        // error_log("SMTP Password Length: " . (strlen($this->smtpPass) > 0 ? strlen($this->smtpPass) : "EMPTY"));
+        // error_log("SMTP Password First 10 chars: " . (strlen($this->smtpPass) > 10 ? substr($this->smtpPass, 0, 10) : "TOO SHORT"));
+        $smtp = $this->config['smtp'] ?? [];
         
         $mail = new PHPMailer(true);
-
         try {
             // Server settings
-            if ($smtp['debug'] > 0) {
+            if (isset($smtp['debug']) && $smtp['debug'] > 0) {
                 $mail->SMTPDebug = $smtp['debug']; // Enable verbose debug output
             }
             
             $mail->isSMTP();
-            $mail->Host       = $smtp['host'];
-            $mail->SMTPAuth   = $smtp['auth'];
-            $mail->Username   = $smtp['username'];
-            $mail->Password   = $smtp['password'];
-            $mail->SMTPSecure = $smtp['secure'];
-            $mail->Port       = $smtp['port'];
-
+            $mail->Host       = $this->smtpHost;
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $this->smtpUser;
+            $mail->Password   = $this->smtpPass;
+            $mail->SMTPSecure = $this->smtpSecure;
+            $mail->Port       = $this->smtpPort;
+            
             // Recipients
-            $mail->setFrom($smtp['from_email'], $smtp['from_name']);
+            $mail->setFrom($this->fromEmail, $this->fromName);
             $mail->addAddress($to);
-
+            
             // Content
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body    = $message;
             $mail->AltBody = $altMessage ?: strip_tags($message);
-
-            return $mail->send();
+            
+            $result = $mail->send();
+            if ($result) {
+                error_log("Email successfully sent to: $to");
+            }
+            return $result;
         } catch (Exception $e) {
             error_log("Email send failed: " . $mail->ErrorInfo);
             return false;
@@ -189,7 +230,7 @@ class EmailService {
     
     /**
      * Get email template
-     * 
+     *
      * @param string $template Template name
      * @return string Template HTML
      */
@@ -231,7 +272,7 @@ class EmailService {
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         .header { background: #3498db; color: white; padding: 15px; text-align: center; }
         .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
-        .button { display: inline-block; padding: 10px 20px; background: #3498db; color: white; 
+        .button { display: inline-block; padding: 10px 20px; background: #3498db; color: white;
                  text-decoration: none; border-radius: 5px; margin: 15px 0; }
         .footer { font-size: 12px; color: #888; text-align: center; margin-top: 20px; }
     </style>
@@ -279,7 +320,7 @@ HTML;
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         .header { background: #3498db; color: white; padding: 15px; text-align: center; }
         .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
-        .button { display: inline-block; padding: 10px 20px; background: #3498db; color: white; 
+        .button { display: inline-block; padding: 10px 20px; background: #3498db; color: white;
                  text-decoration: none; border-radius: 5px; margin: 15px 0; }
         .footer { font-size: 12px; color: #888; text-align: center; margin-top: 20px; }
     </style>
