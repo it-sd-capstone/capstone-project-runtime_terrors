@@ -364,18 +364,18 @@ class ProviderController {
         }
     }
 
-    // Add this method to your ProviderController class
+    // Appointments Management
     public function appointments() {
         $provider_id = $_SESSION['user_id'];
         
-        // Get all appointments for this provider
-        $appointments = $this->appointmentModel->getByProvider($provider_id);
-        
-        // Load the appointments view
+        // Get appointments from model
+        $appointments = $this->providerModel->getBookedAppointments($provider_id);
+
+        // Now include the view with the processed data
         include VIEW_PATH . '/provider/appointments.php';
     }
     
-    // Add this method to your ProviderController class
+    // Scheduling & Availability Management
     public function schedule() {
         $provider_id = $_SESSION['user_id'];
         

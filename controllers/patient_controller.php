@@ -4,6 +4,8 @@ require_once MODEL_PATH . '/Appointment.php';
 require_once MODEL_PATH . '/Services.php';
 require_once MODEL_PATH . '/Provider.php';
 require_once MODEL_PATH . '/ActivityLog.php';
+// Add at top of patient_controller.php, before any redirects
+error_log('SESSION DATA: ' . print_r($_SESSION, true));
 
 class PatientController {
     private $db;

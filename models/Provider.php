@@ -514,13 +514,13 @@ class Provider {
     }
 
     
-    // Get booked appointments for a provider
     public function getBookedAppointments($provider_id) {
         try {
             $stmt = $this->db->prepare("
                 SELECT a.*,
                        u.first_name AS patient_first_name,
                        u.last_name AS patient_last_name,
+                       CONCAT(u.first_name, ' ', u.last_name) AS patient_name,
                        s.name AS service_name
                 FROM appointments a
                 JOIN users u ON a.patient_id = u.user_id
@@ -537,6 +537,7 @@ class Provider {
             return [];
         }
     }
+    
 
 
     /**
