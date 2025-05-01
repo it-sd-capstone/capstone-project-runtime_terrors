@@ -43,9 +43,15 @@ if (!defined('APP_ROOT')) {
                         <a href="<?= base_url('index.php/auth') ?>" class="btn btn-primary">Go to Login</a>
                     </div>                <?php else: ?>
                     <form action="<?= base_url('index.php/auth/reset_password?token=' . htmlspecialchars($token ?? '')) ?>" method="post">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                         <div class="mb-3">
                             <label for="password" class="form-label">New Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                             <div class="form-text">
                                 Password must be at least 8 characters and include uppercase, lowercase, 
                                 number, and special character.
