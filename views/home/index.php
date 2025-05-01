@@ -106,6 +106,42 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
             border-left: 4px solid #28a745;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+        
+        /* Testimonial carousel styles - ADD THESE NEW STYLES HERE */
+        .carousel-control-prev-icon, .carousel-control-next-icon {
+            background-color: rgba(13, 110, 253, 0.8);
+            width: 3rem;
+            height: 3rem;
+            background-size: 1.5rem;
+        }
+
+        .carousel-indicators [data-bs-target] {
+            background-color: #0d6efd;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 0 5px;
+        }
+
+        .carousel-item {
+            padding: 1rem 4rem;
+        }
+
+        .carousel-item .card {
+            box-shadow: 0 6px 10px rgba(0,0,0,0.08);
+            border: none;
+            transition: transform 0.3s ease;
+        }
+
+        .carousel-item .card:hover {
+            transform: translateY(-5px);
+        }
+
+        @media (max-width: 767px) {
+            .carousel-item {
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 
@@ -606,39 +642,57 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
     </section>
     <?php endif; ?>
 
-    <!-- Testimonials (Show for all users) -->
-    <section class="py-5 bg-light">
+    <!-- Testimonials Carousel (Show for all users) -->
+<section class="py-5 bg-light">
     <div class="container">
         <div class="text-center mb-5">
             <h2 class="display-6 fw-bold">What Our Patients Say</h2>
             <p class="lead">Read testimonials from satisfied patients</p>
         </div>
         
-        <div class="row g-4">
-            <?php foreach ($testimonials as $key => $testimonial): ?>
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <p class="mb-3">"<?= htmlspecialchars($testimonial['text']) ?>"</p>
-                        <div class="d-flex align-items-center">
-                            <?php 
-                            // Define some avatar colors for variety
-                            $avatarColors = ['primary', 'success', 'danger', 'warning', 'info'];
-                            $colorIndex = $key % count($avatarColors);
-                            $avatarColor = $avatarColors[$colorIndex];
-                            ?>
-                            <div class="rounded-circle bg-<?= $avatarColor ?> text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-weight: bold;">
-                                <?= strtoupper(substr($testimonial['name'], 0, 1)) ?>
-                            </div>
-                            <div>
-                                <h5 class="m-0"><?= htmlspecialchars($testimonial['name']) ?></h5>
-                                <small class="text-muted">Patient since <?= htmlspecialchars($testimonial['patient_since']) ?></small>
+        <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <?php foreach ($testimonials as $key => $testimonial): ?>
+                    <div class="carousel-item <?= $key === 0 ? 'active' : '' ?>">
+                        <div class="card mx-auto" style="max-width: 700px;">
+                            <div class="card-body p-4 text-center">
+                                <div class="mb-4">
+                                    <i class="fas fa-quote-left fa-2x text-primary"></i>
+                                </div>
+                                <p class="lead mb-4">"<?= htmlspecialchars($testimonial['text']) ?>"</p>
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <?php 
+                                    // Define some avatar colors for variety
+                                    $avatarColors = ['primary', 'success', 'danger', 'warning', 'info'];
+                                    $colorIndex = $key % count($avatarColors);
+                                    $avatarColor = $avatarColors[$colorIndex];
+                                    ?>
+                                    <div class="rounded-circle bg-<?= $avatarColor ?> text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-weight: bold;">
+                                        <?= strtoupper(substr($testimonial['name'], 0, 1)) ?>
+                                    </div>
+                                    <div class="text-start">
+                                        <h5 class="m-0"><?= htmlspecialchars($testimonial['name']) ?></h5>
+                                        <small class="text-muted">Patient since <?= htmlspecialchars($testimonial['patient_since']) ?></small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                <?php endforeach; ?>
             </div>
-            <?php endforeach; ?>
+            <button class="carousel-control-prev" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon bg-primary rounded-circle p-2" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon bg-primary rounded-circle p-2" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+            <div class="carousel-indicators" style="bottom: -40px;">
+                <?php foreach ($testimonials as $key => $testimonial): ?>
+                    <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="<?= $key ?>" <?= $key === 0 ? 'class="active" aria-current="true"' : '' ?> aria-label="Testimonial <?= $key + 1 ?>"></button>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
 </section>

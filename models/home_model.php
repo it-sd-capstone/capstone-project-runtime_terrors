@@ -1,237 +1,16 @@
 <?php
-require_once __DIR__ . '/../models/home_model.php';
 
-class HomeController {
+class HomeModel {
     private $db;
     
     public function __construct() {
-        // Start session if not already started
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        
-        // Get database connection
         $this->db = get_db();
-    }
-    
-    public function index() {
-        // Determine user role
-        $isLoggedIn = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
-        $userRole = $isLoggedIn ? $_SESSION['role'] : 'guest';
-        $userId = $isLoggedIn ? $_SESSION['user_id'] : null;
-        
-        // Default data for all users
-        $featuredServices = [
-            [
-                'service_id' => 1,
-                'name' => 'Regular Checkup',
-                'description' => 'Comprehensive health evaluation with our experienced physicians.',
-                'duration' => 30,
-                'icon' => 'stethoscope'
-            ],
-            [
-                'service_id' => 2,
-                'name' => 'Therapy Session',
-                'description' => 'One-on-one counseling sessions with our licensed therapists.',
-                'duration' => 60,
-                'icon' => 'brain'
-            ],
-            [
-                'service_id' => 3,
-                'name' => 'Cardiac Evaluation',
-                'description' => 'Complete cardiovascular assessment with our heart specialists.',
-                'duration' => 45,
-                'icon' => 'heartbeat'
-            ]
-        ];
-        
-        $featuredProviders = [
-            [
-                'user_id' => 1,
-                'first_name' => 'Dr. Smith',
-                'last_name' => 'MD',
-                'specialization' => 'Family Medicine',
-                'bio' => 'With over 15 years of experience in family medicine, Dr. Smith provides comprehensive care for patients of all ages.'
-            ],
-            [
-                'user_id' => 2,
-                'first_name' => 'Dr. Johnson',
-                'last_name' => '',
-                'specialization' => 'Cardiology',
-                'bio' => 'Dr. Johnson is a board-certified cardiologist specializing in preventive cardiology and heart health management.'
-            ],
-            [
-                'user_id' => 3,
-                'first_name' => 'Dr. Williams',
-                'last_name' => '',
-                'specialization' => 'Mental Health',
-                'bio' => 'As a licensed therapist, Dr. Williams offers compassionate mental health services and counseling.'
-            ]
-        ];
-        
-        $testimonials = [
-            [
-                'name' => 'Jennifer L.',
-                'text' => 'The online scheduling system made booking my appointments so easy. No more waiting on hold for 20 minutes!',
-                'date' => '2023-08-15',
-                'patient_since' => '2023'
-            ],
-            [
-                'name' => 'Michael T.',
-                'text' => 'I love the appointment reminders! I haven\'t missed a single appointment since signing up with this clinic.',
-                'date' => '2024-01-10',
-                'patient_since' => '2024'
-            ],
-            [
-                'name' => 'Sarah K.',
-                'text' => 'Being able to see all available slots made finding an appointment that works with my busy schedule so much easier.',
-                'date' => '2022-11-05',
-                'patient_since' => '2022'
-            ]
-        ];
-        
-        // User-specific data
-        $upcomingAppointments = [];
-        $availabilityData = [];
-        $dashboardStats = [];
-        
-        // Fetch user-specific data based on role
-        if ($isLoggedIn) {
-            if ($userRole === 'patient') {
-                // Get upcoming appointments for patient
-                $upcomingAppointments = $this->getPatientAppointments($userId);
-            } elseif ($userRole === 'provider') {
-                // Get today's schedule and availability for provider
-                $upcomingAppointments = $this->getProviderAppointments($userId);
-                $availabilityData = $this->getProviderAvailability($userId);
-            } elseif ($userRole === 'admin') {
-                // Get system-wide stats for admin
-                $dashboardStats = $this->getAdminStats();
-            }
-        }
-        
-        // Get Patient Insights data for providers and admins
-        if ($isLoggedIn && ($userRole === 'provider' || $userRole === 'admin')) {
-            // Get provider ID (for provider-specific data)
-            $provider_id = $userRole === 'provider' ? $userId : null;
-            
-            // Get patient insights data
-            $patientInsights = [
-                'trends' => $this->getAppointmentTrends($provider_id),
-                'demographics' => $this->getPatientDemographics($provider_id),
-                'satisfaction' => $this->getSatisfactionRating($provider_id)
-            ];
-        }
-        
-        // Get some basic stats for the home page
-        $stats = [];
-        
-        // Only show provider stats if there are providers
-        if ($this->getCount('users', "role = 'provider'") > 0) {
-            $stats['totalProviders'] = $this->getCount('users', "role = 'provider'");
-            
-            // Get total number of services
-            if ($this->tableExists('services')) {
-                $stats['totalServices'] = $this->getCount('services');
-            }
-        }
-        
-        include VIEW_PATH . '/home/index.php';
-    }
-    
-    /**
-     * Check if database connection is working
-     */
-    private function checkDatabaseConnection() {
-        if (!$this->db) {
-            return false;
-        }
-        
-        try {
-            // Try a simple query to check if the connection works
-            $result = $this->db->query("SELECT 1");
-            return $result ? true : false;
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-    
-    /**
-     * Debug table structure
-     */
-    private function debugTableStructure($tableName) {
-        if (!$this->tableExists($tableName)) {
-            return false;
-        }
-        
-        $query = "DESCRIBE $tableName";
-        $result = $this->db->query($query);
-        
-        if (!$result) {
-            return false;
-        }
-        
-        $columns = [];
-        while ($row = $result->fetch_assoc()) {
-            $columns[] = $row;
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Check if a table has any data
-     */
-    private function hasData($tableName, $whereClause = '') {
-        $query = "SELECT COUNT(*) as count FROM $tableName";
-        if (!empty($whereClause)) {
-            $query .= " WHERE $whereClause";
-        }
-        
-        $result = $this->db->query($query);
-        if ($result && $row = $result->fetch_assoc()) {
-            return $row['count'] > 0;
-        }
-        return false;
-    }
-    
-    /**
-     * About page for the application
-     */
-    public function about() {
-        include VIEW_PATH . '/home/about.php';
-    }
-  
-    /**
-     * Contact page for the application
-     */
-    public function contact() {
-        $success = '';
-        $error = '';
-        
-        // Process contact form submission
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $name = trim($_POST['name'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $message = trim($_POST['message'] ?? '');
-            
-            if (empty($name) || empty($email) || empty($message)) {
-                $error = 'All fields are required';
-            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $error = 'Please enter a valid email address';
-            } else {
-                // Store message in database or send email
-                $success = 'Thank you for your message. We will contact you soon!';
-            }
-        }
-        
-        include VIEW_PATH . '/home/contact.php';
     }
     
     /**
      * Get upcoming appointments for a patient
      */
-    private function getPatientAppointments($patientId) {
+    public function getPatientAppointments($patientId) {
         $appointments = [];
         
         try {
@@ -270,7 +49,7 @@ class HomeController {
     /**
      * Get upcoming appointments for a provider
      */
-    private function getProviderAppointments($providerId) {
+    public function getProviderAppointments($providerId) {
         $appointments = [];
         
         try {
@@ -309,7 +88,7 @@ class HomeController {
     /**
      * Get availability data for a provider
      */
-    private function getProviderAvailability($providerId) {
+    public function getProviderAvailability($providerId) {
         $availability = [];
         
         try {
@@ -343,7 +122,7 @@ class HomeController {
     /**
      * Get admin dashboard stats
      */
-    private function getAdminStats() {
+    public function getAdminStats() {
         $stats = [
             'total_appointments' => 0,
             'appointments_today' => 0,
@@ -389,7 +168,7 @@ class HomeController {
     /**
      * Get appointment trends data for patient insights
      */
-    private function getAppointmentTrends($provider_id = null) {
+    public function getAppointmentTrends($provider_id = null) {
         $trends = [
             'days' => [],
             'busiest_days' => [],
@@ -519,7 +298,7 @@ class HomeController {
     /**
      * Get patient demographics data for patient insights
      */
-    private function getPatientDemographics($provider_id = null) {
+    public function getPatientDemographics($provider_id = null) {
         $demographics = [
             'age_groups' => [
                 '18-24' => ['count' => 0, 'percentage' => 0],
@@ -629,7 +408,7 @@ class HomeController {
     /**
      * Get satisfaction ratings data for patient insights
      */
-    private function getSatisfactionRating($provider_id = null) {
+    public function getSatisfactionRating($provider_id = null) {
         $ratings = [
             'average' => 0,
             'count' => 0,
@@ -642,7 +421,7 @@ class HomeController {
             
             if ($tableExists) {
                 // Get ratings from appointment_ratings table
-                $where_clause = $provider_id ?"WHERE provider_id = ?" : "";
+                $where_clause = $provider_id ? "WHERE provider_id = ?" : "";
                 
                 $query = "SELECT AVG(rating) as average_rating, COUNT(*) as rating_count
                           FROM appointment_ratings
@@ -728,22 +507,6 @@ class HomeController {
         }
         
         return $ratings;
-    }
-
-    /**
-     * Helper method to get counts from database tables
-     */
-    private function getCount($table, $where = '') {
-        $query = "SELECT COUNT(*) as count FROM $table";
-        if (!empty($where)) {
-            $query .= " WHERE $where";
-        }
-        
-        $result = $this->db->query($query);
-        if ($result && $row = $result->fetch_assoc()) {
-            return $row['count'];
-        }
-        return 0;
     }
     
     /**
