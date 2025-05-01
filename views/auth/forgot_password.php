@@ -45,7 +45,12 @@ if (!defined('APP_ROOT')) {
                         <?= csrf_field() ?>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="input-group">
+                                <input type="email" class="form-control" id="email" name="email" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 py-2">Send Reset Link</button>
                     </form>

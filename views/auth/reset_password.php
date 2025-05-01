@@ -46,7 +46,12 @@ if (!defined('APP_ROOT')) {
                         <?= csrf_field() ?>
                         <div class="mb-3">
                             <label for="password" class="form-label">New Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                             <div class="form-text">
                                 Password must be at least 8 characters and include uppercase, lowercase, 
                                 number, and special character.
