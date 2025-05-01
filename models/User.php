@@ -27,9 +27,9 @@ class User {
         try {
             if ($this->db instanceof mysqli) {
                 // MySQLi implementation
-                $query = "SELECT user_id, email, password_hash, first_name, last_name, role, password_change_required
-                        FROM users
-                        WHERE email = ? AND is_active = 1";
+                $query = "SELECT user_id, email, password_hash, first_name, last_name, role, 
+                        password_change_required, email_verified_at, is_verified 
+                        FROM users WHERE email = ? AND is_active = 1";
                 
                 $stmt = $this->db->prepare($query);
                 $stmt->bind_param("s", $email);
@@ -44,9 +44,10 @@ class User {
                 
             } elseif ($this->db instanceof PDO) {
                 // PDO implementation
-                $query = "SELECT user_id, email, password_hash, first_name, last_name, role, password_change_required
-                        FROM users
-                        WHERE email = :email AND is_active = 1";
+                $query = "SELECT user_id, email, password_hash, first_name, last_name, role, 
+                password_change_required, email_verified_at, is_verified
+                FROM users
+                WHERE email = :email AND is_active = 1";
                 
                 $stmt = $this->db->prepare($query);
                 $stmt->bindParam(':email', $email, PDO::PARAM_STR);

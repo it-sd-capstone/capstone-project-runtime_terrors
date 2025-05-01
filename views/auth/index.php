@@ -74,6 +74,14 @@ if (!defined('APP_ROOT')) {
                     <?php unset($_SESSION['error_message']); ?>
                 <?php endif; ?>
                 
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert-danger mt-3">
+                        <?php foreach ($errors as $err): ?>
+                            <div><?= $err ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
                 <?php if (isset($resent) && $resent): ?>
                     <div class="alert alert-success mt-3">
                         A new verification email has been sent. Please check your inbox.
