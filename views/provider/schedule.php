@@ -110,31 +110,31 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
-        // 🔍 Debug: Verify if calendar events are correctly fetched
-        fetch("<?= base_url('index.php/provider/getProviderSchedules') ?>")
-        .then(response => response.json())
-        .then(data => {
-            console.log("Calendar Events:", data); // ✅ Check the browser console for received events
-        })
-        .catch(error => console.error("Error fetching provider schedules:", error));
 
+    var selectedDuration = 30; // Default service duration
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-
-
-
         height: 650,
         aspectRatio: 1.35,
         contentHeight: "auto",
         editable: true,
-        events: '<?= base_url("index.php/provider/getProviderSchedules") ?>',        eventResize: function(info) { // Handle when an event is resized
+        eventSources: [
+            {
+                url: "<?= base_url('index.php/provider/getProviderSchedules') ?>",
+                method: "GET",
+                failure: function() {
+                    alert("Failed to load provider schedules.");
+                }
+            }
+        ],
+        eventResize: function(info) { 
             updateAvailability(info.event);
         },
-        eventDrop: function(info) { // Handle when an event is moved to another date
+        eventDrop: function(info) { 
             updateAvailability(info.event);
         },
-        eventClick: function(info) { // Handle event removal dynamically
+        eventClick: function(info) { 
             if (confirm("Do you want to remove this availability?")) {
                 fetch("<?= base_url('index.php/provider/deleteSchedule/') ?>" + info.event.id, { method: "POST" })
                     .then(response => response.json())
@@ -149,15 +149,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Debug provider availability fetching
+    fetch("<?= base_url('index.php/provider/getProviderSchedules') ?>")
+    .then(response => response.json())
+    .then(data => {
+        console.log("Provider Schedules Data:", data);
+        if (data.length === 0) {
+            console.warn("No provider schedules found! Check backend response.");
+        }
+        calendar.addEventSource(data); // Ensure event source is correctly loaded
+    })
+    .catch(error => console.error("Error fetching provider schedules:", error));
+
+    // Debug available appointments fetching
+    fetch("<?= base_url('index.php/provider/getAvailableSlots') ?>?provider_id=<?= $provider_id ?>&service_duration=" + selectedDuration)
+    .then(response => response.json())
+    .then(data => {
+        console.log("Filtered Available Slots:", data);
+        if (data.length === 0) {
+            console.warn("No available slots found! Check backend response.");
+        }
+    })
+    .catch(error => console.error("Error fetching available slots:", error));
     calendar.render();
 
-    // Function to update provider availability in the backend
     function updateAvailability(event) {
         var updatedData = {
             id: event.id,
-            date: event.start.toISOString().split('T')[0], // Get updated date
-            start_time: event.start.toISOString().split('T')[1].substring(0, 5), // Get new start time
-            end_time: event.end ? event.end.toISOString().split('T')[1].substring(0, 5) : event.start.toISOString().split('T')[1].substring(0, 5) // Get new end time
+            date: event.start.toISOString().split('T')[0],
+            start_time: event.start.toISOString().split('T')[1].substring(0, 5),
+            end_time: event.end ? event.end.toISOString().split('T')[1].substring(0, 5) : event.start.toISOString().split('T')[1].substring(0, 5)
         };
 
         fetch("<?= base_url('index.php/provider/updateSchedule') ?>", {
@@ -173,7 +194,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
 </script>
 
 <?php include VIEW_PATH . '/partials/footer.php'; ?>

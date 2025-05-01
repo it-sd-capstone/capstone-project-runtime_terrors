@@ -354,6 +354,39 @@ class Provider {
         }
     }
 
+    public function getAvailableSlots($provider_id, $service_duration) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT availability_date, start_time, end_time 
+                FROM provider_availability 
+                WHERE provider_id = ? AND availability_date >= CURDATE()
+                ORDER BY availability_date, start_time
+            ");
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $appointments = [];
+    
+            while ($row = $result->fetch_assoc()) {
+                $start = strtotime($row['start_time']);
+                $end = strtotime($row['end_time']);
+    
+                while ($start + ($service_duration * 60) <= $end) {
+                    $appointments[] = [
+                        'date' => $row['availability_date'],
+                        'start_time' => date("H:i", $start),
+                        'end_time' => date("H:i", $start + ($service_duration * 60))
+                    ];
+                    $start += ($service_duration * 60); // Move to next available slot
+                }
+            }
+    
+            return $appointments;
+        } catch (Exception $e) {
+            error_log("Error fetching available appointments: " . $e->getMessage());
+            return [];
+        }
+    }
 
     // Check if provider has a specific service
     public function hasService($provider_id, $service_id) {
