@@ -181,23 +181,28 @@ class Provider {
         }
     }
 
-    // Get provider availability
-    public function getAvailability($provider_id) {
+    public function getAvailability($providerId) {
         try {
-            $stmt = $this->db->prepare("
-                SELECT * FROM provider_availability 
-                WHERE provider_id = ? AND availability_date >= CURDATE()
-                ORDER BY availability_date, start_time
-            ");
-            $stmt->bind_param("i", $provider_id);
+            $query = "SELECT * FROM provider_availability 
+                      WHERE provider_id = ? AND available_date >= CURDATE() 
+                      AND is_available = 1
+                      ORDER BY available_date, start_time";
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("i", $providerId);
             $stmt->execute();
             $result = $stmt->get_result();
-            return $result->fetch_all(MYSQLI_ASSOC) ?: [];
+            
+            $availability = [];
+            while ($row = $result->fetch_assoc()) {
+                $availability[] = $row;
+            }
+            
+            return $availability;
         } catch (Exception $e) {
-            error_log("Error fetching availability: " . $e->getMessage());
+            error_log("Error in getAvailability: " . $e->getMessage());
             return [];
         }
-    } // Closing bracket for getAvailability()
+    }
     
     // Add provider availability
     public function addAvailability($availabilityData) {
@@ -488,31 +493,27 @@ class Provider {
             return [];
         }
     }
-    // Get recurring schedules
-    public function getRecurringSchedules($provider_id) {
+    public function getRecurringSchedules($providerId) {
         try {
-            $query = "SELECT * FROM recurring_schedules
-                    WHERE provider_id = ?
-                    ORDER BY day_of_week, start_time";
-
+            $query = "SELECT * FROM recurring_schedules 
+                      WHERE provider_id = ? AND is_active = 1
+                      ORDER BY day_of_week, start_time";
             $stmt = $this->db->prepare($query);
-            $stmt->bind_param("i", $provider_id);
+            $stmt->bind_param("i", $providerId);
             $stmt->execute();
-
             $result = $stmt->get_result();
+            
             $schedules = [];
-
             while ($row = $result->fetch_assoc()) {
                 $schedules[] = $row;
             }
-
+            
             return $schedules;
         } catch (Exception $e) {
-            error_log("Error fetching recurring schedules: " . $e->getMessage());
+            error_log("Error in getRecurringSchedules: " . $e->getMessage());
             return [];
         }
     }
-
     
     public function getBookedAppointments($provider_id) {
         try {
@@ -1398,5 +1399,37 @@ class Provider {
             ];
         }
     }
+    public function updateAvailabilitySlot($availabilityId, $date, $startTime, $endTime) {
+        try {
+            $query = "UPDATE provider_availability 
+                      SET available_date = ?, start_time = ?, end_time = ? 
+                      WHERE availability_id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("sssi", $date, $startTime, $endTime, $availabilityId);
+            $success = $stmt->execute();
+            
+            return $success;
+        } catch (Exception $e) {
+            error_log("Error in updateAvailabilitySlot: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateRecurringSchedule($scheduleId, $startTime, $endTime) {
+        try {
+            $query = "UPDATE recurring_schedules 
+                      SET start_time = ?, end_time = ? 
+                      WHERE schedule_id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("ssi", $startTime, $endTime, $scheduleId);
+            $success = $stmt->execute();
+            
+            return $success;
+        } catch (Exception $e) {
+            error_log("Error in updateRecurringSchedule: " . $e->getMessage());
+            return false;
+        }
+    }
+
 }
 ?>
