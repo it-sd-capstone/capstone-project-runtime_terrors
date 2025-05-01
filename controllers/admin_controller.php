@@ -112,6 +112,7 @@ class AdminController {
                         exit;
                     }
                     
+                    
                     // Begin transaction for safe deletion
                     $this->db->begin_transaction();
                     
@@ -393,6 +394,11 @@ class AdminController {
             if ($action === 'add') {
                 // Handle form submission for adding a new service
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    // Verify CSRF token
+                    if (!verify_csrf_token()) {
+                        return;
+                    }
+    
                     $name = $_POST['name'] ?? '';
                     $description = $_POST['description'] ?? '';
                     $price = $_POST['price'] ?? 0;

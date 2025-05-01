@@ -53,6 +53,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="<?= base_url('index.php/provider/processRecurringSchedule') ?>">
+                        <?= csrf_field() ?>
                         <div class="mb-3">
                             <label>Day of Week:</label>
                             <select class="form-select" name="day_of_week" required>

@@ -26,6 +26,7 @@
                     <?php endif; ?>
                     
                     <form method="POST" action="<?= base_url('index.php/patient/updateProfile') ?>">
+                        <?= csrf_field() ?>
                         <!-- Basic Information -->
                         <div class="row">
                             <div class="col-md-6 mb-3">

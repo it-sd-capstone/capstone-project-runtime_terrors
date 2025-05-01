@@ -171,6 +171,11 @@ class ProviderController {
     // Update Provider Profile
     public function updateProfile() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            // Verify CSRF token
+            if (!verify_csrf_token()) {
+                return;
+            }
+    
             $provider_id = $_SESSION['user_id'];
             $first_name = htmlspecialchars(trim($_POST['first_name']));
             $last_name = htmlspecialchars(trim($_POST['last_name']));
