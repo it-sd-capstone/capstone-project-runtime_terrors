@@ -84,20 +84,25 @@ if (!defined('APP_ROOT')) {
 
                     <div class="mb-3">
                         <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
+                        <input type="email" class="form-control" id="email" name="email" required 
+                               data-bs-toggle="tooltip" data-bs-placement="right" 
+                               title="For admin access, use admin@example.com">
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" id="password" name="password" required>
-                            <!-- Fixed password toggle button -->
-                            <span class="input-group-text">
-                                <button class="password-toggle" type="button" onclick="togglePasswordVisibility()">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </span>
-                        </div>
-                        <small class="text-muted">For demo purposes, use "demo" or "password" as the password</small>
+                      <div class="input-group">
+                          <input type="password" class="form-control" id="password" name="password" required
+                                 data-bs-toggle="tooltip" data-bs-placement="right"
+                                 title="For admin access, use 'Admin123@'">
+                          <!-- Fixed password toggle button -->
+                          <span class="input-group-text">
+                              <button class="password-toggle" type="button" onclick="togglePasswordVisibility()">
+                                  <i class="bi bi-eye"></i>
+                              </button>
+                          </span>
+                      </div>
+                      <small class="text-muted">For demo purposes, use "demo" or "password" as the password</small>
+
                     </div>
                     
                     <div class="form-check mb-3">
@@ -136,22 +141,29 @@ if (!defined('APP_ROOT')) {
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Add password toggle function -->
+    <!-- Initialize tooltips -->
     <script>
-        function togglePasswordVisibility() {
-            const passwordInput = document.getElementById('password');
-            const icon = document.querySelector('.password-toggle i');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.remove('bi-eye');
-                icon.classList.add('bi-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                icon.classList.remove('bi-eye-slash');
-                icon.classList.add('bi-eye');
-            }
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Password toggle function
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const icon = document.querySelector('.password-toggle i');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
         }
+    }
     </script>
 </body>
 </html>
