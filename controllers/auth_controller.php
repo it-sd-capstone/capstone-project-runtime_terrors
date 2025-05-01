@@ -194,7 +194,6 @@ class AuthController {
         $updateStmt->execute();
         
         // Send verification email
-        require_once 'services/EmailService.php';
         $emailService = new EmailService();
         $fullName = $user['first_name'] . ' ' . $user['last_name'];
         $emailSent = $emailService->sendVerificationEmail($user['email'], $fullName, $token);
@@ -304,7 +303,6 @@ class AuthController {
                     $verifyUrl = base_url("index.php/auth/verify?token=$token");
                     
                     // Send verification email using EmailService
-                    require_once 'services/EmailService.php';
                     $emailService = new EmailService();
                     $fullName = $firstName . ' ' . $lastName;
                     $emailSent = $emailService->sendVerificationEmail($email, $fullName, $token);
@@ -391,7 +389,6 @@ class AuthController {
             $updateStmt->execute();
             
             // Send new verification email
-            require_once 'services/EmailService.php';
             $emailService = new EmailService();
             $fullName = $user['first_name'] . ' ' . $user['last_name'];
             $emailSent = $emailService->sendVerificationEmail($user['email'], $fullName, $newToken);

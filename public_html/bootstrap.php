@@ -22,6 +22,27 @@ error_reporting(E_ALL);
 // Start session
 session_start();
 
+// Load .env file - ADD THIS SECTION
+$env_file = APP_ROOT . '/.env';
+if (file_exists($env_file)) {
+    // error_log("Loading environment variables from: $env_file");
+    $lines = file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) {
+        error_log("Failed to read .env file");
+    } else {
+        foreach ($lines as $line) {
+            if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
+                list($key, $value) = explode('=', $line, 2);
+                $key = trim($key);
+                $value = trim($value);
+                putenv("$key=$value");
+                $_ENV[$key] = $value;
+                $_SERVER[$key] = $value;
+                error_log("Loaded env var: $key = " . substr($value, 0, 5) . "...");
+            }
+        }
+    }
+}
 // Load helper functions
 require_once APP_ROOT . '/core/helpers.php';
 

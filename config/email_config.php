@@ -12,7 +12,7 @@ return [
         'secure' => 'tls',
         'auth' => true,
         'username' => 'apikey', // Use literally "apikey" as the username
-        'password' => getenv('SENDGRID_API_KEY') ?: 	'SENDGRID_API_KEY_PLACEHOLDER', 
+        'password' => getenv('SENDGRID_API_KEY') ?: 'SENDGRID_API_KEY_PLACEHOLDER', 
 
         'from_email' => 'admin@capstone.mommabearsweetz.com',
         'from_name' => 'Appointment System',
