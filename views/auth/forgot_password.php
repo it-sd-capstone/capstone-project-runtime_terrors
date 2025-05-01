@@ -41,8 +41,8 @@ if (!defined('APP_ROOT')) {
                     <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
                 <?php else: ?>
                     <p class="mb-3">Enter your email address and we'll send you a link to reset your password.</p>
-                    <form action="<?= base_url('index.php/auth/forgot_password') ?>" method="post">
-                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                    <form method="POST" action="<?= base_url('index.php/auth/forgot_password') ?>">
+                        <?= csrf_field() ?>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
                             <div class="input-group">

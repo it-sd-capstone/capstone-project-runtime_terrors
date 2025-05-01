@@ -38,6 +38,7 @@
                 </div>
                 
                 <form method="POST" action="<?= base_url('index.php/patient/processReschedule') ?>">
+                    <?= csrf_field() ?>
                     <input type="hidden" name="appointment_id" value="<?= $appointment['appointment_id'] ?>">
                     <input type="hidden" name="provider_id" value="<?= $appointment['provider_id'] ?>">
                     <input type="hidden" name="service_id" value="<?= $appointment['service_id'] ?>">

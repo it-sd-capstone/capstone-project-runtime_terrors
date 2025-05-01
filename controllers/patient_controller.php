@@ -133,6 +133,11 @@ class PatientController {
 
     public function processBooking() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            // Verify CSRF token
+            if (!verify_csrf_token()) {
+                return;
+            }
+            
             $patient_id = $_SESSION['user_id'];
             $provider_id = intval($_POST['provider_id']);
             $service_id = intval($_POST['service_id'] ?? 0);

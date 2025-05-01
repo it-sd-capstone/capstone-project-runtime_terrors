@@ -1,6 +1,7 @@
 <h4>Edit Service</h4>
 
 <form method="POST" action="<?= base_url('index.php/provider/processEditService') ?>">
+    <?= csrf_field() ?>
     <input type="hidden" name="service_id" value="<?= htmlspecialchars($service['provider_service_id'] ?? '') ?>">
 
     <label>Service Name:</label>

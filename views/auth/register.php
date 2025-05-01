@@ -62,6 +62,7 @@ if (!defined('APP_ROOT')) {
                 <?php endif; ?>
                 
                 <form action="<?= base_url('index.php/auth/register') ?>" method="post">
+                    <?= csrf_field() ?>
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="first_name" class="form-label">First Name *</label>

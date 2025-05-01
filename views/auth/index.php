@@ -78,10 +78,10 @@ if (!defined('APP_ROOT')) {
                     <div class="alert alert-success mt-3">
                         A new verification email has been sent. Please check your inbox.
                     </div>
-                <?php endif; ?>
-                
-                <form method="POST" action="<?= base_url('index.php/auth/login') ?>" class="needs-validation" novalidate>
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                <?php endif; ?>                
+                <form action="<?= base_url('index.php/auth/login') ?>" method="post" class="needs-validation" novalidate>
+                    <?= csrf_field() ?>
+
                     <div class="mb-3">
                         <label for="email" class="form-label">Email Address</label>
                         <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
