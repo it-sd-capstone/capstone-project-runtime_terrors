@@ -62,7 +62,7 @@
                                 <option value="4">Thursday</option>
                                 <option value="5">Friday</option>
                                 <option value="6">Saturday</option>
-                                <option value="7">Sunday</option>
+                                <option value="0">Sunday</option>
                             </select>
                         </div>
                         <div class="row">
@@ -157,10 +157,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.length === 0) {
             console.warn("No provider schedules found! Check backend response.");
         }
-        calendar.addEventSource(data); // Ensure event source is correctly loaded
+        calendar.addEventSource(data); // Ensure event source loads correctly
     })
     .catch(error => console.error("Error fetching provider schedules:", error));
-
+    
     // Debug available appointments fetching
     fetch("<?= base_url('index.php/provider/getAvailableSlots') ?>?provider_id=<?= $provider_id ?>&service_duration=" + selectedDuration)
     .then(response => response.json())

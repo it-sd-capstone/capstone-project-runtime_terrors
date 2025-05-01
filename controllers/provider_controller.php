@@ -99,10 +99,14 @@ class ProviderController {
                 INSERT INTO provider_recurring_schedules (provider_id, start_date, end_date, day_of_week, start_time, end_time) 
                 VALUES (?, ?, ?, ?, ?, ?)
             ");
+    
             foreach ($days_of_week as $day) {
                 $stmt->bind_param("ississ", $provider_id, $start_date, $end_date, $day, $start_time, $end_time);
-                $stmt->execute();
+                if (!$stmt->execute()) {
+                    error_log("MySQL Insert Error: " . $stmt->error);
+                }
             }
+    
             return true;
         } catch (Exception $e) {
             error_log("Error inserting recurring schedule: " . $e->getMessage());
@@ -132,7 +136,7 @@ class ProviderController {
             $provider_id = $_SESSION['user_id'] ?? null;
             $start_date = $_POST['start_date'] ?? null;
             $end_date = $_POST['end_date'] ?? null;
-            $days_of_week = $_POST['days_of_week'] ?? [];
+            $days_of_week = isset($_POST['days_of_week']) ? (array) $_POST['days_of_week'] : [];
             $start_time = $_POST['start_time'] ?? null;
             $end_time = $_POST['end_time'] ?? null;
     
