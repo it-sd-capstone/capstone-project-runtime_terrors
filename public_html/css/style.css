@@ -27,6 +27,11 @@ h1, h2 {
   text-align: center;
   color: #333;
 }
+/* Target only the calendar's card body */
+.calendar-container {
+  padding: 1.5rem;
+  min-height: 650px;
+}
 
 /* Buttons */
 .btn {
@@ -64,6 +69,10 @@ h1, h2 {
 .btn-primary {
   background-color: #007bff;
   border: none;
+  font-size: 16px;
+  padding: 12px;
+  width: 100%;
+
 }
 
 .btn-primary:hover {

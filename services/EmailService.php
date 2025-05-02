@@ -20,7 +20,7 @@ class EmailService {
     private $smtpSecure;
     private $config;
     
-/**
+    /**
      * Constructor
      */
     public function __construct() {

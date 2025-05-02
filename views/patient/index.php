@@ -1,46 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Poppins', sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: scale(1.02);
+        }
+        .btn-primary, .btn-outline-primary, .btn-outline-success, .btn-outline-info, .btn-outline-dark {
+            transition: all 0.3s ease-in-out;
+            font-weight: 500;
+        }
+        .btn-primary:hover, .btn-outline-primary:hover, .btn-outline-success:hover, .btn-outline-info:hover, .btn-outline-dark:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .icon-badge {
+            font-size: 0.85rem;
+            padding: 6px 10px;
+            border-radius: 20px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
 <?php include VIEW_PATH . '/partials/patient_header.php'; ?>
 
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="alert alert-info">
-                <h2 class="h4 mb-0">Welcome back, <?= htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']) ?>!</h2>
-            </div>
-        </div>
+    <!-- Welcome Section -->
+    <div class="alert alert-info text-center">
+        <h2 class="h4 mb-0">
+            <i class="fas fa-user-md text-primary"></i> Welcome back, <?= htmlspecialchars($patient['first_name']) ?>!
+        </h2>
+        <p class="text-muted">Stay on track with your upcoming appointments and healthcare reminders.</p>
     </div>
-    
+
     <div class="row">
-        <!-- Appointment Stats Card -->
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100">
+        <!-- Appointment Overview -->
+        <div class="col-md-4">
+            <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="h5 mb-0">Your Appointment Stats</h3>
+                    <h5 class="mb-0">Appointment Overview</h5>
                 </div>
-                <div class="card-body" id="appointment-stats">
-                    <div class="d-flex justify-content-between mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
                         <span>Total Appointments:</span>
-                        <span class="badge bg-primary rounded-pill"><?= count($upcomingAppointments) + count($pastAppointments) ?></span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3">
-                        <span>Completed:</span>
-                        <span class="badge bg-success rounded-pill"><?= count($pastAppointments) ?></span>
+                        <span class="badge bg-primary icon-badge"><?= count($pastAppointments) + count($upcomingAppointments) ?></span>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span>Upcoming:</span>
-                        <span class="badge bg-info rounded-pill"><?= count($upcomingAppointments) ?></span>
+                        <span class="badge bg-info icon-badge"><?= count($upcomingAppointments) ?></span>
                     </div>
-                </div>
-                <div class="card-footer bg-light">
-                    <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-primary btn-sm w-100">Book New Appointment</a>
+                    <div class="d-flex justify-content-between">
+                        <span>Completed:</span>
+                        <span class="badge bg-success icon-badge"><?= count($pastAppointments) ?></span>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Upcoming Appointments Card -->
-        <div class="col-md-8 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h3 class="h5 mb-0">Upcoming Appointments</h3>
+
+        <!-- Upcoming Appointments -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between">
+                    <h5>Upcoming Appointments</h5>
                     <a href="<?= base_url('index.php/patient/history') ?>" class="btn btn-light btn-sm">View All</a>
                 </div>
                 <div class="card-body">
@@ -66,20 +111,18 @@
                                             <td><?= htmlspecialchars($appointment['service_name']) ?></td>
                                             <td>
                                                 <?php 
-                                                $statusClass = 'secondary';
-                                                switch($appointment['status']) {
-                                                    case 'scheduled': $statusClass = 'primary'; break;
-                                                    case 'confirmed': $statusClass = 'success'; break;
-                                                    case 'canceled': $statusClass = 'danger'; break;
-                                                    case 'no_show': $statusClass = 'warning'; break;
-                                                }
+                                                    $statusClass = match($appointment['status']) {
+                                                        'scheduled' => 'primary',
+                                                        'confirmed' => 'success',
+                                                        'canceled' => 'danger',
+                                                        'no_show' => 'warning',
+                                                        default => 'secondary'
+                                                    };
                                                 ?>
-                                                <span class="badge bg-<?= $statusClass ?>">
-                                                    <?= ucfirst(htmlspecialchars($appointment['status'])) ?>
-                                                </span>
+                                                <span class="badge bg-<?= $statusClass ?>"><?= ucfirst(htmlspecialchars($appointment['status'])) ?></span>
                                             </td>
                                             <td>
-                                                <?php if ($appointment['status'] != 'canceled'): ?>
+                                                <?php if ($appointment['status'] !== 'canceled'): ?>
                                                     <div class="btn-group btn-group-sm">
                                                         <a href="<?= base_url('index.php/patient/reschedule/' . $appointment['appointment_id']) ?>" class="btn btn-warning">
                                                             <i class="fas fa-calendar-alt"></i>
@@ -98,98 +141,36 @@
                             </table>
                         </div>
                     <?php else: ?>
-                        <div class="alert alert-info">
-                            <p class="mb-0">You have no upcoming appointments.</p>
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-alt"></i>
+                            <p class="mt-2 text-muted">You have no upcoming appointments.</p>
+                            <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-primary">Book Your First Appointment</a>
                         </div>
-                        <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-primary">Book Your First Appointment</a>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Additional Dashboard Widgets Row -->
-    <div class="row">
-        <!-- Health Reminders Card -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-info text-white">
-                    <h3 class="h5 mb-0">Health Reminders</h3>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Annual check-up
-                            <span class="badge bg-primary rounded-pill">Due in 3 months</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Dental cleaning
-                            <span class="badge bg-warning rounded-pill">Overdue</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Prescription refill
-                            <span class="badge bg-success rounded-pill">Up to date</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Quick Links Card -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h3 class="h5 mb-0">Quick Links</h3>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Quick Actions</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <a href="<?= base_url('index.php/patient/search') ?>" class="btn btn-outline-primary">Find a Provider</a>
-                        <a href="<?= base_url('index.php/patient/profile') ?>" class="btn btn-outline-secondary">Update Profile</a>
-                        <a href="<?= base_url('index.php/notification/settings') ?>" class="btn btn-outline-info">Notification Settings</a>
+                        <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-outline-success">Book Appointment</a>
+                        <a href="<?= base_url('index.php/patient/profile') ?>" class="btn btn-outline-info">Update Profile</a>
+                        <a href="<?= base_url('index.php/notification/settings') ?>" class="btn btn-outline-dark">Notification Settings</a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
-
-<!-- JavaScript for Real-Time Updates -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Function to update appointment stats
-    function updateAppointmentStats() {
-        fetch("<?= base_url('index.php/patient/fetchAppointments') ?>")
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Failed to fetch appointment data.");
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data && data.stats) {
-                    const statsHtml = `
-                        <div class="d-flex justify-content-between mb-3">
-                            <span>Total Appointments:</span>
-                            <span class="badge bg-primary rounded-pill">${data.stats.total}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span>Completed:</span>
-                            <span class="badge bg-success rounded-pill">${data.stats.completed}</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Upcoming:</span>
-                            <span class="badge bg-info rounded-pill">${data.stats.upcoming}</span>
-                        </div>
-                    `;
-                    document.getElementById("appointment-stats").innerHTML = statsHtml;
-                }
-            })
-            .catch(error => console.error("Error updating stats:", error.message));
-    }
-    
-    // Update stats every 60 seconds
-    setInterval(updateAppointmentStats, 60000);
-});
-</script>
-
-<?php include VIEW_PATH . '/partials/footer.php'; ?>
+</body>
+</html>

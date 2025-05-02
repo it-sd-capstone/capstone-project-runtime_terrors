@@ -158,13 +158,14 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    <a href="<?= base_url('index.php/patient/viewProvider/' . $provider['provider_id']) ?>" 
-                                                       class="btn btn-outline-primary">
-                                                        <i class="fas fa-user-md me-1"></i> Profile
-                                                    </a>
-                                                    <a href="<?= base_url('index.php/patient/book/' . $provider['provider_id']) ?>" 
-                                                       class="btn btn-primary">
-                                                        <i class="fas fa-calendar-plus me-1"></i> Book
+                                                <?php if (!empty($provider['provider_id'])): ?>
+                                                    <a href="<?= base_url('index.php/patient/viewProvider/' . htmlspecialchars($provider['provider_id'])) ?>" 
+                                                    class="btn btn-outline-primary"> Profile</a>
+                                                    <a href="<?= base_url('index.php/patient/book/' . htmlspecialchars($provider['provider_id'])) ?>" 
+                                                    class="btn btn-primary"> Book</a>
+                                                <?php else: ?>
+                                                    <span class="text-muted">Provider details unavailable</span>
+                                                <?php endif; ?>
                                                     </a>
                                                 </div>
                                             </td>
