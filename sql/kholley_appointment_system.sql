@@ -193,7 +193,7 @@ CREATE TABLE `users` (
   `last_login` datetime DEFAULT null,
   `verification_token` varchar(64) DEFAULT null,
   `reset_token` varchar(64) DEFAULT null,
-  `token_expires_reset` datetime DEFAULT null,
+  `reset_token_expires` datetime DEFAULT null,
   `token_expires` datetime DEFAULT null,
   `password_change_required` tinyint(1) DEFAULT 0
 );
