@@ -179,7 +179,7 @@ CREATE TABLE `settings` (
 );
 
 CREATE TABLE `users` (
-  `user_id` int(11) PRIMARY KEY NOT NULL,
+  `user_id` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `first_name` varchar(100) NOT NULL,
@@ -195,7 +195,8 @@ CREATE TABLE `users` (
   `reset_token` varchar(64) DEFAULT null,
   `reset_token_expires` datetime DEFAULT null,
   `token_expires` datetime DEFAULT null,
-  `password_change_required` tinyint(1) DEFAULT 0
+  `password_change_required` tinyint(1) DEFAULT 0,
+  AUTO_INCREMENT=17
 );
 
 CREATE TABLE `user_tokens` (
