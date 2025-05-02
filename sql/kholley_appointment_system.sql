@@ -195,9 +195,9 @@ CREATE TABLE `users` (
   `reset_token` varchar(64) DEFAULT null,
   `reset_token_expires` datetime DEFAULT null,
   `token_expires` datetime DEFAULT null,
-  `password_change_required` tinyint(1) DEFAULT 0,
-  AUTO_INCREMENT=17
-);
+  `password_change_required` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB AUTO_INCREMENT=17;
+
 
 CREATE TABLE `user_tokens` (
   id INT PRIMARY KEY AUTO_INCREMENT,
