@@ -129,11 +129,9 @@ class PatientController {
         include VIEW_PATH . '/patient/book.php';
     }
 
-<<<<<<< HEAD
     /**
      * Check provider availability before booking
      */
-=======
     public function processBooking() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             // Verify CSRF token
@@ -217,7 +215,6 @@ class PatientController {
     }
 
     // ✅ Check Provider Availability
->>>>>>> main
     public function checkAvailability() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $input = json_decode(file_get_contents("php://input"), true);

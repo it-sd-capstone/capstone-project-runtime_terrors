@@ -19,17 +19,14 @@ class ServiceController {
      */
     public function processService() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-<<<<<<< HEAD
             $action = $_POST['action'] ?? '';
 
             // Validate common input fields
-=======
             // Verify CSRF token
             if (!verify_csrf_token()) {
                 return;
             }
             
->>>>>>> main
             $name = $_POST['name'] ?? '';
             $description = $_POST['description'] ?? '';
             $price = $_POST['price'] ?? 0;
