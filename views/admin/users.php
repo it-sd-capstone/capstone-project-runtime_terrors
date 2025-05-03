@@ -3,7 +3,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 ?>
-<?php include VIEW_PATH . '/partials/admin_header.php'; ?>
+<?php include VIEW_PATH . '/partials/header.php'; ?>
 <div class="container">
     <h2>Manage Users</h2>
     

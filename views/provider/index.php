@@ -1,5 +1,5 @@
 <?php 
-  include VIEW_PATH . '/partials/provider_header.php'; 
+  include VIEW_PATH . '/partials/header.php'; 
 ?>
 
 <div class="container provider-dashboard">

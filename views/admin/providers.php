@@ -1,4 +1,4 @@
-<?php include VIEW_PATH . '/partials/admin_header.php'; ?>
+<?php include VIEW_PATH . '/partials/header.php'; ?>
 
 <!-- Change from container to container-fluid for full width -->
 <div class="container-fluid my-4" style="min-height: 80vh; padding-bottom: 40px;">

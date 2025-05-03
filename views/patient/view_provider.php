@@ -1,5 +1,4 @@
 <?php include VIEW_PATH . '/partials/header.php'; ?>
-<?php include VIEW_PATH . '/partials/patient_header.php'; ?>
 
 <div class="container mt-4">
     <div class="row">
