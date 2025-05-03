@@ -181,46 +181,47 @@ class Provider {
         }
     }
 
-    /**
-     * Get provider availability
-     * 
-     * @param int $provider_id Provider ID
-     * @return array Array of availability slots
-     */
-    public function getAvailability($provider_id) {
-        try {
-            $query = "SELECT 
-                availability_id as id, 
-                provider_id, 
-                available_date AS availability_date, 
-                start_time, 
-                end_time,
-                is_available
-              FROM 
-                provider_availability 
-              WHERE 
-                provider_id = ? 
-                AND available_date >= CURDATE()
-                AND is_available = 1
-              ORDER BY 
-                available_date, start_time";
-            
-            $stmt = $this->db->prepare($query);
-            $stmt->bind_param("i", $provider_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            $availability = [];
-            while ($row = $result->fetch_assoc()) {
-                $availability[] = $row;
-            }
-            
-            return $availability;
-        } catch (Exception $e) {
-            error_log("Error fetching availability: " . $e->getMessage());
-            return [];
-        }
-    } // Closing bracket for getAvailability()
+  /**
+   * Get provider availability
+   *  
+   * @param int $providerId Provider ID
+   * @return array Array of availability slots
+   */
+  public function getAvailability($providerId) {
+      try {
+          $query = "SELECT
+               availability_id as id,
+               provider_id,
+               available_date AS availability_date,
+               start_time,
+               end_time,
+               is_available
+            FROM
+               provider_availability
+             WHERE
+               provider_id = ?
+               AND available_date >= CURDATE()
+               AND is_available = 1
+            ORDER BY
+               available_date, start_time";
+
+          $stmt = $this->db->prepare($query);
+          $stmt->bind_param("i", $providerId);
+          $stmt->execute();
+          $result = $stmt->get_result();
+
+          $availability = [];
+          while ($row = $result->fetch_assoc()) {
+              $availability[] = $row;
+          }
+
+          return $availability;
+      } catch (Exception $e) {
+          error_log("Error in getAvailability: " . $e->getMessage());
+          return [];
+      }
+  }
+
     
     // Add provider availability
     public function addAvailability($availabilityData) {
@@ -238,6 +239,11 @@ class Provider {
                 $availabilityData['max_appointments']
             );
             return $stmt->execute();
+            if (!$result) {
+                error_log("SQL Error: " . $stmt->error);
+            }
+            
+            return $result;
         } catch (Exception $e) {
             error_log("Error adding availability: " . $e->getMessage());
             return false;
@@ -296,6 +302,7 @@ class Provider {
             return [];
         }
     }
+    
     public function addAvailability_old($provider_id, $date, $start_time, $end_time) {
         $availabilityData = [
             'provider_id' => $provider_id,
@@ -511,31 +518,27 @@ class Provider {
             return [];
         }
     }
-    // Get recurring schedules
-    public function getRecurringSchedules($provider_id) {
+    public function getRecurringSchedules($providerId) {
         try {
-            $query = "SELECT * FROM recurring_schedules
-                    WHERE provider_id = ?
-                    ORDER BY day_of_week, start_time";
-
+            $query = "SELECT * FROM recurring_schedules 
+                      WHERE provider_id = ? AND is_active = 1
+                      ORDER BY day_of_week, start_time";
             $stmt = $this->db->prepare($query);
-            $stmt->bind_param("i", $provider_id);
+            $stmt->bind_param("i", $providerId);
             $stmt->execute();
-
             $result = $stmt->get_result();
+            
             $schedules = [];
-
             while ($row = $result->fetch_assoc()) {
                 $schedules[] = $row;
             }
-
+            
             return $schedules;
         } catch (Exception $e) {
-            error_log("Error fetching recurring schedules: " . $e->getMessage());
+            error_log("Error in getRecurringSchedules: " . $e->getMessage());
             return [];
         }
     }
-
     
     public function getBookedAppointments($provider_id) {
         try {
@@ -1421,5 +1424,37 @@ class Provider {
             ];
         }
     }
+    public function updateAvailabilitySlot($availabilityId, $date, $startTime, $endTime) {
+        try {
+            $query = "UPDATE provider_availability 
+                      SET available_date = ?, start_time = ?, end_time = ? 
+                      WHERE availability_id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("sssi", $date, $startTime, $endTime, $availabilityId);
+            $success = $stmt->execute();
+            
+            return $success;
+        } catch (Exception $e) {
+            error_log("Error in updateAvailabilitySlot: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateRecurringSchedule($scheduleId, $startTime, $endTime) {
+        try {
+            $query = "UPDATE recurring_schedules 
+                      SET start_time = ?, end_time = ? 
+                      WHERE schedule_id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("ssi", $startTime, $endTime, $scheduleId);
+            $success = $stmt->execute();
+            
+            return $success;
+        } catch (Exception $e) {
+            error_log("Error in updateRecurringSchedule: " . $e->getMessage());
+            return false;
+        }
+    }
+
 }
 ?>
