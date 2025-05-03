@@ -14,10 +14,16 @@ $schedules = $providerModel->getAvailability($provider_id);
 $calendarEvents = [];
 foreach ($schedules as $schedule) {
     $calendarEvents[] = [
+        "id" => $schedule['id'] ?? $schedule['availability_id'] ?? null,
         "title" => "Available",
         "start" => $schedule['availability_date'] . "T" . $schedule['start_time'],
         "end" => $schedule['availability_date'] . "T" . $schedule['end_time'],
-        "color" => "green"
+        "color" => "#17a2b8", // Info color (lighter blue) to distinguish from appointments
+        "extendedProps" => [
+            "type" => "availability",
+            "isRecurring" => isset($schedule['recurring_id']),
+            "recurring_id" => $schedule['recurring_id'] ?? null
+        ]
     ];
 }
 

@@ -1,45 +1,68 @@
 <?php include VIEW_PATH . '/partials/header.php'; ?>
 
 <div class="container mt-4">
-    <!-- Title Section -->
-    <div class="alert alert-info text-center">
-        <h2 class="h4 mb-0">
-            <i class="fas fa-calendar-alt text-primary"></i> Manage Your Schedule
-        </h2>
-        <p class="text-muted">Set availability and view upcoming appointments.</p>
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm bg-light">
+                <div class="card-body p-4">
+                    <h2 class="text-primary mb-2">
+                        <i class="fas fa-calendar-alt"></i> Manage Your Schedule
+                    </h2>
+                    <p class="text-muted">Set your availability and view upcoming appointments.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Availability Update Form -->
-    <div class="row">
+    <!-- Forms Section -->
+    <div class="row g-4 mb-4">
+        <!-- Availability Update Form -->
         <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5>Update Availability</h5>
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white d-flex align-items-center">
+                    <i class="fas fa-clock me-2"></i>
+                    <h5 class="mb-0">Update Availability</h5>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="<?= base_url('index.php/provider/processUpdateAvailability') ?>">
                         <div class="mb-3">
-                            <label>Select Date:</label>
-                            <input type="date" class="form-control" name="availability_date" required>
+                            <label class="form-label fw-bold">Select Date:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                <input type="date" class="form-control" name="availability_date" required min="<?= date('Y-m-d') ?>">
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label>Start Time:</label>
-                                <input type="time" class="form-control" name="start_time" required>
+                                <label class="form-label fw-bold">Start Time:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-hourglass-start"></i></span>
+                                    <input type="time" class="form-control" name="start_time" required>
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label>End Time:</label>
-                                <input type="time" class="form-control" name="end_time" required>
+                                <label class="form-label fw-bold">End Time:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-hourglass-end"></i></span>
+                                    <input type="time" class="form-control" name="end_time" required>
+                                </div>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label>Availability:</label>
-                            <select class="form-select" name="is_available">
-                                <option value="1">Available</option>
-                                <option value="0">Unavailable</option>
-                            </select>
+                            <label class="form-label fw-bold">Availability Status:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-toggle-on"></i></span>
+                                <select class="form-select" name="is_available">
+                                    <option value="1">Available</option>
+                                    <option value="0">Unavailable</option>
+                                </select>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Update Availability</button>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Availability
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -47,43 +70,60 @@
 
         <!-- Recurring Schedule Form -->
         <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5>Set Recurring Availability</h5>
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white d-flex align-items-center">
+                    <i class="fas fa-sync me-2"></i>
+                    <h5 class="mb-0">Set Recurring Availability</h5>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="<?= base_url('index.php/provider/processRecurringSchedule') ?>">
                         <?= csrf_field() ?>
                         <div class="mb-3">
-                            <label>Day of Week:</label>
-                            <select class="form-select" name="day_of_week" required>
-                                <option value="1">Monday</option>
-                                <option value="2">Tuesday</option>
-                                <option value="3">Wednesday</option>
-                                <option value="4">Thursday</option>
-                                <option value="5">Friday</option>
-                                <option value="6">Saturday</option>
-                                <option value="0">Sunday</option>
-                            </select>
+                            <label class="form-label fw-bold">Day of Week:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-calendar-day"></i></span>
+                                <select class="form-select" name="day_of_week" required>
+                                    <option value="1">Monday</option>
+                                    <option value="2">Tuesday</option>
+                                    <option value="3">Wednesday</option>
+                                    <option value="4">Thursday</option>
+                                    <option value="5">Friday</option>
+                                    <option value="6">Saturday</option>
+                                    <option value="0">Sunday</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label>Start Time:</label>
-                                <input type="time" class="form-control" name="start_time" required>
+                                <label class="form-label fw-bold">Start Time:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-hourglass-start"></i></span>
+                                    <input type="time" class="form-control" name="start_time" required>
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label>End Time:</label>
-                                <input type="time" class="form-control" name="end_time" required>
+                                <label class="form-label fw-bold">End Time:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-hourglass-end"></i></span>
+                                    <input type="time" class="form-control" name="end_time" required>
+                                </div>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label>Active:</label>
-                            <select class="form-select" name="is_active">
-                                <option value="1">Available</option>
-                                <option value="0">Unavailable</option>
-                            </select>
+                            <label class="form-label fw-bold">Status:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-toggle-on"></i></span>
+                                <select class="form-select" name="is_active">
+                                    <option value="1">Active</option>
+                                    <option value="0">Inactive</option>
+                                </select>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-success w-100">Save Recurring Schedule</button>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-2"></i>Save Recurring Schedule
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -91,13 +131,38 @@
     </div>
 
     <!-- Calendar View -->
-    <div class="mt-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-info text-white">
-                <h5>View Your Availability</h5>
-            </div>
-            <div class="card-body calendar-container">
-                <div id="calendar"></div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        <h5 class="mb-0">Your Schedule Calendar</h5>
+                    </div>
+                    <div id="calendar-loading" class="spinner-border spinner-border-sm text-light d-none" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <div class="card-body calendar-container p-3">
+                    <!-- Calendar Tips -->
+                    <div class="alert alert-light border mb-3">
+                        <div class="d-flex">
+                            <i class="fas fa-info-circle text-info me-2 mt-1"></i>
+                            <div>
+                                <strong>Tips:</strong> 
+                                <ul class="mb-0 ps-3 mt-1">
+                                    <li>Drag events to reschedule</li>
+                                    <li>Click an event to delete it</li>
+                                    <li>Events shown in blue are your scheduled availability</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Debug Info (only shown during development) -->
+                    <div id="debug-info" class="alert alert-light border small d-none mb-3"></div>
+                    <!-- Calendar will be rendered here -->
+                    <div id="calendar"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -110,90 +175,276 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Show loading indicator
+    document.getElementById('calendar-loading').classList.remove('d-none');
+    
     var calendarEl = document.getElementById('calendar');
-
     var selectedDuration = 30; // Default service duration
-
+    
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         height: 650,
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        themeSystem: 'bootstrap5',
         aspectRatio: 1.35,
         contentHeight: "auto",
         editable: true,
+        selectable: true,
+        nowIndicator: true,
+        dayMaxEvents: true,
+        eventTimeFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            meridiem: 'short'
+        },
+        eventDisplay: 'block',
         eventSources: [
             {
                 url: "<?= base_url('index.php/provider/getProviderSchedules') ?>",
                 method: "GET",
+                color: '#17a2b8', // info color
+                textColor: 'white',
                 failure: function() {
-                    alert("Failed to load provider schedules.");
+                    showNotification("Failed to load provider schedules", "danger");
                 }
             }
         ],
-        eventResize: function(info) { 
+        eventResize: function(info) {
             updateAvailability(info.event);
         },
-        eventDrop: function(info) { 
+        eventDrop: function(info) {
             updateAvailability(info.event);
         },
-        eventClick: function(info) { 
-            if (confirm("Do you want to remove this availability?")) {
-                fetch("<?= base_url('index.php/provider/deleteSchedule/') ?>" + info.event.id, { method: "POST" })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            info.event.remove();
-                        } else {
-                            alert("Failed to remove availability.");
-                        }
-                    });
+        eventClick: function(info) {
+            if (confirm("Do you want to remove this availability slot?")) {
+                fetch("<?= base_url('index.php/provider/deleteSchedule/') ?>" + info.event.id, { 
+                    method: "POST",
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        info.event.remove();
+                        showNotification("Availability removed successfully", "success");
+                    } else {
+                        showNotification("Failed to remove availability", "danger");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    showNotification("An error occurred while removing availability", "danger");
+                });
+            }
+        },
+        loading: function(isLoading) {
+            if (!isLoading) {
+                // Hide loading indicator when calendar is loaded
+                document.getElementById('calendar-loading').classList.add('d-none');
             }
         }
     });
-
+    
     // Debug provider availability fetching
     fetch("<?= base_url('index.php/provider/getProviderSchedules') ?>")
     .then(response => response.json())
     .then(data => {
         console.log("Provider Schedules Data:", data);
+        
+        // Show debug info during development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.classList.remove('d-none');
+            debugInfo.innerHTML = `<strong>Debug:</strong> Found ${data.length} availability slots`;
+        }
+        
         if (data.length === 0) {
             console.warn("No provider schedules found! Check backend response.");
         }
-        calendar.addEventSource(data); // Ensure event source loads correctly
     })
-    .catch(error => console.error("Error fetching provider schedules:", error));
+    .catch(error => {
+        console.error("Error fetching provider schedules:", error);
+        showNotification("Error loading your schedule data", "danger");
+    });
     
-    // Debug available appointments fetching
-    fetch("<?= base_url('index.php/provider/getAvailableSlots') ?>?provider_id=<?= $provider_id ?>&service_duration=" + selectedDuration)
-    .then(response => response.json())
-    .then(data => {
-        console.log("Filtered Available Slots:", data);
-        if (data.length === 0) {
-            console.warn("No available slots found! Check backend response.");
-        }
-    })
-    .catch(error => console.error("Error fetching available slots:", error));
+    // Render calendar
     calendar.render();
-
+    
+    // Function to update availability
     function updateAvailability(event) {
-        var updatedData = {
+        const updatedData = {
             id: event.id,
             date: event.start.toISOString().split('T')[0],
             start_time: event.start.toISOString().split('T')[1].substring(0, 5),
-            end_time: event.end ? event.end.toISOString().split('T')[1].substring(0, 5) : event.start.toISOString().split('T')[1].substring(0, 5)
+            end_time: event.end ? event.end.toISOString().split('T')[1].substring(0, 5) : 
+                      new Date(event.start.getTime() + 30*60000).toISOString().split('T')[1].substring(0, 5)
         };
-
+        
         fetch("<?= base_url('index.php/provider/updateSchedule') ?>", {
             method: "POST",
             body: JSON.stringify(updatedData),
-            headers: { "Content-Type": "application/json" }
+            headers: { 
+                "Content-Type": "application/json",
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
         .then(response => response.json())
         .then(data => {
-            if (!data.success) {
-                alert("Failed to update availability.");
+            if (data.success) {
+                showNotification("Availability updated successfully", "success");
+            } else {
+                showNotification("Failed to update availability", "danger");
+                calendar.refetchEvents(); // Reload original events
             }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            showNotification("An error occurred while updating availability", "danger");
+            calendar.refetchEvents(); // Reload original events
         });
     }
+    
+    // Function to show notification
+    function showNotification(message, type = 'info') {
+        const notificationHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Check if notification container exists, if not create it
+        let notificationContainer = document.getElementById('notification-container');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            notificationContainer.style.position = 'fixed';
+            notificationContainer.style.top = '20px';
+            notificationContainer.style.right = '20px';
+            notificationContainer.style.zIndex = '9999';
+            notificationContainer.style.maxWidth = '350px';
+            document.body.appendChild(notificationContainer);
+        }
+        
+        // Add notification to container
+        const notificationElement = document.createElement('div');
+        notificationElement.innerHTML = notificationHtml;
+        notificationContainer.appendChild(notificationElement);
+        
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+            notificationElement.querySelector('.alert').classList.remove('show');
+            setTimeout(() => {
+                if (notificationElement.parentNode) {
+                    notificationElement.parentNode.removeChild(notificationElement);
+                }
+            }, 500); // Wait for fade out animation
+        }, 5000);
+    }
+    
+    // Add event listeners for form submissions to provide feedback
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const formType = this.querySelector('button[type="submit"]').textContent.trim();
+            const loadingBtn = this.querySelector('button[type="submit"]');
+            
+            // Show loading state on button
+            const originalBtnText = loadingBtn.innerHTML;
+            loadingBtn.disabled = true;
+            loadingBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+            
+            // We don't prevent default, let the form submit normally
+            // But after submission, we'll show feedback
+            setTimeout(() => {
+                loadingBtn.innerHTML = originalBtnText;
+                loadingBtn.disabled = false;
+            }, 1500); // Reset button after 1.5 seconds
+        });
+    });
+    
+    // Function to refresh calendar events
+    function refreshCalendar() {
+        calendar.refetchEvents();
+        showNotification("Calendar refreshed", "info");
+    }
+    
+    // Add a refresh button to the calendar header
+    const refreshButton = document.createElement('button');
+    refreshButton.className = 'btn btn-sm btn-light ms-2';
+    refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i>';
+    refreshButton.setAttribute('title', 'Refresh calendar');
+    refreshButton.addEventListener('click', refreshCalendar);
+    
+    document.querySelector('.fc-toolbar-chunk:last-child').appendChild(refreshButton);
+    
+    // Event listeners for window focus to refresh calendar
+    window.addEventListener('focus', function() {
+        // Refresh calendar when window gets focus after 1 second delay
+        setTimeout(function() {
+            calendar.refetchEvents();
+        }, 1000);
+    });
+    
+    // Handle errors for better user experience
+    window.addEventListener('error', function(e) {
+        console.error('Global error:', e.message);
+        showNotification("An error occurred in the page. Please reload if calendar doesn't appear correctly.", "warning");
+    });
+    
+    // Improve mobile experience
+    function updateCalendarHeightForMobile() {
+        if (window.innerWidth < 768) {
+            calendar.setOption('height', 500); // Lower height on mobile
+        } else {
+            calendar.setOption('height', 650); // Default height
+        }
+        calendar.updateSize();
+    }
+    
+    // Call on load and when window resizes
+    updateCalendarHeightForMobile();
+    window.addEventListener('resize', updateCalendarHeightForMobile);
+});
+</script>
+
+<!-- Additional Scripts for Better UX -->
+<script>
+// Form validation enhancement
+document.addEventListener('DOMContentLoaded', function() {
+    // Validate that end time is after start time
+    const startTimeInputs = document.querySelectorAll('input[name="start_time"]');
+    const endTimeInputs = document.querySelectorAll('input[name="end_time"]');
+    
+    for (let i = 0; i < startTimeInputs.length; i++) {
+        const startInput = startTimeInputs[i];
+        const endInput = endTimeInputs[i];
+        
+        const validateTimes = function() {
+            if (startInput.value && endInput.value) {
+                if (endInput.value <= startInput.value) {
+                    endInput.setCustomValidity('End time must be after start time');
+                } else {
+                    endInput.setCustomValidity('');
+                }
+            }
+        };
+        
+        startInput.addEventListener('change', validateTimes);
+        endInput.addEventListener('change', validateTimes);
+    }
+    
+    // Set a minimum date for date inputs to prevent selecting past dates
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    const today = new Date().toISOString().split('T')[0];
+    
+    dateInputs.forEach(input => {
+        input.min = today;
+    });
 });
 </script>
 

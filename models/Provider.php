@@ -181,18 +181,41 @@ class Provider {
         }
     }
 
-    // Get provider availability
+    /**
+     * Get provider availability
+     * 
+     * @param int $provider_id Provider ID
+     * @return array Array of availability slots
+     */
     public function getAvailability($provider_id) {
         try {
-            $stmt = $this->db->prepare("
-                SELECT * FROM provider_availability 
-                WHERE provider_id = ? AND availability_date >= CURDATE()
-                ORDER BY availability_date, start_time
-            ");
+            $query = "SELECT 
+                availability_id as id, 
+                provider_id, 
+                available_date AS availability_date, 
+                start_time, 
+                end_time,
+                is_available
+              FROM 
+                provider_availability 
+              WHERE 
+                provider_id = ? 
+                AND available_date >= CURDATE()
+                AND is_available = 1
+              ORDER BY 
+                available_date, start_time";
+            
+            $stmt = $this->db->prepare($query);
             $stmt->bind_param("i", $provider_id);
             $stmt->execute();
             $result = $stmt->get_result();
-            return $result->fetch_all(MYSQLI_ASSOC) ?: [];
+            
+            $availability = [];
+            while ($row = $result->fetch_assoc()) {
+                $availability[] = $row;
+            }
+            
+            return $availability;
         } catch (Exception $e) {
             error_log("Error fetching availability: " . $e->getMessage());
             return [];

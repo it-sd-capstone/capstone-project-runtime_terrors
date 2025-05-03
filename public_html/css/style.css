@@ -780,15 +780,95 @@
   
   /* --- 4.8 Calendar --- */
   .calendar-container {
-    padding: 1.5rem;
-    min-height: 650px;
+    min-height: 600px; /* Increase minimum height */
+    position: relative;
+    margin-bottom: 2rem;
   }
   
   #calendar {
-    margin-top: 20px;
-    max-width: 800px;
-    height: 400px;
-    margin: auto;
+    height: auto !important; /* Override any fixed height */
+    min-height: 600px;
+  }
+  
+  /* Improve event display for multiple appointments on one day */
+  .fc-daygrid-event {
+    white-space: normal !important; /* Allow text to wrap */
+    overflow: visible;
+    display: block;
+    margin-bottom: 2px;
+    padding: 2px 4px;
+    line-height: 1.2;
+  }
+  
+  /* Ensure event content is readable */
+  .fc-event-title, .fc-event-time {
+    white-space: normal !important;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
+    font-size: 0.85rem;
+  }
+  
+  /* Make day cells expandable to fit content */
+  .fc-daygrid-day-frame {
+    min-height: 100%;
+    height: auto !important;
+  }
+  
+  /* Ensure event dots are visible in month view */
+  .fc-daygrid-event-dot {
+    margin: 0 4px;
+  }
+  
+  /* Increase cell height in month view */
+  .fc-daygrid-day {
+    height: auto !important;
+    min-height: 100px;
+  }
+  
+  /* Make sure week and day views have scrollbars if needed */
+  .fc-view-harness {
+    min-height: 500px;
+    max-height: 700px;
+    overflow-y: auto !important;
+  }
+  
+  /* Ensure month view cells have reasonable height */
+  .fc-daygrid-day {
+    min-height: 80px;
+  }
+  
+  /* Fix for week/day view content */
+  .fc-timegrid-slots tr {
+    height: 2em !important; /* Set consistent height */
+  }
+  
+  .fc-timegrid-event {
+    min-height: 2em;
+  }
+  
+  /* Responsive calendar adjustments */
+  @media (max-width: 768px) {
+    .fc-header-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .fc-toolbar-chunk {
+        display: flex;
+        justify-content: center;
+    }
+    
+    /* Smaller font for mobile */
+    .fc th, .fc td {
+        font-size: 0.8rem;
+    }
+    
+    /* Ensure toolbar buttons fit */
+    .fc .fc-button {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
   }
   
   /* --- 4.9 Dashboard Specific --- */
