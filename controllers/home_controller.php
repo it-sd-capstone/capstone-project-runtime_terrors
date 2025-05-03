@@ -44,6 +44,9 @@ class HomeController {
                 'icon' => 'heartbeat'
             ]
         ];
+        // Pass data to the view
+        $data['featuredServices'] = $featuredServices;
+
         
         $featuredProviders = [
             [
