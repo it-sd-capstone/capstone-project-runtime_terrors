@@ -3,19 +3,15 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Determine if user is logged in
 $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['logged_in'] === true;
 $userRole = $isLoggedIn ? $_SESSION['role'] : '';
-//$userName = $isLoggedIn ? $_SESSION['name'] : '';
 $userName = $isLoggedIn ? ($_SESSION['name'] ?? ($_SESSION['email'] ?? 'User')) : '';
 $current_url = $_SERVER['REQUEST_URI'];
 $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_url === '/' || $current_url === '/index.php');
 ?>
 
-
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
-        <!-- Changed from link to span (no link) -->
         <span class="navbar-brand">Appointment System</span>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -23,7 +19,6 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <?php if (!$is_home_page): ?>
-                <!-- Only show Home link if not on the home page -->
                 <li class="nav-item">
                     <a class="nav-link" href="<?= base_url('index.php/home') ?>">Home</a>
                 </li>
@@ -31,14 +26,11 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
                 
                 <?php if ($isLoggedIn): ?>
                     <?php if ($is_home_page && $userRole === 'admin'): ?>
-                        <!-- Don't show any navigation items for admin on home page -->
                     <?php elseif ($userRole === 'admin'): ?>
-                        <!-- Admin only sees Admin Dashboard -->
                         <li class="nav-item">
                             <a class="nav-link" href="<?= base_url('index.php/admin') ?>">Admin Dashboard</a>
                         </li>
                     <?php else: ?>
-                        <!-- Non-admin users see role-specific Appointments links, but not on home page -->
                         <?php if (!$is_home_page): ?>
                             <li class="nav-item">
                                 <?php if ($userRole === 'provider'): ?>
@@ -51,7 +43,6 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
                             </li>
                         <?php endif; ?>
                         
-                        <!-- Always show portal links regardless of page -->
                         <?php if ($userRole === 'provider'): ?>
                             <li class="nav-item">
                                 <a class="nav-link" href="<?= base_url('index.php/provider') ?>">Provider Portal</a>
@@ -70,14 +61,14 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
             <ul class="navbar-nav ms-auto">
                 <?php if ($isLoggedIn): ?>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="badge bg-<?php 
                                 echo $userRole === 'admin' ? 'danger' : 
                                     ($userRole === 'provider' ? 'success' : 'primary'); 
                             ?>"><?= ucfirst($userRole) ?></span>
                             <?= htmlspecialchars($userName) ?>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <?php if ($userRole === 'patient'): ?>
                                 <li><a class="dropdown-item" href="<?= base_url('index.php/profile') ?>">My Profile</a></li>
                             <?php endif; ?>
@@ -95,7 +86,7 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
     </div>
 </nav>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Custom JavaScript for dropdown functionality -->
 <script>
