@@ -181,28 +181,47 @@ class Provider {
         }
     }
 
-    public function getAvailability($providerId) {
-        try {
-            $query = "SELECT * FROM provider_availability 
-                      WHERE provider_id = ? AND available_date >= CURDATE() 
-                      AND is_available = 1
-                      ORDER BY available_date, start_time";
-            $stmt = $this->db->prepare($query);
-            $stmt->bind_param("i", $providerId);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            $availability = [];
-            while ($row = $result->fetch_assoc()) {
-                $availability[] = $row;
-            }
-            
-            return $availability;
-        } catch (Exception $e) {
-            error_log("Error in getAvailability: " . $e->getMessage());
-            return [];
-        }
-    }
+  /**
+   * Get provider availability
+   *  
+   * @param int $providerId Provider ID
+   * @return array Array of availability slots
+   */
+  public function getAvailability($providerId) {
+      try {
+          $query = "SELECT
+               availability_id as id,
+               provider_id,
+               available_date AS availability_date,
+               start_time,
+               end_time,
+               is_available
+            FROM
+               provider_availability
+             WHERE
+               provider_id = ?
+               AND available_date >= CURDATE()
+               AND is_available = 1
+            ORDER BY
+               available_date, start_time";
+
+          $stmt = $this->db->prepare($query);
+          $stmt->bind_param("i", $providerId);
+          $stmt->execute();
+          $result = $stmt->get_result();
+
+          $availability = [];
+          while ($row = $result->fetch_assoc()) {
+              $availability[] = $row;
+          }
+
+          return $availability;
+      } catch (Exception $e) {
+          error_log("Error in getAvailability: " . $e->getMessage());
+          return [];
+      }
+  }
+
     
     // Add provider availability
     public function addAvailability($availabilityData) {

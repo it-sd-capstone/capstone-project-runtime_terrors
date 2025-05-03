@@ -1,27 +1,21 @@
 <?php
-// Prevent direct access
 if (!defined('APP_ROOT')) {
     die("Direct access to views is not allowed");
 }
 
-// Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Determine if user is logged in and their role
 $isLoggedIn = isset($_SESSION['user_id']) && ($_SESSION['logged_in'] ?? false) === true;
 $userRole = $isLoggedIn ? ($_SESSION['role'] ?? 'guest') : 'guest';
 $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . $_SESSION['last_name'] ?? $_SESSION['email'] ?? 'User') : '';
 
-// Determine current page by looking at the URL
 $current_url = $_SERVER['REQUEST_URI'];
 $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_url === '/' || $current_url === '/index.php');
 
-// Set default page title if not provided
 $pageTitle = $pageTitle ?? 'Appointment System';
 
-// Set custom dashboard title based on role
 if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRole) !== false) {
     if ($userRole === 'admin') {
         $pageTitle = 'Admin Dashboard - Appointment System';
@@ -40,19 +34,15 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
     <meta name="csrf-token" content="<?= generate_csrf_token() ?>">
     <title><?= htmlspecialchars($pageTitle) ?></title>
     
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Role-specific CSS -->
     <?php if ($userRole === 'provider'): ?>
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     <?php endif; ?>
     
-    <!-- Custom CSS -->
     <link href="<?= base_url('css/style.css') ?>" rel="stylesheet">
     
     <style>
@@ -62,7 +52,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
-        /* Dashboard styling */
         .admin-dashboard, .provider-dashboard, .patient-dashboard {
             margin-top: 20px;
         }
@@ -78,7 +67,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
             transform: scale(1.02);
         }
         
-        /* Role-specific colors */
         .bg-role-admin {
             background-color: #dc3545;
         }
@@ -91,13 +79,11 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
             background-color: #0d6efd;
         }
         
-        /* Calendar container specific styles */
         .calendar-container {
             padding: 1.5rem;
             min-height: 650px;
         }
         
-        /* Dropdown menu styling */
         .dropdown-menu.show {
             display: block !important;
             position: absolute !important;
@@ -108,21 +94,18 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
             z-index: 1000 !important;
         }
         
-        /* Use a wider container for the header to prevent navbar overcrowding */
         .header-container {
-            max-width: 1320px; /* Wider than default Bootstrap container */
+            max-width: 1320px; 
             width: 95%;
             margin: 0 auto;
         }
         
-        /* Adjust navbar spacing */
         .navbar-nav .nav-link {
             padding-right: 0.8rem;
             padding-left: 0.8rem;
             white-space: nowrap;
         }
         
-        /* Media queries for responsive adjustments */
         @media (max-width: 1200px) {
             .navbar-nav .nav-link {
                 padding-right: 0.5rem;
@@ -136,7 +119,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
         }
         
         @media (max-width: 991px) {
-            /* On medium screens, navbar collapses properly */
             .navbar-collapse {
                 padding-top: 1rem;
             }
@@ -238,7 +220,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                             <?php endif; ?>
                         </ul>
                         
-                        <!-- Right side user menu -->
                         <ul class="navbar-nav">
                             <?php if ($isLoggedIn): ?>
                                 <li class="nav-item dropdown">
@@ -301,17 +282,13 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
         </header>
     </div>
     
-    <!-- For content, revert to standard container -->
     <div class="container">
     <?php endif; ?>
 
-    <!-- Bootstrap JS (included for dropdown functionality) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Custom JavaScript for dropdown functionality -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize all dropdowns
         var dropdowns = document.querySelectorAll('.dropdown-toggle');
         if (dropdowns.length > 0) {
             dropdowns.forEach(function(dropdown) {
@@ -321,7 +298,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                     if (dropdownMenu.classList.contains('show')) {
                         dropdownMenu.classList.remove('show');
                     } else {
-                        // Close any open dropdowns first
                         document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
                             menu.classList.remove('show');
                         });
@@ -330,7 +306,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                 });
             });
 
-            // Close dropdown when clicking outside
             document.addEventListener('click', function(event) {
                 if (!event.target.closest('.dropdown')) {
                     document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {

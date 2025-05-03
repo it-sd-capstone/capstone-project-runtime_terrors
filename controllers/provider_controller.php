@@ -13,6 +13,7 @@ class ProviderController {
     protected $serviceModel;
     protected $userModel; 
     protected $notificationModel;
+    protected $scheduleModel;
     
     public function __construct() {
         // Start session if not already started
@@ -560,6 +561,102 @@ class ProviderController {
         
         return $stats;
     }
-    
+    /**
+     * Get appointments for the calendar
+     */
+    public function getAppointmentEvents() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        $appointments = $this->appointmentModel->getByProvider($provider_id);
+        
+        $calendarEvents = [];
+        foreach ($appointments as $appointment) {
+            // Safely get values with fallbacks for missing fields
+            $patientName = $appointment['patient_name'] ?? 
+                       $appointment['patient_first_name'] ?? 
+                       $appointment['first_name'] ?? 
+                       'Patient';
+                       
+            $serviceName = $appointment['service_name'] ?? 
+                       $appointment['service'] ?? 
+                       'Appointment';
+                       
+            $status = $appointment['status'] ?? 'scheduled';
+            
+            // Determine color based on status
+            $statusColor = match($status) {
+                'confirmed' => '#28a745',           // success/green
+                'scheduled', 'pending' => '#ffc107', // warning/yellow
+                'canceled' => '#dc3545',            // danger/red
+                'completed' => '#0dcaf0',           // info/blue
+                'no_show' => '#6c757d',             // secondary/gray
+                default => '#6c757d'                // secondary/gray
+            };
+            
+            $calendarEvents[] = [
+                "id" => $appointment['id'] ?? $appointment['appointment_id'] ?? null,
+                "title" => $patientName . " (" . $serviceName . ")",
+                "start" => $appointment['appointment_date'] . "T" . $appointment['start_time'],
+                "end" => $appointment['appointment_date'] . "T" . $appointment['end_time'],
+                "color" => $statusColor,
+                "description" => "Status: " . $status,
+                "extendedProps" => [
+                    "type" => "appointment",
+                    "patient" => $patientName,
+                    "service" => $serviceName,
+                    "status" => $status
+                ]
+            ];
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode($calendarEvents);
+        exit;
+    }
+
+    /**
+     * Get availability for the calendar
+     */
+    public function getAvailabilityEvents() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        
+        // Use the providerModel to get availability
+        $schedules = $this->providerModel->getAvailability($provider_id);
+        
+        $calendarEvents = [];
+        foreach ($schedules as $schedule) {
+            // Use the aliased field from our fixed query
+            $dateField = $schedule['availability_date'] ?? $schedule['available_date'] ?? null;
+            if (!$dateField) {
+                continue; // Skip if no date field found
+            }
+            
+            $calendarEvents[] = [
+                "id" => $schedule['id'] ?? $schedule['availability_id'] ?? null,
+                "title" => "Available",
+                "start" => $dateField . "T" . $schedule['start_time'],
+                "end" => $dateField . "T" . $schedule['end_time'],
+                "color" => "#17a2b8", // Info color (lighter blue)
+                "extendedProps" => [
+                    "type" => "availability"
+                ]
+            ];
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode($calendarEvents);
+        exit;
+    }
 }
 ?>
