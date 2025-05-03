@@ -1,4 +1,4 @@
-<?php include VIEW_PATH . '/partials/admin_header.php'; ?>
+<?php include VIEW_PATH . '/partials/header.php'; ?>
 
 <div class="container">
     <div class="row mb-3">
@@ -29,6 +29,7 @@
                     <?php endif; ?>
 
                     <form action="<?= base_url('index.php/admin/appointments/edit/' . $appointment['appointment_id']) ?>" method="post">
+                        <?= csrf_field() ?>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="patient_id" class="form-label">Patient</label>

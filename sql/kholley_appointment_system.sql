@@ -179,7 +179,7 @@ CREATE TABLE `settings` (
 );
 
 CREATE TABLE `users` (
-  `user_id` int(11) PRIMARY KEY NOT NULL,
+  `user_id` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `first_name` varchar(100) NOT NULL,
@@ -187,6 +187,7 @@ CREATE TABLE `users` (
   `phone` varchar(20) DEFAULT null,
   `role` ENUM ('patient', 'provider', 'admin', 'staff') NOT NULL,
   `is_active` tinyint(1) DEFAULT 1,
+  `is_verified` tinyint(1) DEFAULT 0,
   `email_verified_at` datetime DEFAULT null,
   `created_at` datetime DEFAULT (current_timestamp()),
   `last_login` datetime DEFAULT null,
@@ -195,6 +196,17 @@ CREATE TABLE `users` (
   `reset_token_expires` datetime DEFAULT null,
   `token_expires` datetime DEFAULT null,
   `password_change_required` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB AUTO_INCREMENT=17;
+
+
+CREATE TABLE `user_tokens` (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  selector VARCHAR(16) NOT NULL,
+  token VARCHAR(64) NOT NULL,
+  expires DATETIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE `waitlist` (

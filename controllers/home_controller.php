@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../models/home_model.php';
 
 class HomeController {
     private $db;
@@ -43,6 +44,9 @@ class HomeController {
                 'icon' => 'heartbeat'
             ]
         ];
+        // Pass data to the view
+        $data['featuredServices'] = $featuredServices;
+
         
         $featuredProviders = [
             [

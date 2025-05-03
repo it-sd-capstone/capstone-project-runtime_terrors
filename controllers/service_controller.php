@@ -22,6 +22,11 @@ class ServiceController {
             $action = $_POST['action'] ?? '';
 
             // Validate common input fields
+            // Verify CSRF token
+            if (!verify_csrf_token()) {
+                return;
+            }
+            
             $name = $_POST['name'] ?? '';
             $description = $_POST['description'] ?? '';
             $price = $_POST['price'] ?? 0;

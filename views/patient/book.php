@@ -1,4 +1,4 @@
-<?php include VIEW_PATH . '/partials/patient_header.php'; ?>
+<?php include VIEW_PATH . '/partials/header.php'; ?>
 
 <div class="container mt-4">
     <h4>Book an Appointment</h4>
@@ -30,6 +30,28 @@
 
                 <!-- FullCalendar for Available Slots -->
                 <div id="calendar" class="mb-4"></div>
+
+                <!-- CSRF Security Field -->
+                <?= csrf_field() ?>
+
+                <!-- If no provider is selected yet and we're not using the dropdown above -->
+                <?php if (!$selectedProviderId && !isset($_GET['provider_id'])): ?>
+                <div class="mb-3">
+                    <label for="provider_select" class="form-label">Select Provider</label>
+                    <select class="form-control" id="provider_id" name="provider_id" required onchange="updateCalendar()">
+                        <option value="">-- Select a Provider --</option>
+                        <?php foreach ($providers as $p): ?>
+                            <option value="<?= $p['user_id'] ?>"
+                                <?= (isset($provider) && $provider['user_id'] == $p['user_id']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($p['first_name'] . ' ' . $p['last_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php else: ?>
+                <!-- If provider is selected, store as hidden input -->
+                <input type="hidden" name="provider_id" value="<?= $selectedProviderId ?>">
+                <?php endif; ?>
 
                 <div class="row">
                     <div class="col-md-4 mb-3">

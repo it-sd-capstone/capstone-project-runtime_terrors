@@ -75,9 +75,7 @@ class PatientController {
                             header("Location: " . base_url("index.php/patient_services?action=book"));
                             exit;
                         }
-                        $success = $this->appointmentModel->scheduleAppointment(
-                            $patient_id, $provider_id, $service_id, $appointment_date, $appointment_time
-                        );
+                        $success = $this->appointmentModel->scheduleAppointment($patient_id, $provider_id, $service_id, $appointment_date, $start_time, $end_time);
                         $_SESSION[$success ? 'success' : 'error'] = $success ? "Appointment booked successfully!" : "Booking failed.";
                     }
                     break;
@@ -132,6 +130,89 @@ class PatientController {
     /**
      * Check provider availability before booking
      */
+    public function processBooking() {
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            // Verify CSRF token
+            if (!verify_csrf_token()) {
+                return;
+            }
+            
+            $patient_id = $_SESSION['user_id'];
+            $provider_id = intval($_POST['provider_id']);
+            $service_id = intval($_POST['service_id'] ?? 0);
+            $appointment_date = htmlspecialchars($_POST['appointment_date']);
+            $appointment_time = htmlspecialchars($_POST['start_time']); // Changed to match form field name
+            $type = htmlspecialchars($_POST['type'] ?? 'in_person');
+            $notes = htmlspecialchars($_POST['notes'] ?? '');
+            $reason = htmlspecialchars($_POST['reason'] ?? '');
+            
+            if ($provider_id && !empty($appointment_date) && !empty($appointment_time)) {
+                // Check if this slot is already booked
+                if (!$this->appointmentModel->isSlotAvailable($provider_id, $appointment_date, $appointment_time)) {
+                    $_SESSION['error'] = "This time slot is already booked. Please select another time.";
+                    header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                    exit;
+                }
+
+                // Check if patient already has an appointment at this time
+                $existingAppointment = $this->appointmentModel->getPatientAppointmentAtTime(
+                    $patient_id, 
+                    $appointment_date, 
+                    $appointment_time
+                );
+
+                if ($existingAppointment) {
+                    $_SESSION['error'] = "You already have another appointment scheduled at this time.";
+                    header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                    exit;
+                }
+
+                // Calculate end time based on service duration
+                $service = $this->serviceModel->getServiceById($service_id);
+                $duration = $service ? $service['duration'] : 30; // Default to 30 minutes
+                $end_time = date('H:i:s', strtotime($appointment_time . ' +' . $duration . ' minutes'));
+                
+                $appointment_date = date('Y-m-d', strtotime($appointment_date));
+                $appointment_time = date('H:i:s', strtotime($appointment_time));
+                
+                error_log("processBooking called with POST data: " . print_r($_POST, true));
+                error_log("About to schedule appointment: patient=$patient_id, provider=$provider_id, service=$service_id, date=$appointment_date, time=$appointment_time");
+                $success = $this->appointmentModel->scheduleAppointment(
+                    $patient_id,
+                    $provider_id,
+                    $service_id,
+                    $appointment_date,
+                    $appointment_time,
+                    $end_time,
+                    $type,
+                    $notes,
+                    $reason
+                );
+                error_log("Appointment scheduling result: " . ($success ? "Success" : "Failed"));
+                
+                if ($success) {
+                    // Log the appointment creation
+                    $this->activityLogModel->logActivity('appointment_created',
+                        "Patient scheduled appointment with provider #$provider_id",
+                        $patient_id);
+                    
+                    // Redirect to patient dashboard with success message
+                    $_SESSION['success'] = "Your appointment has been booked successfully!";
+                    header("Location: " . base_url("index.php/patient"));
+                } else {
+                    $_SESSION['error'] = "Failed to book appointment. Please try again.";
+                    header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                }
+                exit;
+            } else {
+                $_SESSION['error'] = "Missing required fields for booking.";
+                header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                exit;
+            }
+        }
+    }
+
+    // ✅ Check Provider Availability
     public function checkAvailability() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $input = json_decode(file_get_contents("php://input"), true);

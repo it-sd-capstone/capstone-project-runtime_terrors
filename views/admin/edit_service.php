@@ -1,4 +1,4 @@
-<?php include VIEW_PATH . '/partials/admin_header.php'; ?>
+<?php include VIEW_PATH . '/partials/header.php'; ?>
 <div class="container">
     <h2>Edit Service</h2>
     
@@ -10,6 +10,7 @@
                 </div>
                 <div class="card-body">
                     <form action="<?= base_url('index.php/admin/services/edit/' . $service['service_id']) ?>" method="post">
+                        <?= csrf_field() ?>
                         <div class="mb-3">
                             <label for="name" class="form-label">Service Name</label>
                             <input type="text" class="form-control" id="name" name="name" value="<?= htmlspecialchars($service['name']) ?>" required>

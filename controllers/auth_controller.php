@@ -1,4 +1,7 @@
 <?php
+require_once(__DIR__ . '/../services/EmailService.php');
+require_once(__DIR__ . '/../config/email_config.php');
+
 class AuthController {
     private $db;
     private $userModel;
@@ -33,8 +36,20 @@ class AuthController {
     public function login() {
         $error = '';
         $errors = [];
+        $resent = false;
+        
+        // Check if verification email was requested to be resent
+        if (isset($_GET['resend']) && isset($_GET['email'])) {
+            $email = $this->sanitizeInput($_GET['email']);
+            $resent = $this->resendVerificationEmail($email);
+        }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Verify CSRF token
+            if (!verify_csrf_token()) {
+                return;
+            }
+            
             error_log("Login attempt for email: " . ($_POST['email'] ?? 'none'));
             
             $email = $_POST['email'] ?? '';
@@ -60,6 +75,19 @@ class AuthController {
                     $user = $userModel->authenticate($email, $password);
                     
                     if ($user) {
+                        // Check if email is verified
+                        if (empty($user['email_verified_at']) && ($user['is_verified'] ?? 0) == 0) {
+                            $errors[] = "Your email address has not been verified. Please check your email for the verification link or 
+                                <a href='" . base_url('index.php/auth/login?resend=1&email=' . urlencode($email)) . "'>click here</a> to resend the verification email.";
+                            
+                            // Log verification needed
+                            $this->activityLogModel->logAuth($user['user_id'], 'login_failed', "Email not verified: $email");
+                            
+                            // Include the view and exit
+                            include VIEW_PATH . '/auth/index.php';
+                            return;
+                        }
+                        
                         // Check if password change is required
                         if (isset($user['password_change_required']) && $user['password_change_required'] == 1) {
                             // Store user ID in session for password change
@@ -114,10 +142,80 @@ class AuthController {
             }
         }
         
+        // Pass the resend status to the view
+        $data = [
+            'errors' => $errors,
+            'error' => $error,
+            'resent' => $resent
+        ];
+        
         include VIEW_PATH . '/auth/index.php';
     }
     
+    /**
+     * Resend verification email
+     * 
+     * @param string $email User email
+     * @return boolean Success flag
+     */
+    private function resendVerificationEmail($email) {
+        // Check if email exists and user is not verified
+        $stmt = $this->db->prepare("
+            SELECT user_id, first_name, last_name, email, email_verified_at, is_verified 
+            FROM users 
+            WHERE email = ?
+        ");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            return false; // Email doesn't exist
+        }
+        
+        $user = $result->fetch_assoc();
+        
+        // Check if already verified
+        if (!empty($user['email_verified_at']) || ($user['is_verified'] ?? 0) == 1) {
+            return false; // Already verified
+        }
+        
+        // Generate new verification token
+        $token = bin2hex(random_bytes(32));
+        $tokenExpires = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        
+        // Update token in database
+        $updateStmt = $this->db->prepare("
+            UPDATE users 
+            SET verification_token = ?, token_expires = ? 
+            WHERE user_id = ?
+        ");
+        $updateStmt->bind_param("ssi", $token, $tokenExpires, $user['user_id']);
+        $updateStmt->execute();
+        
+        // Send verification email
+        $emailService = new EmailService();
+        $fullName = $user['first_name'] . ' ' . $user['last_name'];
+        $emailSent = $emailService->sendVerificationEmail($user['email'], $fullName, $token);
+        
+        // Log the activity
+        if (method_exists($this, 'activityLogModel')) {
+            $this->activityLogModel->logAuth($user['user_id'], 'verification_resent', 
+                "Verification email resent during login attempt, Status: " . ($emailSent ? "Success" : "Failed"));
+        }
+        
+        return $emailSent;
+    }
+    
+    
     public function register() {
+
+        $old = [
+            'first_name' => $_POST['first_name'] ?? '',
+            'last_name' => $_POST['last_name'] ?? '',
+            'email' => $_POST['email'] ?? '',
+            'phone' => $_POST['phone'] ?? ''
+        ];
         error_log("Register method called");
         error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
         $error = '';
@@ -134,32 +232,57 @@ class AuthController {
             $phone = $_POST['phone'] ?? '';
             $role = 'patient'; // Default role for new users
             
-            // Password validation
-            if (strlen($password) < 8) {
-                $errors[] = "Password must be at least 8 characters long";
+            // Basic field validation
+            if (empty($email)) {
+                $errors[] = "Email address is required";
+            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Invalid email format";
             }
-            if (!preg_match('/[A-Z]/', $password)) {
-                $errors[] = "Password must contain at least one uppercase letter";
+
+            if (empty($firstName)) {
+                $errors[] = "First name is required";
             }
-            if (!preg_match('/[a-z]/', $password)) {
-                $errors[] = "Password must contain at least one lowercase letter";
+
+            if (empty($lastName)) {
+                $errors[] = "Last name is required";
             }
-            if (!preg_match('/[0-9]/', $password)) {
-                $errors[] = "Password must contain at least one number";
+
+            // Check if email already exists
+            if (!empty($email) && $this->userModel->emailExists($email)) {
+                $errors[] = "Email address is already registered";
             }
-            error_log("Password validation errors: " . print_r($errors, true));
-            if (count($errors) > 0) {
-                // Return errors to the view
-                include VIEW_PATH . '/auth/register.php';
-                return;
-            }
-            
-            // Basic validation
-            if (empty($email) || empty($password) || empty($firstName) || empty($lastName)) {
-                $error = 'All required fields must be filled';
-            } elseif ($password !== $confirmPassword) {
-                $error = 'Passwords do not match';
+
+            // Password validation - collect all errors
+            if (empty($password)) {
+                $errors[] = "Password is required";
             } else {
+                if (strlen($password) < 8) {
+                    $errors[] = "Password must be at least 8 characters long";
+                }
+                if (!preg_match('/[A-Z]/', $password)) {
+                    $errors[] = "Password must contain at least one uppercase letter";
+                }
+                if (!preg_match('/[a-z]/', $password)) {
+                    $errors[] = "Password must contain at least one lowercase letter";
+                }
+                if (!preg_match('/[0-9]/', $password)) {
+                    $errors[] = "Password must contain at least one number";
+                }
+                if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+                    $errors[] = "Password must contain at least one special character";
+                }
+            }
+
+            if ($password !== $confirmPassword) {
+                $errors[] = "Passwords do not match";
+            }
+
+            if (!isset($_POST['terms'])) {
+                $errors[] = "You must agree to the Terms of Service";
+            }
+
+            // Only proceed if no errors
+            if (empty($errors)) {
                 // Hash password before registration
                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
                 
@@ -176,15 +299,28 @@ class AuthController {
                     $stmt->bind_param("ssi", $token, $expires, $result['user_id']);
                     $stmt->execute();
                     
-                    // Send verification email
+                    // Create verification URL
                     $verifyUrl = base_url("index.php/auth/verify?token=$token");
+                    
+                    // Send verification email using EmailService
+                    $emailService = new EmailService();
+                    $fullName = $firstName . ' ' . $lastName;
+                    $emailSent = $emailService->sendVerificationEmail($email, $fullName, $token);
+                    
+                    // Set success message
                     $success = 'Registration successful! Please check your email to verify your account.';
                     
-                    // For demonstration purposes:
-                    $success .= " <a href='$verifyUrl'>Verify now</a> (for demonstration only)";
+                    // For development environment only, show the verification link directly
+                    if (ENVIRONMENT === 'development') {
+                        $success .= " <a href='$verifyUrl'>Verify now</a> (for development only)";
+                        error_log("Verification URL: $verifyUrl");
+                    }
+                    
+                    // Log whether email was sent successfully
+                    error_log("Verification email " . ($emailSent ? "sent successfully" : "failed to send") . " to $email");
                     
                     // Log the registration
-                    $this->activityLogModel->logAuth(null, 'registered', "New {$_POST['role']} account");
+                    $this->activityLogModel->logAuth(null, 'registered', "New {$role} account created, verification email " . ($emailSent ? "sent" : "failed"));
                     $this->activityLogModel->logUserActivity(null, 'created', $result['user_id']);
                 } else {
                     $error = $result['error'] ?? 'Registration failed';
@@ -200,110 +336,308 @@ class AuthController {
      * Handle email verification
      */
     public function verify() {
-        $token = $_GET['token'] ?? '';
+        // Sanitize token input for security
+        $token = $this->sanitizeInput($_GET['token'] ?? '');
         $error = '';
         $success = '';
         
-        if (!empty($token)) {
-            // Verify token and activate account
-            $stmt = $this->db->prepare("SELECT user_id FROM users WHERE verification_token = ? AND token_expires > NOW()");
-            $stmt->bind_param("s", $token);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($result && $result->num_rows > 0) {
-                $user = $result->fetch_assoc();
-                
-                // Mark account as verified
-                $updateStmt = $this->db->prepare("UPDATE users SET email_verified_at = NOW(), verification_token = NULL WHERE user_id = ?");
-                $updateStmt->bind_param("i", $user['user_id']);
-                $updateStmt->execute();
-                
-                $success = 'Your email has been verified! You can now log in.';
-            } else {
-                $error = 'Invalid or expired verification token.';
-            }
-        } else {
+        if (empty($token)) {
             $error = 'No verification token provided.';
+            include VIEW_PATH . '/auth/verify.php';
+            return;
         }
         
-        // Display verification result
+        // Fetch user with this verification token
+        $stmt = $this->db->prepare("
+            SELECT user_id, email, first_name, last_name, email_verified_at, token_expires 
+            FROM users 
+            WHERE verification_token = ?
+        ");
+        $stmt->bind_param("s", $token);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        // Check if token exists
+        if (!$result || $result->num_rows === 0) {
+            $error = 'Invalid verification token. Please check your email and try the link again.';
+            include VIEW_PATH . '/auth/verify.php';
+            return;
+        }
+        
+        $user = $result->fetch_assoc();
+        
+        // Check if account is already verified
+        if (!empty($user['email_verified_at'])) {
+            $success = 'Your email has already been verified. You can now log in.';
+            include VIEW_PATH . '/auth/verify.php';
+            return;
+        }
+        
+        // Check if token is expired
+        if (strtotime($user['token_expires']) < time()) {
+            // Generate new verification token
+            $newToken = bin2hex(random_bytes(32));
+            $tokenExpires = date('Y-m-d H:i:s', strtotime('+24 hours'));
+            
+            // Update token in database
+            $updateStmt = $this->db->prepare("
+                UPDATE users 
+                SET verification_token = ?, token_expires = ? 
+                WHERE user_id = ?
+            ");
+            $updateStmt->bind_param("ssi", $newToken, $tokenExpires, $user['user_id']);
+            $updateStmt->execute();
+            
+            // Send new verification email
+            $emailService = new EmailService();
+            $fullName = $user['first_name'] . ' ' . $user['last_name'];
+            $emailSent = $emailService->sendVerificationEmail($user['email'], $fullName, $newToken);
+            
+            $error = 'Your verification link has expired. We have sent a new verification email to your address.';
+            
+            // Log activity
+            if (method_exists($this, 'activityLogModel')) {
+                $this->activityLogModel->logAuth($user['user_id'], 'verification_resent', "New verification email sent due to expired token");
+            }
+            
+            include VIEW_PATH . '/auth/verify.php';
+            return;
+        }
+        
+        // Mark account as verified
+        $updateStmt = $this->db->prepare("
+            UPDATE users 
+            SET email_verified_at = NOW(), verification_token = NULL, token_expires = NULL, is_verified = 1 
+            WHERE user_id = ?
+        ");
+        $updateStmt->bind_param("i", $user['user_id']);
+        $success = $updateStmt->execute();
+        
+        if ($success) {
+            // Log the verification
+            if (method_exists($this, 'activityLogModel')) {
+                $this->activityLogModel->logAuth($user['user_id'], 'verified', "Email successfully verified");
+                $this->activityLogModel->logUserActivity($user['user_id'], 'verified_email', $user['user_id']);
+            }
+            
+            $success = 'Your email has been verified successfully! You can now <a href="' . base_url('index.php/auth/login') . '">log in</a> to your account.';
+        } else {
+            $error = 'There was a problem verifying your email. Please try again or contact support.';
+        }
+        
         include VIEW_PATH . '/auth/verify.php';
     }
     
     /**
-     * Handle forgot password requests
+     * Helper function to sanitize input
      */
-    public function forgot_password() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $email = $_POST['email'] ?? '';
-            
-            // Check if email exists
-            $stmt = $this->db->prepare("SELECT user_id FROM users WHERE email = ?");
-            $stmt->bind_param("s", $email);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($result && $result->num_rows > 0) {
-                $user = $result->fetch_assoc();
-                
-                // Generate reset token
-                $token = bin2hex(random_bytes(32));
-                $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
-                
-                // Store token
-                $updateStmt = $this->db->prepare("UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE user_id = ?");
-                $updateStmt->bind_param("ssi", $token, $expires, $user['user_id']);
-                $updateStmt->execute();
-                
-                // Send reset email
-                $resetUrl = base_url("index.php/auth/reset_password?token=$token");
-                // Send email with reset link
-            }
-            
-            // Always show success to prevent email enumeration
-            $success = "If an account exists with that email, a password reset link has been sent.";
-        }
-        
-        include VIEW_PATH . '/auth/forgot_password.php';
+    private function sanitizeInput($input) {
+        return htmlspecialchars(strip_tags(trim($input)), ENT_QUOTES, 'UTF-8');
     }
     
     /**
-     * Handle password reset
+     * Display forgot password form
      */
-    public function reset_password() {
-        $token = $_GET['token'] ?? '';
+    public function forgot_password() {
+        $this->loadView('auth/forgot_password');
+    }
+
+    /**
+     * Process forgot password request
+     */
+    public function forgot_password_process() {
+        // Validate CSRF token
+        $this->validateCsrfToken();
         
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $password = $_POST['password'] ?? '';
-            $confirmPassword = $_POST['confirm_password'] ?? '';
-            
-            // Validate token and passwords
-            if ($password === $confirmPassword) {
-                $stmt = $this->db->prepare("SELECT user_id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()");
-                $stmt->bind_param("s", $token);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                if ($result && $result->num_rows > 0) {
-                    $user = $result->fetch_assoc();
-                    
-                    // Hash new password
-                    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-                    
-                    // Update password and clear token
-                    $updateStmt = $this->db->prepare("UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE user_id = ?");
-                    $updateStmt->bind_param("si", $passwordHash, $user['user_id']);
-                    $updateStmt->execute();
-                    
-                    // Redirect to login with success message
-                    header('Location: ' . base_url('index.php/auth?success=password_reset'));
-                    exit;
-                }
-            }
+        $email = $this->sanitizeInput($_POST['email'] ?? '');
+        
+        if (empty($email)) {
+            $this->setErrorMessage('Email address is required.');
+            redirect('auth/forgot_password');
+            return;
         }
         
-        include VIEW_PATH . '/auth/reset_password.php';
+        // Check if email exists in database
+        $stmt = $this->db->prepare("
+            SELECT user_id, first_name, last_name, email 
+            FROM users 
+            WHERE email = ? AND is_active = 1
+        ");
+        
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        // Always show success message even if email doesn't exist (security best practice)
+        if ($result->num_rows === 0) {
+            $this->setSuccessMessage('If your email is registered, you will receive instructions to reset your password.');
+            redirect('auth/login');
+            return;
+        }
+        
+        $user = $result->fetch_assoc();
+        
+        // Generate reset token
+        $token = bin2hex(random_bytes(32));
+        $token_expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
+        
+        // Store token in database
+        $updateStmt = $this->db->prepare("
+            UPDATE users 
+            SET reset_token = ?, token_expires = ? 
+            WHERE user_id = ?
+        ");
+        
+        $updateStmt->bind_param("ssi", $token, $token_expires, $user['user_id']);
+        $updateStmt->execute();
+        
+        // Send password reset email
+        $emailService = new EmailService();
+        $fullName = $user['first_name'] . ' ' . $user['last_name'];
+        $emailSent = $emailService->sendPasswordResetEmail($email, $fullName, $token);
+        
+        // Log the activity
+        if (method_exists($this, 'logActivity')) {
+            $this->logActivity($user['user_id'], 'password_reset_request', 
+                              "Password reset requested, Email sent: " . ($emailSent ? 'Yes' : 'No'));
+        }
+        
+        // Set success message
+        $this->setSuccessMessage('Password reset instructions have been sent to your email.');
+        
+        // For development, also show the link directly
+        if (ENVIRONMENT === 'development') {
+            $resetUrl = base_url("index.php/auth/reset_password?token=$token");
+            $this->setSuccessMessage('For development: <a href="' . $resetUrl . '">Reset password now</a>');
+        }
+        
+        redirect('auth/login');
+    }
+
+    /**
+     * Display reset password form
+     */
+    public function reset_password() {
+        $token = $this->sanitizeInput($_GET['token'] ?? '');
+        
+        if (empty($token)) {
+            $this->setErrorMessage('Invalid reset token.');
+            redirect('auth/login');
+            return;
+        }
+        
+        // Check if token exists and is valid
+        $stmt = $this->db->prepare("
+            SELECT user_id, token_expires 
+            FROM users 
+            WHERE reset_token = ?
+        ");
+        
+        $stmt->bind_param("s", $token);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            $this->setErrorMessage('Invalid reset token.');
+            redirect('auth/login');
+            return;
+        }
+        
+        $user = $result->fetch_assoc();
+        
+        // Check if token is expired
+        if (strtotime($user['token_expires']) < time()) {
+            $this->setErrorMessage('Reset token has expired. Please request a new one.');
+            redirect('auth/forgot_password');
+            return;
+        }
+        
+        // Load reset password view with token
+        $data = ['token' => $token];
+        $this->loadView('auth/reset_password', $data);
+    }
+
+    /**
+     * Process reset password
+     */
+    public function reset_password_process() {
+        // Validate CSRF token
+        $this->validateCsrfToken();
+        
+        $token = $this->sanitizeInput($_POST['token'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+        
+        // Validate input
+        if (empty($token) || empty($password) || empty($confirm_password)) {
+            $this->setErrorMessage('All fields are required.');
+            redirect('auth/reset_password?token=' . urlencode($token));
+            return;
+        }
+        
+        if (strlen($password) < 8) {
+            $this->setErrorMessage('Password must be at least 8 characters.');
+            redirect('auth/reset_password?token=' . urlencode($token));
+            return;
+        }
+        
+        if ($password !== $confirm_password) {
+            $this->setErrorMessage('Passwords do not match.');
+            redirect('auth/reset_password?token=' . urlencode($token));
+            return;
+        }
+        
+        // Check if token exists and is valid
+        $stmt = $this->db->prepare("
+            SELECT user_id, token_expires 
+            FROM users 
+            WHERE reset_token = ?
+        ");
+        
+        $stmt->bind_param("s", $token);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            $this->setErrorMessage('Invalid reset token.');
+            redirect('auth/login');
+            return;
+        }
+        
+        $user = $result->fetch_assoc();
+        
+        // Check if token is expired
+        if (strtotime($user['token_expires']) < time()) {
+            $this->setErrorMessage('Reset token has expired. Please request a new one.');
+            redirect('auth/forgot_password');
+            return;
+        }
+        
+        // Hash new password
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        
+        // Update password and clear reset token
+        $updateStmt = $this->db->prepare("
+            UPDATE users 
+            SET password = ?, reset_token = NULL, token_expires = NULL, updated_at = NOW() 
+            WHERE user_id = ?
+        ");
+        
+        $updateStmt->bind_param("si", $hashed_password, $user['user_id']);
+        $success = $updateStmt->execute();
+        
+        if ($success) {
+            // Log the activity
+            if (method_exists($this, 'logActivity')) {
+                $this->logActivity($user['user_id'], 'password_reset', "Password was reset successfully");
+            }
+            
+            $this->setSuccessMessage('Your password has been reset successfully. You can now log in with your new password.');
+            redirect('auth/login');
+        } else {
+            $this->setErrorMessage('An error occurred while resetting your password. Please try again.');
+            redirect('auth/reset_password?token=' . urlencode($token));
+        }
     }
     
     /**

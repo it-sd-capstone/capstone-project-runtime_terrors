@@ -1,4 +1,4 @@
-<?php include VIEW_PATH . '/partials/patient_header.php'; ?>
+<?php include VIEW_PATH . '/partials/header.php'; ?>
 
 <div class="container mt-4">
     <div class="row">
@@ -26,6 +26,7 @@
                     <?php endif; ?>
                     
                     <form method="POST" action="<?= base_url('index.php/patient/updateProfile') ?>">
+                        <?= csrf_field() ?>
                         <!-- Basic Information -->
                         <div class="row">
                             <div class="col-md-6 mb-3">

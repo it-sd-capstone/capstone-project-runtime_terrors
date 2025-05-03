@@ -11,6 +11,8 @@ if (!defined('APP_ROOT')) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Appointment System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Added Bootstrap Icons CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         body {
             background-color: #f8f9fa;
@@ -31,6 +33,28 @@ if (!defined('APP_ROOT')) {
             background-color: #f8f9fa;
             border: 1px solid #ddd;
         }
+        /* Fixed styling for password toggle button */
+        .password-toggle {
+            background: none;
+            border: none;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        .password-toggle:hover, .password-toggle:focus {
+            background: none !important;
+            border: none !important;
+        }
+        .input-group-text {
+            background-color: transparent;
+            border-left: none;
+        }
+        /* Add styling for register section */
+        .register-section {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
@@ -40,38 +64,74 @@ if (!defined('APP_ROOT')) {
                 <h3>Login to Your Account</h3>
             </div>
             <div class="card-body p-4">
-                <?php if (!empty($error)): ?>
-                    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+                <?php if (isset($_SESSION['success_message'])): ?>
+                    <div class="alert alert-success mt-3"><?= $_SESSION['success_message'] ?></div>
+                    <?php unset($_SESSION['success_message']); ?>
+                <?php endif; ?>
+
+                <?php if (isset($_SESSION['error_message'])): ?>
+                    <div class="alert alert-danger mt-3"><?= $_SESSION['error_message'] ?></div>
+                    <?php unset($_SESSION['error_message']); ?>
                 <?php endif; ?>
                 
-                <?php if (!empty($errors) && is_array($errors)): ?>
-                    <div class="alert alert-danger">
-                        <strong>Login failed:</strong>
-                        <ul class="mb-0">
-                            <?php foreach ($errors as $err): ?>
-                                <li><?= htmlspecialchars($err) ?></li>
-                            <?php endforeach; ?>
-                        </ul>
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert-danger mt-3">
+                        <?php foreach ($errors as $err): ?>
+                            <div><?= $err ?></div>
+                        <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
-                
-                <form action="<?= base_url('index.php/auth/login') ?>" method="post">
+
+                <?php if (isset($resent) && $resent): ?>
+                    <div class="alert alert-success mt-3">
+                        A new verification email has been sent. Please check your inbox.
+                    </div>
+                <?php endif; ?>                
+                <form action="<?= base_url('index.php/auth/login') ?>" method="post" class="needs-validation" novalidate>
+                    <?= csrf_field() ?>
+
                     <div class="mb-3">
                         <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
+                        <input type="email" class="form-control" id="email" name="email" required 
+                               data-bs-toggle="tooltip" data-bs-placement="right" 
+                               title="For admin access, use admin@example.com">
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                        <small class="text-muted">For demo purposes, use "demo" or "password" as the password</small>
+                      <div class="input-group">
+                          <input type="password" class="form-control" id="password" name="password" required
+                                 data-bs-toggle="tooltip" data-bs-placement="right"
+                                 title="For admin access, use 'Admin123@'">
+                          <!-- Fixed password toggle button -->
+                          <span class="input-group-text">
+                              <button class="password-toggle" type="button" onclick="togglePasswordVisibility()">
+                                  <i class="bi bi-eye"></i>
+                              </button>
+                          </span>
+                      </div>
+                      <small class="text-muted">For demo purposes, use "demo" or "password" as the password</small>
+
                     </div>
                     
-                    <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="remember" id="remember">
+                        <label class="form-check-label" for="remember">
+                            Remember me
+                        </label>
+                    </div>
+
+                    <div class="mb-3 text-center">
+                        <a href="<?= base_url('index.php/auth/forgot_password') ?>">Forgot your password?</a>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Sign In</button>
+                    </div>
                     
-                    <div class="mt-3 text-center">
-                        <a href="<?= base_url('index.php/auth/register') ?>">Create an Account</a>
-                        <span class="mx-2">|</span>
-                        <a href="<?= base_url('index.php/auth/forgot_password') ?>">Forgot Password?</a>
+                    <!-- Added Register Section -->
+                    <div class="register-section">
+                        <p>Don't have an account?</p>
+                        <a href="<?= base_url('index.php/auth/register') ?>" class="btn btn-outline-primary">Create New Account</a>
                     </div>
                 </form>
             </div>
@@ -89,5 +149,29 @@ if (!defined('APP_ROOT')) {
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Initialize tooltips -->
+    <script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Password toggle function
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const icon = document.querySelector('.password-toggle i');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+    </script>
 </body>
 </html>
