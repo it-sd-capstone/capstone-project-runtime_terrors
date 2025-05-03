@@ -1,4 +1,29 @@
 <?php include VIEW_PATH . '/partials/provider_header.php'; ?>
+<style>
+/* Calendar styles */
+.calendar-container {
+  padding: 1.5rem;
+  min-height: 650px;
+}
+
+.fc-event {
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.fc-event-title {
+  font-weight: bold;
+}
+
+.fc-daygrid-day-number {
+  font-weight: bold;
+}
+
+/* Make current day highlighted */
+.fc-day-today {
+  background-color: rgba(0, 123, 255, 0.1) !important;
+}
+</style>
 
 <div class="container mt-4">
     <!-- Title Section -->
@@ -53,7 +78,6 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="<?= base_url('index.php/provider/processRecurringSchedule') ?>">
-                        <?= csrf_field() ?>
                         <div class="mb-3">
                             <label>Day of Week:</label>
                             <select class="form-select" name="day_of_week" required>
@@ -63,7 +87,7 @@
                                 <option value="4">Thursday</option>
                                 <option value="5">Friday</option>
                                 <option value="6">Saturday</option>
-                                <option value="0">Sunday</option>
+                                <option value="7">Sunday</option>
                             </select>
                         </div>
                         <div class="row">
@@ -111,87 +135,176 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
-
-    var selectedDuration = 30; // Default service duration
+    
+    // Debug provider ID
+    console.log("Provider ID being used:", <?= json_encode($provider_id ?? $_SESSION['user_id'] ?? 'undefined') ?>);
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         height: 650,
-        aspectRatio: 1.35,
-        contentHeight: "auto",
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
         editable: true,
-        eventSources: [
-            {
-                url: "<?= base_url('index.php/provider/getProviderSchedules') ?>",
-                method: "GET",
-                failure: function() {
-                    alert("Failed to load provider schedules.");
-                }
-            }
-        ],
-        eventResize: function(info) { 
-            updateAvailability(info.event);
+        events: "<?= base_url('index.php/provider/getProviderSchedules') ?>",
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
         },
-        eventDrop: function(info) { 
-            updateAvailability(info.event);
-        },
-        eventClick: function(info) { 
+        eventClick: function(info) {
             if (confirm("Do you want to remove this availability?")) {
-                fetch("<?= base_url('index.php/provider/deleteSchedule/') ?>" + info.event.id, { method: "POST" })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            info.event.remove();
-                        } else {
-                            alert("Failed to remove availability.");
-                        }
-                    });
+                const eventId = info.event.id;
+                const eventType = info.event.extendedProps?.type || 'regular';
+                
+                let endpoint = "<?= base_url('index.php/provider/deleteSchedule/') ?>";
+                endpoint += eventId;
+                
+                fetch(endpoint, { 
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: eventType
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        info.event.remove();
+                        alert("Availability removed successfully!");
+                    } else {
+                        alert("Failed to remove availability: " + (data.message || "Unknown error"));
+                    }
+                })
+                .catch(error => {
+                    console.error("Error removing availability:", error);
+                    alert("Error removing availability. Please try again.");
+                });
+            }
+        },
+        eventDrop: function(info) {
+            updateAvailability(info.event);
+        },
+        eventResize: function(info) {
+            updateAvailability(info.event);
+        },
+        loading: function(isLoading) {
+            if (isLoading) {
+                console.log("Calendar is loading events...");
+            } else {
+                console.log("Calendar finished loading events");
             }
         }
     });
 
-    // Debug provider availability fetching
-    fetch("<?= base_url('index.php/provider/getProviderSchedules') ?>")
-    .then(response => response.json())
-    .then(data => {
-        console.log("Provider Schedules Data:", data);
-        if (data.length === 0) {
-            console.warn("No provider schedules found! Check backend response.");
-        }
-        calendar.addEventSource(data); // Ensure event source loads correctly
-    })
-    .catch(error => console.error("Error fetching provider schedules:", error));
-    
-    // Debug available appointments fetching
-    fetch("<?= base_url('index.php/provider/getAvailableSlots') ?>?provider_id=<?= $provider_id ?>&service_duration=" + selectedDuration)
-    .then(response => response.json())
-    .then(data => {
-        console.log("Filtered Available Slots:", data);
-        if (data.length === 0) {
-            console.warn("No available slots found! Check backend response.");
-        }
-    })
-    .catch(error => console.error("Error fetching available slots:", error));
     calendar.render();
+    
+    // Debug: Log event count after rendering
+    setTimeout(function() {
+        console.log("Total events displayed:", calendar.getEvents().length);
+    }, 1000);
 
+    // Function to update availability on drag/resize
     function updateAvailability(event) {
-        var updatedData = {
-            id: event.id,
-            date: event.start.toISOString().split('T')[0],
-            start_time: event.start.toISOString().split('T')[1].substring(0, 5),
-            end_time: event.end ? event.end.toISOString().split('T')[1].substring(0, 5) : event.start.toISOString().split('T')[1].substring(0, 5)
+        const eventId = event.id;
+        const eventType = event.extendedProps?.type || 'regular';
+        
+        // Format start and end times
+        const startStr = event.start.toISOString();
+        const endStr = event.end ? event.end.toISOString() : 
+                      new Date(event.start.getTime() + 3600000).toISOString(); // Default 1 hour
+        
+        const updatedData = {
+            id: eventId,
+            type: eventType,
+            date: startStr.split('T')[0],
+            start_time: startStr.split('T')[1].substring(0, 5),
+            end_time: endStr.split('T')[1].substring(0, 5)
         };
+        
+        console.log("Updating event:", updatedData);
 
         fetch("<?= base_url('index.php/provider/updateSchedule') ?>", {
             method: "POST",
-            body: JSON.stringify(updatedData),
-            headers: { "Content-Type": "application/json" }
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedData)
         })
         .then(response => response.json())
         .then(data => {
-            if (!data.success) {
-                alert("Failed to update availability.");
+            if (data.success) {
+                console.log("Availability updated successfully");
+            } else {
+                alert("Failed to update availability: " + (data.message || "Unknown error"));
+                calendar.refetchEvents(); // Reset to original state
             }
+        })
+        .catch(error => {
+            console.error("Error updating availability:", error);
+            alert("Error updating availability. Please try again.");
+            calendar.refetchEvents(); // Reset to original state
+        });
+    }
+    
+    // Form submission handlers
+    // Handle availability form submission
+    const availabilityForm = document.querySelector('form[action*="processUpdateAvailability"]');
+    if (availabilityForm) {
+        availabilityForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text()) // Fetch as text instead of JSON first
+            .then(data => {
+                console.log("Raw API Response:", data); // 🔍 Debug output
+    
+                try {
+                    let parsedData = JSON.parse(data);
+                    console.log("Parsed JSON:", parsedData);
+                } catch (error) {
+                    console.error("JSON Parsing Error:", error);
+                    alert("Invalid response received from the server. Check the backend.");
+                }
+            });
+        });
+    }
+    
+    // Handle recurring schedule form submission
+    const recurringForm = document.querySelector('form[action*="processRecurringSchedule"]');
+    if (recurringForm) {
+        recurringForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Recurring schedule created successfully!");
+                    calendar.refetchEvents(); // Refresh calendar
+                    this.reset(); // Reset form
+                } else {
+                    alert("Failed to create recurring schedule: " + (data.message || "Unknown error"));
+                }
+            })
+            .catch(error => {
+                console.error("Error creating recurring schedule:", error);
+                alert("Error creating recurring schedule. Please try again.");
+            });
         });
     }
 });

@@ -55,42 +55,63 @@ class ProviderController {
             exit;
         }
     
-        $schedules = $this->providerModel->getSchedulesByProvider($provider_id);
-        $recurringSchedules = $this->providerModel->getRecurringSchedulesByProvider($provider_id);
-        if (empty($schedules) && empty($recurringSchedules)) {
-            error_log("Error: No schedules found for provider $provider_id.");
-        }
-    
-        error_log("Fetched Regular Schedules: " . print_r($schedules, true));
-        error_log("Fetched Recurring Schedules: " . print_r($recurringSchedules, true));
-
+        // Get both regular and recurring schedules
+        $schedules = $this->providerModel->getAvailability($provider_id);
+        $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+        
+        // Debug logging
+        error_log("Regular schedules count: " . count($schedules));
+        error_log("Recurring schedules count: " . count($recurringSchedules));
+        
+        // Format events for FullCalendar
         $events = [];
-    
-        // Correct Placement of Mapping Array
+        
+        // Format regular availability slots
+        foreach ($schedules as $schedule) {
+            $events[] = [
+                'id' => $schedule['availability_id'], // Make sure this ID exists
+                'title' => 'Available',
+                'start' => $schedule['available_date'] . 'T' . $schedule['start_time'],
+                'end' => $schedule['available_date'] . 'T' . $schedule['end_time'],
+                'color' => '#28a745', // Green for available
+                'extendedProps' => [
+                    'type' => 'regular'
+                ]
+            ];
+        }
+        
+        // Format recurring availability
         $dayOfWeekMap = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    
+        
         foreach ($recurringSchedules as $recurring) {
-            if (!isset($dayOfWeekMap[$recurring['day_of_week']])) {
-                continue;
-            }
-    
-            $dayLabel = $dayOfWeekMap[$recurring['day_of_week']];
-    
-            for ($i = 0; $i < 30; $i++) {
-                $date = date('Y-m-d', strtotime("next $dayLabel +{$i} weeks"));
+            $dayIndex = $recurring['day_of_week'];
+            if ($dayIndex < 0 || $dayIndex > 6) continue;
+            
+            $dayName = $dayOfWeekMap[$dayIndex];
+            
+            // Generate events for the next 4 weeks
+            for ($i = 0; $i < 4; $i++) {
+                $date = date('Y-m-d', strtotime("+$i week $dayName"));
+                
                 $events[] = [
-                    'title' => 'Recurring Availability',
+                    'id' => 'recurring_' . $recurring['schedule_id'] . '_' . $i,
+                    'title' => 'Recurring',
                     'start' => $date . 'T' . $recurring['start_time'],
                     'end' => $date . 'T' . $recurring['end_time'],
-                    'color' => '#17a2b8'
+                    'color' => '#17a2b8', // Blue for recurring
+                    'extendedProps' => [
+                        'type' => 'recurring',
+                        'original_id' => $recurring['schedule_id']
+                    ]
                 ];
             }
         }
-    
-        error_log("Final Events Data Before JSON Output: " . print_r($events, true));
-    
+        
+        // Debug the final events array
+        error_log("Total events generated: " . count($events));
+        
         header('Content-Type: application/json');
-        echo json_encode($events, JSON_PRETTY_PRINT);
+        echo json_encode($events);
         exit;
     }
     public function createRecurringSchedule($provider_id, $start_date, $end_date, $days_of_week, $start_time, $end_time) {
@@ -99,14 +120,10 @@ class ProviderController {
                 INSERT INTO provider_recurring_schedules (provider_id, start_date, end_date, day_of_week, start_time, end_time) 
                 VALUES (?, ?, ?, ?, ?, ?)
             ");
-    
             foreach ($days_of_week as $day) {
                 $stmt->bind_param("ississ", $provider_id, $start_date, $end_date, $day, $start_time, $end_time);
-                if (!$stmt->execute()) {
-                    error_log("MySQL Insert Error: " . $stmt->error);
-                }
+                $stmt->execute();
             }
-    
             return true;
         } catch (Exception $e) {
             error_log("Error inserting recurring schedule: " . $e->getMessage());
@@ -136,7 +153,7 @@ class ProviderController {
             $provider_id = $_SESSION['user_id'] ?? null;
             $start_date = $_POST['start_date'] ?? null;
             $end_date = $_POST['end_date'] ?? null;
-            $days_of_week = isset($_POST['days_of_week']) ? (array) $_POST['days_of_week'] : [];
+            $days_of_week = $_POST['days_of_week'] ?? [];
             $start_time = $_POST['start_time'] ?? null;
             $end_time = $_POST['end_time'] ?? null;
     
@@ -171,11 +188,6 @@ class ProviderController {
     // Update Provider Profile
     public function updateProfile() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            // Verify CSRF token
-            if (!verify_csrf_token()) {
-                return;
-            }
-    
             $provider_id = $_SESSION['user_id'];
             $first_name = htmlspecialchars(trim($_POST['first_name']));
             $last_name = htmlspecialchars(trim($_POST['last_name']));
@@ -420,22 +432,45 @@ class ProviderController {
     }
 
     public function updateSchedule() {
-        if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            $input = json_decode(file_get_contents("php://input"), true);
-            $schedule_id = intval($input['id'] ?? 0);
-            $date = htmlspecialchars($input['date'] ?? '');
-            $start_time = htmlspecialchars($input['start_time'] ?? '');
-            $end_time = htmlspecialchars($input['end_time'] ?? '');
-    
-            if (!$schedule_id || !$date || !$start_time || !$end_time) {
-                echo json_encode(["success" => false, "message" => "Invalid data"]);
-                exit;
-            }
-    
-            $success = $this->scheduleModel->updateAvailability($schedule_id, $date, $start_time, $end_time);
-            echo json_encode(["success" => $success]);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
             exit;
         }
+    
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        
+        if (!$data || !isset($data['id']) || !isset($data['date']) || !isset($data['start_time']) || !isset($data['end_time'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Missing required data']);
+            exit;
+        }
+        
+        $eventId = $data['id'];
+        $eventType = $data['type'] ?? 'regular';
+        $date = $data['date'];
+        $startTime = $data['start_time'];
+        $endTime = $data['end_time'];
+        
+        $success = false;
+        if (strpos($eventId, 'recurring_') === 0) {
+            // Handle recurring schedule updates
+            $parts = explode('_', $eventId);
+            $scheduleId = $parts[1] ?? null;
+            
+            if ($scheduleId) {
+                // For recurring events, we might need to update the base recurring schedule
+                $success = $this->providerModel->updateRecurringSchedule($scheduleId, $startTime, $endTime);
+            }
+        } else {
+            // Handle regular availability updates
+            $success = $this->providerModel->updateAvailabilitySlot($eventId, $date, $startTime, $endTime);
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $success]);
+        exit;
     }
     // Add this method to your ProviderController class
     public function profile() {
@@ -506,5 +541,6 @@ class ProviderController {
         
         return $stats;
     }
+    
 }
 ?>
