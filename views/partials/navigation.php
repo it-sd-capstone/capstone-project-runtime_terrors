@@ -1,5 +1,4 @@
 <?php
-// Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -9,7 +8,6 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['logged_in'] === true;
 $userRole = $isLoggedIn ? $_SESSION['role'] : '';
 //$userName = $isLoggedIn ? $_SESSION['name'] : '';
 $userName = $isLoggedIn ? ($_SESSION['name'] ?? ($_SESSION['email'] ?? 'User')) : '';
-// Determine current page by looking at the URL
 $current_url = $_SERVER['REQUEST_URI'];
 $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_url === '/' || $current_url === '/index.php');
 ?>
@@ -32,23 +30,28 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
                 <?php endif; ?>
                 
                 <?php if ($isLoggedIn): ?>
-                    <?php if ($userRole === 'admin'): ?>
+                    <?php if ($is_home_page && $userRole === 'admin'): ?>
+                        <!-- Don't show any navigation items for admin on home page -->
+                    <?php elseif ($userRole === 'admin'): ?>
                         <!-- Admin only sees Admin Dashboard -->
                         <li class="nav-item">
                             <a class="nav-link" href="<?= base_url('index.php/admin') ?>">Admin Dashboard</a>
                         </li>
                     <?php else: ?>
-                        <!-- Non-admin users see role-specific Appointments links -->
-                        <li class="nav-item">
-                            <?php if ($userRole === 'provider'): ?>
-                                <a class="nav-link" href="<?= base_url('index.php/provider/appointments') ?>">Appointments</a>
-                            <?php elseif ($userRole === 'patient'): ?>
-                                <a class="nav-link" href="<?= base_url('index.php/patient/history') ?>">Appointments</a>
-                            <?php else: ?>
-                                <a class="nav-link" href="<?= base_url('index.php/appointments') ?>">Appointments</a>
-                            <?php endif; ?>
-                        </li>
+                        <!-- Non-admin users see role-specific Appointments links, but not on home page -->
+                        <?php if (!$is_home_page): ?>
+                            <li class="nav-item">
+                                <?php if ($userRole === 'provider'): ?>
+                                    <a class="nav-link" href="<?= base_url('index.php/provider/appointments') ?>">Appointments</a>
+                                <?php elseif ($userRole === 'patient'): ?>
+                                    <a class="nav-link" href="<?= base_url('index.php/patient/history') ?>">Appointments</a>
+                                <?php else: ?>
+                                    <a class="nav-link" href="<?= base_url('index.php/appointments') ?>">Appointments</a>
+                                <?php endif; ?>
+                            </li>
+                        <?php endif; ?>
                         
+                        <!-- Always show portal links regardless of page -->
                         <?php if ($userRole === 'provider'): ?>
                             <li class="nav-item">
                                 <a class="nav-link" href="<?= base_url('index.php/provider') ?>">Provider Portal</a>
@@ -92,13 +95,11 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
     </div>
 </nav>
 
-<!-- Make sure Bootstrap JS is loaded properly -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 
 <!-- Custom JavaScript for dropdown functionality -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize all dropdowns
         var dropdowns = document.querySelectorAll('.dropdown-toggle');
         if (dropdowns.length > 0) {
             dropdowns.forEach(function(dropdown) {
@@ -108,7 +109,6 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
                     if (dropdownMenu.classList.contains('show')) {
                         dropdownMenu.classList.remove('show');
                     } else {
-                        // Close any open dropdowns first
                         document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
                             menu.classList.remove('show');
                         });
@@ -117,7 +117,6 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
                 });
             });
 
-            // Close dropdown when clicking outside
             document.addEventListener('click', function(event) {
                 if (!event.target.closest('.dropdown')) {
                     document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
@@ -129,7 +128,6 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
     });
 </script>
 
-<!-- Add CSS to ensure dropdown is visible -->
 <style>
     .dropdown-menu.show {
         display: block !important;
