@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?php include VIEW_PATH . '/partials/provider_header.php'; ?>
 <style>
 /* Calendar styles */
@@ -24,6 +25,9 @@
   background-color: rgba(0, 123, 255, 0.1) !important;
 }
 </style>
+=======
+<?php include VIEW_PATH . '/partials/header.php'; ?>
+>>>>>>> 9546b7b404310805f630adb3e00c4d0aadd1d518
 
 <div class="container mt-4">
     <!-- Title Section -->

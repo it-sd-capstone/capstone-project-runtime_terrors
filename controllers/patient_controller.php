@@ -75,9 +75,7 @@ class PatientController {
                             header("Location: " . base_url("index.php/patient_services?action=book"));
                             exit;
                         }
-                        $success = $this->appointmentModel->scheduleAppointment(
-                            $patient_id, $provider_id, $service_id, $appointment_date, $appointment_time
-                        );
+                        $success = $this->appointmentModel->scheduleAppointment($patient_id, $provider_id, $service_id, $appointment_date, $start_time, $end_time);
                         $_SESSION[$success ? 'success' : 'error'] = $success ? "Appointment booked successfully!" : "Booking failed.";
                     }
                     break;
