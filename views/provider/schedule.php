@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <?php include VIEW_PATH . '/partials/provider_header.php'; ?>
 <style>
 /* Calendar styles */
@@ -25,9 +24,6 @@
   background-color: rgba(0, 123, 255, 0.1) !important;
 }
 </style>
-=======
-<?php include VIEW_PATH . '/partials/header.php'; ?>
->>>>>>> 9546b7b404310805f630adb3e00c4d0aadd1d518
 
 <div class="container mt-4">
     <!-- Title Section -->
@@ -268,17 +264,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.text()) // Fetch as text instead of JSON first
+            .then(response => response.json())
             .then(data => {
-                console.log("Raw API Response:", data); // 🔍 Debug output
-    
-                try {
-                    let parsedData = JSON.parse(data);
-                    console.log("Parsed JSON:", parsedData);
-                } catch (error) {
-                    console.error("JSON Parsing Error:", error);
-                    alert("Invalid response received from the server. Check the backend.");
+                if (data.success) {
+                    alert("Availability updated successfully!");
+                    calendar.refetchEvents(); // Refresh calendar
+                    this.reset(); // Reset form
+                } else {
+                    alert("Failed to update availability: " + (data.message || "Unknown error"));
                 }
+            })
+            .catch(error => {
+                console.error("Error updating availability:", error);
+                alert("Error updating availability. Please try again.");
             });
         });
     }

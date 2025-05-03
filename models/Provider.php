@@ -220,6 +220,11 @@ class Provider {
                 $availabilityData['max_appointments']
             );
             return $stmt->execute();
+            if (!$result) {
+                error_log("SQL Error: " . $stmt->error);
+            }
+            
+            return $result;
         } catch (Exception $e) {
             error_log("Error adding availability: " . $e->getMessage());
             return false;
@@ -278,6 +283,7 @@ class Provider {
             return [];
         }
     }
+    
     public function addAvailability_old($provider_id, $date, $start_time, $end_time) {
         $availabilityData = [
             'provider_id' => $provider_id,

@@ -136,18 +136,37 @@ class ProviderController {
             $availability_date = $_POST['availability_date'] ?? null;
             $start_time = $_POST['start_time'] ?? null;
             $end_time = $_POST['end_time'] ?? null;
-            $is_available = $_POST['is_available'] ?? 1;
+            $max_appointments = $_POST['max_appointments'] ?? 0;
     
-            error_log("Saving Provider Availability: Date: $availability_date, Time: $start_time-$end_time");
+            // Log the received data for debugging
+            error_log("Received Availability Data: " . json_encode(compact(
+                'provider_id', 'availability_date', 'start_time', 'end_time', 'max_appointments'
+            ), JSON_PRETTY_PRINT));
     
-            $success = $this->providerModel->storeAvailability($provider_id, $availability_date, $start_time, $end_time, $is_available);
+            // Ensure no missing values
+            if (!$provider_id || !$availability_date || !$start_time || !$end_time) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+                exit;
+            }
     
-            $_SESSION[$success ? 'success' : 'error'] = $success ? "Availability Updated!" : "Failed to Update Availability.";
+            $success = $this->providerModel->addAvailability([
+                'provider_id' => $provider_id,
+                'availability_date' => $availability_date,
+                'start_time' => $start_time,
+                'end_time' => $end_time,
+                'max_appointments' => $max_appointments
+            ]);
     
-            header("Location: " . base_url("index.php/provider/schedule"));
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => $success,
+                'message' => $success ? 'Availability updated successfully!' : 'Failed to update availability.'
+            ], JSON_PRETTY_PRINT);
             exit;
         }
     }
+
     public function processRecurringSchedule() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'] ?? null;
