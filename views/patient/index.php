@@ -46,7 +46,7 @@
     </style>
 </head>
 <body>
-<?php include VIEW_PATH . '/partials/patient_header.php'; ?>
+<?php include VIEW_PATH . '/partials/header.php'; ?>
 
 <div class="container mt-4">
     <!-- Welcome Section -->
