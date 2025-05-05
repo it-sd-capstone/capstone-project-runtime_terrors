@@ -1046,5 +1046,49 @@ class Appointment {
         
         return $logs;
     }
+
+    /**
+     * Get upcoming appointments for a provider
+     * @param int $provider_id Provider ID
+     * @return array Upcoming appointments
+     */
+    public function getUpcomingAppointmentsByProvider($provider_id) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    a.appointment_id as id,
+                    a.appointment_date,
+                    a.start_time,
+                    a.end_time,
+                    a.status,
+                    a.notes,
+                    a.reason,
+                    CONCAT(u.first_name, ' ', u.last_name) as patient_name,
+                    s.name as service_name
+                FROM appointments a
+                JOIN users u ON a.patient_id = u.user_id
+                JOIN services s ON a.service_id = s.service_id
+                WHERE a.provider_id = ?
+                AND a.appointment_date >= CURDATE()
+                AND a.status NOT IN ('canceled', 'no_show')
+                ORDER BY a.appointment_date ASC, a.start_time ASC
+                LIMIT 10
+            ");
+        
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        
+            $appointments = [];
+            while ($row = $result->fetch_assoc()) {
+                $appointments[] = $row;
+            }
+        
+            return $appointments;
+        } catch (Exception $e) {
+            error_log("Error fetching upcoming provider appointments: " . $e->getMessage());
+            return [];
+        }
+    }
 }
 ?>
