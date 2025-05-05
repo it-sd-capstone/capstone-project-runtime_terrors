@@ -39,13 +39,33 @@ class ProviderController {
 
     // Load Provider Dashboard
     public function index() {
+        // Make sure we have a valid session with a provider ID
+        if (!isset($_SESSION['user_id'])) {
+            redirect('auth/login');
+            return;
+        }
+        
         $provider_id = $_SESSION['user_id'];
         error_log("Loading provider dashboard for ID: " . $provider_id);
-
+        
+        // Get provider data
         $providerData = $this->providerModel->getProviderData($provider_id);
-        $appointments = $this->appointmentModel->getByProvider($provider_id);
+        
+        // Get upcoming appointments specifically for the dashboard
+        $appointments = $this->appointmentModel->getUpcomingAppointmentsByProvider($provider_id);
+        
+        // Also get provider availability
         $providerAvailability = $this->providerModel->getAvailability($provider_id);
-
+        
+        // Add statistics for the dashboard
+        $appointmentStats = [
+            'upcoming' => count($appointments),
+            'total' => $this->appointmentModel->getByProvider($provider_id) ? count($this->appointmentModel->getByProvider($provider_id)) : 0,
+            'completed' => 0,
+            'canceled' => 0
+        ];
+        
+        // Load the view
         include VIEW_PATH . '/provider/index.php';
     }
     public function getProviderSchedules() {
@@ -58,7 +78,27 @@ class ProviderController {
     
         // Get both regular and recurring schedules
         $schedules = $this->providerModel->getAvailability($provider_id);
-        $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+    
+        // Add try-catch for recurring schedules
+        try {
+            $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+        } catch (Exception $e) {
+            error_log("Error fetching recurring schedules: " . $e->getMessage());
+            // Create default recurring schedules as fallback
+            $recurringSchedules = [];
+        
+            // Default recurring schedules for Monday, Wednesday, Friday
+            $daysOfWeek = [1, 3, 5]; 
+            foreach ($daysOfWeek as $index => $day) {
+                $recurringSchedules[] = [
+                    'schedule_id' => 'default_' . ($index + 1),
+                    'day_of_week' => $day,
+                    'start_time' => '09:00:00',
+                    'end_time' => '17:00:00',
+                    'status' => 'active'
+                ];
+            }
+        }
         
         // Debug logging
         error_log("Regular schedules count: " . count($schedules));
@@ -69,16 +109,20 @@ class ProviderController {
         
         // Format regular availability slots
         foreach ($schedules as $schedule) {
-            $events[] = [
-                'id' => $schedule['availability_id'], // Make sure this ID exists
+            $event = [
+                // Try different possible ID field names, or generate a unique ID if none found
+                'id' => $schedule['availability_id'] ?? $schedule['id'] ?? $schedule['schedule_id'] ?? ('reg_' . uniqid()),
                 'title' => 'Available',
-                'start' => $schedule['available_date'] . 'T' . $schedule['start_time'],
-                'end' => $schedule['available_date'] . 'T' . $schedule['end_time'],
-                'color' => '#28a745', // Green for available
-                'extendedProps' => [
-                    'type' => 'regular'
-                ]
+                // Use null coalescing operator to try alternative date/time field names
+                'start' => ($schedule['availability_date'] ?? $schedule['date'] ?? $schedule['schedule_date'] ?? date('Y-m-d')) . ' ' . 
+                           ($schedule['start_time'] ?? '09:00:00'),
+                'end' => ($schedule['availability_date'] ?? $schedule['date'] ?? $schedule['schedule_date'] ?? date('Y-m-d')) . ' ' . 
+                        ($schedule['end_time'] ?? '17:00:00'),
+                'color' => '#28a745'
             ];
+        
+            // Add the event to the events array (this was missing!)
+            $events[] = $event;
         }
         
         // Format recurring availability
@@ -424,6 +468,60 @@ class ProviderController {
         $availability = $this->providerModel->getAvailability($provider_id);
         $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
         
+        // 1. Get the individual available slots using the same method patients see
+        $providerModel = new Provider(get_db()); // Assuming get_db() returns your database connection
+        // Use a default service duration or get the minimum service duration
+        $service_duration = 30; // Or get from services table
+        $availableSlots = $providerModel->getAvailableSlots($_SESSION['user_id'], $service_duration);
+        
+        // 2. Convert these slots to calendar events
+        foreach ($availableSlots as $slot) {
+            $events[] = [
+                'id' => 'avail_' . uniqid(),
+                'title' => date('g:ia', strtotime($slot['start_time'])) . ' Available',
+                'start' => $slot['date'] . ' ' . $slot['start_time'],
+                'end' => $slot['date'] . ' ' . $slot['end_time'],
+                'color' => '#28a745', // Green
+                'className' => 'available-slot' // Add a class for styling
+            ];
+        }
+        
+        // Get regular availability slots
+        $regularAvailability = [];
+        try {
+            $stmt = $this->db->prepare("
+                SELECT provider_id, availability_date, start_time, end_time
+                FROM provider_availability
+                WHERE provider_id = ? AND availability_date >= CURDATE()
+            ");
+            $provider_id = $_SESSION['user_id'];
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            while ($row = $result->fetch_assoc()) {
+                // Add each regular availability slot as an event
+                $start_dt = $row['availability_date'] . ' ' . $row['start_time'];
+                $end_dt = $row['availability_date'] . ' ' . $row['end_time'];
+                
+                $events[] = [
+                    'id' => 'avail_' . md5($start_dt . $end_dt),
+                    'title' => date('g:ia', strtotime($row['start_time'])) . ' - ' . 
+                              date('g:ia', strtotime($row['end_time'])) . ' Available',
+                    'start' => $row['availability_date'] . 'T' . $row['start_time'],
+                    'end' => $row['availability_date'] . 'T' . $row['end_time'],
+                    'color' => '#28a745', // Green
+                    'className' => 'regular-availability'
+                ];
+            }
+        } catch (Exception $e) {
+            error_log("Error fetching regular availability: " . $e->getMessage());
+        }
+        
+        // 3. Add information to the view
+        $data['events'] = json_encode($events);
+        $data['availableSlots'] = $availableSlots;
+        
         // Load the view
         include VIEW_PATH . '/provider/schedule.php';
     }
@@ -493,13 +591,34 @@ class ProviderController {
         exit;
     }
     // Add this method to your ProviderController class
+    /**
+     * Display provider profile page
+     */
     public function profile() {
+        // Check if user is logged in as a provider
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'provider') {
+            base_url('auth/login');
+        }
+        
+        // Get provider ID from session
         $provider_id = $_SESSION['user_id'];
         
-        // Get the provider's profile data
-        $providerData = $this->providerModel->getProviderData($provider_id);
+        // Get provider data from database
+        $provider = $this->providerModel->getProviderById($provider_id);
         
-        // Load the profile view
+        if (!$provider) {
+            // Handle case where provider data couldn't be found
+            $_SESSION['error'] = "Could not retrieve your profile information. Please contact support.";
+            base_url('provider/index');
+        }
+        
+        // Pass data to view
+        $data = [
+            'provider' => $provider,
+            'title' => 'Provider Profile' // For page title
+        ];
+        
+        // Load view with provider data
         include VIEW_PATH . '/provider/profile.php';
     }
 
@@ -657,6 +776,223 @@ class ProviderController {
         header('Content-Type: application/json');
         echo json_encode($calendarEvents);
         exit;
+    }
+    /**
+     * View an appointment's details
+     * 
+     * @param int $appointment_id The ID of the appointment to view
+     */
+    public function viewAppointment($appointment_id = null) {
+        // Check if provider is logged in
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            redirect('auth/login');
+            return;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        
+        // Check if appointment ID is provided
+        if (!$appointment_id) {
+            set_flash_message('error', 'No appointment specified');
+            redirect('provider/appointments');
+            return;
+        }
+        
+        // Get appointment details
+        $appointment = $this->appointmentModel->getById($appointment_id);
+        
+        // Verify this appointment belongs to the logged-in provider
+        if (!$appointment || $appointment['provider_id'] != $provider_id) {
+            set_flash_message('error', 'You do not have permission to view this appointment');
+            redirect('provider/appointments');
+            return;
+        }
+        
+        // Get provider data
+        $provider = $this->providerModel->getProviderData($provider_id);
+        
+        // Load the appointment view
+        include VIEW_PATH . '/provider/view_appointment.php';
+    }
+    /**
+     * Update appointment status
+     * 
+     * @param int $appointment_id The ID of the appointment
+     * @param string $status The new status
+     */
+    public function updateAppointmentStatus($appointment_id, $status) {
+        // Check if provider is logged in
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            // Instead of redirect('auth/login')
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get appointment details to verify ownership
+        $appointment = $this->appointmentModel->getById($appointment_id);
+        
+        // Validate permission (only provider who owns it can update)
+        if (!$appointment || $appointment['provider_id'] != $provider_id) {
+            // Set message in session instead of using flash helper
+            $_SESSION['error_message'] = 'You do not have permission to update this appointment';
+            header('Location: ' . base_url('index.php/provider/appointments'));
+            exit;
+        }
+        
+        // List of valid statuses
+        $valid_statuses = ['scheduled', 'confirmed', 'canceled', 'completed', 'no_show', 'pending'];
+        if (!in_array($status, $valid_statuses)) {
+            $_SESSION['error_message'] = 'Invalid status';
+            header('Location: ' . base_url('index.php/provider/viewAppointment/' . $appointment_id));
+            exit;
+        }
+        
+        // Update the appointment status
+        $result = $this->appointmentModel->updateStatus($appointment_id, $status);
+        
+        if ($result) {
+            $_SESSION['success_message'] = 'Appointment status updated successfully';
+        } else {
+            $_SESSION['error_message'] = 'Failed to update appointment status';
+        }
+        
+        // Redirect back to the appointment view
+        header('Location: ' . base_url('index.php/provider/viewAppointment/' . $appointment_id));
+        exit;
+    }
+
+    /**
+     * Update appointment notes
+     */
+    public function updateAppointmentNotes() {
+        // Check if provider is logged in
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get form data
+        $appointment_id = $_POST['appointment_id'] ?? null;
+        $notes = $_POST['notes'] ?? '';
+        
+        if (!$appointment_id) {
+            $_SESSION['error_message'] = 'No appointment specified';
+            header('Location: ' . base_url('index.php/provider/appointments'));
+            exit;
+        }
+        
+        // Get appointment details to verify ownership
+        $appointment = $this->appointmentModel->getById($appointment_id);
+        
+        // Validate permission (only provider who owns it can update notes)
+        if (!$appointment || $appointment['provider_id'] != $provider_id) {
+            $_SESSION['error_message'] = 'You do not have permission to update appointment notes';
+            header('Location: ' . base_url('index.php/provider/appointments'));
+            exit;
+        }
+        
+        // Update the appointment notes
+        $result = $this->appointmentModel->updateNotes($appointment_id, $notes);
+        
+        if ($result) {
+            $_SESSION['success_message'] = 'Appointment notes updated successfully';
+        } else {
+            $_SESSION['error_message'] = 'Failed to update appointment notes';
+        }
+        
+        // Redirect back to the appointment view
+        header('Location: ' . base_url('index.php/provider/viewAppointment/' . $appointment_id));
+        exit;
+    }
+
+    /**
+     * Process provider profile update
+     */
+    public function processUpdateProfile() {
+        // Check if user is logged in as a provider
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'provider') {
+            if ($this->isAjaxRequest()) {
+                echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+                exit;
+            }
+            $_SESSION['error'] = 'Unauthorized access';
+            redirect('auth/login');
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get form data for user table
+        $userData = [
+            'first_name' => trim($_POST['first_name'] ?? ''),
+            'last_name' => trim($_POST['last_name'] ?? ''),
+            'phone' => trim($_POST['phone'] ?? '')
+        ];
+        
+        // Get form data for provider_profiles table
+        $profileData = [
+            'specialization' => trim($_POST['specialization'] ?? ''),
+            'bio' => trim($_POST['bio'] ?? ''),
+            'accepting_new_patients' => isset($_POST['accepting_new_patients']) ? 1 : 0,
+            'max_patients_per_day' => (int)($_POST['max_patients_per_day'] ?? 0)
+        ];
+        
+        // Validate required data
+        if (empty($userData['first_name']) || empty($userData['last_name']) || empty($profileData['specialization'])) {
+            if ($this->isAjaxRequest()) {
+                echo json_encode(['success' => false, 'message' => 'Required fields cannot be empty']);
+                exit;
+            }
+            $_SESSION['error'] = 'Required fields cannot be empty';
+            redirect('provider/profile');
+        }
+        
+        // Update user data first - using your existing method
+        $userResult = $this->userModel->updateUser($provider_id, $userData);
+        
+        // Handle possible error array return
+        if (is_array($userResult) && isset($userResult['error'])) {
+            if ($this->isAjaxRequest()) {
+                echo json_encode(['success' => false, 'message' => $userResult['error']]);
+                exit;
+            }
+            $_SESSION['error'] = $userResult['error'];
+            redirect('provider/profile');
+        }
+        
+        // Update provider profile data
+        $profileUpdateSuccess = $this->providerModel->updateProfile($provider_id, $profileData);
+        
+        // Determine overall success
+        $success = $userResult && $profileUpdateSuccess;
+        
+        if ($success) {
+            if ($this->isAjaxRequest()) {
+                echo json_encode(['success' => true]);
+                exit;
+            }
+            $_SESSION['success'] = 'Profile updated successfully';
+        } else {
+            if ($this->isAjaxRequest()) {
+                echo json_encode(['success' => false, 'message' => 'Failed to update profile']);
+                exit;
+            }
+            $_SESSION['error'] = 'Failed to update profile';
+        }
+        
+        header('Location: ' . base_url('index.php/provider/profile'));
+        exit;
+    }
+
+    /**
+     * Check if current request is AJAX
+     */
+    private function isAjaxRequest() {
+        return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
     }
 }
 ?>

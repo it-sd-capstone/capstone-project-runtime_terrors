@@ -37,87 +37,38 @@ class Provider {
         return $this->getById($provider_id);
     }
 
-    public function updateProfile($provider_id, $profileData) {
+    /**
+     * Update provider profile
+     * 
+     * @param int $provider_id Provider ID
+     * @param array $data Profile data to update
+     * @return bool True on success, false on failure
+     */
+    public function updateProfile($provider_id, $data) {
         try {
-            $this->db->begin_transaction();
-            // If we have a full profile update with user data
-            if (isset($profileData['first_name'])) {
-                // Update users table
-                $stmt = $this->db->prepare("
-                    UPDATE users 
-                    SET first_name = ?, last_name = ?, phone = ?
-                    WHERE user_id = ? AND role = 'provider'
-                ");
-                $stmt->bind_param("sssi", 
-                    $profileData['first_name'],
-                    $profileData['last_name'],
-                    $profileData['phone'],
-                    $provider_id
-                );
-                $success = $stmt->execute();
-                if (!$success) {
-                    throw new Exception("Profile update failed (users table).");
-                }
-            }
-
-            // Update provider_profiles table
-            $query = "UPDATE provider_profiles SET ";
-            $params = [];
-            $types = "";
-
-            if (isset($profileData['specialization'])) {
-                $query .= "specialization = ?, ";
-                $params[] = $profileData['specialization'];
-                $types .= "s";
-            }
-
-            if (isset($profileData['title'])) {
-                $query .= "title = ?, ";
-                $params[] = $profileData['title'];
-                $types .= "s";
-            }
-
-            if (isset($profileData['bio'])) {
-                $query .= "bio = ?, ";
-                $params[] = $profileData['bio'];
-                $types .= "s";
-            }
-
-            if (isset($profileData['accepting_new_patients'])) {
-                $query .= "accepting_new_patients = ?, ";
-                $params[] = $profileData['accepting_new_patients'];
-                $types .= "i";
-            }
-
-            if (isset($profileData['max_patients_per_day'])) {
-                $query .= "max_patients_per_day = ?, ";
-                $params[] = $profileData['max_patients_per_day'];
-                $types .= "i";
-            }
-
-            // Remove trailing comma and space
-            $query = rtrim($query, ", ");
-
-            $query .= " WHERE provider_id = ?";
-            $params[] = $provider_id;
-            $types .= "i";
-
-            $stmt = $this->db->prepare($query);
-
-            // Only bind parameters if we have fields to update
-            if (!empty($params)) {
-                $stmt->bind_param($types, ...$params);
-                $success = $stmt->execute();
-
-                if (!$success) {
-                    throw new Exception("Profile update failed (provider_profiles table).");
-                }
-            }
-            $this->db->commit();
-            return true;
+            $sql = "UPDATE provider_profiles SET 
+                    specialization = ?,
+                    title = ?,
+                    bio = ?,
+                    accepting_new_patients = ?,
+                    max_patients_per_day = ?,
+                    updated_at = NOW()
+                    WHERE provider_id = ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param(
+                'sssiii',
+                $data['specialization'],
+                $data['title'],
+                $data['bio'],
+                $data['accepting_new_patients'],
+                $data['max_patients_per_day'],
+                $provider_id
+            );
+            
+            return $stmt->execute();
         } catch (Exception $e) {
-            $this->db->rollback();
-            error_log("Error updating profile: " . $e->getMessage());
+            error_log("Error updating provider profile: " . $e->getMessage());
             return false;
         }
     }
@@ -187,41 +138,39 @@ class Provider {
      * @param int $providerId Provider ID
      * @return array Array of availability slots
      */
-    public function getAvailability($providerId) {
+    public function getAvailability($providerId, $includeRecurring = true) {
         try {
-            $query = "SELECT 
-                 availability_id as id,
-                 provider_id,
-                 available_date AS availability_date,
-                 start_time,
-                 end_time,
-                 is_available
-              FROM
-                 provider_availability 
-               WHERE
-                 provider_id = ?
-                 AND available_date >= CURDATE()
-                 AND is_available = 1
-              ORDER BY
-                 available_date, start_time";
-
+            $query = "SELECT
+                availability_id as id,
+                provider_id,
+                availability_date,
+                start_time,
+                end_time,
+                is_available,
+                is_recurring,
+                IFNULL(weekdays, '') as weekdays
+            FROM
+                provider_availability
+            WHERE
+                provider_id = ?
+                AND availability_date >= CURDATE()
+                AND is_available = 1
+            ORDER BY
+                availability_date, start_time";
             $stmt = $this->db->prepare($query);
             $stmt->bind_param("i", $providerId);
             $stmt->execute();
             $result = $stmt->get_result();
-
             $availability = [];
             while ($row = $result->fetch_assoc()) {
                 $availability[] = $row;
             }
-
             return $availability;
         } catch (Exception $e) {
             error_log("Error in getAvailability: " . $e->getMessage());
             return [];
         }
     }
-
     
     // Add provider availability
     public function addAvailability($availabilityData) {
@@ -386,23 +335,25 @@ class Provider {
 
     public function getAvailableSlots($provider_id, $service_duration) {
         try {
+            $slots = [];
+        
+            // 1. Get one-time availability (your existing code)
             $stmt = $this->db->prepare("
-                SELECT availability_date, start_time, end_time 
-                FROM provider_availability 
+                SELECT availability_date, start_time, end_time
+                FROM provider_availability
                 WHERE provider_id = ? AND availability_date >= CURDATE()
                 ORDER BY availability_date, start_time
             ");
             $stmt->bind_param("i", $provider_id);
             $stmt->execute();
             $result = $stmt->get_result();
-            $appointments = [];
-    
+        
             while ($row = $result->fetch_assoc()) {
                 $start = strtotime($row['start_time']);
                 $end = strtotime($row['end_time']);
-    
+            
                 while ($start + ($service_duration * 60) <= $end) {
-                    $appointments[] = [
+                    $slots[] = [
                         'date' => $row['availability_date'],
                         'start_time' => date("H:i", $start),
                         'end_time' => date("H:i", $start + ($service_duration * 60))
@@ -410,8 +361,51 @@ class Provider {
                     $start += ($service_duration * 60); // Move to next available slot
                 }
             }
-    
-            return $appointments;
+        
+            // 2. Get recurring availability patterns
+            $stmt = $this->db->prepare("
+                SELECT weekdays, start_time, end_time
+                FROM provider_recurring_availability
+                WHERE provider_id = ? AND is_available = 1
+            ");
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        
+            // Process recurring patterns for the next 30 days
+            $days_to_look_ahead = 30;
+            while ($row = $result->fetch_assoc()) {
+                $weekdays = explode(',', $row['weekdays']);
+            
+                for ($i = 0; $i < $days_to_look_ahead; $i++) {
+                    $date = date('Y-m-d', strtotime("+$i days"));
+                    $dayOfWeek = date('w', strtotime($date)); // 0 (Sun) to 6 (Sat)
+                
+                    // If this date matches a recurring weekday pattern
+                    if (in_array($dayOfWeek, $weekdays)) {
+                        $start = strtotime($row['start_time']);
+                        $end = strtotime($row['end_time']);
+                    
+                        while ($start + ($service_duration * 60) <= $end) {
+                            $slots[] = [
+                                'date' => $date,
+                                'start_time' => date("H:i", $start),
+                                'end_time' => date("H:i", $start + ($service_duration * 60))
+                            ];
+                            $start += ($service_duration * 60);
+                        }
+                    }
+                }
+            }
+        
+            // Sort slots by date and time
+            usort($slots, function($a, $b) {
+                $dateCompare = strcmp($a['date'], $b['date']);
+                if ($dateCompare !== 0) return $dateCompare;
+                return strcmp($a['start_time'], $b['start_time']);
+            });
+        
+            return $slots;
         } catch (Exception $e) {
             error_log("Error fetching available appointments: " . $e->getMessage());
             return [];
@@ -693,156 +687,174 @@ class Provider {
     }
 
     /**
-     * Search for providers by various criteria
-     * @param array $criteria Search criteria
-     * @return array Matching providers
-     */
-    public function searchProviders($criteria = []) {
-        try {
-            $query = "SELECT u.user_id AS provider_id, u.first_name, u.last_name, u.email, u.phone,
-                            COALESCE(pp.specialization, 'General') AS specialization, 
-                            COALESCE(pp.title, 'Provider') AS title, 
-                            COALESCE(pp.bio, 'No bio available') AS bio, 
-                            COALESCE(pp.accepting_new_patients, 0) AS accepting_new_patients, 
-                            COALESCE(pp.profile_image, 'default.jpg') AS profile_image
-                    FROM users u
-                    LEFT JOIN provider_profiles pp ON u.user_id = pp.provider_id
-                    WHERE u.role = 'provider' AND u.is_active = 1";
-            
-            $params = [];
-            $types = "";
-            
-            // Add search conditions
-            if (!empty($criteria['specialization'])) {
-                $query .= " AND pp.specialization LIKE ?";
-                $params[] = "%" . $criteria['specialization'] . "%";
-                $types .= "s";
-            }
-            
-            if (!empty($criteria['name'])) {
-                $query .= " AND (u.first_name LIKE ? OR u.last_name LIKE ?)";
-                $params[] = "%" . $criteria['name'] . "%";
-                $params[] = "%" . $criteria['name'] . "%";
-                $types .= "ss";
-            }
-            
-            if (isset($criteria['accepting_new_patients']) && $criteria['accepting_new_patients']) {
-                $query .= " AND pp.accepting_new_patients = 1";
-            }
-            
-            // Add ordering
-            $query .= " ORDER BY u.last_name, u.first_name";
-            
-            $stmt = $this->db->prepare($query);
-            
-            if (!empty($params)) {
-                $stmt->bind_param($types, ...$params);
-            }
-            
-            $stmt->execute();
-            $result = $stmt->get_result();
-            return $result->fetch_all(MYSQLI_ASSOC) ?: [];
-        } catch (Exception $e) {
-            error_log("Error searching providers: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    /**
-     * Get provider's upcoming appointments
-     * @param int $provider_id Provider ID
-     * @param string $startDate Optional start date filter (defaults to today)
-     * @param string $endDate Optional end date filter
-     * @return array Upcoming appointments
-     */
-    public function getUpcomingAppointments($provider_id, $startDate = null, $endDate = null) {
-        try {
-            $query = "
-                SELECT a.*,
-                       u.first_name AS patient_first_name,
-                       u.last_name AS patient_last_name,
-                       s.name AS service_name
-                FROM appointments a
-                JOIN users u ON a.patient_id = u.user_id
-                JOIN services s ON a.service_id = s.service_id
-                WHERE a.provider_id = ?
-                AND a.status NOT IN ('canceled', 'no_show', 'completed')
-            ";
-            
-            $params = [$provider_id];
-            $types = "i";
-            
-            if ($startDate) {
-                $query .= " AND a.appointment_date >= ?";
-                $params[] = $startDate;
-                $types .= "s";
-            } else {
-                $query .= " AND a.appointment_date >= CURDATE()";
-            }
-            
-            if ($endDate) {
-                $query .= " AND a.appointment_date <= ?";
-                $params[] = $endDate;
-                $types .= "s";
-            }
-            
-            $query .= " ORDER BY a.appointment_date, a.start_time";
-            
-            $stmt = $this->db->prepare($query);
-            $stmt->bind_param($types, ...$params);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            return $result->fetch_all(MYSQLI_ASSOC) ?: [];
-        } catch (Exception $e) {
-            error_log("Error fetching upcoming appointments: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    /**
-     * Get all providers with their complete details for admin management
-     * Includes appointment counts, service counts, and profile details
+     * Search for providers based on various criteria
      * 
-     * @return array All providers with details
+     * @param array $params Search parameters (specialty, location, date, gender, language, insurance)
+     * @return array List of providers matching the criteria
      */
-    public function getAllProvidersWithDetails() {
-        try {
-            $query = "
-                SELECT 
-                    u.user_id, u.first_name, u.last_name, u.email, u.phone, 
-                    u.created_at, u.is_active,
-                    pp.specialization, pp.title, pp.bio, pp.accepting_new_patients,
-                    pp.max_patients_per_day, pp.profile_image,
-                    (SELECT COUNT(*) FROM provider_services WHERE provider_id = u.user_id) AS service_count,
-                    (SELECT COUNT(*) FROM appointments 
-                     WHERE provider_id = u.user_id AND status NOT IN ('canceled', 'no_show')) AS appointment_count,
-                    (SELECT COUNT(*) FROM appointments 
-                     WHERE provider_id = u.user_id AND appointment_date >= CURDATE() 
-                     AND status NOT IN ('canceled', 'no_show')) AS upcoming_count,
-                    (SELECT COUNT(*) FROM provider_availability 
-                     WHERE provider_id = u.user_id AND available_date >= CURDATE()) AS availability_count
-                FROM 
-                    users u
-                LEFT JOIN 
-                    provider_profiles pp ON u.user_id = pp.provider_id
-                WHERE 
-                    u.role = 'provider'
-                ORDER BY 
-                    u.last_name, u.first_name
-            ";
-            
-            $result = $this->db->query($query);
-            
-            $providers = [];
+    public function searchProviders($params) {
+        // Modified query to match actual database structure
+        $query = "
+            SELECT 
+                u.user_id AS provider_id,
+                CONCAT(u.first_name, ' ', u.last_name) AS name,
+                pp.specialization AS specialty,
+                u.phone, 
+                pp.title,
+                pp.bio,
+                pp.profile_image,
+                pp.accepting_new_patients,
+                (
+                    SELECT MIN(availability_date) 
+                    FROM provider_availability 
+                    WHERE provider_id = u.user_id 
+                    AND is_available = 1 
+                    AND availability_date >= CURDATE()
+                ) AS next_available_date
+            FROM 
+                users u
+            JOIN 
+                provider_profiles pp ON u.user_id = pp.provider_id
+            WHERE 
+                u.role = 'provider'
+        ";
+        
+        $conditions = [];
+        $params_array = [];
+        $types = "";
+        
+        // Add search conditions based on provided parameters
+        if (!empty($params['specialty'])) {
+            $conditions[] = "pp.specialization = ?";
+            $params_array[] = $params['specialty'];
+            $types .= "s";
+        }
+        
+        // Your database doesn't have location columns, so we'll search across name and phone instead
+        if (!empty($params['location'])) {
+            $conditions[] = "(u.first_name LIKE ? OR u.last_name LIKE ? OR u.phone LIKE ?)";
+            $params_array[] = "%{$params['location']}%";
+            $params_array[] = "%{$params['location']}%";
+            $params_array[] = "%{$params['location']}%";
+            $types .= "sss";
+        }
+        
+        // No gender column in your schema, so we'll skip this filter
+        // if (!empty($params['gender'])) {
+        //     $conditions[] = "u.gender = ?";
+        //     $params_array[] = $params['gender'];
+        //     $types .= "s";
+        // }
+        
+        // No languages column in your schema, so we'll skip this filter
+        // if (!empty($params['language'])) {
+        //     $conditions[] = "pp.languages LIKE ?";
+        //     $params_array[] = "%{$params['language']}%";
+        //     $types .= "s";
+        // }
+        
+        // No insurance_accepted column in your schema, so we'll skip this filter
+        // if (!empty($params['insurance'])) {
+        //     $conditions[] = "pp.insurance_accepted LIKE ?";
+        //     $params_array[] = "%{$params['insurance']}%";
+        //     $types .= "s";
+        // }
+        
+        if (!empty($params['date'])) {
+            $conditions[] = "EXISTS (
+                SELECT 1 FROM provider_availability 
+                WHERE provider_id = u.user_id 
+                AND available_date = ? 
+                AND is_available = 1
+            )";
+            $params_array[] = $params['date'];
+            $types .= "s";
+        }
+        
+        // Add conditions to query if any exist
+        if (!empty($conditions)) {
+            $query .= " AND " . implode(" AND ", $conditions);
+        }
+        
+        // Removed rating from ORDER BY since it doesn't exist in your schema
+        $query .= " ORDER BY next_available_date ASC, u.first_name ASC";
+        
+        $providers = [];
+        
+        $stmt = $this->db->prepare($query);
+        
+        if (!empty($params_array)) {
+            $stmt->bind_param($types, ...$params_array);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result) {
             while ($row = $result->fetch_assoc()) {
+                // Add a location field for display purposes
+                $row['location'] = 'Not specified'; // Since location isn't in your DB
                 $providers[] = $row;
             }
-            
-            return $providers;
-        } catch (Exception $e) {
-            error_log("Error fetching providers with details: " . $e->getMessage());
-            return [];
         }
+        
+        return $providers;
+    }
+
+    /**
+     * Get suggested providers when no search results are found
+     * 
+     * @return array List of suggested providers
+     */
+    public function getSuggestedProviders() {
+        $query = "
+            SELECT 
+                u.user_id AS provider_id,
+                CONCAT(u.first_name, ' ', u.last_name) AS name,
+                pp.specialization AS specialty,
+                pp.bio,
+                pp.profile_image
+            FROM 
+                users u
+            JOIN 
+                provider_profiles pp ON u.user_id = pp.provider_id
+            WHERE 
+                u.role = 'provider'
+                AND pp.accepting_new_patients = 1
+            ORDER BY 
+                RAND()
+            LIMIT 3
+        ";
+        
+        $suggested_providers = [];
+        $result = $this->db->query($query);
+        
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $suggested_providers[] = $row;
+            }
+        }
+        
+        return $suggested_providers;
+    }
+
+    /**
+     * Get all available specializations for the filter dropdown
+     * 
+     * @return array List of distinct specializations
+     */
+    public function getDistinctSpecializations() {
+        $specialties = [];
+        $query = "SELECT DISTINCT specialization FROM provider_profiles WHERE specialization IS NOT NULL ORDER BY specialization";
+        $result = $this->db->query($query);
+        
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $specialties[] = $row;
+            }
+        }
+        
+        return $specialties;
     }
 
     /**
@@ -929,36 +941,6 @@ class Provider {
                 'provider_id' => $providerId,
                 'error' => $e->getMessage()
             ];
-        }
-    }
-    /**
-     * Get a list of distinct specializations from all providers
-     * 
-     * @return array List of unique specializations
-     */
-    public function getDistinctSpecializations() {
-        try {
-            $query = "SELECT DISTINCT specialization 
-                    FROM provider_profiles 
-                    WHERE specialization IS NOT NULL AND specialization != '' 
-                    ORDER BY specialization";
-                    
-            $result = $this->db->query($query);
-            
-            if (!$result) {
-                error_log("Error getting specializations: " . $this->db->error);
-                return [];
-            }
-            
-            $specializations = [];
-            while ($row = $result->fetch_assoc()) {
-                $specializations[] = $row['specialization'];
-            }
-            
-            return $specializations;
-        } catch (Exception $e) {
-            error_log("Error in getDistinctSpecializations: " . $e->getMessage());
-            return [];
         }
     }
 
@@ -1456,5 +1438,40 @@ class Provider {
         }
     }
 
+    /**
+     * Get provider by ID
+     *
+     * @param int $provider_id The provider ID
+     * @return array|false Provider data or false if not found
+     */
+    public function getProviderById($provider_id) {
+        try {
+            // Join users table to get complete provider information
+            $sql = "SELECT 
+                    pp.*, 
+                    u.email, 
+                    u.first_name, 
+                    u.last_name, 
+                    u.phone 
+                FROM provider_profiles pp
+                JOIN users u ON pp.provider_id = u.user_id
+                WHERE pp.provider_id = ?";
+        
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param('i', $provider_id);
+            $stmt->execute();
+        
+            $result = $stmt->get_result();
+        
+            if ($result->num_rows > 0) {
+                return $result->fetch_assoc();
+            }
+        
+            return false;
+        } catch (Exception $e) {
+            error_log("Error fetching provider data: " . $e->getMessage());
+            return false;
+        }
+    }
 }
 ?>

@@ -1120,7 +1120,7 @@ class User {
             }
         }
     
-
+    
     /**
      * Get all patients (users with role 'patient')
      * 
@@ -1521,3 +1521,4 @@ class User {
     }
 }
 ?>
+                    

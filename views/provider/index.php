@@ -23,7 +23,7 @@
                     <a href="<?= base_url('index.php/provider/appointments/' . htmlspecialchars($provider_id)) ?>" class="btn btn-light btn-sm">View All</a>
                 </div>
                 <div class="card-body">
-                    <?php if (!empty($upcomingAppointments)) : ?>
+                    <?php if (!empty($appointments)) : ?>
                         <div class="table-responsive">
                             <table class="table table-striped table-hover">
                                 <thead>

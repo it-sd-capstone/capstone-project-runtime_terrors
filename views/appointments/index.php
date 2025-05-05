@@ -1,5 +1,6 @@
 <?php
-// Debugging
+// Commenting out debugging code
+/*
 if (!isset($availableSlots)) {
     echo "<p>Error: \$availableSlots is not set. Controller method may not be executing.</p>";
     $availableSlots = []; // Prevent foreach error
@@ -8,8 +9,15 @@ if (!isset($availableSlots)) {
 echo "<pre>Available slots: ";
 var_dump($availableSlots);
 echo "</pre>";
-// Prevent direct access to view files
-if (!defined('BASE_PATH')) {
+*/
+
+// Just keep this part to ensure $availableSlots is set
+if (!isset($availableSlots)) {
+    $availableSlots = []; // Prevent foreach error
+}
+
+// Modify the security check to allow controller access
+if (!defined('BASE_PATH') && !isset($availableSlots)) {
     die("Direct access to views is not allowed");
 }
 ?>
@@ -88,7 +96,7 @@ if (!defined('BASE_PATH')) {
                                     <td><?= htmlspecialchars(date('g:i A', strtotime($slot['start_time']))) ?> - 
                                         <?= htmlspecialchars(date('g:i A', strtotime($slot['end_time']))) ?></td>
                                     <td>
-                                        <a href="<?= base_url('index.php/appointments/book?id=' . $slot['availability_id']) ?>" 
+                                        <a href="<?= base_url('index.php/patient/book?id=' . $slot['availability_id']) ?>" 
                                            class="btn btn-primary btn-sm">Book</a>
                                     </td>
                                 </tr>

@@ -274,34 +274,81 @@ class AppointmentsController {
     }
     
     // View appointment history with detailed logs
-    public function history() {
-        // Only admins can see complete history
-        if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'provider') {
-            header('Location: ' . base_url('index.php/appointments'));
-            exit;
+    /**
+     * View Appointment History
+     * @param int $id Appointment ID (optional)
+     */
+    public function history($id = null) {
+        // Check if user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            redirect('auth');
+            return;
         }
         
-        $appointmentId = $_GET['id'] ?? null;
+        // Get appointment ID from URL parameter or query string
+        $appointment_id = $id ?? $_GET['id'] ?? null;
         
-        if (!$appointmentId) {
-            header('Location: ' . base_url('index.php/appointments'));
-            exit;
+        if ($appointment_id) {
+            // Get appointment details - make sure this query includes ALL fields
+            $appointment = $this->appointmentModel->getById($appointment_id);
+            
+            // For debugging, you could add:
+            // echo '<pre>'; print_r($appointment); echo '</pre>';
+            
+            if (!$appointment || !$this->canAccessAppointment($appointment)) {
+                set_flash_message('error', 'You do not have permission to view this appointment.');
+                redirect('appointments');
+                return;
+            }
+            
+            // Get appointment logs (instead of history)
+            $logs = $this->appointmentModel->getAppointmentLogs($appointment_id);
+            
+            include VIEW_PATH . '/appointments/history.php';
+            return;
         }
         
-        // Get appointment details using the model
-        $appointment = $this->appointmentModel->getAppointmentById($appointmentId);
-        
-        if (!$appointment) {
-            $_SESSION['error'] = "Appointment not found";
-            header('Location: ' . base_url('index.php/appointments'));
-            exit;
+        // Otherwise show user's appointment history
+        if ($role === 'patient') {
+            $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments($user_id) ?? [];
+            $pastAppointments = $this->appointmentModel->getPastAppointments($user_id) ?? [];
+        } elseif ($role === 'provider') {
+            $upcomingAppointments = $this->appointmentModel->getProviderUpcomingAppointments($user_id) ?? [];
+            $pastAppointments = $this->appointmentModel->getProviderPastAppointments($user_id) ?? [];
+        } else { // admin
+            $upcomingAppointments = $this->appointmentModel->getAllUpcomingAppointments() ?? [];
+            $pastAppointments = $this->appointmentModel->getAllPastAppointments() ?? [];
         }
         
-        // Get activity logs for this appointment
-        $logs = $this->activityLogModel->getAppointmentLogs($appointmentId);
-        
-        // Load view
         include VIEW_PATH . '/appointments/history.php';
+    }
+    
+    /**
+     * Check if current user can access an appointment
+     * @param array $appointment The appointment data
+     * @return bool True if user can access, false otherwise
+     */
+    private function canAccessAppointment($appointment) {
+        if (!$appointment) {
+            return false;
+        }
+        
+        $role = $_SESSION['role'] ?? '';
+        $user_id = $_SESSION['user_id'] ?? 0;
+        
+        if ($role === 'admin') {
+            return true;
+        }
+        
+        if ($role === 'provider' && $appointment['provider_id'] == $user_id) {
+            return true;
+        }
+        
+        if ($role === 'patient' && $appointment['patient_id'] == $user_id) {
+            return true;
+        }
+        
+        return false;
     }
     
     /**
@@ -576,95 +623,105 @@ class AppointmentsController {
         exit;
     }
     
-//     // Add a new method for updating appointment status that includes logging
-//     public function updateStatus() {
-//         // Only admin and providers can update appointment status
-//         if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'provider') {
-//             header('Location: ' . base_url('index.php/appointments'));
-//             exit;
-//         }
+    /**
+     * Update appointment status
+     * 
+     * @param int $appointment_id The ID of the appointment
+     * @param string $status The new status
+     */
+    public function update_status($appointment_id, $status) {
+        // Check if user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            redirect('auth/login');
+            return;
+        }
         
-//         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-//             header('Location: ' . base_url('index.php/appointments'));
-//             exit;
-//         }
+        $user_id = $_SESSION['user_id'];
+        $role = $_SESSION['role'] ?? '';
         
-//         $appointmentId = $_POST['appointment_id'] ?? null;
-//         $newStatus = $_POST['status'] ?? null;
+        // Get appointment details to verify ownership
+        $appointment = $this->appointmentModel->getById($appointment_id);
         
-//         if (!$appointmentId || !$newStatus) {
-//             header('Location: ' . base_url('index.php/appointments?error=missing_data'));
-//             exit;
-//         }
+        // Validate permission (only provider, patient who owns it, or admin can update)
+        if (!$appointment || 
+            ($role == 'provider' && $appointment['provider_id'] != $user_id) || 
+            ($role == 'patient' && $appointment['patient_id'] != $user_id) && 
+            $role != 'admin') {
+            set_flash_message('error', 'You do not have permission to update this appointment');
+            redirect($role . '/index');
+            return;
+        }
         
-//         // Get current appointment details
-//         $stmt = $this->db->prepare("SELECT * FROM appointments WHERE appointment_id = ?");
-//         $stmt->bind_param("i", $appointmentId);
-//         $stmt->execute();
-//         $result = $stmt->get_result();
-//         $appointment = $result->fetch_assoc();
+        // List of valid statuses
+        $valid_statuses = ['scheduled', 'confirmed', 'canceled', 'completed', 'no_show', 'pending'];
+        if (!in_array($status, $valid_statuses)) {
+            set_flash_message('error', 'Invalid status');
+            redirect($role . '/viewAppointment/' . $appointment_id);
+            return;
+        }
         
-//         // Update appointment status
-//         $stmt = $this->db->prepare("UPDATE appointments SET status = ? WHERE appointment_id = ?");
-//         $stmt->bind_param("si", $newStatus, $appointmentId);
+        // Update the appointment status
+        $result = $this->appointmentModel->updateStatus($appointment_id, $status);
         
-//         if ($stmt->execute()) {
-//             // Log the status change with detailed information
-//             $details = json_encode([
-//                 'previous_status' => $appointment['status'],
-//                 'new_status' => $newStatus,
-//                 'changed_by' => $_SESSION['user_id'],
-//                 'changed_by_role' => $_SESSION['role'],
-//                 'appointment_date' => $appointment['appointment_date'],
-//                 'reason' => $_POST['reason'] ?? 'No reason provided'
-//             ]);
-//             $this->activityLogModel->logAppointment($_SESSION['user_id'], "status_changed", $appointmentId, $details);
+        if ($result) {
+            // Record the action in logs if needed
+            // $this->appointmentModel->logAction($appointment_id, 'status_changed', $user_id, $status);
             
-//             header('Location: ' . base_url('index.php/appointments?success=updated'));
-//         } else {
-//             header('Location: ' . base_url('index.php/appointments?error=update_failed'));
-//         }
-//         exit;
-//     }
-    
-//     // View appointment history with detailed logs
-//     public function history() {
-//         // Only admins can see complete history
-//         if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'provider') {
-//             header('Location: ' . base_url('index.php/appointments'));
-//             exit;
-//         }
+            set_flash_message('success', 'Appointment status updated successfully');
+        } else {
+            set_flash_message('error', 'Failed to update appointment status');
+        }
         
-//         $appointmentId = $_GET['id'] ?? null;
+        // Redirect back to the appointment view
+        redirect($role . '/viewAppointment/' . $appointment_id);
+    }
+
+    /**
+     * Update appointment notes
+     */
+    public function update_notes() {
+        // Check if user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            redirect('auth/login');
+            return;
+        }
         
-//         if (!$appointmentId) {
-//             header('Location: ' . base_url('index.php/appointments'));
-//             exit;
-//         }
+        $user_id = $_SESSION['user_id'];
+        $role = $_SESSION['role'] ?? '';
         
-//         // Get appointment details
-//         $stmt = $this->db->prepare("
-//             SELECT a.*, 
-//                    u_patient.first_name as patient_first_name, 
-//                    u_patient.last_name as patient_last_name,
-//                    u_provider.first_name as provider_first_name, 
-//                    u_provider.last_name as provider_last_name,
-//                    s.name as service_name
-//             FROM appointments a
-//             JOIN users u_patient ON a.patient_id = u_patient.user_id
-//             JOIN users u_provider ON a.provider_id = u_provider.user_id
-//             JOIN services s ON a.service_id = s.service_id
-//             WHERE a.appointment_id = ?
-//         ");
-//         $stmt->bind_param("i", $appointmentId);
-//         $stmt->execute();
-//         $appointment = $stmt->get_result()->fetch_assoc();
+        // Get form data
+        $appointment_id = $_POST['appointment_id'] ?? null;
+        $notes = $_POST['notes'] ?? '';
         
-//         // Get activity logs for this appointment
-//         $logs = $this->activityLogModel->getAppointmentLogs($appointmentId);
+        if (!$appointment_id) {
+            set_flash_message('error', 'No appointment specified');
+            redirect($role . '/index');
+            return;
+        }
         
-//         // Load view
-//         include VIEW_PATH . '/appointments/history.php';
-//     }
+        // Get appointment details to verify ownership
+        $appointment = $this->appointmentModel->getById($appointment_id);
+        
+        // Validate permission (only provider or admin can update notes)
+        if (!$appointment || 
+            ($role == 'provider' && $appointment['provider_id'] != $user_id) && 
+            $role != 'admin') {
+            set_flash_message('error', 'You do not have permission to update appointment notes');
+            redirect($role . '/index');
+            return;
+        }
+        
+        // Update the appointment notes
+        $result = $this->appointmentModel->updateNotes($appointment_id, $notes);
+        
+        if ($result) {
+            set_flash_message('success', 'Appointment notes updated successfully');
+        } else {
+            set_flash_message('error', 'Failed to update appointment notes');
+        }
+        
+        // Redirect back to the appointment view
+        redirect($role . '/viewAppointment/' . $appointment_id);
+    }
 }
 ?>

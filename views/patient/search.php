@@ -18,78 +18,43 @@
                             <?= htmlspecialchars($error) ?>
                         </div>
                     <?php endif; ?>
-
-                    <!-- Search Form -->
+                    
+                    <!-- Search Form (Simplified to match database) -->
                     <form method="GET" action="<?= base_url('index.php/patient/search') ?>" class="mb-4">
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="specialty" class="form-label">Specialty</label>
                                 <select name="specialty" id="specialty" class="form-select">
                                     <option value="">All Specialties</option>
                                     <?php foreach ($specialties as $spec) : ?>
-                                        <!-- Check if $spec is a string or an array -->
-                                        <?php if (is_array($spec)): ?>
-                                            <option value="<?= htmlspecialchars($spec['name'] ?? $spec['specialization'] ?? '') ?>"
-                                                <?= ($specialty == ($spec['name'] ?? $spec['specialization'] ?? '')) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($spec['name'] ?? $spec['specialization'] ?? '') ?>
-                                            </option>
-                                        <?php else: ?>
-                                            <option value="<?= htmlspecialchars($spec) ?>"
-                                                <?= ($specialty == $spec) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($spec) ?>
+                                        <?php if (is_array($spec) && isset($spec['specialization'])): ?>
+                                            <option value="<?= htmlspecialchars($spec['specialization']) ?>"
+                                                <?= (isset($searchParams['specialty']) && $searchParams['specialty'] == $spec['specialization']) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($spec['specialization']) ?>
                                             </option>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
                             
-                            <div class="col-md-4 mb-3">
-                                <label for="location" class="form-label">Location</label>
-                                <input type="text" class="form-control" id="location" name="location"
-                                       placeholder="Enter city or zip code" value="<?= htmlspecialchars($location ?? '') ?>">
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="date" class="form-label">Preferred Date</label>
-                                <input type="date" class="form-control" id="date" name="date" 
-                                       min="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($date ?? '') ?>">
+                                <input type="date" class="form-control" id="date" name="date"
+                                       min="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($searchParams['date'] ?? '') ?>">
                             </div>
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="gender" class="form-label">Provider Gender</label>
-                                <select name="gender" id="gender" class="form-select">
-                                    <option value="">Any Gender</option>
-                                    <option value="male" <?= (isset($gender) && $gender == 'male') ? 'selected' : '' ?>>Male</option>
-                                    <option value="female" <?= (isset($gender) && $gender == 'female') ? 'selected' : '' ?>>Female</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <label for="language" class="form-label">Language</label>
-                                <select name="language" id="language" class="form-select">
-                                    <option value="">Any Language</option>
-                                    <option value="english" <?= (isset($language) && $language == 'english') ? 'selected' : '' ?>>English</option>
-                                    <option value="spanish" <?= (isset($language) && $language == 'spanish') ? 'selected' : '' ?>>Spanish</option>
-                                    <option value="french" <?= (isset($language) && $language == 'french') ? 'selected' : '' ?>>French</option>
-                                    <option value="mandarin" <?= (isset($language) && $language == 'mandarin') ? 'selected' : '' ?>>Mandarin</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <label for="insurance" class="form-label">Insurance Accepted</label>
-                                <select name="insurance" id="insurance" class="form-select">
-                                    <option value="">Any Insurance</option>
-                                    <option value="medicare" <?= (isset($insurance) && $insurance == 'medicare') ? 'selected' : '' ?>>Medicare</option>
-                                    <option value="medicaid" <?= (isset($insurance) && $insurance == 'medicaid') ? 'selected' : '' ?>>Medicaid</option>
-                                    <option value="blue_cross" <?= (isset($insurance) && $insurance == 'blue_cross') ? 'selected' : '' ?>>Blue Cross Blue Shield</option>
-                                    <option value="aetna" <?= (isset($insurance) && $insurance == 'aetna') ? 'selected' : '' ?>>Aetna</option>
-                                    <option value="cigna" <?= (isset($insurance) && $insurance == 'cigna') ? 'selected' : '' ?>>Cigna</option>
-                                </select>
+                            <div class="col-md-12 mb-3">
+                                <label for="location" class="form-label">Search by Name or Phone</label>
+                                <input type="text" class="form-control" id="location" name="location"
+                                       placeholder="Enter provider name or phone" value="<?= htmlspecialchars($searchParams['location'] ?? '') ?>">
+                                <small class="text-muted">
+                                    Search will match provider name or phone number
+                                </small>
                             </div>
                         </div>
-                        
+
                         <!-- Add hidden field to indicate form submission -->
                         <input type="hidden" name="search_submitted" value="1">
                         
@@ -118,7 +83,7 @@
                                     <tr>
                                         <th>Provider</th>
                                         <th>Specialty</th>
-                                        <th>Location</th>
+                                        <th>Title</th>
                                         <th>Next Available</th>
                                         <th>Actions</th>
                                     </tr>
@@ -129,24 +94,30 @@
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <?php if (!empty($provider['profile_image'])): ?>
-                                                        <img src="<?= base_url('uploads/' . $provider['profile_image']) ?>" 
+                                                        <img src="<?= base_url('uploads/' . $provider['profile_image']) ?>"
                                                              class="rounded-circle me-2" width="40" height="40" alt="Provider">
                                                     <?php else: ?>
-                                                        <div class="bg-primary text-white rounded-circle me-2 d-flex align-items-center justify-content-center" 
+                                                        <div class="bg-primary text-white rounded-circle me-2 d-flex align-items-center justify-content-center"
                                                              style="width: 40px; height: 40px;">
                                                             <i class="fas fa-user-md"></i>
                                                         </div>
                                                     <?php endif; ?>
                                                     <div>
                                                         <div class="fw-bold"><?= htmlspecialchars($provider['name'] ?? 'Unknown') ?></div>
-                                                        <div class="small text-muted">
-                                                            <?= !empty($provider['rating']) ? str_repeat('★', $provider['rating']) . str_repeat('☆', 5 - $provider['rating']) : '' ?>
-                                                        </div>
+                                                        <?php if (isset($provider['accepting_new_patients']) && $provider['accepting_new_patients']): ?>
+                                                            <div class="small text-success">
+                                                                <i class="fas fa-check-circle"></i> Accepting new patients
+                                                            </div>
+                                                        <?php else: ?>
+                                                            <div class="small text-muted">
+                                                                Not accepting new patients
+                                                            </div>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td><?= htmlspecialchars($provider['specialty'] ?? 'General') ?></td>
-                                            <td><?= htmlspecialchars($provider['location'] ?? 'Local Area') ?></td>
+                                            <td><?= htmlspecialchars($provider['title'] ?? 'Not specified') ?></td>
                                             <td>
                                                 <?php if (!empty($provider['next_available_date'])): ?>
                                                     <span class="badge bg-success">
@@ -159,14 +130,13 @@
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                 <?php if (!empty($provider['provider_id'])): ?>
-                                                    <a href="<?= base_url('index.php/patient/viewProvider/' . htmlspecialchars($provider['provider_id'])) ?>" 
-                                                    class="btn btn-outline-primary"> Profile</a>
-                                                    <a href="<?= base_url('index.php/patient/book/' . htmlspecialchars($provider['provider_id'])) ?>" 
-                                                    class="btn btn-primary"> Book</a>
+                                                    <a href="<?= base_url('index.php/patient/viewProvider/' . htmlspecialchars($provider['provider_id'])) ?>"
+                                                       class="btn btn-outline-primary"> Profile</a>
+                                                    <a href="<?= base_url('index.php/patient/book?provider_id=' . htmlspecialchars($provider['provider_id'])) ?>"
+                                                       class="btn btn-primary"> Book</a>
                                                 <?php else: ?>
                                                     <span class="text-muted">Provider details unavailable</span>
                                                 <?php endif; ?>
-                                                    </a>
                                                 </div>
                                             </td>
                                         </tr>
@@ -198,7 +168,7 @@
                                                 <h6 class="card-subtitle mb-2 text-muted"><?= htmlspecialchars($provider['specialty']) ?></h6>
                                                 <p class="card-text small"><?= htmlspecialchars($provider['bio'] ?? 'No bio available.') ?></p>
                                                 <a href="<?= base_url('index.php/patient/viewProvider/' . $provider['provider_id']) ?>" class="card-link">View Profile</a>
-                                                <a href="<?= base_url('index.php/patient/book/' . $provider['provider_id']) ?>" class="card-link">Book Appointment</a>
+                                                <a href="<?= base_url('index.php/patient/book?provider_id=' . $provider['provider_id']) ?>" class="card-link">Book Appointment</a>
                                             </div>
                                         </div>
                                     </div>
@@ -218,16 +188,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const specialtySelect = document.getElementById('specialty');
     const locationInput = document.getElementById('location');
     
-    // Example: Auto-suggest locations as user types
+    // Example: Auto-suggest providers as user types
     if (locationInput) {
         locationInput.addEventListener('input', function() {
-            // This would typically call an API to get location suggestions
-            // For demonstration purposes, we're just logging the input
-            console.log('Location search:', this.value);
+            console.log('Provider search:', this.value);
         });
     }
     
-    // Example: Filter specialties based on other selections
+    // Example: Handle specialty selection
     if (specialtySelect) {
         specialtySelect.addEventListener('change', function() {
             console.log('Selected specialty:', this.value);

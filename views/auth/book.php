@@ -4,7 +4,7 @@
 <div class="container mt-4">
     <h2>Book an Appointment</h2>
     
-    <form id="bookingForm" action="/patient/bookAppointment" method="POST">
+    <form id="bookingForm" action="<?= base_url('index.php/patient/processBooking') ?>" method="POST">
         <label for="provider_id">Select Provider:</label>
         <select name="provider_id" required>
             <?php foreach ($availableProviders as $provider): ?>

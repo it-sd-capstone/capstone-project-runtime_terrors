@@ -204,7 +204,7 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                                     <a class="nav-link" href="<?= base_url('index.php/patient/book') ?>">Book</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="<?= base_url('index.php/patient/history') ?>">My Appointments</a>
+                                    <a class="nav-link" href="<?= base_url('index.php/appointments') ?>">My Appointments</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="<?= base_url('index.php/patient/search') ?>">Find Provider</a>
@@ -283,6 +283,7 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
     </div>
     
     <div class="container">
+        <?php display_flash_messages(); ?>
     <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

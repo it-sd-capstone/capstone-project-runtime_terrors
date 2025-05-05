@@ -11,6 +11,10 @@
   padding: 2px 4px;
 }
 
+.regular-availability {
+    background-color: #28a745 !important; /* Green */
+    border: none !important;
+}
 .fc-event-title {
   font-weight: bold;
 }
@@ -242,6 +246,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         ],
+        eventDidMount: function(info) {
+            // Optionally add tooltips or other visual indicators
+            if (info.event.classNames.includes('available-slot')) {
+                // This is an individual available slot
+                $(info.el).tooltip({
+                    title: 'Available for booking',
+                    placement: 'top'
+                });
+            }
+        },
         eventResize: function(info) {
             updateAvailability(info.event);
         },
