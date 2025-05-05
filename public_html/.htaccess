@@ -1,6 +1,14 @@
 # Enable rewrite engine
 RewriteEngine On
 
+# Redirect direct access to index.php to the base URL
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php [NC]
+RewriteRule ^index\.php$ / [R=301,L]
+
+# Handle index.php/path format (with or without query string)
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php/(.*)\ HTTP [NC]
+RewriteRule ^index\.php/(.*)$ /$1 [R=301,L]
+
 # Ensure requests are not directed to actual files or directories
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
