@@ -283,6 +283,7 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
     </div>
     
     <div class="container">
+        <?php display_flash_messages(); ?>
     <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

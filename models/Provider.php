@@ -37,87 +37,38 @@ class Provider {
         return $this->getById($provider_id);
     }
 
-    public function updateProfile($provider_id, $profileData) {
+    /**
+     * Update provider profile
+     * 
+     * @param int $provider_id Provider ID
+     * @param array $data Profile data to update
+     * @return bool True on success, false on failure
+     */
+    public function updateProfile($provider_id, $data) {
         try {
-            $this->db->begin_transaction();
-            // If we have a full profile update with user data
-            if (isset($profileData['first_name'])) {
-                // Update users table
-                $stmt = $this->db->prepare("
-                    UPDATE users 
-                    SET first_name = ?, last_name = ?, phone = ?
-                    WHERE user_id = ? AND role = 'provider'
-                ");
-                $stmt->bind_param("sssi", 
-                    $profileData['first_name'],
-                    $profileData['last_name'],
-                    $profileData['phone'],
-                    $provider_id
-                );
-                $success = $stmt->execute();
-                if (!$success) {
-                    throw new Exception("Profile update failed (users table).");
-                }
-            }
-
-            // Update provider_profiles table
-            $query = "UPDATE provider_profiles SET ";
-            $params = [];
-            $types = "";
-
-            if (isset($profileData['specialization'])) {
-                $query .= "specialization = ?, ";
-                $params[] = $profileData['specialization'];
-                $types .= "s";
-            }
-
-            if (isset($profileData['title'])) {
-                $query .= "title = ?, ";
-                $params[] = $profileData['title'];
-                $types .= "s";
-            }
-
-            if (isset($profileData['bio'])) {
-                $query .= "bio = ?, ";
-                $params[] = $profileData['bio'];
-                $types .= "s";
-            }
-
-            if (isset($profileData['accepting_new_patients'])) {
-                $query .= "accepting_new_patients = ?, ";
-                $params[] = $profileData['accepting_new_patients'];
-                $types .= "i";
-            }
-
-            if (isset($profileData['max_patients_per_day'])) {
-                $query .= "max_patients_per_day = ?, ";
-                $params[] = $profileData['max_patients_per_day'];
-                $types .= "i";
-            }
-
-            // Remove trailing comma and space
-            $query = rtrim($query, ", ");
-
-            $query .= " WHERE provider_id = ?";
-            $params[] = $provider_id;
-            $types .= "i";
-
-            $stmt = $this->db->prepare($query);
-
-            // Only bind parameters if we have fields to update
-            if (!empty($params)) {
-                $stmt->bind_param($types, ...$params);
-                $success = $stmt->execute();
-
-                if (!$success) {
-                    throw new Exception("Profile update failed (provider_profiles table).");
-                }
-            }
-            $this->db->commit();
-            return true;
+            $sql = "UPDATE provider_profiles SET 
+                    specialization = ?,
+                    title = ?,
+                    bio = ?,
+                    accepting_new_patients = ?,
+                    max_patients_per_day = ?,
+                    updated_at = NOW()
+                    WHERE provider_id = ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param(
+                'sssiii',
+                $data['specialization'],
+                $data['title'],
+                $data['bio'],
+                $data['accepting_new_patients'],
+                $data['max_patients_per_day'],
+                $provider_id
+            );
+            
+            return $stmt->execute();
         } catch (Exception $e) {
-            $this->db->rollback();
-            error_log("Error updating profile: " . $e->getMessage());
+            error_log("Error updating provider profile: " . $e->getMessage());
             return false;
         }
     }
@@ -384,23 +335,25 @@ class Provider {
 
     public function getAvailableSlots($provider_id, $service_duration) {
         try {
+            $slots = [];
+        
+            // 1. Get one-time availability (your existing code)
             $stmt = $this->db->prepare("
-                SELECT availability_date, start_time, end_time 
-                FROM provider_availability 
+                SELECT availability_date, start_time, end_time
+                FROM provider_availability
                 WHERE provider_id = ? AND availability_date >= CURDATE()
                 ORDER BY availability_date, start_time
             ");
             $stmt->bind_param("i", $provider_id);
             $stmt->execute();
             $result = $stmt->get_result();
-            $appointments = [];
-    
+        
             while ($row = $result->fetch_assoc()) {
                 $start = strtotime($row['start_time']);
                 $end = strtotime($row['end_time']);
-    
+            
                 while ($start + ($service_duration * 60) <= $end) {
-                    $appointments[] = [
+                    $slots[] = [
                         'date' => $row['availability_date'],
                         'start_time' => date("H:i", $start),
                         'end_time' => date("H:i", $start + ($service_duration * 60))
@@ -408,8 +361,51 @@ class Provider {
                     $start += ($service_duration * 60); // Move to next available slot
                 }
             }
-    
-            return $appointments;
+        
+            // 2. Get recurring availability patterns
+            $stmt = $this->db->prepare("
+                SELECT weekdays, start_time, end_time
+                FROM provider_recurring_availability
+                WHERE provider_id = ? AND is_available = 1
+            ");
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        
+            // Process recurring patterns for the next 30 days
+            $days_to_look_ahead = 30;
+            while ($row = $result->fetch_assoc()) {
+                $weekdays = explode(',', $row['weekdays']);
+            
+                for ($i = 0; $i < $days_to_look_ahead; $i++) {
+                    $date = date('Y-m-d', strtotime("+$i days"));
+                    $dayOfWeek = date('w', strtotime($date)); // 0 (Sun) to 6 (Sat)
+                
+                    // If this date matches a recurring weekday pattern
+                    if (in_array($dayOfWeek, $weekdays)) {
+                        $start = strtotime($row['start_time']);
+                        $end = strtotime($row['end_time']);
+                    
+                        while ($start + ($service_duration * 60) <= $end) {
+                            $slots[] = [
+                                'date' => $date,
+                                'start_time' => date("H:i", $start),
+                                'end_time' => date("H:i", $start + ($service_duration * 60))
+                            ];
+                            $start += ($service_duration * 60);
+                        }
+                    }
+                }
+            }
+        
+            // Sort slots by date and time
+            usort($slots, function($a, $b) {
+                $dateCompare = strcmp($a['date'], $b['date']);
+                if ($dateCompare !== 0) return $dateCompare;
+                return strcmp($a['start_time'], $b['start_time']);
+            });
+        
+            return $slots;
         } catch (Exception $e) {
             error_log("Error fetching available appointments: " . $e->getMessage());
             return [];
@@ -1442,5 +1438,40 @@ class Provider {
         }
     }
 
+    /**
+     * Get provider by ID
+     *
+     * @param int $provider_id The provider ID
+     * @return array|false Provider data or false if not found
+     */
+    public function getProviderById($provider_id) {
+        try {
+            // Join users table to get complete provider information
+            $sql = "SELECT 
+                    pp.*, 
+                    u.email, 
+                    u.first_name, 
+                    u.last_name, 
+                    u.phone 
+                FROM provider_profiles pp
+                JOIN users u ON pp.provider_id = u.user_id
+                WHERE pp.provider_id = ?";
+        
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param('i', $provider_id);
+            $stmt->execute();
+        
+            $result = $stmt->get_result();
+        
+            if ($result->num_rows > 0) {
+                return $result->fetch_assoc();
+            }
+        
+            return false;
+        } catch (Exception $e) {
+            error_log("Error fetching provider data: " . $e->getMessage());
+            return false;
+        }
+    }
 }
 ?>

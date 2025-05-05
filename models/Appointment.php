@@ -311,12 +311,29 @@ class Appointment {
     }
 
     // Update appointment status
-    public function updateStatus($appointmentId, $status) {
+    public function updateStatus($appointment_id, $status) {
         try {
-            $stmt = $this->db->prepare("UPDATE appointments SET status = ? WHERE appointment_id = ?");
-            $stmt->bind_param("si", $status, $appointmentId);
+            // Build query based on status
+            $sql = "UPDATE appointments SET status = ?, updated_at = NOW() ";
+        
+            // Add status-specific timestamp updates
+            if ($status == 'canceled') {
+                $sql .= ", canceled_at = NOW() ";
+            } else if ($status == 'confirmed') {
+                $sql .= ", confirmed_at = NOW() ";
+            }
+        
+            $sql .= "WHERE appointment_id = ?";
+        
+            $stmt = $this->db->prepare($sql);
+        
+            // Use bind_param with MySQLi
+            // 'si' indicates first param is string, second is integer
+            $stmt->bind_param('si', $status, $appointment_id);
+        
             return $stmt->execute();
         } catch (Exception $e) {
+            // Log error
             error_log("Error updating appointment status: " . $e->getMessage());
             return false;
         }
@@ -892,16 +909,26 @@ class Appointment {
         }
     }
 
-    public function updateAppointmentNotes($appointment_id, $notes) {
+    /**
+     * Update appointment notes
+     *
+     * @param int $appointment_id The ID of the appointment
+     * @param string $notes The new notes
+     * @return bool True if successful, false otherwise
+     */
+    public function updateNotes($appointment_id, $notes) {
         try {
-            $stmt = $this->db->prepare("
-                UPDATE appointments
-                SET notes = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE appointment_id = ?
-            ");
-            $stmt->bind_param("si", $notes, $appointment_id);
+            // MySQLi uses ? placeholders instead of named parameters
+            $sql = "UPDATE appointments SET notes = ?, updated_at = NOW() WHERE appointment_id = ?";
+            $stmt = $this->db->prepare($sql);
+        
+            // Bind parameters in order using bind_param
+            // 's' indicates string parameters
+            $stmt->bind_param('si', $notes, $appointment_id);
+        
             return $stmt->execute();
         } catch (Exception $e) {
+            // Log error
             error_log("Error updating appointment notes: " . $e->getMessage());
             return false;
         }
