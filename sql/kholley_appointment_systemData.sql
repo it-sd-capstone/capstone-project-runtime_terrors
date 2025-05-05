@@ -156,8 +156,10 @@ INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availabl
 -- Dumping data for table `provider_profiles`
 --
 
-INSERT INTO `provider_profiles` (`profile_id`, `provider_id`, `specialization`, `title`, `bio`, `accepting_new_patients`, `max_patients_per_day`, `profile_image`, `created_at`, `updated_at`) VALUES
-(1, 16, 'Practisioner', 'MD', 'Hello', 1, 20, NULL, '2025-04-23 01:16:51', '2025-04-23 01:16:51');
+INSERT INTO `provider_profiles` (`profile_id`, `provider_id`, `specialization`, `title`, `bio`, `accepting_new_patients`, `max_patients_per_day`, `profile_image`, `created_at`, `updated_at`) 
+VALUES
+(1, 16, 'Practisioner', 'MD', 'Hello', 1, 20, NULL, '2025-04-23 01:16:51', '2025-04-23 01:16:51'),
+(2, 2, 'General Medicine', 'MD', 'Experienced general practitioner', 1, 20, NULL, NOW(), NOW());
 
 --
 -- Dumping data for table `provider_services`

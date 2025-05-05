@@ -107,7 +107,7 @@
                                         <tr>
                                             <td><?= date('M d, Y', strtotime($appointment['appointment_date'])) ?></td>
                                             <td><?= date('g:i A', strtotime($appointment['start_time'])) ?></td>
-                                            <td><?= htmlspecialchars($appointment['provider_name']) ?></td>
+                                            <td><?= htmlspecialchars($appointment['provider_first_name'] ?? '') . ' ' . htmlspecialchars($appointment['provider_last_name'] ?? '') ?></td>
                                             <td><?= htmlspecialchars($appointment['service_name']) ?></td>
                                             <td>
                                                 <?php 

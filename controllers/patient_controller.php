@@ -69,13 +69,16 @@ class PatientController {
 
             switch ($action) {
                 case 'book':
+                    error_log("Book action received with parameters: " . print_r($_GET, true));
                     if ($provider_id && $appointment_date && $appointment_time) {
+                        error_log("Attempting to book appointment: provider=$provider_id, date=$appointment_date, time=$appointment_time");
                         if (!$this->appointmentModel->isSlotAvailable($provider_id, $appointment_date, $appointment_time)) {
                             $_SESSION['error'] = "This time slot is unavailable.";
                             header("Location: " . base_url("index.php/patient_services?action=book"));
                             exit;
                         }
                         $success = $this->appointmentModel->scheduleAppointment($patient_id, $provider_id, $service_id, $appointment_date, $start_time, $end_time);
+                        error_log("Booking result: " . ($success ? "Success" : "Failed"));
                         $_SESSION[$success ? 'success' : 'error'] = $success ? "Appointment booked successfully!" : "Booking failed.";
                     }
                     break;
@@ -104,28 +107,56 @@ class PatientController {
             exit;
         }
     }
-    public function book($providerId = null) {
-        if (!isset($_SESSION['user_id'])) {
-            header('Location: ' . base_url('index.php/auth'));
-            exit;
+    public function book() {
+        // Check if user is logged in
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'patient') {
+            redirect('auth/login?redirect=patient/book');
+            return;
         }
-    
-        // Get provider details if ID is provided
-        $provider = $providerId ? $this->providerModel->getProviderById($providerId) : null;
         
-        if ($providerId && !$provider) {
-            $_SESSION['error'] = "Provider not found.";
-            header('Location: ' . base_url('index.php/patient/search'));
-            exit;
+        // Add debugging for providers
+        error_log("===== DEBUG: BOOKING APPOINTMENT =====");
+        
+        // Get all active providers
+        $providers = $this->providerModel->getAll();
+        
+        // Debug the providers array
+        error_log("Found " . count($providers) . " total providers from providerModel->getAll()");
+        foreach ($providers as $index => $provider) {
+            error_log("Provider[$index]: ID: " . ($provider['user_id'] ?? 'missing') . 
+                     ", Name: " . ($provider['first_name'] ?? 'missing') . " " . 
+                     ($provider['last_name'] ?? 'missing'));
         }
-    
-        // Get all providers and services
-        $providers = $this->providerModel->getAllProvidersWithDetails();
+        
+        // Get all services - Using getAllServices() instead of getAll()
         $services = $this->serviceModel->getAllServices();
-    
-        // Load the booking view
+        error_log("Found " . count($services) . " services from serviceModel->getAllServices()");
+        
+        // Debug the session data
+        error_log("Current user: ID=" . $_SESSION['user_id'] . ", Role=" . $_SESSION['role']);
+        
+        // Add debugging to check SQL query directly - if providers array is empty
+        if (empty($providers)) {
+            $db = get_db();
+            $result = $db->query("
+                SELECT u.user_id, u.first_name, u.last_name, u.role
+                FROM users u
+                WHERE u.role = 'provider' AND u.is_active = 1
+            ");
+            $direct_providers = $result->fetch_all(MYSQLI_ASSOC);
+            error_log("Direct SQL query found " . count($direct_providers) . " providers");
+            foreach ($direct_providers as $p) {
+                error_log("Direct SQL: Provider ID: {$p['user_id']}, Name: {$p['first_name']} {$p['last_name']}");
+            }
+        }
+        
+        // Load the booking view, not the home view
+        $page_title = 'Book Appointment'; // Making the variable directly available for the view
+        
+        // Direct include instead of using view() function
         include VIEW_PATH . '/patient/book.php';
     }
+    
 
     /**
      * Check provider availability before booking
@@ -195,14 +226,19 @@ class PatientController {
                     $this->activityLogModel->logActivity('appointment_created',
                         "Patient scheduled appointment with provider #$provider_id",
                         $patient_id);
-                    
-                    // Redirect to patient dashboard with success message
+                           
+                    // Redirect to appointments page with success message
                     $_SESSION['success'] = "Your appointment has been booked successfully!";
-                    header("Location: " . base_url("index.php/patient"));
+                    // Use the correct path format for cross-controller redirection
+                    $redirectUrl = base_url("index.php/appointments?success=booked");
+                    error_log("Redirecting to: " . $redirectUrl);
+                    header("Location: " . $redirectUrl);
+                    exit;
                 } else {
                     $_SESSION['error'] = "Failed to book appointment. Please try again.";
                     header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
-                }
+                    exit;
+                }                
                 exit;
             } else {
                 $_SESSION['error'] = "Missing required fields for booking.";
@@ -229,16 +265,17 @@ class PatientController {
     /**
      * View Appointment History
      */
-    public function history() {
-        $patient_id = $_SESSION['user_id'] ?? null;
-        if (!$patient_id) {
-            header('Location: ' . base_url('index.php/auth'));
-            exit;
-        }
-        $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments($patient_id) ?? [];
-        $pastAppointments = $this->appointmentModel->getPastAppointments($patient_id) ?? [];
-        include VIEW_PATH . '/patient/book.php';
-    }
+    // public function history() {
+    //     $patient_id = $_SESSION['user_id'] ?? null;
+    //     if (!$patient_id) {
+    //         header('Location: ' . base_url('index.php/auth'));
+    //         exit;
+    //     }
+    //     $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments($patient_id) ?? [];
+    //     $pastAppointments = $this->appointmentModel->getPastAppointments($patient_id) ?? [];
+    //     include VIEW_PATH . '/appointments/history.php';
+    // }
+
 
     /**
      * Load patient profile view
@@ -284,25 +321,55 @@ class PatientController {
         }
     }
     public function search() {
-        // Retrieve search parameters
-        $specialty = $_GET['specialty'] ?? '';
-        $location = $_GET['location'] ?? '';
-    
+        // Check if user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            redirect('auth/login');
+            return;
+        }
+        
+        // Retrieve all search parameters
+        $searchParams = [
+            'specialty' => $_GET['specialty'] ?? '',
+            'location' => $_GET['location'] ?? '',
+            'date' => $_GET['date'] ?? '',
+            'gender' => $_GET['gender'] ?? '',
+            'language' => $_GET['language'] ?? '',
+            'insurance' => $_GET['insurance'] ?? ''
+        ];
+        
         // Get available specialties for filtering
         $specialties = $this->providerModel->getDistinctSpecializations();
-    
+        
+        // Determine if search was submitted and validate
+        $searchSubmitted = isset($_GET['search_submitted']);
+        $hasSearchCriteria = !empty($searchParams['specialty']) || 
+                             !empty($searchParams['location']) || 
+                             !empty($searchParams['date']) || 
+                             !empty($searchParams['gender']) || 
+                             !empty($searchParams['language']) || 
+                             !empty($searchParams['insurance']);
+        
         // Validate search criteria
-        $error = (isset($_GET['search_submitted']) && empty($specialty) && empty($location)) 
-                 ? "Please enter at least one search criteria." 
-                 : ($_GET['error'] ?? null);
-    
-        // Fetch providers based on filters
-        $providers = $this->providerModel->searchProviders($specialty, $location);
-    
-        // Provide fallback suggested providers when no results are found
-        $suggested_providers = empty($providers) ? $this->providerModel->getSuggestedProviders() : [];
-    
-        // Pass variables to the view
+        $error = ($searchSubmitted && !$hasSearchCriteria) 
+            ? "Please enter at least one search criteria."
+            : ($_GET['error'] ?? null);
+        
+        // Initialize providers array
+        $providers = [];
+        $suggested_providers = [];
+        
+        // Only perform search if form was submitted
+        if ($searchSubmitted) {
+            // Fetch providers based on all search parameters
+            $providers = $this->providerModel->searchProviders($searchParams);
+            
+            // Get suggested providers if no results found
+            if (empty($providers)) {
+                $suggested_providers = $this->providerModel->getSuggestedProviders();
+            }
+        }
+        
+        // Pass all variables to the view
         include VIEW_PATH . '/patient/search.php';
     }
 }

@@ -274,34 +274,81 @@ class AppointmentsController {
     }
     
     // View appointment history with detailed logs
-    public function history() {
-        // Only admins can see complete history
-        if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'provider') {
-            header('Location: ' . base_url('index.php/appointments'));
-            exit;
+    /**
+     * View Appointment History
+     * @param int $id Appointment ID (optional)
+     */
+    public function history($id = null) {
+        // Check if user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            redirect('auth');
+            return;
         }
         
-        $appointmentId = $_GET['id'] ?? null;
+        // Get appointment ID from URL parameter or query string
+        $appointment_id = $id ?? $_GET['id'] ?? null;
         
-        if (!$appointmentId) {
-            header('Location: ' . base_url('index.php/appointments'));
-            exit;
+        if ($appointment_id) {
+            // Get appointment details - make sure this query includes ALL fields
+            $appointment = $this->appointmentModel->getById($appointment_id);
+            
+            // For debugging, you could add:
+            // echo '<pre>'; print_r($appointment); echo '</pre>';
+            
+            if (!$appointment || !$this->canAccessAppointment($appointment)) {
+                set_flash_message('error', 'You do not have permission to view this appointment.');
+                redirect('appointments');
+                return;
+            }
+            
+            // Get appointment logs (instead of history)
+            $logs = $this->appointmentModel->getAppointmentLogs($appointment_id);
+            
+            include VIEW_PATH . '/appointments/history.php';
+            return;
         }
         
-        // Get appointment details using the model
-        $appointment = $this->appointmentModel->getAppointmentById($appointmentId);
-        
-        if (!$appointment) {
-            $_SESSION['error'] = "Appointment not found";
-            header('Location: ' . base_url('index.php/appointments'));
-            exit;
+        // Otherwise show user's appointment history
+        if ($role === 'patient') {
+            $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments($user_id) ?? [];
+            $pastAppointments = $this->appointmentModel->getPastAppointments($user_id) ?? [];
+        } elseif ($role === 'provider') {
+            $upcomingAppointments = $this->appointmentModel->getProviderUpcomingAppointments($user_id) ?? [];
+            $pastAppointments = $this->appointmentModel->getProviderPastAppointments($user_id) ?? [];
+        } else { // admin
+            $upcomingAppointments = $this->appointmentModel->getAllUpcomingAppointments() ?? [];
+            $pastAppointments = $this->appointmentModel->getAllPastAppointments() ?? [];
         }
         
-        // Get activity logs for this appointment
-        $logs = $this->activityLogModel->getAppointmentLogs($appointmentId);
-        
-        // Load view
         include VIEW_PATH . '/appointments/history.php';
+    }
+    
+    /**
+     * Check if current user can access an appointment
+     * @param array $appointment The appointment data
+     * @return bool True if user can access, false otherwise
+     */
+    private function canAccessAppointment($appointment) {
+        if (!$appointment) {
+            return false;
+        }
+        
+        $role = $_SESSION['role'] ?? '';
+        $user_id = $_SESSION['user_id'] ?? 0;
+        
+        if ($role === 'admin') {
+            return true;
+        }
+        
+        if ($role === 'provider' && $appointment['provider_id'] == $user_id) {
+            return true;
+        }
+        
+        if ($role === 'patient' && $appointment['patient_id'] == $user_id) {
+            return true;
+        }
+        
+        return false;
     }
     
     /**
