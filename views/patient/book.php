@@ -53,11 +53,11 @@
                 
                 <!-- Provider Selection Dropdown -->
                 <div class="mb-3">
-                    <label for="provider_id" class="form-label">Select Provider:</label>
-                    <select id="provider_id" name="provider_id" class="form-select" required onchange="updateCalendar()">
-                        <option value="">-- Select a Provider --</option>
-                        <?php foreach ($providers as $p) : ?>
-                            <option value="<?= $p['user_id'] ?>" <?= ($selectedProviderId == $p['user_id']) ? 'selected' : '' ?>>
+                    <label for="provider_id" class="form-label">Provider:</label>
+                    <select id="provider_id" name="provider_id" class="form-select" required>
+                        <?php foreach ($providers as $p): ?>
+                            <option value="<?= $p['user_id'] ?>" 
+                                <?= ($p['user_id'] == $_GET['provider_id']) ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($p['first_name'] . ' ' . $p['last_name']) ?> 
                                 <?= !empty($p['specialization']) ? '(' . htmlspecialchars($p['specialization']) . ')' : '' ?>
                             </option>
@@ -75,7 +75,9 @@
                         <select id="service_id" name="service_id" class="form-select" required>
                             <option value="">-- Select a Service --</option>
                             <?php foreach ($services as $service) : ?>
-                                <option value="<?= $service['service_id'] ?>" data-duration="<?= $service['duration'] ?? 30 ?>">
+                                <option value="<?= $service['service_id'] ?>" 
+                                    <?= ($service['service_id'] == $_GET['service_id']) ? 'selected' : '' ?>
+                                    data-duration="<?= $service['duration'] ?? 30 ?>">
                                     <?= htmlspecialchars($service['name']) ?> ($<?= htmlspecialchars($service['price']) ?>)
                                 </option>
                             <?php endforeach; ?>

@@ -421,5 +421,78 @@ class PatientController {
         // Pass all variables to the view
         include VIEW_PATH . '/patient/search.php';
     }
+
+    /**
+     * Step 1: Service Selection
+     * Displays a form for the user to select which service they're looking for
+     */
+    public function selectService() {
+        // Ensure user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            $_SESSION['error'] = "Please log in to book an appointment";
+            redirect('auth/login');
+            return;
+        }
+        
+        // Load Services model if not already loaded
+        if (!isset($this->serviceModel)) {
+            require_once MODEL_PATH . '/Services.php';
+            $this->serviceModel = new Services($this->db);
+        }
+        
+        // Get all available services
+        $services = $this->serviceModel->getAllServices();
+        
+        // Load the service selection view
+        include VIEW_PATH . '/patient/select_service.php';
+    }
+
+    /**
+     * Step 2: Find Providers
+     * Displays providers who offer the selected service
+     */
+    public function findProviders() {
+        // Ensure user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            $_SESSION['error'] = "Please log in to book an appointment";
+            redirect('auth/login');
+            return;
+        }
+        
+        // Get the selected service ID
+        $service_id = $_GET['service_id'] ?? null;
+        
+        if (!$service_id) {
+            $_SESSION['error'] = "Please select a service first";
+            redirect('patient/selectService');
+            return;
+        }
+        
+        // Load models if not already loaded
+        if (!isset($this->serviceModel)) {
+            require_once MODEL_PATH . '/Services.php';
+            $this->serviceModel = new Services($this->db);
+        }
+        
+        if (!isset($this->providerModel)) {
+            require_once MODEL_PATH . '/Provider.php';
+            $this->providerModel = new Provider($this->db);
+        }
+        
+        // Get the service details
+        $service = $this->serviceModel->getById($service_id);
+        
+        if (!$service) {
+            $_SESSION['error'] = "Service not found";
+            redirect('patient/selectService');
+            return;
+        }
+        
+        // Get providers that offer this service
+        $providers = $this->providerModel->getProvidersByService($service_id);
+        
+        // Load the provider selection view
+        include VIEW_PATH . '/patient/select_provider.php';
+    }
 }
 ?>

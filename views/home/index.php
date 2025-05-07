@@ -160,7 +160,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
             
             <?php if ($userRole === 'patient'): ?>
                 <p class="lead mb-4">Ready to schedule your next appointment?</p>
-                <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-light btn-lg px-4 fw-bold">Book Appointment</a>
+                <a href="<?= base_url('index.php/patient/selectService') ?>" class="btn btn-light btn-lg px-4 fw-bold">Book Appointment</a>
             <?php elseif ($userRole === 'provider'): ?>
                 <p class="lead mb-4">Manage your schedule and patient appointments</p>
                 <a href="<?= base_url('index.php/provider/schedule') ?>" class="btn btn-light btn-lg px-4 fw-bold">Manage Schedule</a>
@@ -190,7 +190,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                 <div class="alert alert-info">
                     <p class="mb-0">You have no upcoming appointments scheduled. Would you like to book one?</p>
                 </div>
-                <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-primary">Book Now</a>
+                <a href="<?= base_url('index.php/patient/selectService') ?>" class="btn btn-primary">Book Now</a>
             <?php else: ?>
                 <div class="row">
                     <?php foreach ($upcomingAppointments as $appointment): ?>
@@ -519,35 +519,70 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
             </div>
         </div>
     </section>
-<?php else: ?>
-    <!-- Service Highlights for Patients/Guests -->
-    <section class="py-5">
+<?php elseif ($userRole === 'patient'): ?>
+    <!-- Appointment Booking CTA for Patients -->
+    <section class="py-5 bg-light">
         <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="display-6 fw-bold">Our Services</h2>
-                <p class="lead">Schedule appointments for the healthcare services you need</p>
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h2 class="display-5 fw-bold mb-3">Need to Schedule an Appointment?</h2>
+                    <p class="lead mb-4">Our easy-to-use booking system allows you to find the right specialist for your needs.</p>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        <a href="<?= base_url('index.php/patient/selectService') ?>" class="btn btn-primary btn-lg px-4 me-md-2">
+                            <i class="fas fa-calendar-plus me-2"></i>Book Now
+                        </a>
+                        <a href="<?= base_url('index.php/patient/appointments') ?>" class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="fas fa-history me-2"></i>View My Appointments
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6 mt-5 mt-lg-0">
+                    <img src="<?= base_url('assets/images/appointment-booking.svg') ?>" alt="Appointment Booking" class="img-fluid">
+                </div>
             </div>
-            
-            <div class="row g-4">
-                <?php foreach ($featuredServices as $service): ?>
-                <div class="col-md-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="service-icon">
-                                <i class="fas fa-<?= $service['icon'] ?>"></i>
-                            </div>
-                            <h3 class="h4"><?= htmlspecialchars($service['name']) ?></h3>
-                            <p><?= htmlspecialchars($service['description']) ?></p>
-                            <p><i class="fas fa-clock me-2"></i> <?= $service['duration'] ?> minutes</p>
-                            <?php if ($isLoggedIn): ?>
-                                <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-primary">Book Now</a>
-                            <?php else: ?>
-                                <a href="<?= base_url('index.php/auth') ?>" class="btn btn-primary">Sign In to Book</a>
-                            <?php endif; ?>
+        </div>
+    </section>
+<?php else: ?>
+    <!-- For guests/non-logged in users -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h2 class="display-5 fw-bold mb-3">Looking for Healthcare Services?</h2>
+                    <p class="lead mb-4">Sign up or log in to schedule appointments with our healthcare professionals.</p>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        <a href="<?= base_url('index.php/auth/register') ?>" class="btn btn-primary btn-lg px-4 me-md-2">
+                            <i class="fas fa-user-plus me-2"></i>Sign Up
+                        </a>
+                        <a href="<?= base_url('index.php/auth/login') ?>" class="btn btn-outline-primary btn-lg px-4">
+                            <i class="fas fa-sign-in-alt me-2"></i>Log In
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6 mt-5 mt-lg-0">
+                    <div class="card border-0 shadow">
+                        <div class="card-body p-4">
+                            <h4 class="mb-3">Our Services Include:</h4>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item bg-transparent border-0 ps-0">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Primary Care
+                                </li>
+                                <li class="list-group-item bg-transparent border-0 ps-0">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Specialist Consultations
+                                </li>
+                                <li class="list-group-item bg-transparent border-0 ps-0">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Preventive Care
+                                </li>
+                                <li class="list-group-item bg-transparent border-0 ps-0">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Follow-up Appointments
+                                </li>
+                                <li class="list-group-item bg-transparent border-0 ps-0">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Virtual Consultations
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
-                <?php endforeach; ?>
             </div>
         </div>
     </section>
@@ -708,7 +743,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                     <?php if ($userRole === 'patient'): ?>
                         <h2 class="card-title mb-3">Ready to schedule your next appointment?</h2>
                         <p class="card-text mb-4">Take control of your healthcare journey by scheduling your next appointment.</p>
-                        <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-light btn-lg">Book Now</a>
+                        <a href="<?= base_url('index.php/patient/selectService') ?>" class="btn btn-light btn-lg">Book Now</a>
                     <?php elseif ($userRole === 'provider'): ?>
                         <h2 class="card-title mb-3">Update your availability</h2>
                         <p class="card-text mb-4">Keep your schedule up-to-date to ensure patients can book appointments when you're available.</p>

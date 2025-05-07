@@ -130,9 +130,9 @@
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                 <?php if (!empty($provider['provider_id'])): ?>
-                                                    <a href="<?= base_url('index.php/patient/view_provider/' . htmlspecialchars($provider['provider_id'])) ?>"
+                                                    <a href="<?= base_url('index.php/patient/selectService') ?>"
                                                        class="btn btn-outline-primary"> Profile</a>
-                                                    <a href="<?= base_url('index.php/patient/book?provider_id=' . htmlspecialchars($provider['provider_id'])) ?>"
+                                                    <a href="<?= base_url('index.php/patient/selectService') ?>"
                                                        class="btn btn-primary"> Book</a>
                                                 <?php else: ?>
                                                     <span class="text-muted">Provider details unavailable</span>
@@ -168,7 +168,7 @@
                                                 <h6 class="card-subtitle mb-2 text-muted"><?= htmlspecialchars($provider['specialty']) ?></h6>
                                                 <p class="card-text small"><?= htmlspecialchars($provider['bio'] ?? 'No bio available.') ?></p>
                                                 <a href="<?= base_url('index.php/patient/viewProvider/' . $provider['provider_id']) ?>" class="card-link">View Profile</a>
-                                                <a href="<?= base_url('index.php/patient/book?provider_id=' . $provider['provider_id']) ?>" class="card-link">Book Appointment</a>
+                                                <a href="<?= base_url('index.php/patient/selectService') ?>" class="card-link">Book Appointment</a>
                                             </div>
                                         </div>
                                     </div>

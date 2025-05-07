@@ -1494,5 +1494,41 @@ class Provider {
             return false;
         }
     }
+
+    /**
+     * Get providers who offer a specific service
+     * 
+     * @param int $service_id The ID of the service
+     * @return array Array of providers
+     */
+    public function getProvidersByService($service_id) {
+        try {
+            $query = "
+                SELECT DISTINCT u.user_id, u.first_name, u.last_name, u.email, u.phone,
+                       pp.specialization, pp.bio, pp.accepting_new_patients
+                FROM users u
+                JOIN provider_profiles pp ON u.user_id = pp.provider_id
+                JOIN provider_services ps ON u.user_id = ps.provider_id
+                WHERE ps.service_id = ? AND u.role = 'provider' AND u.status = 'active'
+                AND pp.accepting_new_patients = 1
+                ORDER BY u.last_name, u.first_name
+            ";
+        
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("i", $service_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        
+            $providers = [];
+            while ($row = $result->fetch_assoc()) {
+                $providers[] = $row;
+            }
+        
+            return $providers;
+        } catch (Exception $e) {
+            error_log("Error getting providers by service: " . $e->getMessage());
+            return [];
+        }
+    }
 }
 ?>
