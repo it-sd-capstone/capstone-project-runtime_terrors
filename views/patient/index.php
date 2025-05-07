@@ -86,7 +86,7 @@
             <div class="card">
                 <div class="card-header bg-primary text-white d-flex justify-content-between">
                     <h5>Upcoming Appointments</h5>
-                    <a href="<?= base_url('index.php/patient/history') ?>" class="btn btn-light btn-sm">View All</a>
+                    <a href="<?= base_url('index.php/appointments/') ?>" class="btn btn-light btn-sm">View All</a>
                 </div>
                 <div class="card-body">
                     <?php if (!empty($upcomingAppointments)) : ?>
@@ -124,10 +124,10 @@
                                             <td>
                                                 <?php if ($appointment['status'] !== 'canceled'): ?>
                                                     <div class="btn-group btn-group-sm">
-                                                        <a href="<?= base_url('index.php/patient/reschedule/' . $appointment['appointment_id']) ?>" class="btn btn-warning">
+                                                        <a href="<?= base_url('index.php/appointments/reschedule?id=' . $appointment['appointment_id']) ?>" class="btn btn-warning">
                                                             <i class="fas fa-calendar-alt"></i>
                                                         </a>
-                                                        <a href="<?= base_url('index.php/patient/cancel/' . $appointment['appointment_id']) ?>" class="btn btn-danger">
+                                                        <a href="<?= base_url('index.php/appointments/cancel?id=' . $appointment['appointment_id']) ?>" class="btn btn-danger">
                                                             <i class="fas fa-times"></i>
                                                         </a>
                                                     </div>

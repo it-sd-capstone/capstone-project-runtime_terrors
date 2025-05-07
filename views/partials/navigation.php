@@ -20,7 +20,7 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
             <ul class="navbar-nav me-auto">
                 <?php if (!$is_home_page): ?>
                 <li class="nav-item">
-                    <a class="nav-link" href="<?= base_url('index.php/home') ?>">Home</a>
+                    <!-- <a class="nav-link" href="<?= base_url('index.php/home') ?>">Home</a> -->
                 </li>
                 <?php endif; ?>
                 
@@ -70,9 +70,12 @@ $is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_ur
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <?php if ($userRole === 'patient'): ?>
-                                <li><a class="dropdown-item" href="<?= base_url('index.php/profile') ?>">My Profile</a></li>
+                                <li><a class="dropdown-item" href="<?= base_url('index.php/patient/profile') ?>">My Profile</a></li>
                             <?php endif; ?>
-                            <li><a class="dropdown-item" href="<?= base_url('index.php/home') ?>">Home</a></li>
+                            <?php if ($userRole === 'provider'): ?>
+                                <li><a class="dropdown-item" href="<?= base_url('index.php/provider/profile') ?>">My Profile</a></li>
+                            <?php endif; ?>
+                            <!-- <li><a class="dropdown-item" href="<?= base_url('index.php/home') ?>">Home</a></li> -->
                             <li><a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>">Logout</a></li>
                         </ul>
                     </li>

@@ -1,5 +1,4 @@
 <?php include VIEW_PATH . '/partials/header.php'; ?>
-
 <div class="container mt-4">
     <!-- Page Header -->
     <div class="row mb-4">
@@ -14,7 +13,6 @@
             </div>
         </div>
     </div>
-
     <?php
     // Display flash messages if any
     if (isset($_SESSION['success'])) {
@@ -24,7 +22,6 @@
               </div>';
         unset($_SESSION['success']);
     }
-
     if (isset($_SESSION['error'])) {
         echo '<div class="alert alert-danger alert-dismissible fade show" role="alert">
                 ' . $_SESSION['error'] . '
@@ -32,7 +29,6 @@
               </div>';
         unset($_SESSION['error']);
     }
-
     $action = $_GET['action'] ?? 'view';
     
     switch ($action) {
@@ -44,14 +40,16 @@
                             <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add a New Service</h5>
                         </div>
                         <div class="card-body p-4">
-                            <form method="POST" action="<?= base_url('index.php/provider/processService') ?>" class="needs-validation" novalidate>
+                            <!-- Updated form action to use service controller instead of provider -->
+                            <form method="POST" action="<?= base_url('index.php/service/processService') ?>" class="needs-validation" novalidate>
+                                <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="add">
                                 
                                 <div class="mb-3">
                                     <label for="service_name" class="form-label fw-bold">Service Name:</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fas fa-tag"></i></span>
-                                        <input type="text" id="service_name" name="name" class="form-control" required placeholder="e.g. Regular Checkup">
+                                        <input type="text" id="service_name" name="service_name" class="form-control" required placeholder="e.g. Regular Checkup">
                                     </div>
                                     <div class="invalid-feedback">Please enter a service name.</div>
                                 </div>
@@ -67,7 +65,7 @@
                                         <label for="duration" class="form-label fw-bold">Duration (mins):</label>
                                         <div class="input-group">
                                             <span class="input-group-text"><i class="fas fa-clock"></i></span>
-                                            <input type="number" id="duration" name="duration" class="form-control" required min="5" max="480" placeholder="30">
+                                            <input type="number" id="duration" name="duration" class="form-control" required min="5" max="480" value="30">
                                             <span class="input-group-text">mins</span>
                                         </div>
                                         <div class="invalid-feedback">Please enter a valid duration (5-480 mins).</div>
@@ -77,7 +75,7 @@
                                         <label for="price" class="form-label fw-bold">Cost ($):</label>
                                         <div class="input-group">
                                             <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
-                                            <input type="number" id="price" name="cost" class="form-control" required min="0" step="0.01" placeholder="50.00">
+                                            <input type="number" id="price" name="price" class="form-control" required min="0" step="0.01" value="50.00">
                                         </div>
                                         <div class="invalid-feedback">Please enter a valid cost.</div>
                                     </div>
@@ -106,7 +104,9 @@
                             <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Service</h5>
                         </div>
                         <div class="card-body p-4">
-                            <form method="POST" action="<?= base_url('index.php/provider/processService') ?>" class="needs-validation" novalidate>
+                            <!-- Updated form action to use service controller instead of provider -->
+                            <form method="POST" action="<?= base_url('index.php/service/processService') ?>" class="needs-validation" novalidate>
+                                <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="edit">
                                 <input type="hidden" name="service_id" value="<?= htmlspecialchars($service['provider_service_id'] ?? '') ?>">
                                 
@@ -180,7 +180,8 @@
                                 <p class="mb-0 small"><?= htmlspecialchars($service['description'] ?? '') ?></p>
                             </div>
                             
-                            <form method="POST" action="<?= base_url('index.php/provider/processService') ?>">
+                            <!-- Updated form action to use service controller instead of provider -->
+                            <form method="POST" action="<?= base_url('index.php/service/processService') ?>">
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="service_id" value="<?= htmlspecialchars($service['provider_service_id'] ?? '') ?>">
                                 
@@ -264,5 +265,4 @@
     }
     ?>
 </div>
-
 <?php include VIEW_PATH . '/partials/footer.php'; ?>

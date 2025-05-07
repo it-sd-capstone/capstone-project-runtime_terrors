@@ -174,7 +174,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
             <p class="lead mb-4">Book appointments with your preferred healthcare providers in minutes. No phone calls, no waiting.</p>
             <div class="d-flex flex-wrap justify-content-center gap-2">
                 <a href="<?= base_url('index.php/auth') ?>" class="btn btn-light btn-lg px-4 fw-bold">Sign In to Book</a>
-                <a href="<?= base_url('index.php/auth') ?>" class="btn btn-outline-light btn-lg px-4">Login</a>
+                <!-- <a href="<?= base_url('index.php/auth') ?>" class="btn btn-outline-light btn-lg px-4">Login</a> -->
             </div>
         <?php endif; ?>
     </div>
@@ -215,14 +215,17 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                                     <?= htmlspecialchars($appointment['provider_last_name'] ?? '') ?>
                                 </p>
                                 <div class="mt-2">
-                                    <a href="<?= base_url('index.php/patient/history/' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-primary">Details</a>
-                                    <a href="<?= base_url('index.php/patient/cancel/' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-danger ms-1">Cancel</a>
+                                <a href="<?= base_url('index.php/appointments/history?id=' . $appointment['appointment_id']) ?>" 
+                                class="btn btn-info btn-sm">Details</a>
+                                    <?php if ($appointment['status'] === 'scheduled' && ($appointment['patient_id'] == $_SESSION['user_id'] || $_SESSION['role'] === 'admin')): ?>
+                                        <a href="<?= base_url('index.php/appointments/cancel?id=' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-danger ms-1">Cancel</a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <a href="<?= base_url('index.php/patient/history/') ?>" class="btn btn-primary mt-3">View All Appointments</a>
+                <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-primary mt-3">View All Appointments</a>
             <?php endif; ?>
 
         <?php elseif ($userRole === 'provider'): ?>

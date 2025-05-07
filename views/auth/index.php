@@ -109,7 +109,7 @@ if (!defined('APP_ROOT')) {
                               </button>
                           </span>
                       </div>
-                      <small class="text-muted">For demo purposes, use "demo" or "password" as the password</small>
+                      <small class="text-muted">For demo purposes, use "admin@example.com" and "Admin123@" as the password</small>
 
                     </div>
                     

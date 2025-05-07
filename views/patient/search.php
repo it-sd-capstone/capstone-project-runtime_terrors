@@ -130,7 +130,7 @@
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                 <?php if (!empty($provider['provider_id'])): ?>
-                                                    <a href="<?= base_url('index.php/patient/viewProvider/' . htmlspecialchars($provider['provider_id'])) ?>"
+                                                    <a href="<?= base_url('index.php/patient/view_provider/' . htmlspecialchars($provider['provider_id'])) ?>"
                                                        class="btn btn-outline-primary"> Profile</a>
                                                     <a href="<?= base_url('index.php/patient/book?provider_id=' . htmlspecialchars($provider['provider_id'])) ?>"
                                                        class="btn btn-primary"> Book</a>

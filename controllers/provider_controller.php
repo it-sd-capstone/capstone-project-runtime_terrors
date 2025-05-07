@@ -304,28 +304,51 @@ class ProviderController {
         // Load the view
         include VIEW_PATH . '/provider/schedule.php';
     }
-    public function getAvailableSlots($provider_id, $service_duration) {
-        $available_slots = $this->providerModel->getAvailability($provider_id);
+    public function getAvailableSlots($provider_id = null, $date = null, $service_duration = null) {
+        // Get parameters if not provided directly
+        if ($provider_id === null) {
+            $provider_id = $_GET['provider_id'] ?? null;
+        }
+        if ($date === null) {
+            $date = $_GET['date'] ?? date('Y-m-d'); // Default to today
+        }
+        if ($service_duration === null) {
+            $service_duration = $_GET['duration'] ?? 30; // Default to 30 min
+        }
+        
+        $exclude_appointment_id = $_GET['appointment_id'] ?? null;
+        
+        // Validation
+        if (!$provider_id) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Provider ID is required']);
+            exit;
+        }
         
         // 🔍 Debugging Log
+        error_log("Getting available slots for provider: $provider_id, date: $date, duration: $service_duration");
+        
+        // Call the provider model method with the correct parameters
+        $available_slots = $this->providerModel->getAvailableSlots(
+            $provider_id,
+            $date,
+            $service_duration,
+            $exclude_appointment_id
+        );
+        
         error_log("Raw Availability Data: " . print_r($available_slots, true));
-    
+        
+        // Format slots for the response if needed
         $appointments = [];
-    
+        
+        // Convert the provider model's output format to what the frontend expects
         foreach ($available_slots as $slot) {
-            $start = strtotime($slot['start_time']);
-            $end = strtotime($slot['end_time']);
-    
-            while ($start + ($service_duration * 60) <= $end) {
-                $appointments[] = [
-                    'date' => $slot['availability_date'],
-                    'start_time' => date("H:i", $start),
-                    'end_time' => date("H:i", $start + ($service_duration * 60))
-                ];
-                $start += ($service_duration * 60);
-            }
+            // The model already returns slots in the format:
+            // { id, start, end, title, color }
+            // This is the format needed by FullCalendar
+            $appointments[] = $slot;
         }
-    
+        
         error_log("Processed Appointment Slots: " . print_r($appointments, true));
         
         header('Content-Type: application/json');
@@ -472,7 +495,8 @@ class ProviderController {
         $providerModel = new Provider(get_db()); // Assuming get_db() returns your database connection
         // Use a default service duration or get the minimum service duration
         $service_duration = 30; // Or get from services table
-        $availableSlots = $providerModel->getAvailableSlots($_SESSION['user_id'], $service_duration);
+        $currentDate = date('Y-m-d');
+        $availableSlots = $providerModel->getAvailableSlots($_SESSION['user_id'], $currentDate, $service_duration);
         
         // 2. Convert these slots to calendar events
         foreach ($availableSlots as $slot) {

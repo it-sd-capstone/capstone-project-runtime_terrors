@@ -332,60 +332,121 @@ class Service {
         }
     }
     
-    /**
+   /**
      * Create a new service
-     * 
+     *
      * @param array $serviceData Service data to insert
      * @return int|bool New service ID or false on failure
      */
     public function createService($serviceData) {
         try {
             // Validate required fields
-            if (empty($serviceData['name']) || empty($serviceData['description'])) {
+            if (empty($serviceData['name'])) {
                 error_log("Missing required fields for service creation");
                 return false;
             }
+                
+            // Get provider ID from session
+            $providerId = $_SESSION['user_id'] ?? 0;
             
+            if (empty($providerId)) {
+                error_log("No provider ID found in session");
+                return false;
+            }
+                
             // Set defaults for optional fields
             $duration = $serviceData['duration'] ?? 30;
             $price = $serviceData['price'] ?? 0;
             $isActive = $serviceData['is_active'] ?? 1;
-            
-            $query = "INSERT INTO services (name, description, duration, price, is_active)
-                      VALUES (?, ?, ?, ?, ?)";
-            
+                
             if ($this->db instanceof mysqli) {
-                $stmt = $this->db->prepare($query);
-                $stmt->bind_param("ssidi", 
-                    $serviceData['name'],
-                    $serviceData['description'],
-                    $duration,
-                    $price,
-                    $isActive
-                );
+                // Begin transaction
+                $this->db->begin_transaction();
                 
-                if ($stmt->execute()) {
-                    return $this->db->insert_id;
+                try {
+                    // Insert into services table
+                    $sql = "INSERT INTO services (name, description, price, duration) VALUES (?, ?, ?, ?)";
+                    $stmt = $this->db->prepare($sql);
+                    $stmt->bind_param("ssdi", 
+                        $serviceData['name'], 
+                        $serviceData['description'], 
+                        $price, 
+                        $duration
+                    );
+                    
+                    if (!$stmt->execute()) {
+                        throw new Exception("Error inserting service: " . $stmt->error);
+                    }
+                    
+                    $serviceId = $this->db->insert_id;
+                    
+                    // Associate service with provider
+                    $sql2 = "INSERT INTO provider_services (provider_id, service_id) VALUES (?, ?)";
+                    $stmt2 = $this->db->prepare($sql2);
+                    $stmt2->bind_param("ii", $providerId, $serviceId);
+                    
+                    if (!$stmt2->execute()) {
+                        throw new Exception("Error associating service with provider: " . $stmt2->error);
+                    }
+                    
+                    // Commit transaction
+                    $this->db->commit();
+                    return $serviceId;
+                    
+                } catch (Exception $e) {
+                    // Rollback on error
+                    $this->db->rollback();
+                    error_log("Transaction failed: " . $e->getMessage());
+                    return false;
                 }
-            } elseif ($this->db instanceof PDO) {
-                $stmt = $this->db->prepare($query);
-                $stmt->bindParam(1, $serviceData['name'], PDO::PARAM_STR);
-                $stmt->bindParam(2, $serviceData['description'], PDO::PARAM_STR);
-                $stmt->bindParam(3, $duration, PDO::PARAM_INT);
-                $stmt->bindParam(4, $price, PDO::PARAM_STR);
-                $stmt->bindParam(5, $isActive, PDO::PARAM_INT);
                 
-                if ($stmt->execute()) {
-                    return $this->db->lastInsertId();
+            } elseif ($this->db instanceof PDO) {
+                // Begin transaction
+                $this->db->beginTransaction();
+                
+                try {
+                    // Insert into services table
+                    $sql = "INSERT INTO services (name, description, price, duration) VALUES (:name, :description, :price, :duration)";
+                    $stmt = $this->db->prepare($sql);
+                    $stmt->bindParam(':name', $serviceData['name']);
+                    $stmt->bindParam(':description', $serviceData['description']);
+                    $stmt->bindParam(':price', $price);
+                    $stmt->bindParam(':duration', $duration);
+                    
+                    if (!$stmt->execute()) {
+                        throw new Exception("Error inserting service: " . implode(", ", $stmt->errorInfo()));
+                    }
+                    
+                    $serviceId = $this->db->lastInsertId();
+                    
+                    // Associate service with provider
+                    $sql2 = "INSERT INTO provider_services (provider_id, service_id) VALUES (:provider_id, :service_id)";
+                    $stmt2 = $this->db->prepare($sql2);
+                    $stmt2->bindParam(':provider_id', $providerId);
+                    $stmt2->bindParam(':service_id', $serviceId);
+                    
+                    if (!$stmt2->execute()) {
+                        throw new Exception("Error associating service with provider: " . implode(", ", $stmt2->errorInfo()));
+                    }
+                    
+                    // Commit transaction
+                    $this->db->commit();
+                    return $serviceId;
+                    
+                } catch (Exception $e) {
+                    // Rollback on error
+                    $this->db->rollback();
+                    error_log("Transaction failed: " . $e->getMessage());
+                    return false;
                 }
             }
         } catch (Exception $e) {
-            error_log("Error in createService: " . $e->getMessage());
+            error_log("Exception in createService: " . $e->getMessage());
         }
-        
+            
         return false;
     }
-    
+
     /**
      * Get the total count of services
      * @param bool $activeOnly Whether to count only active services
