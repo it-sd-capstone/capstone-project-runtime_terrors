@@ -59,13 +59,13 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="appointment_date" class="form-label">Select Date:</label>
-                        <input type="date" class="form-control" id="appointment_date" name="appointment_date" required>
+                        <input type="date" class="form-control" id="appointment_date" name="appointment_date" required readonly>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="start_time" class="form-label">Select Time:</label>
-                        <input type="time" class="form-control" id="start_time" name="start_time" required>
+                        <input type="time" class="form-control" id="start_time" name="start_time" required readonly>
                     </div>
-                </div>
+                    </div>
 
                 <div class="mb-3">
                     <label for="type" class="form-label">Appointment Type:</label>
@@ -109,6 +109,8 @@ document.getElementById("bookForm").addEventListener("submit", function(event) {
 function updateCalendar() {
     var calendarEl = document.getElementById('calendar');
     var providerId = document.getElementById('provider_id').value;
+    document.getElementById("appointment_date").value = "";
+    document.getElementById("start_time").value = "";
     
     if (!providerId) {
         calendarEl.innerHTML = '<p class="text-center text-muted">Select a provider to view availability.</p>';
