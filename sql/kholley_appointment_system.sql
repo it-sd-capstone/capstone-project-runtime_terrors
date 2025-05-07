@@ -329,7 +329,6 @@ CREATE TABLE IF NOT EXISTS `provider_availability` (
   `created_at` datetime DEFAULT current_timestamp(),
   `is_recurring` tinyint(1) NOT NULL DEFAULT 0,
   `weekdays` varchar(20) DEFAULT NULL,
-  `max_appointments` INT DEFAULT 0,
   PRIMARY KEY (`availability_id`),
   KEY `provider_id` (`provider_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -492,7 +491,7 @@ INSERT INTO `settings` (`setting_id`, `setting_key`, `setting_value`, `descripti
 
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE IF NOT EXISTS `users` (
-  `user_id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `first_name` varchar(100) NOT NULL,

@@ -32,7 +32,7 @@ class ProviderController {
         // Initialize models
         $this->providerModel = new Provider($this->db);
         $this->appointmentModel = new Appointment($this->db);
-        $this->serviceModel = new Service($this->db);
+        $this->serviceModel = new Services($this->db);
         $this->userModel = new User($this->db); 
         $this->notificationModel = new Notification($this->db); 
     }
@@ -68,6 +68,45 @@ class ProviderController {
         // Load the view
         include VIEW_PATH . '/provider/index.php';
     }
+    
+
+    public function processService() {
+        error_log("processService called with POST: " . print_r($_POST, true));
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $provider_id = $_SESSION['user_id'];
+            $service_id = isset($_POST['service_id']) ? intval($_POST['service_id']) : null;
+            $service_name = htmlspecialchars(trim($_POST['service_name']));
+            $description = htmlspecialchars(trim($_POST['description']));
+            $price = floatval($_POST['price']);
+    
+            // You can add validation here as needed
+    
+            if ($service_id) {
+                // Update existing service
+                $success = $this->providerModel->updateService($service_id, $provider_id, $service_name, $description, $price);
+                $message = $success ? "Service updated successfully" : "Failed to update service";
+            } else {
+                // Add new service
+                $success = $this->providerModel->addService($provider_id, $service_name, $description, $price);
+                $message = $success ? "Service added successfully" : "Failed to add service";
+            }
+    
+            error_log("Service update result: " . var_export($success, true));
+    
+            if ($success) {
+                $_SESSION['success'] = $message;
+            } else {
+                $_SESSION['error'] = $message;
+            }
+            header('Location: ' . base_url('index.php/provider/services'));
+            exit;
+        }
+        // If not POST, redirect to services page
+        header('Location: ' . base_url('index.php/provider/services'));
+        exit;
+    }
+    
+
     public function getProviderSchedules() {
         $provider_id = $_SESSION['user_id'] ?? null;
         if (!$provider_id) {
@@ -403,7 +442,7 @@ class ProviderController {
         $isAdmin = $isAdminManaging;
         include VIEW_PATH . '/provider/services.php';
     }
-
+    
     public function addService() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'];
