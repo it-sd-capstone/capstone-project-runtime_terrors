@@ -84,15 +84,14 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="appointment_date" class="form-label">Select Date:</label>
-                        <input type="date" class="form-control" id="appointment_date" name="appointment_date" min="<?= date('Y-m-d') ?>" required>
-                        <div class="invalid-feedback">Please select a valid appointment date.</div>
+                        <input type="date" class="form-control" id="appointment_date" name="appointment_date" required readonly>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="start_time" class="form-label">Select Time:</label>
-                        <input type="time" class="form-control" id="start_time" name="start_time" required>
-                        <div class="invalid-feedback">Please select a valid time.</div>
+                        <input type="time" class="form-control" id="start_time" name="start_time" required readonly>
                     </div>
-                </div>
+
+                    </div>
 
                 <div class="mb-3">
                     <label for="type" class="form-label">Appointment Type:</label>
@@ -176,6 +175,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function updateCalendar() {
     var calendarEl = document.getElementById('calendar');
     var providerId = document.getElementById('provider_id').value;
+    document.getElementById("appointment_date").value = "";
+    document.getElementById("start_time").value = "";
     
     if (!providerId) {
         calendarEl.innerHTML = '<div class="alert alert-info text-center py-5"><i class="fas fa-info-circle me-2"></i>Select a provider to view availability.</div>';

@@ -1,88 +1,80 @@
 <?php
-require_once MODEL_PATH . '/Services.php';
+require_once MODEL_PATH . '/ProviderServices.php';
+require_once MODEL_PATH . '/Service.php';
 
-class ServiceController {
+class ProviderServicesController {
     protected $db;
+    protected $providerServicesModel;
     protected $serviceModel;
 
     public function __construct() {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
+        if (session_status() === PHP_SESSION_NONE) session_start();
         $this->db = get_db();
+        $this->providerServicesModel = new ProviderServices($this->db);
         $this->serviceModel = new Service($this->db);
     }
 
     /**
-     * Process service actions (add, edit, delete)
+     * List all services offered by the current provider
      */
-    public function processService() {
+    public function services() {
+        $provider_id = $_SESSION['user_id'];
+        $services = $this->providerServicesModel->getServicesByProvider($provider_id);
+
+        // For the add form, get all global services not already linked
+        $all_services = $this->serviceModel->getAllServices();
+        $offered_service_ids = array_column($services, 'service_id');
+        $available_services = array_filter($all_services, function($s) use ($offered_service_ids) {
+            return !in_array($s['service_id'], $offered_service_ids);
+        });
+
+        include VIEW_PATH . '/provider/services.php';
+    }
+
+    /**
+     * Add a service to the provider's offerings
+     */
+    public function addProviderService() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $action = $_POST['action'] ?? '';
+            $provider_id = $_SESSION['user_id'];
+            $service_id = intval($_POST['service_id']);
+            $custom_duration = !empty($_POST['custom_duration']) ? intval($_POST['custom_duration']) : null;
+            $custom_notes = trim($_POST['custom_notes'] ?? '');
 
-            // Validate common input fields
-            // Verify CSRF token
-            if (!verify_csrf_token()) {
-                return;
-            }
-            
-            $name = $_POST['name'] ?? '';
-            $description = $_POST['description'] ?? '';
-            $price = $_POST['price'] ?? 0;
-            $duration = $_POST['duration'] ?? 30;
-            $serviceId = $_POST['service_id'] ?? null;
-
-            $errors = [];
-
-            // Validate fields unless deleting
-            if ($action !== 'delete') {
-                if (empty($name)) $errors[] = "Service name is required";
-                if (empty($description)) $errors[] = "Description is required";
-                if (empty($price) || !is_numeric($price)) $errors[] = "Valid price is required";
-            }
-
-            // Perform action based on request
-            if (empty($errors)) {
-                switch ($action) {
-                    case 'add':
-                        $serviceData = compact('name', 'description', 'price', 'duration');
-                        $result = $this->serviceModel->createService($serviceData);
-                        break;
-
-                    case 'edit':
-                        if (!$serviceId) {
-                            $_SESSION['errors'][] = "Service ID is missing";
-                            break;
-                        }
-                        $serviceData = compact('name', 'description', 'price', 'duration', 'serviceId');
-                        $result = $this->serviceModel->updateService($serviceData);
-                        break;
-
-                    case 'delete':
-                        if (!$serviceId) {
-                            $_SESSION['errors'][] = "Service ID is missing";
-                            break;
-                        }
-                        $result = $this->serviceModel->deleteService($serviceId);
-                        break;
-
-                    default:
-                        $_SESSION['errors'][] = "Invalid service action";
-                        $result = false;
-                }
-
-                if ($result) {
-                    $_SESSION['success'] = ucfirst($action) . " service successful";
-                } else {
-                    $_SESSION['errors'][] = "Error processing service operation";
-                }
-            } else {
-                $_SESSION['errors'] = $errors;
-            }
+            $success = $this->providerServicesModel->addProviderService($provider_id, $service_id, $custom_duration, $custom_notes);
+            $_SESSION[$success ? 'success' : 'error'] = $success ? "Service added to your offerings." : "Failed to add service.";
+            header('Location: ' . base_url('index.php/provider/services'));
+            exit;
         }
+    }
 
-        header('Location: ' . base_url('index.php/provider/services'));
-        exit;
+    /**
+     * Edit a provider's service customization
+     */
+    public function editProviderService() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $provider_service_id = intval($_POST['provider_service_id']);
+            $custom_duration = !empty($_POST['custom_duration']) ? intval($_POST['custom_duration']) : null;
+            $custom_notes = trim($_POST['custom_notes'] ?? '');
+
+            $success = $this->providerServicesModel->editProviderService($provider_service_id, $custom_duration, $custom_notes);
+            $_SESSION[$success ? 'success' : 'error'] = $success ? "Service updated." : "Failed to update service.";
+            header('Location: ' . base_url('index.php/provider/services'));
+            exit;
+        }
+    }
+
+    /**
+     * Remove a service from the provider's offerings
+     */
+    public function deleteProviderService() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $provider_service_id = intval($_POST['provider_service_id']);
+            $success = $this->providerServicesModel->deleteProviderService($provider_service_id);
+            $_SESSION[$success ? 'success' : 'error'] = $success ? "Service removed from your offerings." : "Failed to remove service.";
+            header('Location: ' . base_url('index.php/provider/services'));
+            exit;
+        }
     }
 }
+?>
