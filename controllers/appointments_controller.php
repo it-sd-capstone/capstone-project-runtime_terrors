@@ -16,7 +16,7 @@ class AppointmentsController {
         require_once MODEL_PATH . '/Services.php';
         $this->activityLogModel = new ActivityLog($this->db);
         $this->appointmentModel = new Appointment($this->db);
-        $this->serviceModel = new Service($this->db);
+        $this->serviceModel = new Services($this->db);
         $this->requireLogin();
     }
 

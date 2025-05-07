@@ -69,6 +69,109 @@ class ProviderController {
         include VIEW_PATH . '/provider/index.php';
     }
     
+    /**
+     * Handle editing a provider service (custom duration and notes)
+     */
+    public function editProviderService() {
+        // Check if user is logged in and is a provider
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            $_SESSION['error'] = "Unauthorized access";
+            redirect('auth');
+            return;
+        }
+        
+        // Verify CSRF token if implemented
+        if (function_exists('verify_csrf_token') && !verify_csrf_token()) {
+            $_SESSION['error'] = "Invalid form submission";
+            redirect('provider/services');
+            return;
+        }
+        
+        // Get the provider ID from the session
+        $provider_id = $_SESSION['user_id'];
+        
+        // Check if form was submitted and contains required fields
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['provider_service_id'])) {
+            // Get the provider service ID
+            $provider_service_id = intval($_POST['provider_service_id']);
+            
+            // Get custom duration and notes
+            $custom_duration = isset($_POST['custom_duration']) && !empty($_POST['custom_duration']) 
+                            ? intval($_POST['custom_duration']) 
+                            : null;
+            $custom_notes = isset($_POST['custom_notes']) ? trim($_POST['custom_notes']) : '';
+            
+            // Initialize the provider services model if not already available
+            if (!isset($this->providerServicesModel)) {
+                $this->providerServicesModel = new ProviderServices($this->db);
+            }
+            
+            // Update the provider service
+            $success = $this->providerServicesModel->updateService(
+                $provider_service_id, 
+                $provider_id, 
+                $custom_duration, 
+                $custom_notes
+            );
+            
+            if ($success) {
+                $_SESSION['success'] = "Service updated successfully";
+            } else {
+                $_SESSION['error'] = "Failed to update service";
+            }
+        } else {
+            $_SESSION['error'] = "Invalid request";
+        }
+        
+        // Redirect back to the services page
+        redirect('provider/services');
+    }
+    /**
+     * Handle deleting a provider service (removing a service from provider's offerings)
+     */
+    public function deleteProviderService() {
+        // Check if user is logged in and is a provider
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            $_SESSION['error'] = "Unauthorized access";
+            redirect('auth');
+            return;
+        }
+        
+        // Verify CSRF token if implemented
+        if (function_exists('verify_csrf_token') && !verify_csrf_token()) {
+            $_SESSION['error'] = "Invalid form submission";
+            redirect('provider/services');
+            return;
+        }
+        
+        // Get the provider ID from the session
+        $provider_id = $_SESSION['user_id'];
+        
+        // Check if form was submitted and contains required fields
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['provider_service_id'])) {
+            // Get the provider service ID
+            $provider_service_id = intval($_POST['provider_service_id']);
+            
+            // Initialize the provider services model if not already available
+            if (!isset($this->providerServicesModel)) {
+                $this->providerServicesModel = new ProviderServices($this->db);
+            }
+            
+            // Delete the provider service association
+            $success = $this->providerServicesModel->deleteProviderService($provider_service_id, $provider_id);
+            
+            if ($success) {
+                $_SESSION['success'] = "Service removed from your offerings";
+            } else {
+                $_SESSION['error'] = "Failed to remove service";
+            }
+        } else {
+            $_SESSION['error'] = "Invalid request";
+        }
+        
+        // Redirect back to the services page
+        redirect('provider/services');
+    }
 
     public function processService() {
         error_log("processService called with POST: " . print_r($_POST, true));

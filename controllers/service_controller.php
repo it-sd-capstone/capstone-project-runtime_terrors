@@ -11,7 +11,7 @@ class ProviderServicesController {
         if (session_status() === PHP_SESSION_NONE) session_start();
         $this->db = get_db();
         $this->providerServicesModel = new ProviderServices($this->db);
-        $this->serviceModel = new Service($this->db);
+        $this->serviceModel = new Services($this->db);
     }
 
     /**
@@ -19,15 +19,22 @@ class ProviderServicesController {
      */
     public function services() {
         $provider_id = $_SESSION['user_id'];
+        
+        // Get services offered by this provider
         $services = $this->providerServicesModel->getServicesByProvider($provider_id);
         
-        // For the add form, get all global services not already linked
+        // Get all services for the add form
         $all_services = $this->serviceModel->getAllServices();
+        
+        // Find services not already linked to this provider
         $offered_service_ids = array_column($services, 'service_id');
         $available_services = array_filter($all_services, function($s) use ($offered_service_ids) {
             return !in_array($s['service_id'], $offered_service_ids);
         });
-
+        
+        // Make sure to pass available_services to the view with array keys preserved
+        $available_services = array_values($available_services);
+        
         include VIEW_PATH . '/provider/services.php';
     }
 

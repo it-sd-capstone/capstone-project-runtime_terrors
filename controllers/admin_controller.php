@@ -27,7 +27,7 @@ class AdminController {
         $this->userModel = new User($this->db);
         $this->activityLogModel = new ActivityLog($this->db);
         $this->appointmentModel = new Appointment($this->db);
-        $this->serviceModel = new Service($this->db);
+        $this->serviceModel = new Services($this->db);
         $this->providerModel = new Provider($this->db);
         
         error_log("Using models in AdminController");

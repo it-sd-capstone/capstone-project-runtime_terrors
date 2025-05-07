@@ -176,7 +176,7 @@
                                         <?= htmlspecialchars($service['description']) ?>
                                     </td>
                                     <td class="px-4 py-3">
-                                        <?= htmlspecialchars($service['default_duration']) ?> mins
+                                        <?= htmlspecialchars($service['duration'] ?? '') ?> mins
                                     </td>
                                     <td class="px-4 py-3">
                                         $<?= htmlspecialchars($service['price']) ?>
@@ -192,8 +192,12 @@
                                         <form method="POST" action="<?= base_url('index.php/provider/editProviderService') ?>" class="d-inline-block" style="width: 120px;">
                                             <input type="hidden" name="provider_service_id" value="<?= $service['provider_service_id'] ?>">
                                             <?php if (function_exists('csrf_token_field')) echo csrf_token_field(); ?>
-                                            <input type="number" name="custom_duration" class="form-control form-control-sm mb-1" min="5" max="480" placeholder="Duration" value="<?= htmlspecialchars($service['custom_duration']) ?>">
-                                            <input type="text" name="custom_notes" class="form-control form-control-sm mb-1" placeholder="Notes" value="<?= htmlspecialchars($service['custom_notes']) ?>">
+                                            <input type="number" name="custom_duration" class="form-control form-control-sm mb-1" 
+                                                   min="5" max="480" placeholder="Duration" 
+                                                   value="<?= isset($service['custom_duration']) ? htmlspecialchars($service['custom_duration']) : '' ?>">
+                                            <input type="text" name="custom_notes" class="form-control form-control-sm mb-1" 
+                                                   placeholder="Notes" 
+                                                   value="<?= isset($service['custom_notes']) ? htmlspecialchars($service['custom_notes']) : '' ?>">
                                             <button type="submit" class="btn btn-info btn-sm w-100 mb-1"><i class="fas fa-save"></i> Update</button>
                                         </form>
                                         <!-- Delete Form -->
