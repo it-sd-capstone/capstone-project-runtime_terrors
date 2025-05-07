@@ -333,36 +333,43 @@ class Provider {
         }
     }
 
-    public function getAvailableSlots($provider_id, $service_duration) {
+    public function getAvailableSlots($provider_id, $date, $service_duration, $exclude_appointment_id = null) {
         try {
             $slots = [];
-        
-            // 1. Get one-time availability (your existing code)
+            
+            // Convert the date parameter to the right format
+            $requestedDate = date('Y-m-d', strtotime($date));
+            
+            // 1. Get one-time availability (filtered by the requested date)
             $stmt = $this->db->prepare("
                 SELECT availability_date, start_time, end_time
                 FROM provider_availability
-                WHERE provider_id = ? AND availability_date >= CURDATE()
-                ORDER BY availability_date, start_time
+                WHERE provider_id = ? AND availability_date = ?
+                ORDER BY start_time
             ");
-            $stmt->bind_param("i", $provider_id);
+            $stmt->bind_param("is", $provider_id, $requestedDate);
             $stmt->execute();
             $result = $stmt->get_result();
-        
+            
             while ($row = $result->fetch_assoc()) {
                 $start = strtotime($row['start_time']);
                 $end = strtotime($row['end_time']);
-            
+                
                 while ($start + ($service_duration * 60) <= $end) {
                     $slots[] = [
-                        'date' => $row['availability_date'],
-                        'start_time' => date("H:i", $start),
-                        'end_time' => date("H:i", $start + ($service_duration * 60))
+                        'id' => uniqid('slot_'),  // Generate a unique ID for each slot
+                        'start' => $requestedDate . 'T' . date("H:i:s", $start),
+                        'end' => $requestedDate . 'T' . date("H:i:s", $start + ($service_duration * 60)),
+                        'title' => 'Available',
+                        'color' => '#28a745'
                     ];
-                    $start += ($service_duration * 60); // Move to next available slot
+                    $start += ($service_duration * 60);
                 }
             }
-        
-            // 2. Get recurring availability patterns
+            
+            // 2. Get recurring availability patterns (only for the requested date)
+            $dayOfWeek = date('w', strtotime($requestedDate)); // 0 (Sun) to 6 (Sat)
+            
             $stmt = $this->db->prepare("
                 SELECT weekdays, start_time, end_time
                 FROM provider_recurring_availability
@@ -371,46 +378,60 @@ class Provider {
             $stmt->bind_param("i", $provider_id);
             $stmt->execute();
             $result = $stmt->get_result();
-        
-            // Process recurring patterns for the next 30 days
-            $days_to_look_ahead = 30;
+            
             while ($row = $result->fetch_assoc()) {
                 $weekdays = explode(',', $row['weekdays']);
-            
-                for ($i = 0; $i < $days_to_look_ahead; $i++) {
-                    $date = date('Y-m-d', strtotime("+$i days"));
-                    $dayOfWeek = date('w', strtotime($date)); // 0 (Sun) to 6 (Sat)
                 
-                    // If this date matches a recurring weekday pattern
-                    if (in_array($dayOfWeek, $weekdays)) {
-                        $start = strtotime($row['start_time']);
-                        $end = strtotime($row['end_time']);
+                // Only process if this date matches a recurring weekday pattern
+                if (in_array($dayOfWeek, $weekdays)) {
+                    $start = strtotime($row['start_time']);
+                    $end = strtotime($row['end_time']);
                     
-                        while ($start + ($service_duration * 60) <= $end) {
-                            $slots[] = [
-                                'date' => $date,
-                                'start_time' => date("H:i", $start),
-                                'end_time' => date("H:i", $start + ($service_duration * 60))
-                            ];
-                            $start += ($service_duration * 60);
-                        }
+                    while ($start + ($service_duration * 60) <= $end) {
+                        $slots[] = [
+                            'id' => uniqid('slot_'),
+                            'start' => $requestedDate . 'T' . date("H:i:s", $start),
+                            'end' => $requestedDate . 'T' . date("H:i:s", $start + ($service_duration * 60)),
+                            'title' => 'Available',
+                            'color' => '#28a745'
+                        ];
+                        $start += ($service_duration * 60);
                     }
                 }
             }
-        
-            // Sort slots by date and time
-            usort($slots, function($a, $b) {
-                $dateCompare = strcmp($a['date'], $b['date']);
-                if ($dateCompare !== 0) return $dateCompare;
-                return strcmp($a['start_time'], $b['start_time']);
-            });
-        
+            
+            // 3. Remove slots that conflict with existing appointments
+            // (This part assumes you have a method to get booked appointments)
+            if (!empty($slots)) {
+                $bookedSlots = $this->getBookedAppointments($provider_id, $requestedDate, $exclude_appointment_id);
+                
+                if (!empty($bookedSlots)) {
+                    foreach ($bookedSlots as $booked) {
+                        $bookedStart = strtotime($booked['start_time']);
+                        $bookedEnd = strtotime($booked['end_time']);
+                        
+                        // Remove slots that overlap with booked appointments
+                        $slots = array_filter($slots, function($slot) use ($bookedStart, $bookedEnd) {
+                            $slotStart = strtotime(substr($slot['start'], 11));
+                            $slotEnd = strtotime(substr($slot['end'], 11));
+                            
+                            // No overlap if slot ends before booked starts or starts after booked ends
+                            return ($slotEnd <= $bookedStart || $slotStart >= $bookedEnd);
+                        });
+                    }
+                    
+                    // Re-index array after filtering
+                    $slots = array_values($slots);
+                }
+            }
+            
             return $slots;
         } catch (Exception $e) {
             error_log("Error fetching available appointments: " . $e->getMessage());
             return [];
         }
     }
+    
 
     // Check if provider has a specific service
     public function hasService($provider_id, $service_id) {
@@ -440,7 +461,7 @@ class Provider {
     public function getServices($provider_id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT ps.*, s.name, s.description, s.duration, s.is_active
+                SELECT ps.*, s.name, s.description, s.duration, s.is_active, s.price
                 FROM provider_services ps
                 JOIN services s ON ps.service_id = s.service_id
                 WHERE ps.provider_id = ?

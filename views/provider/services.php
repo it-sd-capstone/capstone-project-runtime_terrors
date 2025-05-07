@@ -1,8 +1,5 @@
-
 <?php include VIEW_PATH . '/partials/header.php'; ?>
-
 <div class="container mt-4">
-
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card shadow-sm bg-light">
@@ -15,7 +12,6 @@
             </div>
         </div>
     </div>
-
     <?php
     if (isset($_SESSION['success'])) {
         echo '<div class="alert alert-success alert-dismissible fade show" role="alert">'
@@ -31,8 +27,73 @@
         </div>';
         unset($_SESSION['error']);
     }
+    
+    $action = $_GET['action'] ?? 'view';
+    
+    if ($action === 'add') {
     ?>
-
+    <div class="row">
+        <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add a New Service</h5>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Updated form action to use service controller instead of provider -->
+                    <form method="POST" action="<?= base_url('index.php/service/processService') ?>" class="needs-validation" novalidate>
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="add">
+                        
+                        <div class="mb-3">
+                            <label for="service_name" class="form-label fw-bold">Service Name:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                <input type="text" id="service_name" name="service_name" class="form-control" required placeholder="e.g. Regular Checkup">
+                            </div>
+                            <div class="invalid-feedback">Please enter a service name.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label fw-bold">Description:</label>
+                            <textarea id="description" name="description" class="form-control" rows="3" placeholder="Describe the service details" required></textarea>
+                            <div class="invalid-feedback">Please provide a description.</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="duration" class="form-label fw-bold">Duration (mins):</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                                    <input type="number" id="duration" name="duration" class="form-control" required min="5" max="480" value="30">
+                                    <span class="input-group-text">mins</span>
+                                </div>
+                                <div class="invalid-feedback">Please enter a valid duration (5-480 mins).</div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="price" class="form-label fw-bold">Cost ($):</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                    <input type="number" id="price" name="price" class="form-control" required min="0" step="0.01" value="50.00">
+                                </div>
+                                <div class="invalid-feedback">Please enter a valid cost.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex mt-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>Add Service
+                            </button>
+                            <a href="<?= base_url('index.php/provider/services') ?>" class="btn btn-secondary ms-2">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php } else { ?>
     <!-- Add Service Form -->
     <div class="row mb-4">
         <div class="col-lg-8 col-md-10 mx-auto">
@@ -68,13 +129,17 @@
                             <button type="submit" class="btn btn-success">
                                 <i class="fas fa-check me-2"></i>Add Service
                             </button>
+                            <a href="<?= base_url('index.php/provider/services') ?>" class="btn btn-primary ms-2">
+                                <i class="fas fa-plus me-2"></i>Create New Service
+                            </a>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-
+    <?php } ?>
+    
     <!-- List of Provider's Services -->
     <div class="card shadow-sm rounded">
         <div class="card-header d-flex justify-content-between align-items-center bg-white py-3 rounded-top">
@@ -149,5 +214,4 @@
         </div>
     </div>
 </div>
-
 <?php include VIEW_PATH . '/partials/footer.php'; ?>

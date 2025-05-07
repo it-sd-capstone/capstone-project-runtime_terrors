@@ -11,6 +11,7 @@ if (!defined('APP_ROOT')) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Appointment System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         body {
             background-color: #f8f9fa;
@@ -23,6 +24,27 @@ if (!defined('APP_ROOT')) {
         .register-card {
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .requirement {
+            margin-top: 5px;
+            font-size: 0.85rem;
+        }
+        .requirement i {
+            margin-right: 5px;
+        }
+        .valid-requirement {
+            color: #198754;
+        }
+        .invalid-requirement {
+            color: #6c757d;
+        }
+        .is-valid {
+            border-color: #198754;
+            padding-right: calc(1.5em + 0.75rem);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
         }
     </style>
 </head>
@@ -61,25 +83,11 @@ if (!defined('APP_ROOT')) {
                     </div>
                 <?php endif; ?>
                 
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Registration Requirements</h5>
-                    </div>
-                    <div class="card-body">
-                        <ul class="mb-0">
-                            <li>All fields marked with * are required</li>
-                            <li>Email address must be valid and not already registered</li>
-                            <li>Password must be at least 8 characters long</li>
-                            <li>Password must contain at least one uppercase letter</li>
-                            <li>Password must contain at least one lowercase letter</li>
-                            <li>Password must contain at least one number</li>
-                            <li>Password must contain at least one special character</li>
-                            <li>You must agree to the Terms of Service</li>
-                        </ul>
-                    </div>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Fields marked with * are required
                 </div>
                 
-                <form action="<?= base_url('index.php/auth/register') ?>" method="post">
+                <form action="<?= base_url('index.php/auth/register') ?>" method="post" id="registerForm">
                     <?= csrf_field() ?>
                     <div class="row mb-3">
                         <div class="col-md-6">
@@ -97,6 +105,11 @@ if (!defined('APP_ROOT')) {
                         <label for="email" class="form-label">Email Address *</label>
                         <input type="email" class="form-control" id="email" name="email" 
                         value="<?= htmlspecialchars($old['email'] ?? '') ?>" required>
+                        <div class="requirement">
+                            <span id="email-requirement" class="invalid-requirement">
+                                <i class="bi bi-circle"></i> Must be a valid email address
+                            </span>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="phone" class="form-label">Phone Number</label>
@@ -108,14 +121,42 @@ if (!defined('APP_ROOT')) {
                     <div class="mb-3">
                         <label for="password" class="form-label">Password *</label>
                         <input type="password" class="form-control" id="password" name="password" required>
-                        <div class="form-text">
-                            Password must be at least 8 characters and include uppercase, lowercase,
-                            number, and special character.
+                        <div class="mt-2">
+                            <div class="requirement">
+                                <span id="length-requirement" class="invalid-requirement">
+                                    <i class="bi bi-circle"></i> At least 8 characters
+                                </span>
+                            </div>
+                            <div class="requirement">
+                                <span id="uppercase-requirement" class="invalid-requirement">
+                                    <i class="bi bi-circle"></i> At least one uppercase letter
+                                </span>
+                            </div>
+                            <div class="requirement">
+                                <span id="lowercase-requirement" class="invalid-requirement">
+                                    <i class="bi bi-circle"></i> At least one lowercase letter
+                                </span>
+                            </div>
+                            <div class="requirement">
+                                <span id="number-requirement" class="invalid-requirement">
+                                    <i class="bi bi-circle"></i> At least one number
+                                </span>
+                            </div>
+                            <div class="requirement">
+                                <span id="special-requirement" class="invalid-requirement">
+                                    <i class="bi bi-circle"></i> At least one special character
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="confirm_password" class="form-label">Confirm Password *</label>
                         <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        <div class="requirement">
+                            <span id="match-requirement" class="invalid-requirement">
+                                <i class="bi bi-circle"></i> Passwords must match
+                            </span>
+                        </div>
                     </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
@@ -174,6 +215,172 @@ if (!defined('APP_ROOT')) {
                 }
             }
         });
+
+        // Password validation
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        const email = document.getElementById('email');
+        
+        // Requirement elements
+        const lengthReq = document.getElementById('length-requirement');
+        const uppercaseReq = document.getElementById('uppercase-requirement');
+        const lowercaseReq = document.getElementById('lowercase-requirement');
+        const numberReq = document.getElementById('number-requirement');
+        const specialReq = document.getElementById('special-requirement');
+        const matchReq = document.getElementById('match-requirement');
+        const emailReq = document.getElementById('email-requirement');
+        
+        // Validation functions
+        function validatePassword() {
+            const value = password.value;
+            
+            // Check length
+            if (value.length >= 8) {
+                lengthReq.classList.remove('invalid-requirement');
+                lengthReq.classList.add('valid-requirement');
+                lengthReq.innerHTML = '<i class="bi bi-check-circle-fill"></i> At least 8 characters';
+            } else {
+                lengthReq.classList.remove('valid-requirement');
+                lengthReq.classList.add('invalid-requirement');
+                lengthReq.innerHTML = '<i class="bi bi-circle"></i> At least 8 characters';
+            }
+            
+            // Check uppercase
+            if (/[A-Z]/.test(value)) {
+                uppercaseReq.classList.remove('invalid-requirement');
+                uppercaseReq.classList.add('valid-requirement');
+                uppercaseReq.innerHTML = '<i class="bi bi-check-circle-fill"></i> At least one uppercase letter';
+            } else {
+                uppercaseReq.classList.remove('valid-requirement');
+                uppercaseReq.classList.add('invalid-requirement');
+                uppercaseReq.innerHTML = '<i class="bi bi-circle"></i> At least one uppercase letter';
+            }
+            
+            // Check lowercase
+            if (/[a-z]/.test(value)) {
+                lowercaseReq.classList.remove('invalid-requirement');
+                lowercaseReq.classList.add('valid-requirement');
+                lowercaseReq.innerHTML = '<i class="bi bi-check-circle-fill"></i> At least one lowercase letter';
+            } else {
+                lowercaseReq.classList.remove('valid-requirement');
+                lowercaseReq.classList.add('invalid-requirement');
+                lowercaseReq.innerHTML = '<i class="bi bi-circle"></i> At least one lowercase letter';
+            }
+            
+            // Check number
+            if (/[0-9]/.test(value)) {
+                numberReq.classList.remove('invalid-requirement');
+                numberReq.classList.add('valid-requirement');
+                numberReq.innerHTML = '<i class="bi bi-check-circle-fill"></i> At least one number';
+            } else {
+                numberReq.classList.remove('valid-requirement');
+                numberReq.classList.add('invalid-requirement');
+                numberReq.innerHTML = '<i class="bi bi-circle"></i> At least one number';
+            }
+            
+            // Check special character
+            if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
+                specialReq.classList.remove('invalid-requirement');
+                specialReq.classList.add('valid-requirement');
+                specialReq.innerHTML = '<i class="bi bi-check-circle-fill"></i> At least one special character';
+            } else {
+                specialReq.classList.remove('valid-requirement');
+                specialReq.classList.add('invalid-requirement');
+                specialReq.innerHTML = '<i class="bi bi-circle"></i> At least one special character';
+            }
+            
+            // Check if all requirements are met
+            if (value.length >= 8 && 
+                /[A-Z]/.test(value) && 
+                /[a-z]/.test(value) && 
+                /[0-9]/.test(value) && 
+                /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
+                password.classList.add('is-valid');
+            } else {
+                password.classList.remove('is-valid');
+            }
+            
+            // Check password match if confirm password has value
+            if (confirmPassword.value) {
+                validatePasswordMatch();
+            }
+        }
+        
+        function validatePasswordMatch() {
+            if (password.value === confirmPassword.value && password.value !== '') {
+                matchReq.classList.remove('invalid-requirement');
+                matchReq.classList.add('valid-requirement');
+                matchReq.innerHTML = '<i class="bi bi-check-circle-fill"></i> Passwords match';
+                confirmPassword.classList.add('is-valid');
+            } else {
+                matchReq.classList.remove('valid-requirement');
+                matchReq.classList.add('invalid-requirement');
+                matchReq.innerHTML = '<i class="bi bi-circle"></i> Passwords must match';
+                confirmPassword.classList.remove('is-valid');
+            }
+        }
+        
+        function validateEmail() {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (emailRegex.test(email.value)) {
+                emailReq.classList.remove('invalid-requirement');
+                emailReq.classList.add('valid-requirement');
+                emailReq.innerHTML = '<i class="bi bi-check-circle-fill"></i> Valid email address';
+                email.classList.add('is-valid');
+            } else {
+                emailReq.classList.remove('valid-requirement');
+                emailReq.classList.add('invalid-requirement');
+                emailReq.innerHTML = '<i class="bi bi-circle"></i> Must be a valid email address';
+                email.classList.remove('is-valid');
+            }
+        }
+        
+        // Add event listeners
+        password.addEventListener('input', validatePassword);
+        confirmPassword.addEventListener('input', validatePasswordMatch);
+        email.addEventListener('input', validateEmail);
+        
+        // Form submission validation
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            // Validate all fields before submitting
+            validatePassword();
+            validatePasswordMatch();
+            validateEmail();
+            
+            // Check if password meets all requirements
+            const passwordValid = password.value.length >= 8 && 
+                                 /[A-Z]/.test(password.value) && 
+                                 /[a-z]/.test(password.value) && 
+                                 /[0-9]/.test(password.value) && 
+                                 /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password.value);
+            
+            // Check if passwords match
+            const passwordsMatch = password.value === confirmPassword.value;
+            
+            // Check if email is valid
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const emailValid = emailRegex.test(email.value);
+            
+            // If any validation fails, prevent form submission
+            if (!passwordValid || !passwordsMatch || !emailValid) {
+                e.preventDefault();
+                
+                // Scroll to the first error
+                if (!emailValid) {
+                    email.focus();
+                } else if (!passwordValid) {
+                    password.focus();
+                } else if (!passwordsMatch) {
+                    confirmPassword.focus();
+                }
+            }
+        });
+        
+        // Initialize validation on page load for any prefilled values
+        if (email.value) validateEmail();
+        if (password.value) validatePassword();
+        if (confirmPassword.value) validatePasswordMatch();
     </script>
 </body>
 </html>
+

@@ -107,6 +107,55 @@ class PatientController {
             exit;
         }
     }
+    /**
+     * Display a provider's profile
+     * 
+     * @param int $id Provider ID
+     * @return void
+     */
+    public function view_provider($id = null) {
+        // Check if ID is provided
+        if (!$id) {
+            $_SESSION['error'] = 'Provider ID is required';
+            header("Location: " . base_url("index.php/patient/search"));
+            exit;
+        }
+        
+        // Load necessary models
+        require_once MODEL_PATH . '/provider.php';
+        require_once MODEL_PATH . '/services.php';
+        
+        // Create model instances
+        $providerModel = new Provider($this->db);
+        $serviceModel = new Service($this->db);
+        
+        // Get provider details
+        $provider = $providerModel->getById($id);
+        
+        if (!$provider) {
+            $_SESSION['error'] = 'Provider not found';
+            header("Location: " . base_url("index.php/patient/search"));
+            exit;
+        }
+        
+        // Get provider services using the Provider class method
+        $services = $providerModel->getServices($id);
+        
+        // Get provider availability
+        $availability = $providerModel->getAvailability($id);
+        
+        // Set up data for the view
+        $data = [
+            'provider' => $provider,
+            'services' => $services,
+            'availability' => $availability,
+            'page_title' => 'Provider Profile'
+        ];
+        
+        include VIEW_PATH . '/patient/view_provider.php';
+    }
+    
+
     public function book() {
         // Check if user is logged in
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'patient') {

@@ -16,11 +16,22 @@ class ApiController {
     public function getAvailableSlots() {
         header("Content-Type: application/json");
         
+        $date = $_GET['date'] ?? null;
         $provider_id = $_GET['provider_id'] ?? null;
-        error_log("===== DEBUG: getAvailableSlots for provider_id: $provider_id =====");
+        $service_id = $_GET['service_id'] ?? null;
+        $appointment_id = $_GET['appointment_id'] ?? null;
+        
+        // Debug output to check what's being received
+        error_log("API getAvailableSlots called with date: $date, provider: $provider_id, service: $service_id");
         
         if (!$provider_id) {
             error_log("No provider_id specified in request");
+            echo json_encode([]);
+            exit;
+        }
+        
+        if (!$date) {
+            error_log("No date specified in request");
             echo json_encode([]);
             exit;
         }
@@ -40,6 +51,18 @@ class ApiController {
         }
         
         error_log("Found provider: " . $provider['first_name'] . " " . $provider['last_name']);
+        
+        // Get service duration if service_id is provided
+        $service_duration = 30; // Default duration in minutes
+        if ($service_id) {
+            require_once MODEL_PATH . '/services.php';
+            $serviceModel = new Service($db);
+            $service = $serviceModel->getServiceById($service_id);
+            if ($service && isset($service['duration'])) {
+                $service_duration = (int)$service['duration'];
+                error_log("Using service duration: $service_duration minutes for service ID: $service_id");
+            }
+        }
         
         // Get provider availability
         $schedules = $this->providerModel->getAvailability($provider_id);
@@ -61,8 +84,8 @@ class ApiController {
             
             error_log("Direct DB query found " . count($direct_slots) . " availability records");
             foreach ($direct_slots as $index => $slot) {
-                error_log("Slot[$index]: ID: " . ($slot['availability_id'] ?? 'missing') . 
-                         ", Date: " . ($slot['availability_date'] ?? 'N/A') . 
+                error_log("Slot[$index]: ID: " . ($slot['availability_id'] ?? 'missing') .
+                         ", Date: " . ($slot['availability_date'] ?? 'N/A') .
                          ", Time: " . ($slot['start_time'] ?? 'missing') . "-" . ($slot['end_time'] ?? 'missing') .
                          ", Recurring: " . ($slot['is_recurring'] ? 'Yes' : 'No'));
             }
@@ -80,8 +103,15 @@ class ApiController {
         $calendarEvents = [];
         $processedCount = 0;
         $skippedCount = 0;
+        $filteredDate = date('Y-m-d', strtotime($date)); // Normalize date format
         
         foreach ($schedules as $index => $schedule) {
+            // Filter by the requested date
+            if (isset($schedule['availability_date']) && $schedule['availability_date'] != $filteredDate) {
+                // Skip slots that don't match our requested date
+                continue;
+            }
+            
             // Validate each required field is present
             $requiredFields = ['availability_date', 'start_time', 'end_time'];
             $missingFields = [];
@@ -101,7 +131,7 @@ class ApiController {
             
             // Check if date and time are valid
             if (!strtotime($schedule['availability_date'] . ' ' . $schedule['start_time'])) {
-                error_log("Schedule[$index] has invalid date/time format: " . 
+                error_log("Schedule[$index] has invalid date/time format: " .
                          $schedule['availability_date'] . ' ' . $schedule['start_time']);
                 $skippedCount++;
                 continue;
@@ -113,14 +143,23 @@ class ApiController {
             $end = strtotime($schedule['availability_date'] . ' ' . $schedule['end_time']);
             
             if (!$start || !$end) {
-                error_log("Failed to convert date/time to timestamp for schedule[$index]: " . 
+                error_log("Failed to convert date/time to timestamp for schedule[$index]: " .
                          $schedule['availability_date'] . ' ' . $schedule['start_time'] . '-' . $schedule['end_time']);
                 $skippedCount++;
                 continue;
             }
             
+            // Skip the appointment we're trying to reschedule
+            $apptToIgnore = $appointment_id ? (int)$appointment_id : null;
+            
             foreach ($appointments as $apptIndex => $appt) {
                 if ($appt['status'] === 'canceled') continue;
+                
+                // Skip the appointment we're trying to reschedule
+                if ($apptToIgnore && isset($appt['appointment_id']) && (int)$appt['appointment_id'] === $apptToIgnore) {
+                    error_log("Ignoring appointment ID $apptToIgnore for rescheduling");
+                    continue;
+                }
                 
                 if (!isset($appt['appointment_date']) || !isset($appt['start_time']) || !isset($appt['end_time'])) {
                     error_log("Appointment[$apptIndex] missing required date/time fields");
@@ -147,11 +186,15 @@ class ApiController {
             
             // Only add available slots (not booked)
             if (!$isBooked) {
+                // Format start and end times to include seconds for proper ISO format
+                $startTime = date('H:i:s', strtotime($schedule['start_time']));
+                $endTime = date('H:i:s', strtotime($schedule['end_time']));
+                
                 $calendarEvents[] = [
                     "id" => $schedule['id'] ?? $schedule['availability_id'] ?? $index,
                     "title" => "Available" . (isset($schedule['recurring_id']) ? " (Recurring)" : ""),
-                    "start" => $schedule['availability_date'] . "T" . $schedule['start_time'],
-                    "end" => $schedule['availability_date'] . "T" . $schedule['end_time'],
+                    "start" => $schedule['availability_date'] . "T" . $startTime,
+                    "end" => $schedule['availability_date'] . "T" . $endTime,
                     "color" => "#28a745", // Success/green for available slots
                     "extendedProps" => [
                         "type" => "availability",
@@ -170,6 +213,7 @@ class ApiController {
         
         echo json_encode($calendarEvents);
     }
+    
     
     public function checkSlotAvailability() {
         header("Content-Type: application/json");

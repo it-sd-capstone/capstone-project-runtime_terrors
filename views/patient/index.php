@@ -84,10 +84,11 @@
 
         <!-- Upcoming Appointments -->
         <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Upcoming Appointments</h5>
-                    <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-light btn-sm">View All</a>
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between">
+                    <h5>Upcoming Appointments</h5>
+                    <a href="<?= base_url('index.php/appointments/') ?>" class="btn btn-light btn-sm">View All</a>
+
                 </div>
                 <div class="card-body">
                     <?php if (!empty($upcomingAppointments)) : ?>
@@ -125,15 +126,13 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <a href="<?= base_url('index.php/appointments/history?id=' . $appointment['appointment_id']) ?>" 
-                                                       class="btn btn-outline-primary">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    <?php if ($appointment['status'] !== 'canceled'): ?>
-                                                        <a href="<?= base_url('index.php/appointments/cancel?id=' . $appointment['appointment_id']) ?>" 
-                                                           class="btn btn-outline-danger" 
-                                                           onclick="return confirm('Are you sure you want to cancel this appointment?')">
+                                                <?php if ($appointment['status'] !== 'canceled'): ?>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <a href="<?= base_url('index.php/appointments/reschedule?id=' . $appointment['appointment_id']) ?>" class="btn btn-warning">
+                                                            <i class="fas fa-calendar-alt"></i>
+                                                        </a>
+                                                        <a href="<?= base_url('index.php/appointments/cancel?id=' . $appointment['appointment_id']) ?>" class="btn btn-danger">
+
                                                             <i class="fas fa-times"></i>
                                                         </a>
                                                     <?php endif; ?>
