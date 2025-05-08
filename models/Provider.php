@@ -279,10 +279,120 @@ class Provider {
             return false;
         }
     }
+    /**
+     * Delete a recurring schedule
+     * 
+     * @param int $schedule_id The ID of the recurring schedule
+     * @param int $provider_id The provider ID for security validation
+     * @return bool Whether the deletion was successful
+     */
+    public function deleteRecurringSchedule($schedule_id, $provider_id) {
+        try {
+            $stmt = $this->db->prepare("
+                DELETE FROM recurring_schedules
+                WHERE schedule_id = ? AND provider_id = ?
+            ");
+            $stmt->bind_param("ii", $schedule_id, $provider_id);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Error deleting recurring schedule: " . $e->getMessage());
+            return false;
+        }
+    }
+    // In the Provider model or a Settings model
+    public function getDefaultSlotDuration() {
+        return 30; // Default 30-minute increments
+    }
+    // Add this to ProviderController
+    public function generateAvailabilityFromSchedule() {
+        $provider_id = $_SESSION['user_id'];
+        $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+        
+        // For each recurring schedule
+        foreach ($recurringSchedules as $schedule) {
+            // Calculate next occurrence of this day
+            $dayOfWeek = $schedule['day_of_week'];
+            $dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][$dayOfWeek];
+            $nextDate = date('Y-m-d', strtotime("next $dayName"));
+            
+            // Generate slots based on slot duration (e.g., 15 minutes)
+            $slotDuration = 15; // minutes
+            $startTime = strtotime($schedule['start_time']);
+            $endTime = strtotime($schedule['end_time']);
+            
+            // Create availability in 15-minute increments
+            for ($time = $startTime; $time < $endTime; $time += ($slotDuration * 60)) {
+                $slotStart = date('H:i:s', $time);
+                $slotEnd = date('H:i:s', $time + ($slotDuration * 60));
+                
+                // Add availability slot
+                $this->providerModel->addAvailability([
+                    'provider_id' => $provider_id,
+                    'availability_date' => $nextDate,
+                    'start_time' => $slotStart,
+                    'end_time' => $slotEnd,
+                    'is_available' => 1
+                ]);
+            }
+        }
+        
+        $_SESSION['success'] = 'Availability slots generated from your schedule';
+        redirect('provider/schedule');
+    }
+    /**
+     * Delete all availability slots within a date range
+     * 
+     * @param int $provider_id The provider ID
+     * @param string $start_date Start date (YYYY-MM-DD)
+     * @param string $end_date End date (YYYY-MM-DD)
+     * @return int|bool Number of deleted slots or false on failure
+     */
+    public function deleteAvailabilityRange($provider_id, $start_date, $end_date) {
+        try {
+            $stmt = $this->db->prepare("
+                DELETE FROM provider_availability 
+                WHERE provider_id = ? 
+                AND availability_date BETWEEN ? AND ?
+            ");
+            
+            $stmt->bind_param("iss", $provider_id, $start_date, $end_date);
+            $stmt->execute();
+            
+            return $stmt->affected_rows;
+        } catch (Exception $e) {
+            error_log("Error deleting availability range: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Clear all availability for a specific day
+     * 
+     * @param int $provider_id The provider ID
+     * @param string $date The date (YYYY-MM-DD)
+     * @return int|bool Number of deleted slots or false on failure
+     */
+    public function clearDayAvailability($provider_id, $date) {
+        try {
+            $stmt = $this->db->prepare("
+                DELETE FROM provider_availability 
+                WHERE provider_id = ? 
+                AND availability_date = ?
+            ");
+            
+            $stmt->bind_param("is", $provider_id, $date);
+            $stmt->execute();
+            
+            return $stmt->affected_rows;
+        } catch (Exception $e) {
+            error_log("Error clearing day availability: " . $e->getMessage());
+            return false;
+        }
+    }
     public function addRecurringSchedule($provider_id, $day_of_week, $start_time, $end_time, $is_active) {
         try {
             $stmt = $this->db->prepare("
-                INSERT INTO provider_recurring_schedules (provider_id, day_of_week, start_time, end_time, is_active) 
+                INSERT INTO recurring_schedules (provider_id, day_of_week, start_time, end_time, is_active) 
                 VALUES (?, ?, ?, ?, ?)
             ");
             $stmt->bind_param("isssi", $provider_id, $day_of_week, $start_time, $end_time, $is_active);
@@ -296,7 +406,7 @@ class Provider {
         try {
             $stmt = $this->db->prepare("
                 SELECT provider_id, day_of_week, start_time, end_time, is_active 
-                FROM provider_recurring_schedules 
+                FROM recurring_schedules 
                 WHERE provider_id = ? AND is_active = 1
             ");
             $stmt->bind_param("i", $provider_id);
@@ -369,26 +479,28 @@ class Provider {
                 }
             }
             
-            // 2. Get recurring availability patterns (only for the requested date)
+          // 2. Get recurring availability patterns (only for the requested date)
             $dayOfWeek = date('w', strtotime($requestedDate)); // 0 (Sun) to 6 (Sat)
-            
+                        
             $stmt = $this->db->prepare("
                 SELECT weekdays, start_time, end_time
-                FROM provider_recurring_availability
+                FROM provider_availability
                 WHERE provider_id = ? AND is_available = 1
             ");
             $stmt->bind_param("i", $provider_id);
             $stmt->execute();
             $result = $stmt->get_result();
-            
+                        
             while ($row = $result->fetch_assoc()) {
-                $weekdays = explode(',', $row['weekdays']);
-                
+                // Fix for null weekdays value - use empty string if null
+                $weekdaysStr = $row['weekdays'] ?? '';
+                $weekdays = !empty($weekdaysStr) ? explode(',', $weekdaysStr) : [];
+                            
                 // Only process if this date matches a recurring weekday pattern
                 if (in_array($dayOfWeek, $weekdays)) {
                     $start = strtotime($row['start_time']);
                     $end = strtotime($row['end_time']);
-                    
+                                
                     while ($start + ($service_duration * 60) <= $end) {
                         $slots[] = [
                             'id' => uniqid('slot_'),
@@ -401,6 +513,7 @@ class Provider {
                     }
                 }
             }
+
             
             // 3. Remove slots that conflict with existing appointments
             // (This part assumes you have a method to get booked appointments)

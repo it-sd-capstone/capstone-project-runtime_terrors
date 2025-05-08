@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 05, 2025 at 02:54 AM
+-- Generation Time: May 08, 2025 at 09:20 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -32,7 +32,7 @@ USE `kholley_appointment_system`;
 
 DROP TABLE IF EXISTS `activity_log`;
 CREATE TABLE IF NOT EXISTS `activity_log` (
-  `log_id` int(11) NOT NULL,
+  `log_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) DEFAULT NULL,
   `description` text NOT NULL,
   `category` varchar(50) DEFAULT 'general',
@@ -43,14 +43,13 @@ CREATE TABLE IF NOT EXISTS `activity_log` (
   `related_type` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`log_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `activity_log`
 --
 
 INSERT INTO `activity_log` (`log_id`, `user_id`, `description`, `category`, `created_at`, `ip_address`, `details`, `related_id`, `related_type`) VALUES
-(0, 1, 'Auth: logout', 'authentication', '2025-05-02 12:49:35', '::1', NULL, NULL, NULL),
 (1, 3, 'Admin logged in', 'general', '2025-04-25 12:38:20', NULL, NULL, NULL, NULL),
 (2, 3, 'Created new provider account: Dr. Jane Smith', 'general', '2025-04-25 11:08:20', NULL, NULL, NULL, NULL),
 (3, 3, 'Updated system settings: appointment reminder time changed to 24 hours', 'general', '2025-04-25 09:08:20', NULL, NULL, NULL, NULL),
@@ -62,6 +61,7 @@ INSERT INTO `activity_log` (`log_id`, `user_id`, `description`, `category`, `cre
 (9, 2, 'Auth: logout', 'authentication', '2025-04-26 13:58:41', '::1', NULL, NULL, NULL),
 (10, 3, 'Auth: logout', 'authentication', '2025-04-26 14:00:11', '::1', NULL, NULL, NULL),
 (11, 2, 'Auth: logout', 'authentication', '2025-04-26 14:18:36', '::1', NULL, NULL, NULL),
+(12, 1, 'Auth: logout', 'authentication', '2025-05-02 12:49:35', '::1', NULL, NULL, NULL),
 (19, 1, 'Auth: logout', 'authentication', '2025-04-26 17:27:49', '::1', NULL, NULL, NULL),
 (20, 1, 'Auth: logout', 'authentication', '2025-04-27 12:56:19', '::1', NULL, NULL, NULL),
 (21, 3, 'Auth: logout', 'authentication', '2025-04-27 13:07:44', '::1', NULL, NULL, NULL),
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   KEY `patient_id` (`patient_id`),
   KEY `provider_id` (`provider_id`),
   KEY `service_id` (`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointments`
@@ -124,7 +124,9 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `serv
 (19, 1, 2, 1, '2025-05-07', '10:04:00', '10:34:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-04 18:23:50', '2025-05-04 17:47:24', '2025-05-04 18:23:50'),
 (20, 1, 2, 1, '2025-05-05', '09:00:00', '09:30:00', 'canceled', 'in_person', 'note', 'No reason provided', 0, NULL, '2025-05-04 19:06:42', '2025-05-04 18:26:30', '2025-05-04 19:06:42'),
 (21, 1, 2, 1, '2025-05-06', '14:00:00', '14:30:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-04 19:06:45', '2025-05-04 18:54:57', '2025-05-04 19:06:45'),
-(22, 1, 2, 1, '2025-05-07', '10:04:00', '10:34:00', 'scheduled', '', '', '', 0, NULL, NULL, '2025-05-04 19:35:26', '2025-05-04 19:35:26');
+(22, 1, 2, 1, '2025-05-07', '10:04:00', '10:34:00', 'canceled', '', 'notes', 'No reason provided', 0, NULL, '2025-05-07 13:14:38', '2025-05-04 19:35:26', '2025-05-07 13:14:38'),
+(23, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-07 12:37:10', '2025-05-07 12:34:16', '2025-05-07 12:37:10'),
+(24, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-07 13:59:58', '2025-05-07 13:15:04', '2025-05-07 13:59:58');
 
 -- --------------------------------------------------------
 
@@ -134,7 +136,7 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `serv
 
 DROP TABLE IF EXISTS `appointment_history`;
 CREATE TABLE IF NOT EXISTS `appointment_history` (
-  `history_id` int(11) NOT NULL,
+  `history_id` int(11) NOT NULL AUTO_INCREMENT,
   `appointment_id` int(11) NOT NULL,
   `action` enum('created','updated','canceled','rescheduled','completed','no_show') NOT NULL,
   `changed_fields` text DEFAULT NULL,
@@ -145,7 +147,7 @@ CREATE TABLE IF NOT EXISTS `appointment_history` (
   PRIMARY KEY (`history_id`),
   KEY `appointment_id` (`appointment_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointment_history`
@@ -162,7 +164,7 @@ INSERT INTO `appointment_history` (`history_id`, `appointment_id`, `action`, `ch
 
 DROP TABLE IF EXISTS `appointment_ratings`;
 CREATE TABLE IF NOT EXISTS `appointment_ratings` (
-  `rating_id` int(11) NOT NULL,
+  `rating_id` int(11) NOT NULL AUTO_INCREMENT,
   `appointment_id` int(11) NOT NULL,
   `patient_id` int(11) NOT NULL,
   `provider_id` int(11) NOT NULL,
@@ -173,7 +175,7 @@ CREATE TABLE IF NOT EXISTS `appointment_ratings` (
   KEY `appointment_id` (`appointment_id`),
   KEY `patient_id` (`patient_id`),
   KEY `provider_id` (`provider_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointment_ratings`
@@ -203,7 +205,7 @@ INSERT INTO `appointment_ratings` (`rating_id`, `appointment_id`, `patient_id`, 
 
 DROP TABLE IF EXISTS `auth_sessions`;
 CREATE TABLE IF NOT EXISTS `auth_sessions` (
-  `session_id` int(11) NOT NULL,
+  `session_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `token` varchar(255) NOT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
@@ -223,7 +225,7 @@ CREATE TABLE IF NOT EXISTS `auth_sessions` (
 
 DROP TABLE IF EXISTS `notifications`;
 CREATE TABLE IF NOT EXISTS `notifications` (
-  `notification_id` int(11) NOT NULL,
+  `notification_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `appointment_id` int(11) DEFAULT NULL,
   `subject` varchar(255) NOT NULL,
@@ -240,7 +242,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   UNIQUE KEY `unique_system_notification` (`subject`(100),`message`(100),`is_system`,`audience`),
   KEY `user_id` (`user_id`),
   KEY `appointment_id` (`appointment_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `notifications`
@@ -266,7 +268,7 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `su
 
 DROP TABLE IF EXISTS `notification_preferences`;
 CREATE TABLE IF NOT EXISTS `notification_preferences` (
-  `preference_id` int(11) NOT NULL,
+  `preference_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `email_notifications` tinyint(1) NOT NULL DEFAULT 1,
   `sms_notifications` tinyint(1) NOT NULL DEFAULT 0,
@@ -287,7 +289,7 @@ CREATE TABLE IF NOT EXISTS `notification_preferences` (
 
 DROP TABLE IF EXISTS `patient_profiles`;
 CREATE TABLE IF NOT EXISTS `patient_profiles` (
-  `patient_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `date_of_birth` date DEFAULT NULL,
@@ -301,7 +303,7 @@ CREATE TABLE IF NOT EXISTS `patient_profiles` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`patient_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `patient_profiles`
@@ -310,7 +312,10 @@ CREATE TABLE IF NOT EXISTS `patient_profiles` (
 INSERT INTO `patient_profiles` (`patient_id`, `user_id`, `phone`, `date_of_birth`, `address`, `emergency_contact`, `emergency_contact_phone`, `medical_conditions`, `medical_history`, `insurance_info`, `created_at`, `updated_at`) VALUES
 (1, 1, '2120001234', '1997-10-31', '123 Main Street', 'example', '1112223333', 'Na', NULL, '{\"provider\":\"Example\",\"policy_number\":\"8778599455d\"}', '2025-04-23 00:49:59', '2025-04-26 22:46:30'),
 (17, 17, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-04 18:48:54', '2025-05-04 18:48:54'),
-(18, 18, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-04 18:54:30', '2025-05-04 18:54:30');
+(18, 18, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-04 18:54:30', '2025-05-04 18:54:30'),
+(19, 19, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-07 16:31:56', '2025-05-07 16:31:56'),
+(20, 20, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-07 16:33:37', '2025-05-07 16:33:37'),
+(21, 21, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-07 17:26:07', '2025-05-07 17:26:07');
 
 -- --------------------------------------------------------
 
@@ -320,28 +325,68 @@ INSERT INTO `patient_profiles` (`patient_id`, `user_id`, `phone`, `date_of_birth
 
 DROP TABLE IF EXISTS `provider_availability`;
 CREATE TABLE IF NOT EXISTS `provider_availability` (
-  `availability_id` int(11) NOT NULL,
+  `availability_id` int(11) NOT NULL AUTO_INCREMENT,
   `provider_id` int(11) NOT NULL,
-  `availability_date` date DEFAULT NULL,
+  `availability_date` date NOT NULL,
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
   `is_available` tinyint(1) DEFAULT 1,
-  `created_at` datetime DEFAULT current_timestamp(),
-  `is_recurring` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `is_recurring` tinyint(1) DEFAULT 0,
   `weekdays` varchar(20) DEFAULT NULL,
-  PRIMARY KEY (`availability_id`),
-  KEY `provider_id` (`provider_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `max_appointments` int(11) DEFAULT 1,
+  PRIMARY KEY (`availability_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=243 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `provider_availability`
 --
 
-INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availability_date`, `start_time`, `end_time`, `is_available`, `created_at`, `is_recurring`, `weekdays`) VALUES
-(1, 2, '2025-05-05', '09:00:00', '12:00:00', 1, '2025-04-17 08:59:28', 1, '1,2,3,4,5'),
-(2, 2, '2025-05-06', '14:00:00', '17:00:00', 1, '2025-04-17 08:59:28', 1, '1,2,3,4,5'),
-(4, 2, '2025-05-07', '10:04:00', '22:04:00', 1, '2025-04-17 10:05:05', 1, '1,2,3,4,5'),
-(5, 2, '2025-05-08', '10:11:00', '22:11:00', 1, '2025-04-17 10:11:09', 1, '1,2,3,4,5');
+INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availability_date`, `start_time`, `end_time`, `is_available`, `created_at`, `is_recurring`, `weekdays`, `max_appointments`) VALUES
+(1, 2, '2025-05-05', '10:00:00', '17:59:00', 1, '2025-05-05 03:05:32', 0, NULL, 0),
+(2, 2, '2025-05-05', '09:00:00', '12:00:00', 1, '2025-04-17 13:59:28', 1, '1,2,3,4,5', 0),
+(3, 2, '2025-05-06', '14:00:00', '17:00:00', 1, '2025-04-17 13:59:28', 1, '1,2,3,4,5', 0),
+(4, 2, '2025-05-07', '10:04:00', '22:04:00', 1, '2025-04-17 15:05:05', 1, '1,2,3,4,5', 0),
+(163, 2, '2025-05-12', '05:00:00', '05:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(164, 2, '2025-05-12', '05:30:00', '06:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(165, 2, '2025-05-12', '06:00:00', '06:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(166, 2, '2025-05-12', '06:30:00', '07:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(167, 2, '2025-05-12', '07:00:00', '07:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(168, 2, '2025-05-12', '07:30:00', '08:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(169, 2, '2025-05-12', '08:00:00', '08:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(170, 2, '2025-05-12', '08:30:00', '09:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(171, 2, '2025-05-12', '09:00:00', '09:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(172, 2, '2025-05-12', '09:30:00', '10:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(173, 2, '2025-05-12', '10:00:00', '10:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(174, 2, '2025-05-12', '10:30:00', '11:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(175, 2, '2025-05-12', '11:00:00', '11:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(176, 2, '2025-05-12', '11:30:00', '12:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(177, 2, '2025-05-12', '12:00:00', '12:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(178, 2, '2025-05-12', '12:30:00', '13:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(179, 2, '2025-05-12', '13:00:00', '13:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(180, 2, '2025-05-12', '13:30:00', '14:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(181, 2, '2025-05-12', '14:00:00', '14:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(182, 2, '2025-05-12', '14:30:00', '15:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(183, 2, '2025-05-12', '15:00:00', '15:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(184, 2, '2025-05-12', '15:30:00', '16:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(207, 2, '2025-05-08', '08:00:00', '08:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(208, 2, '2025-05-08', '08:30:00', '09:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(209, 2, '2025-05-08', '09:00:00', '09:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(210, 2, '2025-05-08', '09:30:00', '10:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(211, 2, '2025-05-08', '10:00:00', '10:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(212, 2, '2025-05-08', '10:30:00', '11:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(213, 2, '2025-05-08', '11:00:00', '11:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(214, 2, '2025-05-08', '11:30:00', '12:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(215, 2, '2025-05-08', '12:00:00', '12:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(216, 2, '2025-05-08', '12:30:00', '13:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(217, 2, '2025-05-08', '13:00:00', '13:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(218, 2, '2025-05-08', '13:30:00', '14:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(219, 2, '2025-05-08', '14:00:00', '14:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(220, 2, '2025-05-08', '14:30:00', '15:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(221, 2, '2025-05-08', '15:00:00', '15:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(222, 2, '2025-05-08', '15:30:00', '16:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(223, 2, '2025-05-08', '16:00:00', '16:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
+(224, 2, '2025-05-08', '16:30:00', '17:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -351,7 +396,7 @@ INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availabi
 
 DROP TABLE IF EXISTS `provider_profiles`;
 CREATE TABLE IF NOT EXISTS `provider_profiles` (
-  `profile_id` int(11) NOT NULL,
+  `profile_id` int(11) NOT NULL AUTO_INCREMENT,
   `provider_id` int(11) NOT NULL,
   `specialization` varchar(100) DEFAULT NULL,
   `title` varchar(50) DEFAULT NULL,
@@ -363,7 +408,7 @@ CREATE TABLE IF NOT EXISTS `provider_profiles` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`profile_id`),
   KEY `provider_id` (`provider_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `provider_profiles`
@@ -371,7 +416,7 @@ CREATE TABLE IF NOT EXISTS `provider_profiles` (
 
 INSERT INTO `provider_profiles` (`profile_id`, `provider_id`, `specialization`, `title`, `bio`, `accepting_new_patients`, `max_patients_per_day`, `profile_image`, `created_at`, `updated_at`) VALUES
 (1, 16, 'Practisioner', 'MD', 'Hello', 1, 20, NULL, '2025-04-23 01:16:51', '2025-04-23 01:16:51'),
-(2, 2, 'General Medicine', 'MD', 'Experienced general practitioner', 1, 20, NULL, '2025-05-04 20:15:52', '2025-05-04 20:15:52');
+(2, 2, 'General Medicine', NULL, 'Experienced general practitioner', 0, 0, NULL, '2025-05-04 20:15:52', '2025-05-05 02:41:47');
 
 -- --------------------------------------------------------
 
@@ -381,7 +426,7 @@ INSERT INTO `provider_profiles` (`profile_id`, `provider_id`, `specialization`, 
 
 DROP TABLE IF EXISTS `provider_services`;
 CREATE TABLE IF NOT EXISTS `provider_services` (
-  `provider_service_id` int(11) NOT NULL,
+  `provider_service_id` int(11) NOT NULL AUTO_INCREMENT,
   `provider_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL,
   `custom_duration` int(11) DEFAULT NULL COMMENT 'Override default duration if needed',
@@ -390,15 +435,16 @@ CREATE TABLE IF NOT EXISTS `provider_services` (
   PRIMARY KEY (`provider_service_id`),
   KEY `provider_id` (`provider_id`),
   KEY `service_id` (`service_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `provider_services`
 --
 
 INSERT INTO `provider_services` (`provider_service_id`, `provider_id`, `service_id`, `custom_duration`, `custom_notes`, `created_at`) VALUES
-(1, 2, 1, NULL, NULL, '2025-04-17 08:59:28'),
-(2, 2, 2, NULL, NULL, '2025-04-17 08:59:28');
+(1, 2, 9, NULL, NULL, '2025-05-07 15:50:21'),
+(2, 2, 1, NULL, NULL, '2025-04-17 08:59:28'),
+(3, 2, 2, NULL, NULL, '2025-04-17 08:59:28');
 
 -- --------------------------------------------------------
 
@@ -408,7 +454,7 @@ INSERT INTO `provider_services` (`provider_service_id`, `provider_id`, `service_
 
 DROP TABLE IF EXISTS `recurring_schedules`;
 CREATE TABLE IF NOT EXISTS `recurring_schedules` (
-  `schedule_id` int(11) NOT NULL,
+  `schedule_id` int(11) NOT NULL AUTO_INCREMENT,
   `provider_id` int(11) NOT NULL,
   `day_of_week` int(11) NOT NULL COMMENT '0=Sunday, 1=Monday, etc.',
   `start_time` time NOT NULL,
@@ -420,16 +466,15 @@ CREATE TABLE IF NOT EXISTS `recurring_schedules` (
   `updated_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`schedule_id`),
   KEY `provider_id` (`provider_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `recurring_schedules`
 --
 
 INSERT INTO `recurring_schedules` (`schedule_id`, `provider_id`, `day_of_week`, `start_time`, `end_time`, `is_active`, `effective_from`, `effective_until`, `created_at`, `updated_at`) VALUES
-(1, 2, 1, '14:00:00', '22:00:00', 1, '2025-04-01', NULL, '2025-04-17 08:59:28', '2025-04-17 08:59:28'),
-(2, 2, 3, '09:00:00', '17:00:00', 1, '2025-04-01', NULL, '2025-04-17 08:59:28', '2025-04-17 08:59:28'),
-(3, 2, 5, '09:00:00', '12:00:00', 1, '2025-04-01', NULL, '2025-04-17 08:59:28', '2025-04-17 08:59:28');
+(1, 2, 1, '05:00:00', '16:00:00', 1, NULL, NULL, '2025-05-08 10:27:46', '2025-05-08 10:27:46'),
+(2, 2, 4, '08:00:00', '17:00:00', 1, NULL, NULL, '2025-05-08 12:19:02', '2025-05-08 12:19:02');
 
 -- --------------------------------------------------------
 
@@ -439,7 +484,7 @@ INSERT INTO `recurring_schedules` (`schedule_id`, `provider_id`, `day_of_week`, 
 
 DROP TABLE IF EXISTS `services`;
 CREATE TABLE IF NOT EXISTS `services` (
-  `service_id` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
   `duration` int(11) DEFAULT 30,
@@ -447,15 +492,18 @@ CREATE TABLE IF NOT EXISTS `services` (
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`service_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `services`
 --
 
 INSERT INTO `services` (`service_id`, `name`, `description`, `duration`, `price`, `is_active`, `created_at`) VALUES
-(1, 'Regular Checkup', 'Standard medical examination', 30, 75.00, 1, '2025-04-22 23:34:16'),
-(2, 'Consultation', 'Medical consultation with specialist', 45, 125.00, 1, '2025-04-22 23:34:16');
+(1, 'test', 'test', 30, 50.00, 1, '2025-05-07 19:37:48'),
+(2, 'Regular Checkup', 'Standard medical examination', 30, 75.00, 1, '2025-04-22 23:34:16'),
+(3, 'Consultation', 'Medical consultation with specialist', 45, 125.00, 1, '2025-04-22 23:34:16'),
+(7, 'TESTT', 'TESTT', 30, 50.00, 1, '2025-05-07 20:24:26'),
+(9, 'testtest', 'testtest', 30, 50.00, 1, '2025-05-07 20:50:21');
 
 -- --------------------------------------------------------
 
@@ -465,13 +513,13 @@ INSERT INTO `services` (`service_id`, `name`, `description`, `duration`, `price`
 
 DROP TABLE IF EXISTS `settings`;
 CREATE TABLE IF NOT EXISTS `settings` (
-  `setting_id` int(11) NOT NULL,
+  `setting_id` int(11) NOT NULL AUTO_INCREMENT,
   `setting_key` varchar(100) NOT NULL,
   `setting_value` text DEFAULT NULL,
   `description` text DEFAULT NULL,
   `updated_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`setting_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `settings`
@@ -491,7 +539,7 @@ INSERT INTO `settings` (`setting_id`, `setting_key`, `setting_value`, `descripti
 
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE IF NOT EXISTS `users` (
-  `user_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `first_name` varchar(100) NOT NULL,
@@ -509,7 +557,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `token_expires` datetime DEFAULT NULL,
   `password_change_required` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
@@ -517,12 +565,11 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 INSERT INTO `users` (`user_id`, `email`, `password_hash`, `first_name`, `last_name`, `phone`, `role`, `is_active`, `is_verified`, `email_verified_at`, `created_at`, `last_login`, `verification_token`, `reset_token`, `reset_token_expires`, `token_expires`, `password_change_required`) VALUES
 (1, 'patient@example.com', '$2y$10$example_hash', 'John', 'Doe', '2120001234', 'patient', 1, 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
-(2, 'provider@example.com', '$2y$10$example_hash', 'Dr. Smith', 'MD', NULL, 'provider', 1, 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
-(3, 'admin@example.com', '$2y$10$q/l96RJfI9YX3D1jtI/ZBue7hSr.F6/zVjzrOI1loV9lNj3W.hMY.', 'Admin', 'User', NULL, 'admin', 1, 1, NULL, '2025-04-17 08:59:28', '2025-05-02 12:52:04', NULL, NULL, NULL, NULL, 0),
+(2, 'provider@example.com', '$2y$10$example_hash', 'Dr. Smith', 'MD', '7152125151', 'provider', 1, 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
+(3, 'admin@example.com', '$2y$10$mn369d8QchCNaqnZ9DA15OJejiRrlHCzw33TIkq01qepowE42AWkS', 'Admin', 'User', NULL, 'admin', 1, 1, NULL, '2025-04-17 08:59:28', '2025-05-02 12:52:04', NULL, NULL, NULL, NULL, 0),
 (10, 'Kholley@student.cvtc.edu', '$2y$10$xiDwOmotNFAOn.5R0XJ1huUpLb681/phtw/TCkT9wlddp9s1DiRnG', 'Kaleb', 'Holley', '7156191363', 'patient', 1, 1, '2025-04-22 09:54:17', '2025-04-22 09:54:02', '2025-04-22 09:54:47', NULL, 'd9472a925ebd1c3138bb4731edcaf0a207e72c66c1bd00be9783e31f632bb69e', '2025-04-22 15:55:40', '2025-04-23 14:54:02', 0),
 (16, 'john@doe.com', '$2y$10$nxPUCopIWXPZw442f6B4UOJv.H/6wty9qrJmSqXzYPCmo6i6Zn8sW', 'john', 'doe', '1234567897', 'provider', 1, 1, NULL, '2025-04-22 20:16:51', '2025-04-22 20:25:22', NULL, NULL, NULL, NULL, 0),
-(17, 'trash@gmail.com', '$argon2id$v=19$m=65536,t=4,p=3$cmJXQ2pBVjlVbzR5eVgxSQ$IsmEEXxajVGZfigueXnsUqfYDdPRIjHXCGf1AEk81G8', 'Kaleb', 'Holley', '(715) 619-1363', 'patient', 1, 1, '2025-05-04 13:49:29', '2025-05-04 13:48:54', NULL, NULL, NULL, NULL, NULL, 0),
-(18, 'kalebholley43@gmail.com', '$2y$10$JYJGb6bvRyph/Ciqn9pA9eu6Jl7e3PAtPKTU64dhhUbGRVXnpf4O.', 'Kaleb', 'Holley', '(715) 619-1363', 'patient', 1, 1, '2025-05-04 13:54:45', '2025-05-04 13:54:30', '2025-05-04 13:54:58', NULL, NULL, NULL, NULL, 0);
+(17, 'trash@gmail.com', '$argon2id$v=19$m=65536,t=4,p=3$cmJXQ2pBVjlVbzR5eVgxSQ$IsmEEXxajVGZfigueXnsUqfYDdPRIjHXCGf1AEk81G8', 'Kaleb', 'Holley', '(715) 619-1363', 'patient', 1, 1, '2025-05-04 13:49:29', '2025-05-04 13:48:54', NULL, NULL, NULL, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -550,7 +597,7 @@ CREATE TABLE IF NOT EXISTS `user_tokens` (
 
 DROP TABLE IF EXISTS `waitlist`;
 CREATE TABLE IF NOT EXISTS `waitlist` (
-  `waitlist_id` int(11) NOT NULL,
+  `waitlist_id` int(11) NOT NULL AUTO_INCREMENT,
   `patient_id` int(11) NOT NULL,
   `provider_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL,
@@ -571,18 +618,12 @@ CREATE TABLE IF NOT EXISTS `waitlist` (
 --
 
 --
--- Constraints for table `activity_log`
---
-ALTER TABLE `activity_log`
-  ADD CONSTRAINT `activity_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
-
---
 -- Constraints for table `appointments`
 --
 ALTER TABLE `appointments`
   ADD CONSTRAINT `appointments_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `users` (`user_id`),
   ADD CONSTRAINT `appointments_ibfk_2` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`),
-  ADD CONSTRAINT `appointments_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`);
+  ADD CONSTRAINT `appointments_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services_old` (`service_id`);
 
 --
 -- Constraints for table `appointment_history`
@@ -625,12 +666,6 @@ ALTER TABLE `patient_profiles`
   ADD CONSTRAINT `patient_profiles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
 
 --
--- Constraints for table `provider_availability`
---
-ALTER TABLE `provider_availability`
-  ADD CONSTRAINT `provider_availability_ibfk_1` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`);
-
---
 -- Constraints for table `provider_profiles`
 --
 ALTER TABLE `provider_profiles`
@@ -650,22 +685,6 @@ ALTER TABLE `recurring_schedules`
   ADD CONSTRAINT `recurring_schedules_ibfk_1` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`);
 
 --
--- unavailability for providers
---
-CREATE TABLE IF NOT EXISTS `provider_unavailability` (
-  `unavailability_id` INT(11) NOT NULL AUTO_INCREMENT,
-  `provider_id` INT(11) NOT NULL,
-  `unavailable_date` DATE DEFAULT NULL,
-  `start_time` TIME NOT NULL,
-  `end_time` TIME NOT NULL,
-  `reason` VARCHAR(255) DEFAULT NULL,
-  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP(),
-  PRIMARY KEY (`unavailability_id`),
-  KEY `provider_id` (`provider_id`),
-  CONSTRAINT `provider_unavailability_ibfk_1` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
 -- Constraints for table `user_tokens`
 --
 ALTER TABLE `user_tokens`
@@ -677,7 +696,7 @@ ALTER TABLE `user_tokens`
 ALTER TABLE `waitlist`
   ADD CONSTRAINT `waitlist_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `users` (`user_id`),
   ADD CONSTRAINT `waitlist_ibfk_2` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`),
-  ADD CONSTRAINT `waitlist_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`);
+  ADD CONSTRAINT `waitlist_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services_old` (`service_id`);
 SET FOREIGN_KEY_CHECKS=1;
 COMMIT;
 
