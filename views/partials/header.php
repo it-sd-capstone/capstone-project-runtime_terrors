@@ -59,12 +59,13 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
         .card {
             margin-bottom: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease-in-out;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+            transition: none !important;
         }
         
         .card:hover {
-            transform: scale(1.02);
+            transform: none !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
         }
         
         .bg-role-admin {
