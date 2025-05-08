@@ -23,3 +23,93 @@ IntegrationTest.php
 tech_integration_test.php
 PerformanceTest.php
 ReportingAnalyticsTest.php
+
+# Key User Journeys for Appointment System Testing
+
+## Patient User Journeys
+    1. Registration and Authentication
+        - New patient registers an account
+        - Patient verifies email
+        - Patient logs in
+        - Patient resets forgotten password
+        
+    2. Profile Management
+        - Patient views personal profile
+        - Patient updates contact information
+        - Patient updates personal details
+        - Patient manages communication preferences
+    
+    3. Notification Management
+        - Patient views notifications
+        - Patient marks notifications as read
+        - Patient configures notification preferences
+        - Patient enables/disables email notifications
+
+    4. Appointment Booking
+        - Patient selects a service first
+        - Patient selects a provider
+        - Patient books available time slot
+        - Patient receives confirmation
+    OR
+        - Patient searches for a provider
+        - Patient selects service
+        - Patient books available time slot
+        - Patient receives confirmation
+
+    5. Appointment Management
+        - Patient views upcoming appointments
+        - Patient reschedules appointment
+        - Patient cancels appointment
+        - Patient views appointment history
+
+## Provider User Journeys
+    1. Provider Onboarding
+        - Admin creates provider account with work email and temporary password
+        - Provider logs in for first time with temporary credentials
+        - Provider is required to change password
+        - Provider account is automatically verified (no email verification needed)
+
+    2. Profile Management
+        - Provider updates profile information
+        - Provider adds/removes services
+        - Provider sets pricing
+
+    3. Availability Management
+        - Provider sets regular weekly schedule
+        - Provider blocks off specific dates/times
+        - Provider views availability calendar
+
+    4. Appointment Handling
+        - Provider receives notification of new appointment
+        - Provider views appointment details
+        - Provider cancels/reschedules appointment
+
+    5. Notification Management
+        - Provider views notifications
+        - Provider marks notifications as read
+        - Provider configures notification preferences
+
+## Admin User Journeys
+    1. User Management
+        - Admin creates new provider account
+        - Admin modifies user permissions
+        - Admin deactivates user account
+        - Admin manages patient accounts
+
+    2. Service Management
+        - Admin creates new service categories
+        - Admin updates service details
+        - Admin assigns services to providers
+        - Admin sets default pricing for services
+
+    3. Appointment Management
+        - Admin views all system appointments
+        - Admin cancels or reschedules appointments
+        - Admin resolves scheduling conflicts
+        - Admin searches/filters appointments
+
+    4. System Oversight
+        - Admin views appointment statistics
+        - Admin generates reports
+        - Admin manages global settings
+        - Admin reviews activity logs
