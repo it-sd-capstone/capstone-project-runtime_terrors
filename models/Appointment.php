@@ -654,6 +654,98 @@ class Appointment {
             return false;
         }
     }
+    /**
+     * Generate bookable slots for a provider, service, and date.
+     * Returns an array of ['start' => 'YYYY-MM-DDTHH:MM:SS', 'end' => 'YYYY-MM-DDTHH:MM:SS']
+     */
+    public function generateBookableSlots($provider_id, $service_id, $date) {
+        // 1. Get service duration (check for provider override)
+        $stmt = $this->db->prepare("
+            SELECT 
+                COALESCE(ps.custom_duration, s.duration) AS duration
+            FROM services s
+            LEFT JOIN provider_services ps ON ps.service_id = s.service_id AND ps.provider_id = ?
+            WHERE s.service_id = ?
+            LIMIT 1
+        ");
+        $stmt->bind_param("ii", $provider_id, $service_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $duration = $row ? intval($row['duration']) : 30; // fallback to 30 min
+
+        // 2. Get provider's available blocks for the date
+        $stmt = $this->db->prepare("
+            SELECT start_time, end_time 
+            FROM provider_availability 
+            WHERE provider_id = ? 
+              AND (availability_date = ? OR (is_recurring = 1 AND FIND_IN_SET(WEEKDAY(?)+1, weekdays)))
+              AND is_available = 1
+        ");
+        $stmt->bind_param("iss", $provider_id, $date, $date);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $availabilityBlocks = [];
+        while ($row = $result->fetch_assoc()) {
+            $availabilityBlocks[] = [
+                'start' => $row['start_time'],
+                'end'   => $row['end_time']
+            ];
+        }
+
+        // 3. Get existing appointments for the provider on that date (exclude canceled)
+        $stmt = $this->db->prepare("
+            SELECT start_time, end_time 
+            FROM appointments 
+            WHERE provider_id = ? 
+              AND appointment_date = ?
+              AND status NOT IN ('canceled', 'no_show')
+        ");
+        $stmt->bind_param("is", $provider_id, $date);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $existingAppointments = [];
+        while ($row = $result->fetch_assoc()) {
+            $existingAppointments[] = [
+                'start' => $row['start_time'],
+                'end'   => $row['end_time']
+            ];
+        }
+
+        // 4. Generate slots
+        $slots = [];
+        foreach ($availabilityBlocks as $block) {
+            $blockStart = new DateTime("$date {$block['start']}");
+            $blockEnd   = new DateTime("$date {$block['end']}");
+            $slotStart  = clone $blockStart;
+
+            while ($slotStart < $blockEnd) {
+                $slotEnd = clone $slotStart;
+                $slotEnd->modify("+{$duration} minutes");
+                if ($slotEnd > $blockEnd) break;
+
+                // Check for overlap with existing appointments
+                $overlap = false;
+                foreach ($existingAppointments as $appt) {
+                    $apptStart = new DateTime("$date {$appt['start']}");
+                    $apptEnd   = new DateTime("$date {$appt['end']}");
+                    if ($slotStart < $apptEnd && $slotEnd > $apptStart) {
+                        $overlap = true;
+                        break;
+                    }
+                }
+
+                if (!$overlap) {
+                    $slots[] = [
+                        'start' => $slotStart->format('Y-m-d\TH:i:s'),
+                        'end'   => $slotEnd->format('Y-m-d\TH:i:s'),
+                    ];
+                }
+                $slotStart->modify("+{$duration} minutes");
+            }
+        }
+        return $slots;
+    }
 
     /**
      * Get appointment counts by type.

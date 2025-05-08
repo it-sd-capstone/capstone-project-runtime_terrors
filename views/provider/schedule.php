@@ -431,18 +431,20 @@ document.addEventListener('DOMContentLoaded', function() {
               const formAction = form.getAttribute('action') || '';
 
               if (formAction.includes('processUpdateAvailability') || formAction.includes('processRecurringSchedule')) {
-                  form.addEventListener('submit', function(e) {
-                      e.preventDefault();
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
 
-                      const formType = this.querySelector('button[type="submit"]')?.textContent.trim();
-                      const loadingBtn = this.querySelector('button[type="submit"]');
+                    const formType = this.querySelector('button[type="submit"]')?.textContent.trim();
+                    const loadingBtn = this.querySelector('button[type="submit"]');
+                    let originalBtnText = ""; // <-- Declare outside
 
-                      // Show loading state on button
-                      if (loadingBtn) {
-                          const originalBtnText = loadingBtn.innerHTML;
-                          loadingBtn.disabled = true;
-                          loadingBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
-                      }
+                    // Show loading state on button
+                    if (loadingBtn) {
+                        originalBtnText = loadingBtn.innerHTML; // <-- Assign here
+                        loadingBtn.disabled = true;
+                        loadingBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+                    }
+
 
                       const formData = new FormData(this);
 

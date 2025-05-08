@@ -173,32 +173,34 @@ class Provider {
     }
     
     // Add provider availability
+
     public function addAvailability($availabilityData) {
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO provider_availability 
                 (provider_id, availability_date, start_time, end_time, max_appointments, is_available)
-                VALUES (?, ?, ?, ?, ?, 1)
+                VALUES (?, ?, ?, ?, ?, ?)
             ");
-            $stmt->bind_param("isssi", 
-                $availabilityData['provider_id'], 
-                $availabilityData['availability_date'], 
-                $availabilityData['start_time'], 
-                $availabilityData['end_time'], 
-                $availabilityData['max_appointments']
+            $stmt->bind_param(
+                "isssii",
+                $availabilityData['provider_id'],
+                $availabilityData['availability_date'],
+                $availabilityData['start_time'],
+                $availabilityData['end_time'],
+                $availabilityData['max_appointments'],
+                $availabilityData['is_available']
             );
-            return $stmt->execute();
-            if (!$result) {
-                error_log("SQL Error: " . $stmt->error);
+            $success = $stmt->execute();
+            if (!$success) {
+                error_log("addAvailability SQL Error: " . $stmt->error);
             }
-            
-            return $result;
+            return $success;
         } catch (Exception $e) {
             error_log("Error adding availability: " . $e->getMessage());
             return false;
         }
     }
-
+    
     // Provider Services Management
     public function addService($serviceData) {
         try {
@@ -403,7 +405,7 @@ class Provider {
             // 3. Remove slots that conflict with existing appointments
             // (This part assumes you have a method to get booked appointments)
             if (!empty($slots)) {
-                $bookedSlots = $this->getBookedAppointments($provider_id, $requestedDate, $exclude_appointment_id);
+                $bookedSlots = $this->getBookedAppointments($provider_id);
                 
                 if (!empty($bookedSlots)) {
                     foreach ($bookedSlots as $booked) {
@@ -731,7 +733,7 @@ class Provider {
                     WHERE provider_id = u.user_id 
                     AND is_available = 1 
                     AND availability_date >= CURDATE()
-                ) AS next_available_date
+                ) AS next_availability_date
             FROM 
                 users u
             JOIN 
@@ -785,7 +787,7 @@ class Provider {
             $conditions[] = "EXISTS (
                 SELECT 1 FROM provider_availability 
                 WHERE provider_id = u.user_id 
-                AND available_date = ? 
+                AND availability_date = ? 
                 AND is_available = 1
             )";
             $params_array[] = $params['date'];
@@ -798,7 +800,7 @@ class Provider {
         }
         
         // Removed rating from ORDER BY since it doesn't exist in your schema
-        $query .= " ORDER BY next_available_date ASC, u.first_name ASC";
+        $query .= " ORDER BY next_availability_date ASC, u.first_name ASC";
         
         $providers = [];
         
@@ -906,7 +908,7 @@ class Provider {
                     provider_availability
                 WHERE 
                     provider_id = ? AND
-                    available_date BETWEEN ? AND ?
+                    availability_date BETWEEN ? AND ?
             ";
             
             $availStmt = $this->db->prepare($availQuery);
@@ -1018,7 +1020,7 @@ class Provider {
             
             $query = "
                 SELECT 
-                    pa.available_date,
+                    pa.availability_date,
                     SEC_TO_TIME(SUM(TIME_TO_SEC(TIMEDIFF(pa.end_time, pa.start_time)))) as total_hours,
                     COUNT(DISTINCT a.appointment_id) as booked_appointments
                 FROM 
@@ -1026,15 +1028,15 @@ class Provider {
                 LEFT JOIN 
                     appointments a ON 
                     pa.provider_id = a.provider_id AND 
-                    pa.available_date = a.appointment_date AND
+                    pa.availability_date = a.appointment_date AND
                     a.status NOT IN ('canceled', 'no_show')
                 WHERE 
                     pa.provider_id = ? AND
-                    pa.available_date BETWEEN ? AND ?
+                    pa.availability_date BETWEEN ? AND ?
                 GROUP BY 
-                    pa.available_date
+                    pa.availability_date
                 ORDER BY 
-                    pa.available_date
+                    pa.availability_date
             ";
             
             $stmt = $this->db->prepare($query);
@@ -1430,7 +1432,7 @@ class Provider {
     public function updateAvailabilitySlot($availabilityId, $date, $startTime, $endTime) {
         try {
             $query = "UPDATE provider_availability 
-                      SET available_date = ?, start_time = ?, end_time = ? 
+                      SET availability_date = ?, start_time = ?, end_time = ? 
                       WHERE availability_id = ?";
             $stmt = $this->db->prepare($query);
             $stmt->bind_param("sssi", $date, $startTime, $endTime, $availabilityId);
@@ -1509,7 +1511,7 @@ class Provider {
                 FROM users u
                 JOIN provider_profiles pp ON u.user_id = pp.provider_id
                 JOIN provider_services ps ON u.user_id = ps.provider_id
-                WHERE ps.service_id = ? AND u.role = 'provider' AND u.status = 'active'
+                WHERE ps.service_id = ? AND u.role = 'provider' AND u.is_active = 1
                 AND pp.accepting_new_patients = 1
                 ORDER BY u.last_name, u.first_name
             ";

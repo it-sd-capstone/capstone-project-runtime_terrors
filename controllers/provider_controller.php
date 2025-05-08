@@ -324,10 +324,11 @@ class ProviderController {
             $start_time = $_POST['start_time'] ?? null;
             $end_time = $_POST['end_time'] ?? null;
             $max_appointments = $_POST['max_appointments'] ?? 0;
+            $is_available = $_POST['is_available'] ?? 1;
     
             // Log the received data for debugging
             error_log("Received Availability Data: " . json_encode(compact(
-                'provider_id', 'availability_date', 'start_time', 'end_time', 'max_appointments'
+                'provider_id', 'availability_date', 'start_time', 'end_time', 'max_appointments', 'is_available'
             ), JSON_PRETTY_PRINT));
     
             // Ensure no missing values
@@ -342,7 +343,8 @@ class ProviderController {
                 'availability_date' => $availability_date,
                 'start_time' => $start_time,
                 'end_time' => $end_time,
-                'max_appointments' => $max_appointments
+                'max_appointments' => $max_appointments,
+                'is_available' => $is_available // <-- THIS FIXES THE BUG
             ]);
     
             header('Content-Type: application/json');
@@ -497,6 +499,41 @@ class ProviderController {
         echo json_encode($appointments, JSON_PRETTY_PRINT);
         exit;
     }
+     /**
+     * Export provider's appointments to CSV
+     */
+    public function exportAppointmentsToCSV() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+
+        $provider_id = $_SESSION['user_id'];
+        $appointments = $this->appointmentModel->getByProvider($provider_id);
+
+        // Set headers for CSV download
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment;filename="appointments.csv"');
+
+        $output = fopen('php://output', 'w');
+        // Write CSV header
+        fputcsv($output, ['Appointment ID', 'Patient Name', 'Service', 'Date', 'Start Time', 'End Time', 'Status']);
+
+        foreach ($appointments as $appointment) {
+            fputcsv($output, [
+                $appointment['id'] ?? $appointment['appointment_id'] ?? '',
+                $appointment['patient_name'] ?? $appointment['first_name'] ?? '',
+                $appointment['service_name'] ?? $appointment['service'] ?? '',
+                $appointment['appointment_date'] ?? '',
+                $appointment['start_time'] ?? '',
+                $appointment['end_time'] ?? '',
+                $appointment['status'] ?? ''
+            ]);
+        }
+        fclose($output);
+        exit;
+    }
+
 
     // Provider Services (CRUD)
     public function services() {
@@ -628,6 +665,9 @@ class ProviderController {
     // Scheduling & Availability Management
     public function schedule() {
         $provider_id = $_SESSION['user_id'];
+        
+          // Initialize events array to avoid undefined variable warning
+        $events = [];
         
         // Get the provider's current availability/schedules
         $availability = $this->providerModel->getAvailability($provider_id);
