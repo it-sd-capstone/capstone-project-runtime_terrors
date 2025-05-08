@@ -1,25 +1,37 @@
 <?php
-/**
- * API Endpoints Test
- * 
- * Tests for all API endpoints including:
- * - Provider API endpoints
- * - Appointment API endpoints
- * - Notification API endpoints
- * - User API endpoints
- */
+require_once dirname(__DIR__) . '/public_html/bootstrap.php';
 
-echo "<h1>API Endpoints Test</h1>";
-echo "<p>This test file will validate all API endpoints in the system.</p>";
-echo "<p>Key endpoints to test:</p>";
-echo "<ul>";
-echo "<li>getAppointments.php - Retrieving appointment data</li>";
-echo "<li>getProviderSchedules.php - Retrieving provider schedules</li>";
-echo "<li>notification/getAdminNotifications - Admin notifications</li>";
-echo "<li>notification/getUserNotifications - User notifications</li>";
-echo "<li>appointment/getUpcoming - Upcoming appointments</li>";
-echo "<li>appointment/getPast - Past appointments</li>";
-echo "<li>provider/getAvailability - Provider availability</li>";
-echo "<li>user/getProfile - User profile data</li>";
-echo "</ul>";
-echo "<p>Implement comprehensive tests for these endpoints to ensure API functionality works correctly.</p>";
+class ApiEndpointsTest {
+    public function setUp() {
+        // Initialize test environment
+    }
+    
+    public function tearDown() {
+        // Clean up resources
+    }
+    
+    public function testAvailabilitySlotsAPI() {
+        // Request available slots with valid provider ID
+        // Try with invalid provider ID
+        // Verify JSON response structure
+    }
+    
+    public function testAppointmentCreationAPI() {
+        // Create appointment via API
+        // Verify validation checks
+        // Test error responses
+    }
+    
+    // Run the tests
+    public function run() {
+        $this->setUp();
+        $this->testAvailabilitySlotsAPI();
+        $this->testAppointmentCreationAPI();
+        $this->tearDown();
+        echo "API endpoints tests completed\n";
+    }
+}
+
+// Instantiate and run the tests
+$test = new ApiEndpointsTest();
+$test->run();

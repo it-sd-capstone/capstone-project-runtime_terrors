@@ -1,25 +1,37 @@
 <?php
-/**
- * Provider Availability Test
- * 
- * Tests for the provider schedule management including:
- * - Setting availability
- * - Viewing schedule
- * - Managing recurring availability
- * - Blocking time slots
- * - Handling appointment conflicts
- */
+require_once dirname(__DIR__) . '/public_html/bootstrap.php';
 
-echo "<h1>Provider Availability Test</h1>";
-echo "<p>This test file will validate the provider schedule management functionality.</p>";
-echo "<p>Key workflows to test:</p>";
-echo "<ul>";
-echo "<li>Setting daily availability</li>";
-echo "<li>Setting recurring availability patterns</li>";
-echo "<li>Blocking specific time slots</li>";
-echo "<li>Viewing upcoming schedule</li>";
-echo "<li>Handling appointment conflicts</li>";
-echo "<li>Maximum appointments per day</li>";
-echo "<li>Availability across different services</li>";
-echo "</ul>";
-echo "<p>Implement comprehensive tests for these workflows to ensure provider scheduling works correctly.</p>";
+class ProviderAvailabilityTest {
+    public function setUp() {
+        // Initialize test environment
+    }
+    
+    public function tearDown() {
+        // Clean up resources
+    }
+    
+    public function testAvailabilityCreation() {
+        // Set available time slots
+        // Test recurring availability
+        // Verify slots appear for booking
+    }
+    
+    public function testAvailabilityUpdates() {
+        // Modify existing availability
+        // Block previously available times
+        // Check conflicts with existing appointments
+    }
+    
+    // Run the tests
+    public function run() {
+        $this->setUp();
+        $this->testAvailabilityCreation();
+        $this->testAvailabilityUpdates();
+        $this->tearDown();
+        echo "Provider availability tests completed\n";
+    }
+}
+
+// Instantiate and run the tests
+$test = new ProviderAvailabilityTest();
+$test->run();

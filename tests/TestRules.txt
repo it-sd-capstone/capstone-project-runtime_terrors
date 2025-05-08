@@ -1,0 +1,25 @@
+Test Execution Order
+----------------------
+bootstrap_test.php
+env_bridge_test.php
+SecurityTest.php
+CsrfProtectionTest.php
+AuthenticationTest.php
+UserTest.php
+ProviderTest.php
+ServiceManagementTest.php
+email_test.php
+ApiEndpointsTest.php
+NotificationSystemTest.php
+DataIntegrityTest.php
+AdminFunctionsTest.php
+admin_dashboard_test.php
+PatientPortalTest.php
+ProviderAvailabilityTest.php
+AppointmentTest.php
+AppointmentManagementTest.php
+ErrorHandlingTest.php
+IntegrationTest.php
+tech_integration_test.php
+PerformanceTest.php
+ReportingAnalyticsTest.php
