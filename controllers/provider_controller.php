@@ -359,19 +359,25 @@ class ProviderController {
     public function processRecurringSchedule() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'] ?? null;
-            $start_date = $_POST['start_date'] ?? null;
-            $end_date = $_POST['end_date'] ?? null;
-            $days_of_week = $_POST['days_of_week'] ?? [];
+            $day_of_week = $_POST['day_of_week'] ?? null; // single value: 0-6
             $start_time = $_POST['start_time'] ?? null;
             $end_time = $_POST['end_time'] ?? null;
+            $is_active = $_POST['is_active'] ?? 1;
+            $repeat_weekly = $_POST['repeat_weekly'] ?? '0';
+            $repeat_until = $_POST['repeat_until'] ?? null;
     
-            if (!$provider_id || !$start_date || !$end_date || empty($days_of_week) || !$start_time || !$end_time) {
+            // Use today as the start date
+            $start_date = date('Y-m-d');
+            // Use repeat_until as the end date, or default to 1 month from now if not set
+            $end_date = $repeat_until ?: date('Y-m-d', strtotime('+1 month'));
+    
+            if (!$provider_id || $day_of_week === null || !$start_time || !$end_time) {
                 $_SESSION['error'] = "All required fields must be filled.";
                 header("Location: " . base_url("index.php/provider/schedule"));
                 exit;
             }
     
-            // Ensure `$this->scheduleModel` exists in your controller
+            // Ensure $this->scheduleModel exists
             if (!isset($this->scheduleModel)) {
                 error_log("Error: `scheduleModel` is not initialized in ProviderController.");
                 $_SESSION['error'] = "Internal error: schedule processing failed.";
@@ -379,9 +385,28 @@ class ProviderController {
                 exit;
             }
     
-            $success = $this->scheduleModel->createRecurringSchedule(
-                $provider_id, $start_date, $end_date, $days_of_week, $start_time, $end_time
-            );
+            // Only create recurring slots if repeat_weekly is checked
+            if ($repeat_weekly === '1') {
+                $success = $this->scheduleModel->createRecurringSchedule(
+                    $provider_id,
+                    $start_date,
+                    $end_date,
+                    [$day_of_week], // as array
+                    $start_time,
+                    $end_time,
+                    $is_active
+                );
+            } else {
+                // If not repeating, just create a single slot on the next occurrence of the selected day
+                $next_date = date('Y-m-d', strtotime("next " . jddayofweek($day_of_week, 1)));
+                $success = $this->scheduleModel->createSingleSchedule(
+                    $provider_id,
+                    $next_date,
+                    $start_time,
+                    $end_time,
+                    $is_active
+                );
+            }
     
             $_SESSION[$success ? 'success' : 'error'] = $success 
                 ? "Recurring schedule created successfully!" 
@@ -391,7 +416,6 @@ class ProviderController {
             exit;
         }
     }
-    
 
     // Update Provider Profile
     public function updateProfile() {

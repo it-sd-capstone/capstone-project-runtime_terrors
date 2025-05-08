@@ -650,6 +650,22 @@ ALTER TABLE `recurring_schedules`
   ADD CONSTRAINT `recurring_schedules_ibfk_1` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`);
 
 --
+-- unavailability for providers
+--
+CREATE TABLE IF NOT EXISTS `provider_unavailability` (
+  `unavailability_id` INT(11) NOT NULL AUTO_INCREMENT,
+  `provider_id` INT(11) NOT NULL,
+  `unavailable_date` DATE DEFAULT NULL,
+  `start_time` TIME NOT NULL,
+  `end_time` TIME NOT NULL,
+  `reason` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP(),
+  PRIMARY KEY (`unavailability_id`),
+  KEY `provider_id` (`provider_id`),
+  CONSTRAINT `provider_unavailability_ibfk_1` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
 -- Constraints for table `user_tokens`
 --
 ALTER TABLE `user_tokens`

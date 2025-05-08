@@ -148,6 +148,18 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="repeat_weekly" name="repeat_weekly">
+                                <label class="form-check-label" for="repeat_weekly">
+                                Repeat weekly
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="repeat_until" class="form-label fw-bold">Repeat until:</label>
+                            <input type="date" class="form-control" id="repeat_until" name="repeat_until" min="<?= date('Y-m-d') ?>">
+                        </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-success">
                                 <i class="fas fa-save me-2"></i>Save Recurring Schedule
@@ -446,7 +458,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
 
-                      const formData = new FormData(this);
+                    const formData = new FormData(this);
+
+                    // If this is the recurring schedule form, append repeat fields
+                    if (formAction.includes('processRecurringSchedule')) {
+                        const repeatWeekly = this.querySelector('#repeat_weekly')?.checked ? '1' : '0';
+                        const repeatUntil = this.querySelector('#repeat_until')?.value || '';
+                        formData.append('repeat_weekly', repeatWeekly);
+                        formData.append('repeat_until', repeatUntil);
+                    }
 
                       fetch(this.action, {
                           method: 'POST',
