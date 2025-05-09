@@ -1,6 +1,6 @@
 <?php
-require_once MODEL_PATH . '/ProviderServices.php';
-require_once MODEL_PATH . '/Service.php';
+require_once MODEL_PATH . '/Services.php';
+require_once MODEL_PATH . '/Provider.php';
 
 class ProviderServicesController {
     protected $db;
@@ -10,7 +10,7 @@ class ProviderServicesController {
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) session_start();
         $this->db = get_db();
-        $this->providerServicesModel = new ProviderServices($this->db);
+        $this->providerServicesModel = new Provider($this->db);
         $this->serviceModel = new Services($this->db);
     }
 

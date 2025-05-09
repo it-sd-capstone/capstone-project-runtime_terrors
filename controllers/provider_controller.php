@@ -220,12 +220,12 @@ class ProviderController {
             $custom_notes = isset($_POST['custom_notes']) ? trim($_POST['custom_notes']) : '';
             
             // Initialize the provider services model if not already available
-            if (!isset($this->providerServicesModel)) {
-                $this->providerServicesModel = new ProviderServices($this->db);
+            if (!isset($this->providerModel)) {
+                $this->providerModel = $this->providerModel;
             }
             
             // Update the provider service
-            $success = $this->providerServicesModel->updateService(
+            $success = $this->providerModel->updateService(
                 $provider_service_id, 
                 $provider_id, 
                 $custom_duration, 
@@ -271,12 +271,12 @@ class ProviderController {
             $provider_service_id = intval($_POST['provider_service_id']);
             
             // Initialize the provider services model if not already available
-            if (!isset($this->providerServicesModel)) {
-                $this->providerServicesModel = new ProviderServices($this->db);
+            if (!isset($this->providerModel)) {
+                $this->providerModel = $this->providerModel;
             }
             
             // Delete the provider service association
-            $success = $this->providerServicesModel->deleteProviderService($provider_service_id, $provider_id);
+            $success = $this->providerModel->deleteProviderService($provider_service_id, $provider_id);
             
             if ($success) {
                 $_SESSION['success'] = "Service removed from your offerings";

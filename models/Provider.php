@@ -1,10 +1,12 @@
 <?php
 
 class Provider {
+    private $providerModel;
     private $db;
 
     public function __construct($db) {
         $this->db = $db;
+        $this->providerModel = $this;
     }
 
     // Get provider's profile details securely

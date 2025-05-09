@@ -162,41 +162,41 @@ class HomeController {
     /**
      * Debug table structure
      */
-    private function debugTableStructure($tableName) {
-        if (!$this->tableExists($tableName)) {
-            return false;
-        }
+    // private function debugTableStructure($tableName) {
+    //     if (!$this->tableExists($tableName)) {
+    //         return false;
+    //     }
         
-        $query = "DESCRIBE $tableName";
-        $result = $this->db->query($query);
+    //     $query = "DESCRIBE $tableName";
+    //     $result = $this->db->query($query);
         
-        if (!$result) {
-            return false;
-        }
+    //     if (!$result) {
+    //         return false;
+    //     }
         
-        $columns = [];
-        while ($row = $result->fetch_assoc()) {
-            $columns[] = $row;
-        }
+    //     $columns = [];
+    //     while ($row = $result->fetch_assoc()) {
+    //         $columns[] = $row;
+    //     }
         
-        return true;
-    }
+    //     return true;
+    // }
     
     /**
      * Check if a table has any data
      */
-    private function hasData($tableName, $whereClause = '') {
-        $query = "SELECT COUNT(*) as count FROM $tableName";
-        if (!empty($whereClause)) {
-            $query .= " WHERE $whereClause";
-        }
+    // private function hasData($tableName, $whereClause = '') {
+    //     $query = "SELECT COUNT(*) as count FROM $tableName";
+    //     if (!empty($whereClause)) {
+    //         $query .= " WHERE $whereClause";
+    //     }
         
-        $result = $this->db->query($query);
-        if ($result && $row = $result->fetch_assoc()) {
-            return $row['count'] > 0;
-        }
-        return false;
-    }
+    //     $result = $this->db->query($query);
+    //     if ($result && $row = $result->fetch_assoc()) {
+    //         return $row['count'] > 0;
+    //     }
+    //     return false;
+    // }
     
     /**
      * About page for the application

@@ -24,8 +24,42 @@ class AuthController {
         $this->activityLogModel = new ActivityLog($this->db);
     }
     
-    private function setError($message) {
+    // private function setError($message) {
+        // $_SESSION['error'] = $message;
+    // }
+    
+    /**
+     * Set error message in session
+     */
+    private function setErrorMessage($message) {
         $_SESSION['error'] = $message;
+    }
+
+    /**
+     * Set success message in session
+     */
+    private function setSuccessMessage($message) {
+        $_SESSION['success'] = $message;
+    }
+
+    /**
+     * Load view with data
+     */
+    private function loadView($viewPath, $data = []) {
+        extract($data);
+        include VIEW_PATH . '/' . $viewPath . '.php';
+    }
+
+    /**
+     * Validate CSRF token
+     */
+    private function validateCsrfToken() {
+        if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+            $this->setErrorMessage('Invalid CSRF token');
+            redirect('auth/login');
+            return false;
+        }
+        return true;
     }
     
     public function index() {
