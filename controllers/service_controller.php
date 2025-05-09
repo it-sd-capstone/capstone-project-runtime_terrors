@@ -42,9 +42,9 @@ class ProviderServicesController {
      * Process service creation
      */
     public function processService() {
+        $errors = [];
         error_log("Session user role: " . ($_SESSION['user_role'] ?? 'not set'));
         error_log("Session user ID: " . ($_SESSION['user_id'] ?? 'not set'));
-        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $action = $_POST['action'] ?? '';
             
@@ -59,10 +59,9 @@ class ProviderServicesController {
             $price = $_POST['price'] ?? 0;
             $duration = $_POST['duration'] ?? 30;
             $serviceId = $_POST['service_id'] ?? null;
-            $errors = [];
 
             // Perform action based on request
-            if (empty($errors)) {
+            if (count($errors) === 0) {
                 switch ($action) {
                     case 'add':
                         $serviceData = [

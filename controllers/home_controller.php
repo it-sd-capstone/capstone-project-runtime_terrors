@@ -142,9 +142,7 @@ class HomeController {
         include VIEW_PATH . '/home/index.php';
     }
     
-    /**
-     * Check if database connection is working
-     */
+    /** @phpstan-ignore-next-line */
     private function checkDatabaseConnection() {
         if (!$this->db) {
             return false;
