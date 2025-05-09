@@ -36,13 +36,8 @@ class ApiController {
             exit;
         }
         
-        // Verify provider exists
-        $db = get_db();
-        $stmt = $db->prepare("SELECT first_name, last_name FROM users WHERE user_id = ? AND role = 'provider'");
-        $stmt->bind_param("i", $provider_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $provider = $result->fetch_assoc();
+        
+        $provider = $this->providerModel->getProviderById($provider_id);
         
         if (!$provider) {
             error_log("ERROR: Provider with ID $provider_id not found in database");
@@ -67,35 +62,6 @@ class ApiController {
         // Get provider availability
         $schedules = $this->providerModel->getAvailability($provider_id);
         
-        // Debug availability data
-        error_log("Found " . count($schedules) . " availability slots for provider $provider_id");
-        if (count($schedules) === 0) {
-            // Check if the method exists
-            $reflection = new ReflectionMethod($this->providerModel, 'getAvailability');
-            error_log("Method exists: " . $reflection->getName());
-            
-            // Check direct database query
-            $sql = "SELECT * FROM provider_availability WHERE provider_id = ?";
-            $stmt = $db->prepare($sql);
-            $stmt->bind_param("i", $provider_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $direct_slots = $result->fetch_all(MYSQLI_ASSOC);
-            
-            error_log("Direct DB query found " . count($direct_slots) . " availability records");
-            foreach ($direct_slots as $index => $slot) {
-                error_log("Slot[$index]: ID: " . ($slot['availability_id'] ?? 'missing') .
-                         ", Date: " . ($slot['availability_date'] ?? 'N/A') .
-                         ", Time: " . ($slot['start_time'] ?? 'missing') . "-" . ($slot['end_time'] ?? 'missing') .
-                         ", Recurring: " . ($slot['is_recurring'] ? 'Yes' : 'No'));
-            }
-        } else {
-            // Debug the first few schedule entries
-            for ($i = 0; $i < min(3, count($schedules)); $i++) {
-                $schedule = $schedules[$i];
-                error_log("Schedule[$i]: " . json_encode($schedule));
-            }
-        }
         
         $appointments = $this->appointmentModel->getByProvider($provider_id);
         error_log("Found " . count($appointments) . " appointments for provider $provider_id");

@@ -904,6 +904,46 @@ class User {
             return [];
         }
     }
+    /**
+     * Get user by verification token
+     *
+     * @param string $token Verification token
+     * @return array|false User data or false if not found
+     */
+    public function getUserByVerificationToken($token) {
+        $stmt = $this->db->prepare("
+            SELECT user_id, email, first_name, last_name, email_verified_at, token_expires
+            FROM users
+            WHERE verification_token = ?
+        ");
+        $stmt->bind_param("s", $token);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if (!$result || $result->num_rows === 0) {
+            return false;
+        }
+        
+        return $result->fetch_assoc();
+    }
+
+    /**
+     * Mark user email as verified
+     *
+     * @param int $userId User ID
+     * @return bool Success flag
+     */
+    public function markEmailAsVerified($userId) {
+        $stmt = $this->db->prepare("
+            UPDATE users
+            SET email_verified_at = NOW(), verification_token = NULL, token_expires = NULL, is_verified = 1
+            WHERE user_id = ?
+        ");
+        $stmt->bind_param("i", $userId);
+        $success = $stmt->execute();
+        
+        return $success;
+    }
 
     /**
      * Update user password
@@ -1461,6 +1501,47 @@ class User {
             error_log("Error in getPatientProfile: " . $e->getMessage());
             return null;
         }
+    }
+    /**
+     * Get user by email
+     *
+     * @param string $email User email
+     * @return array|false User data or false if not found
+     */
+    public function getUserByEmail($email) {
+        $stmt = $this->db->prepare("
+            SELECT user_id, first_name, last_name, email, email_verified_at, is_verified
+            FROM users
+            WHERE email = ?
+        ");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            return false;
+        }
+        
+        return $result->fetch_assoc();
+    }
+    /**
+     * Update user verification token
+     *
+     * @param int $userId User ID
+     * @param string $token Verification token
+     * @param string $tokenExpires Token expiration date
+     * @return bool Success flag
+     */
+    public function updateVerificationToken($userId, $token, $tokenExpires) {
+        $stmt = $this->db->prepare("
+            UPDATE users
+            SET verification_token = ?, token_expires = ?
+            WHERE user_id = ?
+        ");
+        $stmt->bind_param("ssi", $token, $tokenExpires, $userId);
+        $success = $stmt->execute();
+        
+        return $success && $stmt->affected_rows > 0;
     }
      /**
      * Get all available providers for booking

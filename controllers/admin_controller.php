@@ -710,27 +710,6 @@ class AdminController {
         // Use the appointment model to get all appointments
         $appointments = $this->appointmentModel->getAllAppointments();
         
-        // If the model doesn't have this method yet, fall back to the original code
-        if (empty($appointments) && method_exists($this, 'db')) {
-            $query = "SELECT a.*,
-                CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
-                CONCAT(pr.first_name, ' ', pr.last_name) AS provider_name,
-                s.name AS service_name
-                FROM appointments a
-                JOIN users p ON a.patient_id = p.user_id
-                JOIN users pr ON a.provider_id = pr.user_id
-                JOIN services s ON a.service_id = s.service_id
-                ORDER BY a.appointment_date DESC, a.start_time DESC";
-            $result = $this->db->query($query);
-            $appointments = [];
-            
-            if ($result && $result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    $appointments[] = $row;
-                }
-            }
-        }
-        
         // Get lists of patients, providers, and services for the add form
         $patients = $this->getPatients();
         $providers = $this->getProviders();
@@ -1125,10 +1104,6 @@ class AdminController {
             return !in_array($service['service_id'], $providerServiceIds);
         });
         
-        // Include the admin header
-        include VIEW_PATH . '/partials/admin_header.php';
-        
-        include VIEW_PATH . '/admin/provider_services.php';
         
         // Include the footer
         include VIEW_PATH . '/partials/footer.php';
