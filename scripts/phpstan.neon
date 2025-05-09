@@ -1,8 +1,9 @@
 parameters:
-    level: 0
+    level: 9
     paths:
         - ../controllers
         - ../models
+        - ../views
     excludePaths:
         - ../vendor
     bootstrapFiles:
@@ -10,6 +11,11 @@ parameters:
         - ../config/connection_bridge.php
         - ../services/EmailService.php
         - ../services/NotificationService.php
+        - ../public_html/bootstrap.php
+        - ../public_html/index.php
+        - phpstan-bootstrap.php
+    scanDirectories:
+        - ../views 
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         # Helper functions
@@ -22,7 +28,7 @@ parameters:
         
         # Missing classes
         - '#Instantiated class Service not found#'
-        
+        - '#Constant [A-Z_]+ not found#'
 
 includes:
     - ../vendor/phpstan/phpstan-deprecation-rules/rules.neon
