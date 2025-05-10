@@ -107,7 +107,32 @@ class Services {
         
         return $services;
     }
-    
+    /**
+     * Get services offered by a specific provider
+     * 
+     * @param int $provider_id The provider's user_id
+     * @return array Array of services with details
+     */
+    public function getProviderServices($provider_id) {
+        $sql = "
+            SELECT s.*, 
+                ps.provider_service_id,
+                ps.custom_duration,
+                ps.custom_notes
+            FROM services s
+            JOIN provider_services ps ON s.service_id = ps.service_id
+            WHERE ps.provider_id = ? AND s.is_active = 1
+            ORDER BY s.name
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $provider_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+
     /**
      * Get all active services - WRAPPER for backward compatibility
      *

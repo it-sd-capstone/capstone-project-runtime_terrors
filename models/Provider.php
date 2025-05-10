@@ -36,6 +36,27 @@ class Provider {
     public function getProviderWithProfile($provider_id) {
         return $this->getById($provider_id);
     }
+   /**
+     * Check if a provider offers a specific service
+     *
+     * @param int $provider_id The provider ID
+     * @param int $service_id The service ID
+     * @return bool True if the provider offers the service, false otherwise
+     */
+    public function checkProviderService($provider_id, $service_id) {
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*) as count
+            FROM provider_services
+            WHERE provider_id = ? AND service_id = ?
+        ");
+        $stmt->bind_param("ii", $provider_id, $service_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+            
+        return $row['count'] > 0;
+    }
+
 
     /**
      * Update provider profile
@@ -132,14 +153,19 @@ class Provider {
         }
     }
 
-    /**
-     * Get provider availability
+   /**
+     * Get provider availability with optional service filtering
      *  
      * @param int $providerId Provider ID
+     * @param int|null $serviceId Optional service ID to filter availability
+     * @param bool $includeRecurring Whether to include recurring availability
      * @return array Array of availability slots
      */
-    public function getAvailability($providerId, $includeRecurring = true) {
+    public function getAvailability($providerId, $serviceId = null, $includeRecurring = true) {
         try {
+            $params = [$providerId];
+            $types = "i";
+            
             $query = "SELECT
                 availability_id as id,
                 provider_id,
@@ -154,52 +180,89 @@ class Provider {
             WHERE
                 provider_id = ?
                 AND availability_date >= CURDATE()
-                AND is_available = 1
-            ORDER BY
-                availability_date, start_time";
+                AND is_available = 1";
+                
+            // Add service filter if provided
+            if ($serviceId) {
+                $query .= " AND (service_id = ? OR service_id IS NULL)";
+                $params[] = $serviceId;
+                $types .= "i";
+            }
+            
+            // Exclude recurring if needed
+            if (!$includeRecurring) {
+                $query .= " AND is_recurring = 0";
+            }
+            
+            $query .= " ORDER BY availability_date, start_time";
+            
             $stmt = $this->db->prepare($query);
-            $stmt->bind_param("i", $providerId);
+            $stmt->bind_param($types, ...$params);
             $stmt->execute();
             $result = $stmt->get_result();
+            
             $availability = [];
             while ($row = $result->fetch_assoc()) {
                 $availability[] = $row;
             }
+            
             return $availability;
         } catch (Exception $e) {
             error_log("Error in getAvailability: " . $e->getMessage());
             return [];
         }
     }
-    
-    // Add provider availability
 
+    
+   /**
+     * Add provider availability
+     *
+     * @param array $availabilityData Availability data including provider_id, dates, times, and optional service_id
+     * @return bool Success or failure indicator
+     */
     public function addAvailability($availabilityData) {
         try {
             $stmt = $this->db->prepare("
-                INSERT INTO provider_availability 
-                (provider_id, availability_date, start_time, end_time, max_appointments, is_available)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO provider_availability
+                (provider_id, availability_date, start_time, end_time, service_id, max_appointments, is_available)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
+            
+            // Handle service_id more explicitly to ensure NULL is properly stored
+            // This avoids issues with empty strings or 0 values
+            $service_id = isset($availabilityData['service_id']) && $availabilityData['service_id'] ? 
+                intval($availabilityData['service_id']) : null;
+            
+            // Default max_appointments to 1 if not provided
+            $max_appointments = $availabilityData['max_appointments'] ?? 1;
+            
+            // Default is_available to 1 if not provided
+            $is_available = $availabilityData['is_available'] ?? 1;
+            
             $stmt->bind_param(
-                "isssii",
+                "isssiii",
                 $availabilityData['provider_id'],
                 $availabilityData['availability_date'],
                 $availabilityData['start_time'],
                 $availabilityData['end_time'],
-                $availabilityData['max_appointments'],
-                $availabilityData['is_available']
+                $service_id,
+                $max_appointments,
+                $is_available
             );
+            
             $success = $stmt->execute();
             if (!$success) {
                 error_log("addAvailability SQL Error: " . $stmt->error);
             }
+            
             return $success;
         } catch (Exception $e) {
             error_log("Error adding availability: " . $e->getMessage());
             return false;
         }
     }
+
+
     
     // Provider Services Management
     public function addService($serviceData) {
@@ -303,42 +366,106 @@ class Provider {
     public function getDefaultSlotDuration() {
         return 30; // Default 30-minute increments
     }
-    // Add this to ProviderController
     public function generateAvailabilityFromSchedule() {
+        // Check if form was submitted
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $_SESSION['error'] = 'Invalid request';
+            redirect('provider/schedule');
+            return;
+        }
+        
+        // Get selected services from the form
+        $selectedServices = $_POST['services'] ?? [];
+        if (empty($selectedServices)) {
+            $_SESSION['error'] = 'Please select at least one service';
+            redirect('provider/schedule');
+            return;
+        }
+        
+        // Get distribution method
+        $distributionMethod = $_POST['distribution'] ?? 'alternate';
+        
+        // Get period (in weeks)
+        $period = intval($_POST['period'] ?? 1);
+        $endDate = date('Y-m-d', strtotime("+{$period} weeks"));
+        
         $provider_id = $_SESSION['user_id'];
         $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
         
+        // Track how many slots were created
+        $slotsCreated = 0;
+        $serviceIndex = 0; // Used for alternating services
+        
         // For each recurring schedule
         foreach ($recurringSchedules as $schedule) {
-            // Calculate next occurrence of this day
+            // Get day of week (0 = Sunday, 6 = Saturday)
             $dayOfWeek = $schedule['day_of_week'];
             $dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][$dayOfWeek];
-            $nextDate = date('Y-m-d', strtotime("next $dayName"));
             
-            // Generate slots based on slot duration (e.g., 15 minutes)
-            $slotDuration = 15; // minutes
-            $startTime = strtotime($schedule['start_time']);
-            $endTime = strtotime($schedule['end_time']);
-            
-            // Create availability in 15-minute increments
-            for ($time = $startTime; $time < $endTime; $time += ($slotDuration * 60)) {
-                $slotStart = date('H:i:s', $time);
-                $slotEnd = date('H:i:s', $time + ($slotDuration * 60));
+            // Calculate all dates in the period that match this day of week
+            $currentDate = date('Y-m-d', strtotime("next $dayName"));
+            while (strtotime($currentDate) <= strtotime($endDate)) {
+                // Generate slots based on slot duration
+                $slotDuration = 30; // Default duration in minutes
+                $startTime = strtotime($schedule['start_time']);
+                $endTime = strtotime($schedule['end_time']);
                 
-                // Add availability slot
-                $this->providerModel->addAvailability([
-                    'provider_id' => $provider_id,
-                    'availability_date' => $nextDate,
-                    'start_time' => $slotStart,
-                    'end_time' => $slotEnd,
-                    'is_available' => 1
-                ]);
+                // Create availability slots
+                for ($time = $startTime; $time < $endTime; $time += ($slotDuration * 60)) {
+                    $slotStart = date('H:i:s', $time);
+                    $slotEnd = date('H:i:s', $time + ($slotDuration * 60));
+                    
+                    // Determine which service ID to use based on distribution method
+                    $serviceId = null;
+                    switch ($distributionMethod) {
+                        case 'alternate':
+                            // Alternate between selected services
+                            $serviceId = $selectedServices[$serviceIndex % count($selectedServices)];
+                            $serviceIndex++;
+                            break;
+                            
+                        case 'blocks':
+                            // Create blocks of the same service
+                            // Each day uses the same service, rotate by day
+                            $dayIndex = array_search($currentDate, array_unique([$currentDate]));
+                            $serviceId = $selectedServices[$dayIndex % count($selectedServices)];
+                            break;
+                            
+                        case 'priority':
+                            // Just use the first service (highest priority)
+                            $serviceId = $selectedServices[0];
+                            break;
+                    }
+                    
+                    // Add availability slot WITH SERVICE ID
+                    $result = $this->providerModel->addAvailability([
+                        'provider_id' => $provider_id,
+                        'availability_date' => $currentDate,
+                        'start_time' => $slotStart,
+                        'end_time' => $slotEnd,
+                        'is_available' => 1,
+                        'service_id' => $serviceId // This is the critical addition!
+                    ]);
+                    
+                    if ($result) {
+                        $slotsCreated++;
+                    }
+                }
+                
+                // Move to the next occurrence of this day
+                $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 week'));
             }
         }
         
-        $_SESSION['success'] = 'Availability slots generated from your schedule';
+        if ($slotsCreated > 0) {
+            $_SESSION['success'] = "$slotsCreated availability slots generated from your schedule";
+        } else {
+            $_SESSION['error'] = 'No slots were generated. Please check your recurring schedule.';
+        }
+        
         redirect('provider/schedule');
     }
+
     /**
      * Delete all availability slots within a date range
      * 
@@ -444,110 +571,518 @@ class Provider {
             return true; // Assume overlap on error to be safe
         }
     }
+    public function getAvailabilityForDate($provider_id, $date, $service_id = null) {
+        $slots = [];
+        $day_of_week = date('w', strtotime($date)); // 0 (Sunday) to 6 (Saturday)
+        
+        try {
+            // If no specific service requested, get all availability
+            if (!$service_id) {
+                // 1. Get all one-time availability for this specific date
+                $sql = "
+                    SELECT
+                        availability_id,
+                        provider_id,
+                        availability_date,
+                        start_time,
+                        end_time,
+                        service_id,
+                        0 as is_recurring
+                    FROM
+                        provider_availability
+                    WHERE
+                        provider_id = ?
+                        AND availability_date = ?
+                        AND is_available = 1
+                ";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("is", $provider_id, $date);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                while ($row = $result->fetch_assoc()) {
+                    $slots[] = $row;
+                }
+                
+                // 2. Get recurring availability for this day of week
+                $sql = "
+                    SELECT
+                        availability_id,
+                        provider_id,
+                        ? as availability_date,
+                        start_time,
+                        end_time,
+                        service_id,
+                        1 as is_recurring
+                    FROM
+                        provider_availability
+                    WHERE
+                        provider_id = ?
+                        AND is_available = 1
+                        AND is_recurring = 1
+                        AND FIND_IN_SET(?, weekdays) > 0
+                ";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("sis", $date, $provider_id, $day_of_week);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                while ($row = $result->fetch_assoc()) {
+                    $slots[] = $row;
+                }
+            } 
+            else {
+                // When a specific service is requested
+                
+                // 1. First try to get service-specific one-time availability
+                $sql = "
+                    SELECT
+                        availability_id,
+                        provider_id,
+                        availability_date,
+                        start_time,
+                        end_time,
+                        service_id,
+                        0 as is_recurring
+                    FROM
+                        provider_availability
+                    WHERE
+                        provider_id = ?
+                        AND availability_date = ?
+                        AND is_available = 1
+                        AND service_id = ?
+                ";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("isi", $provider_id, $date, $service_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $serviceSpecificSlots = [];
+                
+                while ($row = $result->fetch_assoc()) {
+                    $serviceSpecificSlots[] = $row;
+                }
+                
+                // 2. Get service-specific recurring availability
+                $sql = "
+                    SELECT
+                        availability_id,
+                        provider_id,
+                        ? as availability_date,
+                        start_time,
+                        end_time,
+                        service_id,
+                        1 as is_recurring
+                    FROM
+                        provider_availability
+                    WHERE
+                        provider_id = ?
+                        AND is_available = 1
+                        AND is_recurring = 1
+                        AND FIND_IN_SET(?, weekdays) > 0
+                        AND service_id = ?
+                ";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("sisi", $date, $provider_id, $day_of_week, $service_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                while ($row = $result->fetch_assoc()) {
+                    $serviceSpecificSlots[] = $row;
+                }
+                
+                // If we found service-specific slots, use only those
+                if (!empty($serviceSpecificSlots)) {
+                    error_log("Found " . count($serviceSpecificSlots) . " service-specific slots for service_id: $service_id");
+                    return $serviceSpecificSlots;
+                }
+                
+                // If no service-specific slots, fall back to general availability (NULL service_id)
+                error_log("No service-specific slots found for service_id: $service_id, using general availability");
+                
+                // 3. Get general one-time availability (NULL service_id)
+                $sql = "
+                    SELECT
+                        availability_id,
+                        provider_id,
+                        availability_date,
+                        start_time,
+                        end_time,
+                        service_id,
+                        0 as is_recurring
+                    FROM
+                        provider_availability
+                    WHERE
+                        provider_id = ?
+                        AND availability_date = ?
+                        AND is_available = 1
+                        AND service_id IS NULL
+                ";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("is", $provider_id, $date);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                while ($row = $result->fetch_assoc()) {
+                    $slots[] = $row;
+                }
+                
+                // 4. Get general recurring availability (NULL service_id)
+                $sql = "
+                    SELECT
+                        availability_id,
+                        provider_id,
+                        ? as availability_date,
+                        start_time,
+                        end_time,
+                        service_id,
+                        1 as is_recurring
+                    FROM
+                        provider_availability
+                    WHERE
+                        provider_id = ?
+                        AND is_available = 1
+                        AND is_recurring = 1
+                        AND FIND_IN_SET(?, weekdays) > 0
+                        AND service_id IS NULL
+                ";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("sis", $date, $provider_id, $day_of_week);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                while ($row = $result->fetch_assoc()) {
+                    $slots[] = $row;
+                }
+            }
+            
+            error_log("getAvailabilityForDate returning " . count($slots) . " slots for provider $provider_id, date $date" . 
+                    ($service_id ? ", service $service_id" : ""));
+            
+            return $slots;
+            
+        } catch (Exception $e) {
+            error_log("Error in getAvailabilityForDate: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            return [];
+        }
+    }
 
-    public function getAvailableSlots($provider_id, $date, $service_duration, $exclude_appointment_id = null) {
+
+    public function getAvailableSlots($provider_id, $date, $service_duration, $service_id = null, $exclude_appointment_id = null) {
         try {
             $slots = [];
             
             // Convert the date parameter to the right format
             $requestedDate = date('Y-m-d', strtotime($date));
             
+            error_log("Getting slots for provider_id=$provider_id, date=$requestedDate, service_duration=$service_duration, service_id=" . ($service_id ?? 'NULL'));
+            
+            // First check if this provider offers the requested service (if service_id is provided)
+            if ($service_id) {
+                $checkServiceSql = "
+                    SELECT COUNT(*) as count
+                    FROM provider_services
+                    WHERE provider_id = ? AND service_id = ? AND is_active = 1
+                ";
+                $stmt = $this->db->prepare($checkServiceSql);
+                $stmt->bind_param("ii", $provider_id, $service_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $row = $result->fetch_assoc();
+                
+                if ($row['count'] == 0) {
+                    error_log("Provider $provider_id does not offer service $service_id");
+                    return []; // Return empty array if provider doesn't offer this service
+                }
+                
+                error_log("Provider $provider_id offers service $service_id - proceeding with availability check");
+            }
+            
             // 1. Get one-time availability (filtered by the requested date)
-            $stmt = $this->db->prepare("
-                SELECT availability_date, start_time, end_time
-                FROM provider_availability
-                WHERE provider_id = ? AND availability_date = ?
-                ORDER BY start_time
-            ");
-            $stmt->bind_param("is", $provider_id, $requestedDate);
+            $sql = "
+                SELECT
+                    availability_id,
+                    availability_date,
+                    start_time,
+                    end_time,
+                    service_id
+                FROM
+                    provider_availability
+                WHERE
+                    provider_id = ?
+                    AND availability_date = ?
+                    AND is_available = 1
+            ";
+            
+            // Add service_id filtering if specified - only show slots specifically for this service or generic slots
+            $params = [$provider_id, $requestedDate];
+            $types = "is";
+            
+            if ($service_id) {
+                $sql .= " AND (service_id = ? OR service_id IS NULL)";
+                $params[] = $service_id;
+                $types .= "i";
+            }
+            
+            $sql .= " ORDER BY start_time";
+            
+            error_log("One-time availability SQL: " . $sql);
+            error_log("Params: " . implode(", ", $params));
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param($types, ...$params);
             $stmt->execute();
             $result = $stmt->get_result();
+            
+            $oneTimeSlots = 0; // For logging
             
             while ($row = $result->fetch_assoc()) {
                 $start = strtotime($row['start_time']);
                 $end = strtotime($row['end_time']);
                 
+                error_log("Processing availability: " . $requestedDate . " " .
+                    $row['start_time'] . "-" . $row['end_time'] .
+                    " (service_id=" . ($row['service_id'] ?? 'NULL') . ")");
+                
                 while ($start + ($service_duration * 60) <= $end) {
+                    $slot_end_time = date("H:i:s", $start + ($service_duration * 60));
                     $slots[] = [
-                        'id' => uniqid('slot_'),  // Generate a unique ID for each slot
+                        'id' => 'slot_' . $row['availability_id'] . '_' . date("His", $start),
                         'start' => $requestedDate . 'T' . date("H:i:s", $start),
-                        'end' => $requestedDate . 'T' . date("H:i:s", $start + ($service_duration * 60)),
+                        'end' => $requestedDate . 'T' . $slot_end_time,
+                        'end_time' => $slot_end_time, // Add this specific field for patient controller
                         'title' => 'Available',
-                        'color' => '#28a745'
+                        'color' => '#28a745',
+                        'extendedProps' => [
+                            'availability_id' => $row['availability_id'],
+                            'service_id' => $row['service_id'] ?? null
+                        ]
                     ];
                     $start += ($service_duration * 60);
+                    $oneTimeSlots++;
                 }
             }
             
-          // 2. Get recurring availability patterns (only for the requested date)
+            error_log("Found $oneTimeSlots one-time availability slots");
+            
+            // 2. Get recurring availability patterns (only for the requested date)
             $dayOfWeek = date('w', strtotime($requestedDate)); // 0 (Sun) to 6 (Sat)
-                        
-            $stmt = $this->db->prepare("
-                SELECT weekdays, start_time, end_time
-                FROM provider_availability
-                WHERE provider_id = ? AND is_available = 1
-            ");
-            $stmt->bind_param("i", $provider_id);
+            
+            // Improved query for recurring availability
+            $sql = "
+                SELECT
+                    availability_id,
+                    weekdays,
+                    start_time,
+                    end_time,
+                    service_id
+                FROM
+                    provider_availability
+                WHERE
+                    provider_id = ?
+                    AND is_available = 1
+                    AND is_recurring = 1
+            ";
+            
+            // Add service_id filtering for recurring slots too - only show slots specifically for this service or generic slots
+            $params = [$provider_id];
+            $types = "i";
+            
+            if ($service_id) {
+                $sql .= " AND (service_id = ? OR service_id IS NULL)";
+                $params[] = $service_id;
+                $types .= "i";
+            }
+            
+            error_log("Recurring availability SQL: " . $sql);
+            error_log("Params: " . implode(", ", $params));
+            error_log("Looking for day of week: " . $dayOfWeek);
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param($types, ...$params);
             $stmt->execute();
             $result = $stmt->get_result();
-                        
+            
+            $recurringSlots = 0; // For logging
+            $recurringCount = 0;
+            
             while ($row = $result->fetch_assoc()) {
+                $recurringCount++;
                 // Fix for null weekdays value - use empty string if null
                 $weekdaysStr = $row['weekdays'] ?? '';
-                $weekdays = !empty($weekdaysStr) ? explode(',', $weekdaysStr) : [];
-                            
-                // Only process if this date matches a recurring weekday pattern
-                if (in_array($dayOfWeek, $weekdays)) {
-                    $start = strtotime($row['start_time']);
-                    $end = strtotime($row['end_time']);
-                                
-                    while ($start + ($service_duration * 60) <= $end) {
-                        $slots[] = [
-                            'id' => uniqid('slot_'),
-                            'start' => $requestedDate . 'T' . date("H:i:s", $start),
-                            'end' => $requestedDate . 'T' . date("H:i:s", $start + ($service_duration * 60)),
-                            'title' => 'Available',
-                            'color' => '#28a745'
-                        ];
-                        $start += ($service_duration * 60);
+                
+                // Debug the weekdays field
+                error_log("Recurring pattern " . $recurringCount . ": weekdays=[" . $weekdaysStr .
+                    "], type=" . gettype($weekdaysStr));
+                
+                // Convert weekdays to array and ensure they're integers
+                $weekdays = [];
+                if (!empty($weekdaysStr)) {
+                    // Handle both comma-separated and CSV formats
+                    $weekdaysArray = explode(',', $weekdaysStr);
+                    foreach ($weekdaysArray as $day) {
+                        $trimmedDay = trim($day);
+                        if (is_numeric($trimmedDay)) {
+                            $weekdays[] = (int)$trimmedDay;
+                        }
                     }
                 }
+                
+                error_log("Parsed weekdays: [" . implode(',', $weekdays) . "]");
+                error_log("Checking if day $dayOfWeek is in weekdays array");
+                error_log("Service ID: " . ($row['service_id'] ?? 'NULL'));
+                
+                // Only process if this date matches a recurring weekday pattern
+                if (in_array((int)$dayOfWeek, $weekdays)) {
+                    $start = strtotime($row['start_time']);
+                    $end = strtotime($row['end_time']);
+                    
+                    error_log("MATCH! Recurring pattern for day $dayOfWeek: " . $row['start_time'] . "-" . $row['end_time']);
+                    
+                    while ($start + ($service_duration * 60) <= $end) {
+                        $slot_end_time = date("H:i:s", $start + ($service_duration * 60));
+                        $slots[] = [
+                            'id' => 'slot_' . $row['availability_id'] . '_' . date("His", $start),
+                            'start' => $requestedDate . 'T' . date("H:i:s", $start),
+                            'end' => $requestedDate . 'T' . $slot_end_time,
+                            'end_time' => $slot_end_time, // Add this specific field for patient controller
+                            'title' => 'Available (Recurring)',
+                            'color' => '#28a745',
+                            'extendedProps' => [
+                                'availability_id' => $row['availability_id'],
+                                'service_id' => $row['service_id'] ?? null,
+                                'is_recurring' => true
+                            ]
+                        ];
+                        $start += ($service_duration * 60);
+                        $recurringSlots++;
+                    }
+                } else {
+                    error_log("Day $dayOfWeek not found in weekdays [" . implode(',', $weekdays) . "]");
+                }
             }
-
+            
+            error_log("Found $recurringSlots recurring availability slots from $recurringCount patterns");
             
             // 3. Remove slots that conflict with existing appointments
-            // (This part assumes you have a method to get booked appointments)
             if (!empty($slots)) {
-                $bookedSlots = $this->getBookedAppointments($provider_id);
+                // Modified to get booked appointments for the specific date only
+                $bookedAppointments = $this->getBookedAppointmentsForDate($provider_id, $requestedDate);
                 
-                if (!empty($bookedSlots)) {
-                    foreach ($bookedSlots as $booked) {
-                        $bookedStart = strtotime($booked['start_time']);
-                        $bookedEnd = strtotime($booked['end_time']);
+                error_log("Found " . count($bookedAppointments) . " booked appointments to check for conflicts");
+                
+                if (!empty($bookedAppointments)) {
+                    $originalCount = count($slots);
+                    foreach ($bookedAppointments as $booked) {
+                        // Skip canceled appointments and the excluded appointment
+                        if ($booked['status'] === 'canceled' ||
+                            ($exclude_appointment_id && $booked['appointment_id'] == $exclude_appointment_id)) {
+                            error_log("Skipping appointment ID " . $booked['appointment_id'] . " (status=" . $booked['status'] . ")");
+                            continue;
+                        }
+                        
+                        $bookedDate = $booked['appointment_date'];
+                        $bookedStart = strtotime($bookedDate . ' ' . $booked['start_time']);
+                        $bookedEnd = strtotime($bookedDate . ' ' . $booked['end_time']);
+                        
+                        error_log("Checking conflicts with appointment: " . $bookedDate . " " .
+                            $booked['start_time'] . "-" . $booked['end_time'] .
+                            " (status=" . $booked['status'] . ")");
                         
                         // Remove slots that overlap with booked appointments
                         $slots = array_filter($slots, function($slot) use ($bookedStart, $bookedEnd) {
-                            $slotStart = strtotime(substr($slot['start'], 11));
-                            $slotEnd = strtotime(substr($slot['end'], 11));
+                            $slotStart = strtotime(substr($slot['start'], 0, 10) . ' ' . substr($slot['start'], 11));
+                            $slotEnd = strtotime(substr($slot['end'], 0, 10) . ' ' . substr($slot['end'], 11));
                             
                             // No overlap if slot ends before booked starts or starts after booked ends
-                            return ($slotEnd <= $bookedStart || $slotStart >= $bookedEnd);
+                            $noOverlap = ($slotEnd <= $bookedStart || $slotStart >= $bookedEnd);
+                            
+                            if (!$noOverlap) {
+                                error_log("Conflict found: Slot " . date('H:i', $slotStart) . "-" . date('H:i', $slotEnd) .
+                                    " overlaps with appointment " . date('H:i', $bookedStart) . "-" . date('H:i', $bookedEnd));
+                            }
+                            
+                            return $noOverlap;
                         });
                     }
                     
                     // Re-index array after filtering
                     $slots = array_values($slots);
+                    error_log("After conflict removal: " . count($slots) . " slots remain (removed " .
+                        ($originalCount - count($slots)) . " conflicting slots)");
                 }
+            }
+            
+            if (empty($slots)) {
+                error_log("No available slots found after all processing");
+                
+                // DEBUG: Just to test if we can see any slots at all - REMOVE FOR PRODUCTION
+                if (isset($_GET['debug']) && $_GET['debug'] === 'true') {
+                    error_log("Adding test slot for debugging");
+                    $slots[] = [
+                        'id' => 'debug_slot',
+                        'start' => $requestedDate . 'T09:00:00',
+                        'end' => $requestedDate . 'T09:30:00',
+                        'end_time' => '09:30:00', // Add this for the patient controller
+                        'title' => 'TEST SLOT',
+                        'color' => '#ff0000',
+                    ];
+                }
+            } else {
+                error_log("Returning " . count($slots) . " total available slots");
             }
             
             return $slots;
         } catch (Exception $e) {
             error_log("Error fetching available appointments: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             return [];
         }
     }
-    
 
+
+    // Helper method to get booked appointments for a specific date
+    private function getBookedAppointmentsForDate($provider_id, $date) {
+        try {
+            $sql = "
+                SELECT
+                    appointment_id,
+                    appointment_date,
+                    start_time,
+                    end_time,
+                    status
+                FROM
+                    appointments
+                WHERE
+                    provider_id = ?
+                    AND appointment_date = ?
+            ";
+            
+            error_log("Booked appointments SQL: " . $sql);
+            error_log("Params: $provider_id, $date");
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param("is", $provider_id, $date);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            $appointments = [];
+            while ($row = $result->fetch_assoc()) {
+                $appointments[] = $row;
+            }
+            
+            return $appointments;
+        } catch (Exception $e) {
+            error_log("Error fetching booked appointments: " . $e->getMessage());
+            return [];
+        }
+    }
     // Check if provider has a specific service
     public function hasService($provider_id, $service_id) {
         try {
@@ -607,6 +1142,100 @@ class Provider {
             return false;
         }
     }
+    /**
+     * Get a specific availability slot by date and time
+     * 
+     * @param int $provider_id The provider ID
+     * @param string $date The appointment date (YYYY-MM-DD)
+     * @param string $time The appointment start time (HH:MM:SS)
+     * @return array|null The slot data including end_time or null if not found
+     */
+    public function getSlotByDateTime($provider_id, $date, $time) {
+        // Format the date consistently
+        $formattedDate = date('Y-m-d', strtotime($date));
+        
+        error_log("Looking for slot: provider=$provider_id, date=$formattedDate, time=$time");
+        
+        // First check one-time availability
+        $sql = "
+            SELECT
+                availability_id,
+                availability_date,
+                start_time,
+                end_time,
+                service_id
+            FROM
+                provider_availability
+            WHERE
+                provider_id = ?
+                AND availability_date = ?
+                AND start_time <= ?
+                AND end_time > ?
+                AND is_available = 1
+                AND is_recurring = 0
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("isss", $provider_id, $formattedDate, $time, $time);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            $slot = $result->fetch_assoc();
+            error_log("Found one-time slot: " . json_encode($slot));
+            return $slot;
+        }
+        
+        // If not found, check recurring availability
+        $dayOfWeek = date('w', strtotime($formattedDate)); // 0 (Sun) to 6 (Sat)
+        
+        $sql = "
+            SELECT
+                availability_id,
+                weekdays,
+                start_time,
+                end_time,
+                service_id
+            FROM
+                provider_availability
+            WHERE
+                provider_id = ?
+                AND is_available = 1
+                AND is_recurring = 1
+                AND start_time <= ?
+                AND end_time > ?
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("iss", $provider_id, $time, $time);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            // Parse weekdays
+            $weekdaysStr = $row['weekdays'] ?? '';
+            $weekdays = [];
+            
+            if (!empty($weekdaysStr)) {
+                $weekdaysArray = explode(',', $weekdaysStr);
+                foreach ($weekdaysArray as $day) {
+                    $trimmedDay = trim($day);
+                    if (is_numeric($trimmedDay)) {
+                        $weekdays[] = (int)$trimmedDay;
+                    }
+                }
+            }
+            
+            // Check if this recurring slot applies to the current day of week
+            if (in_array((int)$dayOfWeek, $weekdays)) {
+                error_log("Found recurring slot for day $dayOfWeek: " . json_encode($row));
+                return $row;
+            }
+        }
+        
+        error_log("No slot found for provider=$provider_id, date=$formattedDate, time=$time");
+        return null;
+    }
 
 
     // Remove service from provider
@@ -648,6 +1277,52 @@ class Provider {
             return [];
         }
     }
+    /**
+     * Get provider availability filtered by service
+     */
+    public function getServiceAvailability($provider_id, $service_id = null, $date = null) {
+        // Base query
+        $sql = "
+            SELECT * FROM provider_availability
+            WHERE provider_id = ? AND is_available = 1
+        ";
+        
+        $params = [$provider_id];
+        $types = "i";
+        
+        // Add service filter - include slots with NULL service_id (available for all)
+        // or slots matching the requested service_id
+        if ($service_id) {
+            $sql .= " AND (service_id = ? OR service_id IS NULL)";
+            $params[] = $service_id;
+            $types .= "i";
+            // Debug this specific condition
+            error_log("Using service_id filter: $service_id or NULL");
+        } else {
+            error_log("No service_id filter applied");
+        }
+        
+        // Add date filter - FIXED: use availability_date instead of date
+        if ($date) {
+            $sql .= " AND availability_date = ?";
+            $params[] = $date;
+            $types .= "s";
+        } else {
+            // Only future dates if no specific date provided
+            $sql .= " AND availability_date >= CURDATE()";
+        }
+        
+        $sql .= " ORDER BY availability_date ASC, start_time ASC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+
+
     public function getRecurringSchedules($providerId) {
         try {
             $query = "SELECT * FROM recurring_schedules 

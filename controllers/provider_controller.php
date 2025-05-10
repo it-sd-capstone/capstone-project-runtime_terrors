@@ -186,6 +186,233 @@ class ProviderController {
         echo json_encode(['success' => $success, 'message' => $message]);
         exit;
     }
+    /**
+     * Generate service-specific availability slots based on recurring schedule
+     */
+    public function generateServiceSlots() {
+        // Check if it's an AJAX request
+        if (!$this->isAjaxRequest()) {
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        $services = json_decode($_POST['services'], true);
+        $distribution = $_POST['distribution'];
+        $period = (int)$_POST['period'];
+        
+        if (empty($services)) {
+            echo json_encode(['success' => false, 'message' => 'No services selected']);
+            return;
+        }
+        
+        // Get recurring schedule patterns
+        $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+        
+        if (empty($recurringSchedules)) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'No recurring schedule found. Please set up your weekly schedule first.'
+            ]);
+            return;
+        }
+        
+        // Calculate end date based on period (in weeks)
+        $start_date = date('Y-m-d');
+        $end_date = date('Y-m-d', strtotime("+{$period} week"));
+        
+        $count = 0;
+        $current_date = new DateTime($start_date);
+        $end = new DateTime($end_date);
+        
+        // Loop through each day in the specified period
+        while ($current_date <= $end) {
+            $day_of_week = $current_date->format('N'); // 1 (Mon) to 7 (Sun)
+            if ($day_of_week == 7) $day_of_week = 0; // Convert to 0 (Sun) - 6 (Sat) format if needed
+            
+            // Find if there's a recurring schedule for this day
+            $daySchedules = array_filter($recurringSchedules, function($schedule) use ($day_of_week) {
+                return $schedule['day_of_week'] == $day_of_week;
+            });
+            
+            if (!empty($daySchedules)) {
+                foreach ($daySchedules as $schedule) {
+                    $date = $current_date->format('Y-m-d');
+                    
+                    // For this day's schedule, create alternating slots for each service
+                    $this->generateSlotsForDaySchedule(
+                        $provider_id,
+                        $date,
+                        $schedule['start_time'],
+                        $schedule['end_time'],
+                        $services,
+                        $distribution,
+                        $count
+                    );
+                }
+            }
+            
+            // Move to next day
+            $current_date->add(new DateInterval('P1D'));
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'count' => $count,
+            'message' => "Generated {$count} service-specific availability slots"
+        ]);
+        exit;
+    }
+
+    /**
+     * Generate slots for a specific day schedule with multiple services
+     */
+    private function generateSlotsForDaySchedule($provider_id, $date, $start_time, $end_time, $services, $distribution, &$count) {
+        // Start with the first service
+        $serviceIndex = 0;
+        $totalServices = count($services);
+        
+        if ($totalServices === 0) {
+            return;
+        }
+        
+        // Calculate time slots for this day
+        $current_time = new DateTime($date . ' ' . $start_time);
+        $day_end_time = new DateTime($date . ' ' . $end_time);
+        
+        // Different distribution strategies
+        switch ($distribution) {
+            case 'alternate':
+                // Alternate between services for each slot
+                while ($current_time < $day_end_time) {
+                    $service = $services[$serviceIndex % $totalServices];
+                    // Get duration from the correct field
+                    $duration = isset($service['duration']) ? (int)$service['duration'] : 30;
+                    
+                    $slot_start = clone $current_time;
+                    $slot_end = clone $current_time;
+                    $slot_end->add(new DateInterval("PT{$duration}M"));
+                    
+                    // Only create the slot if it fits within the day's schedule
+                    if ($slot_end <= $day_end_time) {
+                        try {
+                            $success = $this->providerModel->addAvailability([
+                                'provider_id' => $provider_id,
+                                'availability_date' => $date,
+                                'start_time' => $slot_start->format('H:i:s'),
+                                'end_time' => $slot_end->format('H:i:s'),
+                                'service_id' => $service['id'],
+                                'max_appointments' => 1,
+                                'is_available' => 1
+                            ]);
+                            
+                            if ($success) {
+                                $count++;
+                            }
+                        } catch (Exception $e) {
+                            // Silent exception handling
+                        }
+                    }
+                    
+                    // Move to next slot and service
+                    $current_time = $slot_end;
+                    $serviceIndex++;
+                }
+                break;
+                
+            case 'blocks':
+                // Create blocks of the same service
+                $blocksPerService = 3; // Number of consecutive slots for each service
+                $blockCount = 0;
+                
+                while ($current_time < $day_end_time) {
+                    $service = $services[$serviceIndex % $totalServices];
+                    $duration = isset($service['duration']) ? (int)$service['duration'] : 30;
+                    
+                    $slot_start = clone $current_time;
+                    $slot_end = clone $current_time;
+                    $slot_end->add(new DateInterval("PT{$duration}M"));
+                    
+                    // Only create the slot if it fits within the day's schedule
+                    if ($slot_end <= $day_end_time) {
+                        try {
+                            $success = $this->providerModel->addAvailability([
+                                'provider_id' => $provider_id,
+                                'availability_date' => $date,
+                                'start_time' => $slot_start->format('H:i:s'),
+                                'end_time' => $slot_end->format('H:i:s'),
+                                'service_id' => $service['id'],
+                                'max_appointments' => 1,
+                                'is_available' => 1
+                            ]);
+                            
+                            if ($success) {
+                                $count++;
+                            }
+                        } catch (Exception $e) {
+                            // Silent exception handling
+                        }
+                    }
+                    
+                    // Move to next slot
+                    $current_time = $slot_end;
+                    $blockCount++;
+                    
+                    // Move to next service after creating the specified number of blocks
+                    if ($blockCount >= $blocksPerService) {
+                        $blockCount = 0;
+                        $serviceIndex++;
+                    }
+                }
+                break;
+                
+            case 'priority':
+                // Prioritize services in the order they were selected
+                foreach ($services as $index => $service) {
+                    $duration = isset($service['duration']) ? (int)$service['duration'] : 30;
+                    $service_time = clone $current_time;
+                    
+                    while ($service_time < $day_end_time) {
+                        $slot_start = clone $service_time;
+                        $slot_end = clone $service_time;
+                        $slot_end->add(new DateInterval("PT{$duration}M"));
+                        
+                        // Only create the slot if it fits within the day's schedule
+                        if ($slot_end <= $day_end_time) {
+                            try {
+                                $success = $this->providerModel->addAvailability([
+                                    'provider_id' => $provider_id,
+                                    'availability_date' => $date,
+                                    'start_time' => $slot_start->format('H:i:s'),
+                                    'end_time' => $slot_end->format('H:i:s'),
+                                    'service_id' => $service['id'],
+                                    'max_appointments' => 1,
+                                    'is_available' => 1
+                                ]);
+                                
+                                if ($success) {
+                                    $count++;
+                                }
+                            } catch (Exception $e) {
+                                // Silent exception handling
+                            }
+                        } else {
+                            break;
+                        }
+                        
+                        // Move to next slot
+                        $service_time = $slot_end;
+                    }
+                    
+                    // Update the overall current time for the next service
+                    if ($index === count($services) - 1) {
+                        $current_time = $day_end_time; // End the loop after last service
+                    }
+                }
+                break;
+        }
+    }
+
 
     /**
      * Handle editing a provider service (custom duration and notes)
@@ -961,9 +1188,9 @@ class ProviderController {
 
     public function manage_services() {
         require_once MODEL_PATH . '/Services.php';
-        $servicesModel = new Services($this->db);
+        $serviceModel = new Services($this->db);
     
-        $services = $servicesModel->getAllServices(); // Fetch services from the database
+        $services = $serviceModel->getAllServices(); // Fetch services from the database
         
         require VIEW_PATH . '/provider/services.php'; // Pass `$services` to the view
     }
@@ -1036,11 +1263,11 @@ class ProviderController {
         include VIEW_PATH . '/provider/appointments.php';
     }
     
-    // Scheduling & Availability Management
+   // Scheduling & Availability Management
     public function schedule() {
         $provider_id = $_SESSION['user_id'];
         
-          // Initialize events array to avoid undefined variable warning
+        // Initialize events array to avoid undefined variable warning
         $events = [];
         
         // Get the provider's current availability/schedules
@@ -1099,8 +1326,8 @@ class ProviderController {
                 
                 $events[] = [
                     'id' => 'avail_' . md5($start_dt . $end_dt),
-                    'title' => date('g:ia', strtotime($row['start_time'])) . ' - ' . 
-                              date('g:ia', strtotime($row['end_time'])) . ' Available',
+                    'title' => date('g:ia', strtotime($row['start_time'])) . ' - ' .
+                            date('g:ia', strtotime($row['end_time'])) . ' Available',
                     'start' => $row['availability_date'] . 'T' . $row['start_time'],
                     'end' => $row['availability_date'] . 'T' . $row['end_time'],
                     'color' => '#28a745', // Green
@@ -1115,9 +1342,19 @@ class ProviderController {
         $data['events'] = json_encode($events);
         $data['availableSlots'] = $availableSlots;
         
+        // Load the Services model if not already loaded
+        if (!isset($this->serviceModel)) {
+            require_once MODEL_PATH . '/Services.php';
+            $this->serviceModel = new Services($this->db);
+        }
+        
+        // Fetch provider services for the dropdown
+        $provider_services = $this->serviceModel->getProviderServices($provider_id);
+        
         // Load the view
         include VIEW_PATH . '/provider/schedule.php';
     }
+
 
     // Scheduling & Availability Management
     public function addRecurringSchedule() {

@@ -131,6 +131,28 @@ class AppointmentsController {
         include VIEW_PATH . '/appointments/book.php';
     }
 
+    /**
+     * Marks conflicting time slots as unavailable after booking
+     */
+    private function markTimeSlotAsBooked($provider_id, $date, $start_time, $end_time, $booked_service_id) {
+        // Find all other service availabilities at the same time slot
+        $conflictingAvailabilities = $this->providerModel->getConflictingAvailabilities(
+            $provider_id, 
+            $date, 
+            $start_time, 
+            $end_time,
+            $booked_service_id
+        );
+        
+        // Mark all conflicting slots as unavailable
+        foreach ($conflictingAvailabilities as $availability) {
+            $this->providerModel->updateAvailabilityStatus(
+                $availability['id'], 
+                0 // Set is_available to 0
+            );
+        }
+    }
+
     public function cancel() {
         $appointmentId = $_GET['id'] ?? null;
         $reason = $_GET['reason'] ?? 'No reason provided';
@@ -456,7 +478,7 @@ class AppointmentsController {
             exit;
         }
         $logs = $this->activityLogModel->getAppointmentLogs($appointmentId);
-        include VIEW_PATH . '/appointments/view.php';
+        header('Location: ' . base_url('index.php/provider/appointments'));
     }
 
     public function statistics() {
