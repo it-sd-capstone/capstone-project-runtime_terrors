@@ -57,6 +57,46 @@ class Provider {
         return $row['count'] > 0;
     }
 
+    /**
+     * Add a service to provider's offerings
+     *
+     * @param int $providerId Provider ID
+     * @param int $serviceId Service ID
+     * @param int|null $customDuration Custom duration in minutes (optional)
+     * @param string|null $customNotes Custom notes for this service (optional)
+     * @return bool Success or failure
+     */
+    public function addServiceToProvider($providerId, $serviceId, $customDuration = null, $customNotes = null) {
+        try {
+            // Begin transaction
+            $this->db->begin_transaction();
+            
+            // Insert into provider_services table
+            $stmt = $this->db->prepare(
+                "INSERT INTO provider_services 
+                (provider_id, service_id, custom_duration, custom_notes) 
+                VALUES (?, ?, ?, ?)"
+            );
+            
+            $stmt->bind_param("iiis", $providerId, $serviceId, $customDuration, $customNotes);
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                $this->db->rollback();
+                error_log("Failed to add service to provider: " . $stmt->error);
+                return false;
+            }
+            
+            // Commit transaction
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            error_log("Exception in addServiceToProvider: " . $e->getMessage());
+            return false;
+        }
+    }
+
 
     /**
      * Update provider profile
