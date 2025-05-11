@@ -746,18 +746,21 @@ class AdminController {
         include VIEW_PATH . '/admin/appointments.php';
     }
     
-    public function providers() {
-        // Get all providers with their profile details using the provider model
-        $providers = $this->providerModel->getById();
-        
-        // If providers are empty, use a more specific provider method
-        if (empty($providers)) {
-            // This should be implemented in the Provider model
-            $providers = $this->providerModel->getProvidersWithServiceAndAppointmentCounts();
-        }
-        
-        include VIEW_PATH . '/admin/providers.php';
+public function providers() {
+    // Get provider_id from query if present
+    $provider_id = $_GET['provider_id'] ?? null;
+    $provider = null;
+
+    if ($provider_id) {
+        // Fetch a single provider by ID
+        $provider = $this->providerModel->getById($provider_id);
+        // Optionally, you could also fetch all providers for the sidebar/list
     }
+
+    // Pass both $providers and $provider (if set) to the view
+    include VIEW_PATH . '/admin/providers.php';
+}
+
     
     /**
      * Run a test from the tests directory

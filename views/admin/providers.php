@@ -137,7 +137,7 @@
         </div>
         <div class="card-footer text-muted py-3"> <!-- Added a card footer -->
             <div class="d-flex justify-content-between align-items-center">
-                <span>Total Providers: <?= count($providers) ?></span>
+                <span>Total Providers: <?= isset($providers) && is_array($providers) ? count($providers) : 0 ?></span>
                 <a href="#" class="btn btn-sm btn-outline-secondary">Export List</a>
             </div>
         </div>
