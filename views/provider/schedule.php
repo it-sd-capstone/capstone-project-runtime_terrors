@@ -47,6 +47,9 @@
     padding: 1rem;
     min-height: 700px;
 }
+.schedule-bottom-spacing {
+    margin-bottom: 3rem; /* Adjust as needed for more/less space */
+}
 
 /* Calendar Header Enhancement */
 .fc .fc-toolbar.fc-header-toolbar {
@@ -466,7 +469,7 @@
 }
 </style>
 
-<div class="container-fluid mt-3">
+<div class="container-fluid mt-3 schedule-bottom-spacing">
     <!-- Introduction Card with Instructions -->
     <div class="row mb-3">
         <div class="col-12">
