@@ -785,6 +785,8 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
                         <?php else: ?>
                             <li class="mb-2"><a href="<?= base_url('index.php/auth/logout') ?>">Logout</a></li>
                         <?php endif; ?>
+                        <li class="mb-2"><a href="<?= base_url('index.php/terms') ?>" target="_blank">Terms of Service</a></li>
+                        <li class="mb-2"><a href="<?= base_url('index.php/privacy') ?>" target="_blank">Privacy Policy</a></li>
                     </ul>
                 </div>
                 
