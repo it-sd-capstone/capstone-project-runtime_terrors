@@ -11,6 +11,8 @@ if (!defined('APP_ROOT')) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Policy - Appointment System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
+    <link rel="shortcut icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
     <style>
         body {
             background-color: #f8f9fa;
