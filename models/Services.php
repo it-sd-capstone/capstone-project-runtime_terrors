@@ -357,17 +357,21 @@ class Services {
         }
     }
     
-    /**
+   /**
      * Create a new service
-     * 
+     *
      * @param array $serviceData Service data to insert
      * @return int|bool New service ID or false on failure
      */
     public function createService($serviceData) {
+        error_log("Services::createService called with data: " . json_encode($serviceData));
+        
         try {
             // Validate required fields
             if (empty($serviceData['name']) || empty($serviceData['description'])) {
-                error_log("Missing required fields for service creation");
+                error_log("Missing required fields for service creation - name: " . 
+                    (empty($serviceData['name']) ? "MISSING" : "present") . 
+                    ", description: " . (empty($serviceData['description']) ? "MISSING" : "present"));
                 return false;
             }
             
@@ -376,12 +380,20 @@ class Services {
             $price = $serviceData['price'] ?? 0;
             $isActive = $serviceData['is_active'] ?? 1;
             
+            error_log("Processing service with name: {$serviceData['name']}, price: $price, duration: $duration");
+            
             $query = "INSERT INTO services (name, description, duration, price, is_active)
-                      VALUES (?, ?, ?, ?, ?)";
+                    VALUES (?, ?, ?, ?, ?)";
             
             if ($this->db instanceof mysqli) {
                 $stmt = $this->db->prepare($query);
-                $stmt->bind_param("ssidi", 
+                
+                if (!$stmt) {
+                    error_log("Prepare failed (mysqli): " . $this->db->error);
+                    return false;
+                }
+                
+                $stmt->bind_param("ssidi",
                     $serviceData['name'],
                     $serviceData['description'],
                     $duration,
@@ -389,27 +401,50 @@ class Services {
                     $isActive
                 );
                 
-                if ($stmt->execute()) {
-                    return $this->db->insert_id;
+                $success = $stmt->execute();
+                if (!$success) {
+                    error_log("Execute failed (mysqli): " . $stmt->error);
+                    return false;
                 }
+                
+                $insertId = $this->db->insert_id;
+                error_log("Insert successful, new service ID: " . $insertId);
+                $stmt->close();
+                return $insertId;
+                
             } elseif ($this->db instanceof PDO) {
                 $stmt = $this->db->prepare($query);
+                
+                if (!$stmt) {
+                    error_log("Prepare failed (PDO): " . implode(', ', $this->db->errorInfo()));
+                    return false;
+                }
+                
                 $stmt->bindParam(1, $serviceData['name'], PDO::PARAM_STR);
                 $stmt->bindParam(2, $serviceData['description'], PDO::PARAM_STR);
                 $stmt->bindParam(3, $duration, PDO::PARAM_INT);
                 $stmt->bindParam(4, $price, PDO::PARAM_STR);
                 $stmt->bindParam(5, $isActive, PDO::PARAM_INT);
                 
-                if ($stmt->execute()) {
-                    return $this->db->lastInsertId();
+                $success = $stmt->execute();
+                if (!$success) {
+                    error_log("Execute failed (PDO): " . implode(', ', $stmt->errorInfo()));
+                    return false;
                 }
+                
+                $insertId = $this->db->lastInsertId();
+                error_log("Insert successful, new service ID: " . $insertId);
+                return $insertId;
+            } else {
+                error_log("Unsupported database connection type: " . get_class($this->db));
+                return false;
             }
         } catch (Exception $e) {
-            error_log("Error in createService: " . $e->getMessage());
+            error_log("Exception in createService: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return false;
         }
-        
-        return false;
     }
+
     
     /**
      * Get the total count of services
@@ -528,50 +563,45 @@ class Services {
         return false;
     }
         
-    public function deleteService() {
-        // Ensure we have a POST request with CSRF protection
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $_SESSION['error'] = "Invalid request method";
-            header('Location: ' . base_url('index.php/provider/services'));
-            exit;
+    /**
+     * Delete a service by ID
+     * 
+     * @param int $service_id The ID of the service to delete
+     * @return bool True if deleted successfully, false otherwise
+     */
+    public function deleteService($service_id) {
+        try {
+            error_log("Attempting to delete service with ID: $service_id");
+            
+            // First check if the service exists
+            $query = "SELECT service_id FROM services WHERE service_id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("i", $service_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows === 0) {
+                error_log("Service with ID $service_id not found");
+                return false;
+            }
+            
+            // Delete the service
+            $query = "DELETE FROM services WHERE service_id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("i", $service_id);
+            $success = $stmt->execute();
+            
+            if ($success) {
+                error_log("Service with ID $service_id deleted successfully");
+                return true;
+            } else {
+                error_log("Failed to delete service with ID $service_id: " . $stmt->error);
+                return false;
+            }
+        } catch (Exception $e) {
+            error_log("Exception deleting service with ID $service_id: " . $e->getMessage());
+            return false;
         }
-        
-        // Get the provider_service_id from the POST data
-        $provider_service_id = isset($_POST['provider_service_id']) ? intval($_POST['provider_service_id']) : 0;
-        
-        if (!$provider_service_id) {
-            $_SESSION['error'] = "Invalid service selection";
-            header('Location: ' . base_url('index.php/provider/services'));
-            exit;
-        }
-        
-        // Add debugging
-        error_log("Attempting to delete provider_service_id: $provider_service_id");
-        
-        // Use the session user_id as the provider_id for security
-        $provider_id = $_SESSION['user_id'] ?? 0;
-        
-        if (!$provider_id) {
-            $_SESSION['error'] = "Provider authentication required";
-            header('Location: ' . base_url('index.php/auth/login'));
-            exit;
-        }
-        
-        // Load the provider model
-        require_once MODEL_PATH . '/Provider.php';
-        $providerModel = new Provider($this->db);
-        
-        // Delete the provider service association
-        $result = $providerModel->deleteProviderService($provider_service_id, $provider_id);
-        
-        if ($result) {
-            $_SESSION['success'] = "Service removed from your offerings";
-        } else {
-            $_SESSION['error'] = "Failed to remove service";
-        }
-        
-        header('Location: ' . base_url('index.php/provider/services'));
-        exit;
     }
 
 
