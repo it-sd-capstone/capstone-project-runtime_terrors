@@ -10,17 +10,19 @@
             
             <div class="col-md-2">
                 <h5 class="mb-3">Links</h5>
-                <ul class="list-unstyled">
-                    <li class="mb-2"><a href="<?= base_url('index.php/home') ?>" class="text-white">Home</a></li>
-                    <li class="mb-2"><a href="<?= base_url('index.php/appointments') ?>" class="text-white">Appointments</a></li>
-                    <?php if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']): ?>
-                        <li class="mb-2"><a href="<?= base_url('index.php/auth') ?>" class="text-white">Login</a></li>
-                    <?php else: ?>
-                        <li class="mb-2"><a href="<?= base_url('index.php/auth/logout') ?>" class="text-white">Logout</a></li>
-                    <?php endif; ?>
-                </ul>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="<?= base_url('index.php/home') ?>" class="text-white">Home</a></li>
+                        <li class="mb-2"><a href="<?= base_url('index.php/appointments') ?>" class="text-white">Appointments</a></li>
+                        <?php if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']): ?>
+                            <li class="mb-2"><a href="<?= base_url('index.php/auth') ?>" class="text-white">Login</a></li>
+                        <?php else: ?>
+                            <li class="mb-2"><a href="<?= base_url('index.php/auth/logout') ?>" class="text-white">Logout</a></li>
+                        <?php endif; ?>
+                        <li class="mb-2"><a href="<?= base_url('index.php/terms') ?>" class="text-white" target="_blank">Terms of Service</a></li>
+                        <li class="mb-2"><a href="<?= base_url('index.php/privacy') ?>" class="text-white" target="_blank">Privacy Policy</a></li>
+                    </ul>
             </div>
-            
+                        
             <div class="col-md-3">
                 <h5 class="mb-3">Office Hours</h5>
                 <ul class="list-unstyled">

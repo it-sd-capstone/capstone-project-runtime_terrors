@@ -173,7 +173,8 @@ if (!defined('RECAPTCHA_SITE_KEY')) {
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
                         <label class="form-check-label" for="terms">
-                            I agree to the Terms of Service and Privacy Policy
+                            I agree to the <a href="<?= base_url('index.php/terms') ?>" target="_blank">Terms of Service</a> 
+                            and <a href="<?= base_url('index.php/privacy') ?>" target="_blank">Privacy Policy</a>
                         </label>
                     </div>
                     
