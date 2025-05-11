@@ -71,6 +71,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="<?= base_url('index.php/admin/services/add') ?>" method="post">
+                <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="name" class="form-label">Service Name</label>
@@ -112,14 +113,17 @@
                     <h5 class="modal-title">Confirm Delete</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete the service: <strong><?= htmlspecialchars($service['name'] ?? '') ?></strong>?</p>
-                    <p class="text-danger">This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <a href="<?= base_url('index.php/admin/services/delete/' . $service['service_id']) ?>" class="btn btn-danger">Delete</a>
-                </div>
+                <form action="<?= base_url('index.php/admin/services/delete/' . $service['service_id']) ?>" method="post">
+                    <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete service: <strong><?= htmlspecialchars($service['name']) ?></strong>?</p>
+                        <p class="text-danger">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Delete Service</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

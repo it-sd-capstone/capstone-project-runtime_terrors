@@ -176,7 +176,7 @@ class AdminController {
                     // Load role-specific data if needed
                     $roleData = [];
                     if ($user['role'] === 'provider') {
-                        $roleData = $this->providerModel->getProviderProfile($userId);
+                        $roleData = $this->providerModel->getProviderById($userId);
                     } elseif ($user['role'] === 'patient') {
                         $roleData = $this->userModel->getPatientProfile($userId);
                     }
@@ -373,121 +373,150 @@ class AdminController {
 
     // Manage Services
     public function services($action = null, $id = null) {
-        // If action is specified (add, edit, delete)
-if ($action === 'add') {
-    // Handle form submission for adding a new service
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        // Verify CSRF token
-        if (!verify_csrf_token()) {
-            return;
-        }
-
-        $name = $_POST['name'] ?? '';
-        $description = $_POST['description'] ?? '';
-        $price = $_POST['price'] ?? 0;
-        $duration = $_POST['duration'] ?? 30; // Default duration
-        $is_active = isset($_POST['is_active']) ? 1 : 0;
-
-        // Basic validation
-        $errors = [];
-        if (empty($name)) {
-            $errors[] = "Service name is required";
-        }
-        if (empty($description)) {
-            $errors[] = "Description is required";
-        }
-        if (!is_numeric($price) || $price <= 0) {
-            $errors[] = "Price must be a positive number";
-        }
-
-        if (empty($errors)) {
-            // Create service data array
-            $serviceData = [
-                'name' => $name,
-                'description' => $description,
-                'price' => $price,
-                'duration' => $duration,
-                'is_active' => $is_active
-            ];
-            
-            // Use the service model to create the service
-            $result = $this->serviceModel->createService($serviceData);
-            
-            if ($result) {
-                $_SESSION['success'] = "Service added successfully";
-            } else {
-                $_SESSION['error'] = "Failed to add service";
-            }
-        } else {
-            $_SESSION['error'] = implode("<br>", $errors);
+        error_log("AdminController::services called with action: " . ($action ?? 'null') . 
+              ", id: " . ($id ?? 'null') . 
+              ", method: " . $_SERVER['REQUEST_METHOD']);
+              
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            error_log("POST data received: " . json_encode($_POST));
         }
         
-        // Redirect back to services page
-        header('Location: ' . base_url('index.php/admin/services'));
-        exit;
-    }
-
-            } elseif ($action === 'edit' && $id) {
-                // Handle form submission for editing a service
-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    $name = $_POST['name'] ?? '';
-                    $description = $_POST['description'] ?? '';
-                    $price = $_POST['price'] ?? 0;
-                    $duration = $_POST['duration'] ?? 30;
-                    $is_active = isset($_POST['is_active']) ? 1 : 0;
-    
-                    // Basic validation
-                    $errors = [];
-                    if (empty($name)) {
-                        $errors[] = "Service name is required";
-                    }
-                    if (empty($description)) {
-                        $errors[] = "Description is required";
-                    }
-                    if (!is_numeric($price) || $price <= 0) {
-                        $errors[] = "Price must be a positive number";
-                    }
-    
-                    if (empty($errors)) {
-                        // Create service data array
-                        $serviceData = [
-                            'name' => $name,
-                            'description' => $description,
-                            'price' => $price,
-                            'duration' => $duration,
-                            'is_active' => $is_active
-                        ];
-                        
-                        // Use the service model to update the service
-                        $result = $this->serviceModel->updateService($id, $serviceData);
-                        
-                        if ($result) {
-                            $_SESSION['success'] = "Service updated successfully";
-                        } else {
-                            $_SESSION['error'] = "Failed to update service";
-                        }
-                    } else {
-                        $_SESSION['error'] = implode("<br>", $errors);
-                    }
-                    
-                    // Redirect back to services page
-                    header('Location: ' . base_url('index.php/admin/services'));
-                    exit;
-                }
-    
-                // Get service details for editing
-                $service = $this->serviceModel->getServiceById($id);
+        // If action is specified (add, edit, delete)
+        if ($action === 'add') {
+            // Handle form submission for adding a new service
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                error_log("Processing add service form submission");
                 
-                if ($service) {
-                    // Display edit form
-                    include VIEW_PATH . '/admin/edit_service.php';
-                    return;
-                } else {
-                    $_SESSION['error'] = "Service not found";
+                // Verify CSRF token
+                if (!verify_csrf_token()) {
+                    error_log("CSRF token verification failed");
+                    $_SESSION['error'] = "Security validation failed. Please try again.";
                     header('Location: ' . base_url('index.php/admin/services'));
                     exit;
                 }
-            } elseif ($action === 'delete' && $id) {
+                
+                $name = $_POST['name'] ?? '';
+                $description = $_POST['description'] ?? '';
+                $price = $_POST['price'] ?? 0;
+                $duration = $_POST['duration'] ?? 30; // Default duration
+                $is_active = isset($_POST['is_active']) ? 1 : 0;
+                
+                error_log("Service data: name=$name, price=$price, duration=$duration");
+                
+                // Basic validation
+                $errors = [];
+                if (empty($name)) {
+                    $errors[] = "Service name is required";
+                }
+                if (empty($description)) {
+                    $errors[] = "Description is required";
+                }
+                if (!is_numeric($price) || $price < 0) {
+                    $errors[] = "Price must be a non-negative number";
+                }
+                
+                if (empty($errors)) {
+                    // Create service data array
+                    $serviceData = [
+                        'name' => $name,
+                        'description' => $description,
+                        'price' => $price,
+                        'duration' => $duration,
+                        'is_active' => $is_active
+                    ];
+                    
+                    error_log("Creating service with data: " . json_encode($serviceData));
+                    
+                    // Use the service model to create the service
+                    $result = $this->serviceModel->createService($serviceData);
+                    
+                    error_log("Create service result: " . ($result ? "success ($result)" : "failure"));
+                    
+                    if ($result) {
+                        $_SESSION['success'] = "Service added successfully";
+                    } else {
+                        $_SESSION['error'] = "Failed to add service";
+                    }
+                } else {
+                    error_log("Validation errors: " . implode(", ", $errors));
+                    $_SESSION['error'] = implode("<br>", $errors);
+                }
+                
+                // Redirect back to services page
+                header('Location: ' . base_url('index.php/admin/services'));
+                exit;
+            }
+        } elseif ($action === 'edit' && $id) {
+            // Handle form submission for editing a service
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $name = $_POST['name'] ?? '';
+                $description = $_POST['description'] ?? '';
+                $price = $_POST['price'] ?? 0;
+                $duration = $_POST['duration'] ?? 30;
+                $is_active = isset($_POST['is_active']) ? 1 : 0;
+    
+                // Basic validation
+                $errors = [];
+                if (empty($name)) {
+                    $errors[] = "Service name is required";
+                }
+                if (empty($description)) {
+                    $errors[] = "Description is required";
+                }
+                if (!is_numeric($price) || $price <= 0) {
+                    $errors[] = "Price must be a positive number";
+                }
+    
+                if (empty($errors)) {
+                    // Create service data array
+                    $serviceData = [
+                        'name' => $name,
+                        'description' => $description,
+                        'price' => $price,
+                        'duration' => $duration,
+                        'is_active' => $is_active
+                    ];
+                        
+                    // Use the service model to update the service
+                    $result = $this->serviceModel->updateService($id, $serviceData);
+                        
+                    if ($result) {
+                        $_SESSION['success'] = "Service updated successfully";
+                    } else {
+                        $_SESSION['error'] = "Failed to update service";
+                    }
+                } else {
+                    $_SESSION['error'] = implode("<br>", $errors);
+                }
+                    
+                // Redirect back to services page
+                header('Location: ' . base_url('index.php/admin/services'));
+                exit;
+            }
+    
+            // Get service details for editing
+            $service = $this->serviceModel->getServiceById($id);
+            
+            if ($service) {
+                // Display edit form
+                include VIEW_PATH . '/admin/edit_service.php';
+                return;
+            } else {
+                $_SESSION['error'] = "Service not found";
+                header('Location: ' . base_url('index.php/admin/services'));
+                exit;
+            }
+        } elseif ($action === 'delete' && $id) {
+            // Only process delete on POST requests
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                // Verify CSRF token
+                // if (!verify_csrf_token()) {
+                //     error_log("CSRF token verification failed for delete");
+                //     $_SESSION['error'] = "Security validation failed. Please try again.";
+                //     header('Location: ' . base_url('index.php/admin/services'));
+                //     exit;
+                // }
+                
                 // Use the service model to delete the service
                 $result = $this->serviceModel->deleteService($id);
                 
@@ -500,10 +529,19 @@ if ($action === 'add') {
                 // Redirect back to services page
                 header('Location: ' . base_url('index.php/admin/services'));
                 exit;
+            } else {
+                // If accessed with GET, just redirect to services page
+                $_SESSION['error'] = "Invalid request method for delete";
+                header('Location: ' . base_url('index.php/admin/services'));
+                exit;
             }
+        }
+        
+        // Display the main services page
         
         // Get all services for display
         $services = $this->serviceModel->getAllServices();
+        error_log("Found " . count($services) . " services");
         
         include VIEW_PATH . '/admin/services.php';
     }
