@@ -165,12 +165,41 @@ class ServiceController {
      */
     public function deleteProviderService() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $provider_service_id = intval($_POST['provider_service_id']);
-            $success = $this->serviceModel->deleteService($provider_service_id);
-            $_SESSION[$success ? 'success' : 'error'] = $success ? "Service removed from your offerings." : "Failed to remove service.";
+            // Get provider_service_id from the form
+            $provider_service_id = isset($_POST['provider_service_id']) ? intval($_POST['provider_service_id']) : 0;
+            
+            // Get provider_id from the session instead of from POST data
+            $provider_id = $_SESSION['user_id'];
+            
+            // Debug what we're working with
+            error_log("Deleting service: provider_service_id=$provider_service_id, provider_id=$provider_id");
+            
+            if (!$provider_service_id || !$provider_id) {
+                $_SESSION['error'] = "Missing required information";
+                header('Location: ' . base_url('index.php/provider/services'));
+                exit;
+            }
+            
+            // Load the provider model
+            require_once MODEL_PATH . '/Provider.php';
+            $providerModel = new Provider($this->db);
+            
+            // Call your existing method
+            $result = $providerModel->deleteService($provider_service_id, $provider_id);
+            
+            if ($result) {
+                $_SESSION['success'] = "Service deleted";
+            } else {
+                $_SESSION['error'] = "Failed to delete service";
+            }
+            
             header('Location: ' . base_url('index.php/provider/services'));
             exit;
         }
+        
+        // If not a POST request, redirect back
+        header('Location: ' . base_url('index.php/provider/services'));
+        exit;
     }
 }
 ?>

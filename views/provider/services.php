@@ -114,7 +114,7 @@
                               No services available. Please <a href="#" data-bs-toggle="modal" data-bs-target="#addServiceModal">create a new service</a> first.
                           </div>
                       <?php else: ?>
-                          <form method="POST" action="<?= base_url('index.php/provider/addService') ?>" class="needs-validation" novalidate>
+                          <form method="POST" action="<?= base_url('index.php/serivce/addProviderService') ?>" class="needs-validation" novalidate>
                               <?= csrf_field() ?>
                               <div class="mb-3">
                                   <label for="service_id" class="form-label fw-bold">Select Service:</label>
@@ -198,7 +198,7 @@
                                       </td>
                                       <td class="px-4 py-3 text-center">
                                           <!-- Edit Form -->
-                                          <form method="POST" action="<?= base_url('index.php/provider/editService') ?>" class="d-inline-block" style="width: 120px;">
+                                          <form method="POST" action="<?= base_url('index.php/service/editProviderService') ?>" class="d-inline-block" style="width: 120px;">
                                               <input type="hidden" name="provider_service_id" value="<?= $service['provider_service_id'] ?>">
                                               <?= csrf_field() ?>
                                               <input type="number" name="custom_duration" class="form-control form-control-sm mb-1" 
@@ -210,7 +210,7 @@
                                               <button type="submit" class="btn btn-info btn-sm w-100 mb-1"><i class="fas fa-save"></i> Update</button>
                                           </form>
                                           <!-- Delete Form -->
-                                          <form method="POST" action="<?= base_url('index.php/provider/deleteService') ?>" class="d-inline-block">
+                                          <form method="POST" action="<?= base_url('index.php/service/deleteProviderService') ?>" class="d-inline-block">
                                               <input type="hidden" name="provider_service_id" value="<?= $service['provider_service_id'] ?>">
                                               <?= csrf_field() ?>
                                               <button type="submit" class="btn btn-danger btn-sm w-100" onclick="return confirm('Are you sure you want to remove this service?');">
