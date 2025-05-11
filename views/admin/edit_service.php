@@ -1,3 +1,4 @@
+
 <?php include VIEW_PATH . '/partials/header.php'; ?>
 <div class="container">
     <h2>Edit Service</h2>
@@ -22,6 +23,14 @@
                         <div class="mb-3">
                             <label for="price" class="form-label">Price ($)</label>
                             <input type="number" step="0.01" min="0" class="form-control" id="price" name="price" value="<?= htmlspecialchars($service['price']) ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="duration" class="form-label">Duration (minutes)</label>
+                            <input type="number" min="1" class="form-control" id="duration" name="duration" value="<?= htmlspecialchars($service['duration'] ?? 30) ?>" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" <?= (!isset($service['is_active']) || $service['is_active']) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="is_active">Active</label>
                         </div>
                         <div class="d-flex justify-content-between">
                             <a href="<?= base_url('index.php/admin/services') ?>" class="btn btn-secondary">Cancel</a>

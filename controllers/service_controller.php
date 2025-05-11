@@ -2,6 +2,7 @@
 require_once MODEL_PATH . '/Services.php';
 require_once MODEL_PATH . '/Provider.php';
 
+
 class ServiceController {
     protected $db;
     protected $serviceModel;
@@ -9,6 +10,7 @@ class ServiceController {
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) session_start();
         $this->db = get_db();
+
 
         $this->providerServicesModel = new Provider($this->db);
         $this->serviceModel = new Services($this->db);
@@ -42,6 +44,7 @@ class ServiceController {
      * Process service creation or update
      */
     public function processService() {
+
 
         $errors = [];
         error_log("Session user role: " . ($_SESSION['user_role'] ?? 'not set'));
