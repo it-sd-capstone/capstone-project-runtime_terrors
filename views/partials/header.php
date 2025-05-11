@@ -171,9 +171,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                             <?php if ($userRole === 'admin'): ?>
                                 <!-- Admin Navigation -->
                                 <li class="nav-item">
-                                    <a class="nav-link" href="<?= base_url('index.php/admin') ?>">Dashboard</a>
-                                </li>
-                                <li class="nav-item">
                                     <a class="nav-link" href="<?= base_url('index.php/admin/providers') ?>">Providers</a>
                                 </li>
                                 <li class="nav-item">
@@ -188,9 +185,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                             <?php elseif ($userRole === 'provider'): ?>
                                 <!-- Provider Navigation -->
                                 <li class="nav-item">
-                                    <a class="nav-link" href="<?= base_url('index.php/provider') ?>">Dashboard</a>
-                                </li>
-                                <li class="nav-item">
                                     <a class="nav-link" href="<?= base_url('index.php/provider/services') ?>">Services</a>
                                 </li>
                                 <li class="nav-item">
@@ -201,9 +195,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                                 </li>
                             <?php elseif ($userRole === 'patient'): ?>
                                 <!-- Patient Navigation -->
-                                <li class="nav-item">
-                                    <a class="nav-link" href="<?= base_url('index.php/patient') ?>">Dashboard</a>
-                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="<?= base_url('index.php/patient/book') ?>">Book</a>
                                 </li>

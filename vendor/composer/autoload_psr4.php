@@ -6,5 +6,6 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'PHPStan\\' => array($vendorDir . '/phpstan/phpstan-strict-rules/src', $vendorDir . '/phpstan/phpstan-deprecation-rules/src'),
     'PHPMailer\\PHPMailer\\' => array($vendorDir . '/phpmailer/phpmailer/src'),
 );

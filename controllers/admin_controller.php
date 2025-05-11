@@ -112,31 +112,15 @@ class AdminController {
                         exit;
                     }
                     
-                    
-                    // Begin transaction for safe deletion
-                    $this->db->begin_transaction();
-                    
-                    try {
-                        // Use model methods for deletion
-                        $this->appointmentModel->deleteAppointmentsByUser($userId);
-                        
-                        if ($user['role'] === 'provider') {
-                            $this->providerModel->deleteProviderAvailability($userId);
-                            $this->providerModel->deleteProviderProfile($userId);
-                        } elseif ($user['role'] === 'patient') {
-                            $this->userModel->deletePatientProfile($userId);
-                        }
-                        
-                        $this->userModel->deleteUser($userId);
-                        
+                    // Replace multiple delete calls with one comprehensive deletion
+                    $success = $this->userModel->deleteUserComprehensive($userId);
+
+                    if ($success) {
                         // Log the activity
                         $this->activityLogModel->logUserDeletion($userId, $_SESSION['user_id']);
-                        
-                        // Commit is handled by the models
                         $_SESSION['success'] = "User has been permanently deleted";
-                    } catch (Exception $e) {
-                        error_log("Error deleting user ID {$userId}: " . $e->getMessage());
-                        $_SESSION['error'] = "Error deleting user: " . $e->getMessage();
+                    } else {
+                        $_SESSION['error'] = "Failed to delete user. Check server logs for details.";
                     }
                     
                     // Redirect back to user list
@@ -623,7 +607,7 @@ class AdminController {
                     }
                     if (empty($errors)) {
                         // First get the existing appointment
-                        $appointment = $this->appointmentModel->getAppointmentById($id);
+                        $appointment = $this->appointmentModel->getById($id);
                         
                         if (!$appointment) {
                             $_SESSION['error'] = "Appointment not found";
@@ -663,7 +647,7 @@ class AdminController {
                 // Get appointment details for editing
                 try {
                     // Get appointment details using the model
-                    $appointment = $this->appointmentModel->getAppointmentById($id);
+                    $appointment = $this->appointmentModel->getById($id);
                     
                     if (!$appointment) {
                         $_SESSION['error'] = "Appointment not found";
@@ -710,27 +694,6 @@ class AdminController {
         // Use the appointment model to get all appointments
         $appointments = $this->appointmentModel->getAllAppointments();
         
-        // If the model doesn't have this method yet, fall back to the original code
-        if (empty($appointments) && method_exists($this, 'db')) {
-            $query = "SELECT a.*,
-                CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
-                CONCAT(pr.first_name, ' ', pr.last_name) AS provider_name,
-                s.name AS service_name
-                FROM appointments a
-                JOIN users p ON a.patient_id = p.user_id
-                JOIN users pr ON a.provider_id = pr.user_id
-                JOIN services s ON a.service_id = s.service_id
-                ORDER BY a.appointment_date DESC, a.start_time DESC";
-            $result = $this->db->query($query);
-            $appointments = [];
-            
-            if ($result && $result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    $appointments[] = $row;
-                }
-            }
-        }
-        
         // Get lists of patients, providers, and services for the add form
         $patients = $this->getPatients();
         $providers = $this->getProviders();
@@ -747,17 +710,35 @@ class AdminController {
     }
     
     public function providers() {
+
         // Get all providers with their profile details using the provider model
-        $providers = $this->providerModel->getAllProvidersWithDetails();
+        $providers = $this->providerModel->getbyId($provider_id);
         
         // If providers are empty, use a more specific provider method
         if (empty($providers)) {
             // This should be implemented in the Provider model
-            $providers = $this->providerModel->getProvidersWithServiceAndAppointmentCounts();
+            $providers = $this->providerModel->getProvidersWithServiceAndAppointmentCounts()
         }
         
+        // Enhance provider data with service and appointment counts
+        foreach ($providers as &$provider) {
+            // Get count of services for this provider
+            $services = $this->providerModel->getProviderServices($provider['user_id']);
+            $provider['service_count'] = count($services);
+            
+            // Get upcoming appointments for this provider
+            $appointments = $this->providerModel->getBookedAppointments($provider['user_id']);
+            // Filter for only upcoming appointments
+            $upcomingAppointments = array_filter($appointments, function($appt) {
+                return strtotime($appt['appointment_date']) >= strtotime(date('Y-m-d'));
+            });
+            $provider['appointment_count'] = count($upcomingAppointments);
+        }
+
         include VIEW_PATH . '/admin/providers.php';
     }
+
+
     
     /**
      * Run a test from the tests directory
@@ -941,10 +922,17 @@ class AdminController {
                 'first_name' => $_POST['first_name'] ?? '',
                 'last_name' => $_POST['last_name'] ?? '',
                 'email' => $_POST['email'] ?? '',
-                'password' => $_POST['password'] ?? '',
                 'phone' => $_POST['phone'] ?? '',
                 'role' => 'provider' // Force role to be provider
             ];
+            
+            // Generate a secure random password if none provided
+            if (empty($_POST['password'])) {
+                $generatedPassword = bin2hex(random_bytes(4)); // 8 character password
+                $userData['password'] = $generatedPassword; // Store to display once
+            } else {
+                $password = $_POST['password'];
+            }
             
             // Provider-specific data
             $providerData = [
@@ -960,7 +948,6 @@ class AdminController {
             if (empty($userData['first_name'])) $errors[] = "First name is required";
             if (empty($userData['last_name'])) $errors[] = "Last name is required";
             if (empty($userData['email'])) $errors[] = "Email is required";
-            if (empty($userData['password'])) $errors[] = "Password is required";
             
             if (!empty($errors)) {
                 $_SESSION['error'] = implode("<br>", $errors);
@@ -973,7 +960,7 @@ class AdminController {
                 $this->db->begin_transaction();
                 
                 // Register the user first
-                $userId = $this->userModel->register(
+                $result = $this->userModel->register(
                     $userData['email'],
                     password_hash($userData['password'], PASSWORD_DEFAULT),
                     $userData['first_name'],
@@ -981,20 +968,31 @@ class AdminController {
                     $userData['phone'],
                     'provider'
                 );
-                
-                if (!$userId) {
-                    throw new Exception("Failed to create user account");
+
+                // Handle the result array properly
+                if (isset($result['user_id'])) {
+                    $userId = $result['user_id'];
+                    error_log("User created with ID: " . $userId);
+                } else if (isset($result['error'])) {
+                    throw new Exception($result['error']);
+                } else {
+                    throw new Exception("Unknown error during user registration");
                 }
                 
-                // Create provider profile
+                // Add debug logging
+                error_log("User created with ID: " . $userId);
+                
+                // Create provider profile with detailed logging
+                error_log("Creating provider profile with data: " . print_r($providerData, true));
                 $profileCreated = $this->providerModel->createProviderProfile($userId, $providerData);
                 
                 if (!$profileCreated) {
                     throw new Exception("Failed to create provider profile");
                 }
-                
-                // Commit transaction
-                $this->db->commit();
+
+                // Add debug logging
+                error_log("Provider profile created successfully");
+
                 
                 // Log the activity
                 $this->activityLogModel->logActivity(
@@ -1002,8 +1000,13 @@ class AdminController {
                     "Admin created new provider: {$userData['first_name']} {$userData['last_name']}",
                     $_SESSION['user_id']
                 );
+                // Commit transaction
+                $this->db->commit();
                 
-                $_SESSION['success'] = "Provider created successfully";
+                // Store the password in the session specifically for display
+                $_SESSION['success'] = "Provider created successfully! Temporary password: <strong>" . $generatedPassword . "</strong>";
+                $_SESSION['show_password'] = true; // Add a flag to indicate password should be shown
+                
                 header('Location: ' . base_url('index.php/admin/providers'));
                 exit;
                 
@@ -1020,6 +1023,7 @@ class AdminController {
         // Display the add provider form
         include VIEW_PATH . '/admin/add_provider.php';
     }
+
 
     /**
      * Manage services offered by a provider
@@ -1125,10 +1129,6 @@ class AdminController {
             return !in_array($service['service_id'], $providerServiceIds);
         });
         
-        // Include the admin header
-        include VIEW_PATH . '/partials/admin_header.php';
-        
-        include VIEW_PATH . '/admin/provider_services.php';
         
         // Include the footer
         include VIEW_PATH . '/partials/footer.php';

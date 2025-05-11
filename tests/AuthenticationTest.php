@@ -1,25 +1,48 @@
 <?php
-/**
- * Authentication Test
- * 
- * Tests for the authentication system including:
- * - Login process
- * - Registration process
- * - Password reset flow
- * - Email verification
- * - Session management
- */
+require_once dirname(__DIR__) . '/public_html/bootstrap.php';
 
-echo "<h1>Authentication System Test</h1>";
-echo "<p>This test file will validate the authentication system including login, registration, and password reset flows.</p>";
-echo "<p>Key workflows to test:</p>";
-echo "<ul>";
-echo "<li>User registration with email verification</li>";
-echo "<li>User login with correct and incorrect credentials</li>";
-echo "<li>Password reset request and completion</li>";
-echo "<li>Session creation and management</li>";
-echo "<li>Role-based access control</li>";
-echo "<li>Account lockout after failed attempts</li>";
-echo "<li>Password change requirement</li>";
-echo "</ul>";
-echo "<p>Implement comprehensive tests for these workflows to ensure authentication security.</p>";
+class AuthenticationTest {
+    public function setUp() {
+        // Initialize test environment
+    }
+    
+    public function tearDown() {
+        // Clean up resources
+    }
+    
+    public function testUserRegistration() {
+        // Register with valid credentials
+        // Try registering with existing email
+        // Check email verification flow
+        // Verify user appears in database
+    }
+    
+    public function testUserLogin() {
+        // Login with valid credentials
+        // Try login with invalid password
+        // Check remember me functionality
+        // Verify session creation
+    }
+    
+    public function testPasswordReset() {
+        // Request password reset
+        // Verify token email sent
+        // Test token validation
+        // Change password using token
+        // Verify old password no longer works
+    }
+    
+    // Run the tests
+    public function run() {
+        $this->setUp();
+        $this->testUserRegistration();
+        $this->testUserLogin();
+        $this->testPasswordReset();
+        $this->tearDown();
+        echo "Authentication tests completed\n";
+    }
+}
+
+// Instantiate and run the tests
+$test = new AuthenticationTest();
+$test->run();

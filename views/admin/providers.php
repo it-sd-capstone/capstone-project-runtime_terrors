@@ -1,5 +1,28 @@
 <?php include VIEW_PATH . '/partials/header.php'; ?>
 
+<!-- Add this at the top of your providers.php view, right after including the header -->
+<?php if (isset($_SESSION['success']) && isset($_SESSION['show_password'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i>
+        <?= $_SESSION['success'] ?>
+        <div class="mt-2">
+            <strong>IMPORTANT:</strong> Please copy this password now. For security reasons, it will not be shown again.
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php 
+    // Remove the password display flag so it's only shown once
+    unset($_SESSION['show_password']); 
+    ?>
+<?php elseif (isset($_SESSION['success'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i>
+        <?= $_SESSION['success'] ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
 <!-- Change from container to container-fluid for full width -->
 <div class="container-fluid my-4" style="min-height: 80vh; padding-bottom: 40px;">
     <div class="row mb-4">  <!-- Increased bottom margin -->
@@ -137,7 +160,7 @@
         </div>
         <div class="card-footer text-muted py-3"> <!-- Added a card footer -->
             <div class="d-flex justify-content-between align-items-center">
-                <span>Total Providers: <?= count($providers) ?></span>
+                <span>Total Providers: <?= isset($providers) && is_array($providers) ? count($providers) : 0 ?></span>
                 <a href="#" class="btn btn-sm btn-outline-secondary">Export List</a>
             </div>
         </div>

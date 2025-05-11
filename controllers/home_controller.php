@@ -1,3 +1,4 @@
+
 <?php
 require_once __DIR__ . '/../models/home_model.php';
 
@@ -15,12 +16,27 @@ class HomeController {
     }
     
     public function index() {
-        // Determine user role
-        $isLoggedIn = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
-        $userRole = $isLoggedIn ? $_SESSION['role'] : 'guest';
-        $userId = $isLoggedIn ? $_SESSION['user_id'] : null;
-        
-        // Default data for all users
+        // Redirect logged-in users to their dashboards
+        if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
+            $role = $_SESSION['role'];
+            if ($role === 'guest') {
+                header('Location: ' . base_url('index.php/home/index'));
+                exit;
+            } elseif ($role === 'patient') {
+                header('Location: ' . base_url('index.php/patient/index'));
+                exit;
+            } elseif ($role === 'provider') {
+                header('Location: ' . base_url('index.php/provider/index'));
+                exit;
+            } elseif ($role === 'admin') {
+                header('Location: ' . base_url('index.php/admin'));
+                exit;
+            }
+        }
+
+        // Not logged in: set userRole for the view
+
+        // Prepare data for the view
         $featuredServices = [
             [
                 'service_id' => 1,
@@ -44,10 +60,7 @@ class HomeController {
                 'icon' => 'heartbeat'
             ]
         ];
-        // Pass data to the view
-        $data['featuredServices'] = $featuredServices;
 
-        
         $featuredProviders = [
             [
                 'user_id' => 1,
@@ -92,59 +105,24 @@ class HomeController {
                 'patient_since' => '2022'
             ]
         ];
-        
-        // User-specific data
-        $upcomingAppointments = [];
-        $availabilityData = [];
-        $dashboardStats = [];
-        
-        // Fetch user-specific data based on role
-        if ($isLoggedIn) {
-            if ($userRole === 'patient') {
-                // Get upcoming appointments for patient
-                $upcomingAppointments = $this->getPatientAppointments($userId);
-            } elseif ($userRole === 'provider') {
-                // Get today's schedule and availability for provider
-                $upcomingAppointments = $this->getProviderAppointments($userId);
-                $availabilityData = $this->getProviderAvailability($userId);
-            } elseif ($userRole === 'admin') {
-                // Get system-wide stats for admin
-                $dashboardStats = $this->getAdminStats();
-            }
-        }
-        
-        // Get Patient Insights data for providers and admins
-        if ($isLoggedIn && ($userRole === 'provider' || $userRole === 'admin')) {
-            // Get provider ID (for provider-specific data)
-            $provider_id = $userRole === 'provider' ? $userId : null;
-            
-            // Get patient insights data
-            $patientInsights = [
-                'trends' => $this->getAppointmentTrends($provider_id),
-                'demographics' => $this->getPatientDemographics($provider_id),
-                'satisfaction' => $this->getSatisfactionRating($provider_id)
-            ];
-        }
-        
+
         // Get some basic stats for the home page
         $stats = [];
-        
-        // Only show provider stats if there are providers
         if ($this->getCount('users', "role = 'provider'") > 0) {
             $stats['totalProviders'] = $this->getCount('users', "role = 'provider'");
-            
-            // Get total number of services
             if ($this->tableExists('services')) {
                 $stats['totalServices'] = $this->getCount('services');
             }
         }
-        
+
+        // Pass all data to the view (if you use extract($data), otherwise just set variables)
+        // $data = compact('userRole', 'featuredServices', 'featuredProviders', 'testimonials', 'stats');
+        // extract($data);
+
         include VIEW_PATH . '/home/index.php';
     }
     
-    /**
-     * Check if database connection is working
-     */
+    /** @phpstan-ignore-next-line */
     private function checkDatabaseConnection() {
         if (!$this->db) {
             return false;
@@ -162,41 +140,41 @@ class HomeController {
     /**
      * Debug table structure
      */
-    private function debugTableStructure($tableName) {
-        if (!$this->tableExists($tableName)) {
-            return false;
-        }
+    // private function debugTableStructure($tableName) {
+    //     if (!$this->tableExists($tableName)) {
+    //         return false;
+    //     }
         
-        $query = "DESCRIBE $tableName";
-        $result = $this->db->query($query);
+    //     $query = "DESCRIBE $tableName";
+    //     $result = $this->db->query($query);
         
-        if (!$result) {
-            return false;
-        }
+    //     if (!$result) {
+    //         return false;
+    //     }
         
-        $columns = [];
-        while ($row = $result->fetch_assoc()) {
-            $columns[] = $row;
-        }
+    //     $columns = [];
+    //     while ($row = $result->fetch_assoc()) {
+    //         $columns[] = $row;
+    //     }
         
-        return true;
-    }
+    //     return true;
+    // }
     
     /**
      * Check if a table has any data
      */
-    private function hasData($tableName, $whereClause = '') {
-        $query = "SELECT COUNT(*) as count FROM $tableName";
-        if (!empty($whereClause)) {
-            $query .= " WHERE $whereClause";
-        }
+    // private function hasData($tableName, $whereClause = '') {
+    //     $query = "SELECT COUNT(*) as count FROM $tableName";
+    //     if (!empty($whereClause)) {
+    //         $query .= " WHERE $whereClause";
+    //     }
         
-        $result = $this->db->query($query);
-        if ($result && $row = $result->fetch_assoc()) {
-            return $row['count'] > 0;
-        }
-        return false;
-    }
+    //     $result = $this->db->query($query);
+    //     if ($result && $row = $result->fetch_assoc()) {
+    //         return $row['count'] > 0;
+    //     }
+    //     return false;
+    // }
     
     /**
      * About page for the application

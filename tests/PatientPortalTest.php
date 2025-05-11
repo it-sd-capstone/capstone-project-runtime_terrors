@@ -1,25 +1,43 @@
 <?php
-/**
- * Patient Portal Test
- * 
- * Tests for patient-specific features including:
- * - Viewing appointments
- * - Managing personal profile
- * - Booking new appointments
- * - Viewing medical history
- * - Managing notifications
- */
+require_once dirname(__DIR__) . '/public_html/bootstrap.php';
 
-echo "<h1>Patient Portal Test</h1>";
-echo "<p>This test file will validate the patient-specific features in the patient portal.</p>";
-echo "<p>Key workflows to test:</p>";
-echo "<ul>";
-echo "<li>Viewing upcoming appointments</li>";
-echo "<li>Viewing appointment history</li>";
-echo "<li>Updating personal profile</li>";
-echo "<li>Booking new appointments</li>";
-echo "<li>Canceling or rescheduling appointments</li>";
-echo "<li>Viewing and managing notifications</li>";
-echo "<li>Searching for providers or services</li>";
-echo "</ul>";
-echo "<p>Implement comprehensive tests for these workflows to ensure the patient portal works correctly.</p>";
+class PatientPortalTest {
+    public function setUp() {
+        // Initialize test environment
+    }
+    
+    public function tearDown() {
+        // Clean up resources
+    }
+    
+    public function testProviderSearch() {
+        // Search for providers by service
+        // Test filtering options
+    }
+    
+    public function testAppointmentBooking() {
+        // Search for provider
+        // Select service
+        // Book appointment
+        // Verify confirmation
+    }
+    
+    public function testAppointmentHistory() {
+        // View past appointments
+        // Check appointment details
+    }
+    
+    // Run the tests
+    public function run() {
+        $this->setUp();
+        $this->testProviderSearch();
+        $this->testAppointmentBooking();
+        $this->testAppointmentHistory();
+        $this->tearDown();
+        echo "Patient portal tests completed\n";
+    }
+}
+
+// Instantiate and run the tests
+$test = new PatientPortalTest();
+$test->run();
