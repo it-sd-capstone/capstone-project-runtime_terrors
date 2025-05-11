@@ -1302,26 +1302,25 @@ class Provider {
 
 
     // Get all providers (needed for listing providers)
-    public function getAll() {
-        try {
-            $stmt = $this->db->prepare("
-                SELECT u.user_id, u.first_name, u.last_name, u.email, u.is_active, 
-                       pp.specialization, pp.title, pp.bio, pp.accepting_new_patients
-                FROM users u
-                JOIN provider_profiles pp ON u.user_id = pp.provider_id
-                WHERE u.role = 'provider' AND u.is_active = 1
-            ");
-            $stmt->execute();
-            $result = $stmt->get_result();
-            return $result->fetch_all(MYSQLI_ASSOC) ?: [];
-        } catch (Exception $e) {
-            error_log("Error fetching all providers: " . $e->getMessage());
-            return [];
-        }
-    }
-    /**
-     * Get provider availability filtered by service
-     */
+
+  public function getAll() {
+      try {
+          $stmt = $this->db->prepare("
+              SELECT u.user_id, u.first_name, u.last_name, u.email, u.phone, u.is_active,
+                     pp.specialization, pp.title, pp.bio, pp.accepting_new_patients
+              FROM users u
+              JOIN provider_profiles pp ON u.user_id = pp.provider_id
+              WHERE u.role = 'provider' AND u.is_active = 1
+          ");
+          $stmt->execute();
+          $result = $stmt->get_result();
+          return $result->fetch_all(MYSQLI_ASSOC) ?: [];
+      } catch (Exception $e) {
+          error_log("Error fetching all providers: " . $e->getMessage());
+          return [];
+      }
+  }
+
     public function getServiceAvailability($provider_id, $service_id = null, $date = null) {
         // Base query
         $sql = "

@@ -747,6 +747,7 @@ class Appointment {
         }
         return $slots;
     }
+
     /**
      * Update an appointment with all details.
      * @param int $appointment_id The ID of the appointment to update
@@ -819,7 +820,6 @@ class Appointment {
             return false;
         }
     }
-
 
     /**
      * Get appointment counts by type.
