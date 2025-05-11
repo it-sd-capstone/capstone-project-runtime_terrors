@@ -744,22 +744,22 @@ class AdminController {
         ];
         
         include VIEW_PATH . '/admin/appointments.php';
-    }
-    
-public function providers() {
+    }public function providers() {
     // Get provider_id from query if present
     $provider_id = $_GET['provider_id'] ?? null;
     $provider = null;
 
+    // Always fetch all providers for the list
+    $providers = $this->providerModel->getAll();
+
+    // If a specific provider is requested, fetch it
     if ($provider_id) {
-        // Fetch a single provider by ID
         $provider = $this->providerModel->getById($provider_id);
-        // Optionally, you could also fetch all providers for the sidebar/list
     }
 
-    // Pass both $providers and $provider (if set) to the view
     include VIEW_PATH . '/admin/providers.php';
 }
+
 
     
     /**

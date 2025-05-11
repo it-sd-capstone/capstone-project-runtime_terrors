@@ -1303,7 +1303,7 @@ class Provider {
     public function getAll() {
         try {
             $stmt = $this->db->prepare("
-                SELECT u.user_id, u.first_name, u.last_name, 
+                SELECT u.user_id, u.first_name, u.last_name, u.email, 
                        pp.specialization, pp.title, pp.bio, pp.accepting_new_patients
                 FROM users u
                 JOIN provider_profiles pp ON u.user_id = pp.provider_id
