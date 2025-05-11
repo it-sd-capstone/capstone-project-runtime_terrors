@@ -107,7 +107,32 @@ class Services {
         
         return $services;
     }
-    
+    /**
+     * Get services offered by a specific provider
+     * 
+     * @param int $provider_id The provider's user_id
+     * @return array Array of services with details
+     */
+    public function getProviderServices($provider_id) {
+        $sql = "
+            SELECT s.*, 
+                ps.provider_service_id,
+                ps.custom_duration,
+                ps.custom_notes
+            FROM services s
+            JOIN provider_services ps ON s.service_id = ps.service_id
+            WHERE ps.provider_id = ? AND s.is_active = 1
+            ORDER BY s.name
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $provider_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+
     /**
      * Get all active services - WRAPPER for backward compatibility
      *
@@ -503,50 +528,52 @@ class Services {
         return false;
     }
         
-    /**
-     * Delete a service (or deactivate it)
-     * 
-     * @param int $serviceId Service ID to delete
-     * @param bool $permanent Whether to permanently delete or just deactivate
-     * @return bool Success flag
-     */
-    public function deleteService($serviceId, $permanent = false) {
-        try {
-            // Check if service is in use
-            $query = "SELECT COUNT(*) as count FROM appointments WHERE service_id = ?";
-            $stmt = $this->db->prepare($query);
-            $stmt->bind_param("i", $serviceId);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $row = $result->fetch_assoc();
-            
-            // If service is in use and permanent deletion requested, don't allow it
-            if ($permanent && $row['count'] > 0) {
-                error_log("Cannot permanently delete service ID $serviceId - it is used in appointments");
-                return false;
-            }
-            
-            if ($permanent) {
-                $query = "DELETE FROM services WHERE service_id = ?";
-            } else {
-                $query = "UPDATE services SET is_active = 0 WHERE service_id = ?";
-            }
-            
-            if ($this->db instanceof mysqli) {
-                $stmt = $this->db->prepare($query);
-                $stmt->bind_param("i", $serviceId);
-                return $stmt->execute();
-            } elseif ($this->db instanceof PDO) {
-                $stmt = $this->db->prepare($query);
-                $stmt->bindParam(1, $serviceId, PDO::PARAM_INT);
-                return $stmt->execute();
-            }
-        } catch (Exception $e) {
-            error_log("Error in deleteService: " . $e->getMessage());
+    public function deleteService() {
+        // Ensure we have a POST request with CSRF protection
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $_SESSION['error'] = "Invalid request method";
+            header('Location: ' . base_url('index.php/provider/services'));
+            exit;
         }
         
-        return false;
+        // Get the provider_service_id from the POST data
+        $provider_service_id = isset($_POST['provider_service_id']) ? intval($_POST['provider_service_id']) : 0;
+        
+        if (!$provider_service_id) {
+            $_SESSION['error'] = "Invalid service selection";
+            header('Location: ' . base_url('index.php/provider/services'));
+            exit;
+        }
+        
+        // Add debugging
+        error_log("Attempting to delete provider_service_id: $provider_service_id");
+        
+        // Use the session user_id as the provider_id for security
+        $provider_id = $_SESSION['user_id'] ?? 0;
+        
+        if (!$provider_id) {
+            $_SESSION['error'] = "Provider authentication required";
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+        
+        // Load the provider model
+        require_once MODEL_PATH . '/Provider.php';
+        $providerModel = new Provider($this->db);
+        
+        // Delete the provider service association
+        $result = $providerModel->deleteProviderService($provider_service_id, $provider_id);
+        
+        if ($result) {
+            $_SESSION['success'] = "Service removed from your offerings";
+        } else {
+            $_SESSION['error'] = "Failed to remove service";
+        }
+        
+        header('Location: ' . base_url('index.php/provider/services'));
+        exit;
     }
+
 
     /**
      * Add a service for a provider
@@ -682,5 +709,38 @@ class Services {
         }
         
         return $services;
+    }
+
+    /**
+     * Edit a provider's service (custom duration and notes)
+     *
+     * @param int $provider_service_id
+     * @param int|null $custom_duration
+     * @param string|null $custom_notes
+     * @return bool Success flag
+     */
+    public function editService($provider_service_id, $custom_duration = null, $custom_notes = null) {
+        try {
+            $query = "UPDATE provider_services SET custom_duration = ?, custom_notes = ? WHERE provider_service_id = ?";
+            if ($this->db instanceof mysqli) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bind_param(
+                    "ssi",
+                    $custom_duration,
+                    $custom_notes,
+                    $provider_service_id
+                );
+                return $stmt->execute();
+            } elseif ($this->db instanceof PDO) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(1, $custom_duration, PDO::PARAM_STR);
+                $stmt->bindParam(2, $custom_notes, PDO::PARAM_STR);
+                $stmt->bindParam(3, $provider_service_id, PDO::PARAM_INT);
+                return $stmt->execute();
+            }
+        } catch (Exception $e) {
+            error_log("Error in editProviderService: " . $e->getMessage());
+        }
+        return false;
     }
 }

@@ -1,25 +1,26 @@
 <?php include VIEW_PATH . '/partials/header.php'; ?>
-<div class="container">
-    <h2>Manage Services</h2>
-    
+<div class="container my-5">
+    <h2 class="mb-4">Manage Services</h2>
     <div class="row mb-3">
         <div class="col-md-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between">
-                    <h5>Service List</h5>
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Service List</h5>
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addServiceModal">
                         Add New Service
                     </button>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead>
+                        <table class="table table-bordered table-hover align-middle">
+                            <thead class="table-light">
                                 <tr>
                                     <th>ID</th>
                                     <th>Name</th>
                                     <th>Description</th>
                                     <th>Price</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -28,9 +29,17 @@
                                     <?php foreach ($services as $service): ?>
                                     <tr>
                                         <td><?= $service['service_id'] ?></td>
-                                        <td><?= htmlspecialchars($service['name']) ?></td>
-                                        <td><?= htmlspecialchars($service['description']) ?></td>
-                                        <td>$<?= number_format($service['price'], 2) ?></td>
+                                        <td><?= htmlspecialchars($service['name'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars($service['description'] ?? '') ?></td>
+                                        <td>$<?= number_format($service['price'] ?? 0, 2) ?></td>
+                                        <td><?= htmlspecialchars($service['duration'] ?? 30) ?> min</td>
+                                        <td>
+                                            <?php if (!isset($service['is_active']) || $service['is_active']): ?>
+                                                <span class="badge bg-success">Active</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <a href="<?= base_url('index.php/admin/services/edit/' . $service['service_id']) ?>" class="btn btn-outline-primary">Edit</a>
@@ -41,7 +50,7 @@
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="5" class="text-center">No services found</td>
+                                        <td colspan="7" class="text-center">No services found</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -73,7 +82,15 @@
                     </div>
                     <div class="mb-3">
                         <label for="price" class="form-label">Price ($)</label>
-                        <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+                        <input type="number" step="0.01" min="0" class="form-control" id="price" name="price" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="duration" class="form-label">Duration (minutes)</label>
+                        <input type="number" min="1" class="form-control" id="duration" name="duration" value="30" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" checked>
+                        <label class="form-check-label" for="is_active">Active</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -96,7 +113,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to delete the service: <strong><?= htmlspecialchars($service['name']) ?></strong>?</p>
+                    <p>Are you sure you want to delete the service: <strong><?= htmlspecialchars($service['name'] ?? '') ?></strong>?</p>
                     <p class="text-danger">This action cannot be undone.</p>
                 </div>
                 <div class="modal-footer">

@@ -68,7 +68,352 @@ class ProviderController {
         // Load the view
         include VIEW_PATH . '/provider/index.php';
     }
-    
+    /**
+     * Delete all availability slots within a date range
+     */
+    public function deleteAvailabilityRange() {
+        // Check for AJAX request to avoid direct access
+        if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
+            header('HTTP/1.0 403 Forbidden');
+            echo "Direct access not allowed.";
+            exit;
+        }
+        
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+            exit;
+        }
+        
+        // Get the JSON data sent in the request
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        
+        if (!$data || !isset($data['start_date']) || !isset($data['end_date'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Missing required data']);
+            exit;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        $start_date = $data['start_date'];
+        $end_date = $data['end_date'];
+        
+        // Log information to debug the issue
+        error_log("Deleting availability range for provider $provider_id from $start_date to $end_date");
+        
+        // Implement a temporary SQL query solution if the model method might not be available yet
+        try {
+            $stmt = $this->db->prepare("
+                DELETE FROM provider_availability 
+                WHERE provider_id = ? 
+                AND availability_date BETWEEN ? AND ?
+            ");
+            
+            $stmt->bind_param("iss", $provider_id, $start_date, $end_date);
+            $stmt->execute();
+            
+            $count = $stmt->affected_rows;
+            
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true, 
+                'message' => "Successfully deleted availability slots in the selected range",
+                'count' => $count
+            ]);
+        } catch (Exception $e) {
+            error_log("Error deleting availability range: " . $e->getMessage());
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /**
+     * Delete a schedule event (handles both regular and recurring)
+     */
+    public function deleteScheduleEvent() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+            exit;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get JSON data from request
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        
+        if (!$data || !isset($data['id'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Missing event ID']);
+            exit;
+        }
+        
+        $eventId = $data['id'];
+        $success = false;
+        $message = '';
+        
+        // Check if this is a recurring schedule or regular availability
+        if (strpos($eventId, 'recurring_') === 0) {
+            // Extract the actual schedule ID from the event ID
+            $parts = explode('_', $eventId);
+            $scheduleId = $parts[1] ?? null;
+            
+            if ($scheduleId) {
+                // Delete recurring schedule using the new method
+                $success = $this->providerModel->deleteRecurringSchedule($scheduleId, $provider_id);
+                $message = $success ? 'Recurring schedule deleted' : 'Failed to delete recurring schedule';
+            } else {
+                $message = 'Invalid recurring schedule ID format';
+            }
+        } else {
+            // For regular availability, extract numeric ID if it's not already
+            $availabilityId = is_numeric($eventId) ? $eventId : 
+                            (preg_match('/(\d+)/', $eventId, $matches) ? $matches[1] : null);
+            
+            if ($availabilityId) {
+                // Use your existing method
+                $success = $this->providerModel->deleteAvailability($availabilityId, $provider_id);
+                $message = $success ? 'Availability slot deleted' : 'Failed to delete availability slot';
+            } else {
+                $message = 'Invalid availability ID format';
+            }
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $success, 'message' => $message]);
+        exit;
+    }
+    /**
+     * Generate service-specific availability slots based on recurring schedule
+     */
+    public function generateServiceSlots() {
+        // Check if it's an AJAX request
+        if (!$this->isAjaxRequest()) {
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        $services = json_decode($_POST['services'], true);
+        $distribution = $_POST['distribution'];
+        $period = (int)$_POST['period'];
+        
+        if (empty($services)) {
+            echo json_encode(['success' => false, 'message' => 'No services selected']);
+            return;
+        }
+        
+        // Get recurring schedule patterns
+        $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+        
+        if (empty($recurringSchedules)) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'No recurring schedule found. Please set up your weekly schedule first.'
+            ]);
+            return;
+        }
+        
+        // Calculate end date based on period (in weeks)
+        $start_date = date('Y-m-d');
+        $end_date = date('Y-m-d', strtotime("+{$period} week"));
+        
+        $count = 0;
+        $current_date = new DateTime($start_date);
+        $end = new DateTime($end_date);
+        
+        // Loop through each day in the specified period
+        while ($current_date <= $end) {
+            $day_of_week = $current_date->format('N'); // 1 (Mon) to 7 (Sun)
+            if ($day_of_week == 7) $day_of_week = 0; // Convert to 0 (Sun) - 6 (Sat) format if needed
+            
+            // Find if there's a recurring schedule for this day
+            $daySchedules = array_filter($recurringSchedules, function($schedule) use ($day_of_week) {
+                return $schedule['day_of_week'] == $day_of_week;
+            });
+            
+            if (!empty($daySchedules)) {
+                foreach ($daySchedules as $schedule) {
+                    $date = $current_date->format('Y-m-d');
+                    
+                    // For this day's schedule, create alternating slots for each service
+                    $this->generateSlotsForDaySchedule(
+                        $provider_id,
+                        $date,
+                        $schedule['start_time'],
+                        $schedule['end_time'],
+                        $services,
+                        $distribution,
+                        $count
+                    );
+                }
+            }
+            
+            // Move to next day
+            $current_date->add(new DateInterval('P1D'));
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'count' => $count,
+            'message' => "Generated {$count} service-specific availability slots"
+        ]);
+        exit;
+    }
+
+    /**
+     * Generate slots for a specific day schedule with multiple services
+     */
+    private function generateSlotsForDaySchedule($provider_id, $date, $start_time, $end_time, $services, $distribution, &$count) {
+        // Start with the first service
+        $serviceIndex = 0;
+        $totalServices = count($services);
+        
+        if ($totalServices === 0) {
+            return;
+        }
+        
+        // Calculate time slots for this day
+        $current_time = new DateTime($date . ' ' . $start_time);
+        $day_end_time = new DateTime($date . ' ' . $end_time);
+        
+        // Different distribution strategies
+        switch ($distribution) {
+            case 'alternate':
+                // Alternate between services for each slot
+                while ($current_time < $day_end_time) {
+                    $service = $services[$serviceIndex % $totalServices];
+                    // Get duration from the correct field
+                    $duration = isset($service['duration']) ? (int)$service['duration'] : 30;
+                    
+                    $slot_start = clone $current_time;
+                    $slot_end = clone $current_time;
+                    $slot_end->add(new DateInterval("PT{$duration}M"));
+                    
+                    // Only create the slot if it fits within the day's schedule
+                    if ($slot_end <= $day_end_time) {
+                        try {
+                            $success = $this->providerModel->addAvailability([
+                                'provider_id' => $provider_id,
+                                'availability_date' => $date,
+                                'start_time' => $slot_start->format('H:i:s'),
+                                'end_time' => $slot_end->format('H:i:s'),
+                                'service_id' => $service['id'],
+                                'max_appointments' => 1,
+                                'is_available' => 1
+                            ]);
+                            
+                            if ($success) {
+                                $count++;
+                            }
+                        } catch (Exception $e) {
+                            // Silent exception handling
+                        }
+                    }
+                    
+                    // Move to next slot and service
+                    $current_time = $slot_end;
+                    $serviceIndex++;
+                }
+                break;
+                
+            case 'blocks':
+                // Create blocks of the same service
+                $blocksPerService = 3; // Number of consecutive slots for each service
+                $blockCount = 0;
+                
+                while ($current_time < $day_end_time) {
+                    $service = $services[$serviceIndex % $totalServices];
+                    $duration = isset($service['duration']) ? (int)$service['duration'] : 30;
+                    
+                    $slot_start = clone $current_time;
+                    $slot_end = clone $current_time;
+                    $slot_end->add(new DateInterval("PT{$duration}M"));
+                    
+                    // Only create the slot if it fits within the day's schedule
+                    if ($slot_end <= $day_end_time) {
+                        try {
+                            $success = $this->providerModel->addAvailability([
+                                'provider_id' => $provider_id,
+                                'availability_date' => $date,
+                                'start_time' => $slot_start->format('H:i:s'),
+                                'end_time' => $slot_end->format('H:i:s'),
+                                'service_id' => $service['id'],
+                                'max_appointments' => 1,
+                                'is_available' => 1
+                            ]);
+                            
+                            if ($success) {
+                                $count++;
+                            }
+                        } catch (Exception $e) {
+                            // Silent exception handling
+                        }
+                    }
+                    
+                    // Move to next slot
+                    $current_time = $slot_end;
+                    $blockCount++;
+                    
+                    // Move to next service after creating the specified number of blocks
+                    if ($blockCount >= $blocksPerService) {
+                        $blockCount = 0;
+                        $serviceIndex++;
+                    }
+                }
+                break;
+                
+            case 'priority':
+                // Prioritize services in the order they were selected
+                foreach ($services as $index => $service) {
+                    $duration = isset($service['duration']) ? (int)$service['duration'] : 30;
+                    $service_time = clone $current_time;
+                    
+                    while ($service_time < $day_end_time) {
+                        $slot_start = clone $service_time;
+                        $slot_end = clone $service_time;
+                        $slot_end->add(new DateInterval("PT{$duration}M"));
+                        
+                        // Only create the slot if it fits within the day's schedule
+                        if ($slot_end <= $day_end_time) {
+                            try {
+                                $success = $this->providerModel->addAvailability([
+                                    'provider_id' => $provider_id,
+                                    'availability_date' => $date,
+                                    'start_time' => $slot_start->format('H:i:s'),
+                                    'end_time' => $slot_end->format('H:i:s'),
+                                    'service_id' => $service['id'],
+                                    'max_appointments' => 1,
+                                    'is_available' => 1
+                                ]);
+                                
+                                if ($success) {
+                                    $count++;
+                                }
+                            } catch (Exception $e) {
+                                // Silent exception handling
+                            }
+                        } else {
+                            break;
+                        }
+                        
+                        // Move to next slot
+                        $service_time = $slot_end;
+                    }
+                    
+                    // Update the overall current time for the next service
+                    if ($index === count($services) - 1) {
+                        $current_time = $day_end_time; // End the loop after last service
+                    }
+                }
+                break;
+        }
+    }
+
+
     /**
      * Handle editing a provider service (custom duration and notes)
      */
@@ -173,41 +518,99 @@ class ProviderController {
         redirect('provider/services');
     }
 
+   /**
+     * Process service creation or update
+     */
     public function processService() {
-        error_log("processService called with POST: " . print_r($_POST, true));
-        if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            $provider_id = $_SESSION['user_id'];
-            $service_id = isset($_POST['service_id']) ? intval($_POST['service_id']) : null;
-            $service_name = htmlspecialchars(trim($_POST['service_name']));
-            $description = htmlspecialchars(trim($_POST['description']));
-            $price = floatval($_POST['price']);
-    
-            // You can add validation here as needed
-    
-            if ($service_id) {
-                // Update existing service
-                $success = $this->providerModel->updateService($service_id, $provider_id, $service_name, $description, $price);
-                $message = $success ? "Service updated successfully" : "Failed to update service";
-            } else {
-                // Add new service
-                $success = $this->providerModel->addService($provider_id, $service_name, $description, $price);
-                $message = $success ? "Service added successfully" : "Failed to add service";
-            }
-    
-            error_log("Service update result: " . var_export($success, true));
-    
-            if ($success) {
-                $_SESSION['success'] = $message;
-            } else {
-                $_SESSION['error'] = $message;
-            }
+        // Comprehensive debugging
+        error_log("ServiceController::processService called");
+        error_log("POST data: " . json_encode($_POST));
+        error_log("Session data: user_id=" . ($_SESSION['user_id'] ?? 'not set') . 
+                ", role=" . ($_SESSION['role'] ?? 'not set'));
+        
+        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+            error_log("Not a POST request, redirecting");
             header('Location: ' . base_url('index.php/provider/services'));
             exit;
         }
-        // If not POST, redirect to services page
+        
+        // Fix field name extraction - handle both possible field names
+        $service_name = isset($_POST['service_name']) ? trim($_POST['service_name']) : 
+                    (isset($_POST['name']) ? trim($_POST['name']) : '');
+        $description = isset($_POST['description']) ? trim($_POST['description']) : '';
+        $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
+        $duration = isset($_POST['duration']) ? intval($_POST['duration']) : 30;
+        
+        // Validate required fields
+        if (empty($service_name)) {
+            error_log("Service name is empty, aborting");
+            $_SESSION['error'] = "Service name is required";
+            header('Location: ' . base_url('index.php/provider/services'));
+            exit;
+        }
+        
+        // Prepare data for the model
+        $serviceData = [
+            'name' => $service_name,
+            'description' => $description,
+            'price' => $price,
+            'duration' => $duration
+        ];
+        error_log("Service data prepared: " . json_encode($serviceData));
+        
+        // Load Services model for creating/updating the base service
+        require_once MODEL_PATH . '/Services.php';
+        $serviceModel = new Services($this->db);
+        
+        // Service ID handling for updates
+        $service_id = isset($_POST['service_id']) ? intval($_POST['service_id']) : null;
+        
+        if ($service_id) {
+            // Update existing service
+            error_log("Updating existing service ID: $service_id");
+            $success = $serviceModel->updateService($service_id, $serviceData);
+        } else {
+            // Create new service
+            error_log("Creating new service");
+            $service_id = $serviceModel->createService($serviceData);
+            $success = ($service_id !== false);
+        }
+        
+        error_log("Service operation result: " . ($success ? "success (ID: $service_id)" : "failure"));
+        
+        // Associate with provider if applicable
+        if ($success && isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'provider') {
+            $provider_id = $_SESSION['user_id'];
+            error_log("Attempting to associate service $service_id with provider $provider_id");
+            
+            // Load Provider model
+            require_once MODEL_PATH . '/Provider.php';
+            $providerModel = new Provider($this->db);
+            
+            // Check if this method exists and is correctly implemented
+            if (method_exists($providerModel, 'addServiceToProvider')) {
+                $provider_result = $providerModel->addServiceToProvider($provider_id, $service_id);
+                error_log("Provider association result: " . ($provider_result ? "success" : "failure"));
+            } else {
+                error_log("ERROR: Method 'addServiceToProvider' does not exist in Provider model!");
+            }
+        } else {
+            error_log("Not associating with provider. Success=$success, User ID=" . 
+                    ($_SESSION['user_id'] ?? 'not set') . ", Role=" . ($_SESSION['role'] ?? 'not set'));
+        }
+        
+        // Set response message
+        if ($success) {
+            $_SESSION['success'] = $service_id ? "Service created successfully!" : "Service updated successfully!";
+        } else {
+            $_SESSION['error'] = "Failed to " . ($service_id ? "update" : "create") . " service. Please try again.";
+        }
+        
+        // Redirect back to the services page
         header('Location: ' . base_url('index.php/provider/services'));
         exit;
     }
+
     
 
     public function getProviderSchedules() {
@@ -217,10 +620,14 @@ class ProviderController {
             echo json_encode([]);
             exit;
         }
-    
+        
+        // Check which view we're rendering for
+        $view_type = $_GET['view'] ?? 'dayGridMonth';
+        $isMonthView = ($view_type === 'dayGridMonth');
+        
         // Get both regular and recurring schedules
         $schedules = $this->providerModel->getAvailability($provider_id);
-    
+        
         // Add try-catch for recurring schedules
         try {
             $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
@@ -228,9 +635,9 @@ class ProviderController {
             error_log("Error fetching recurring schedules: " . $e->getMessage());
             // Create default recurring schedules as fallback
             $recurringSchedules = [];
-        
+            
             // Default recurring schedules for Monday, Wednesday, Friday
-            $daysOfWeek = [1, 3, 5]; 
+            $daysOfWeek = [1, 3, 5];
             foreach ($daysOfWeek as $index => $day) {
                 $recurringSchedules[] = [
                     'schedule_id' => 'default_' . ($index + 1),
@@ -242,69 +649,261 @@ class ProviderController {
             }
         }
         
-        // Debug logging
-        error_log("Regular schedules count: " . count($schedules));
-        error_log("Recurring schedules count: " . count($recurringSchedules));
-        
         // Format events for FullCalendar
         $events = [];
         
-        // Format regular availability slots
-        foreach ($schedules as $schedule) {
-            $event = [
-                // Try different possible ID field names, or generate a unique ID if none found
-                'id' => $schedule['availability_id'] ?? $schedule['id'] ?? $schedule['schedule_id'] ?? ('reg_' . uniqid()),
-                'title' => 'Available',
-                // Use null coalescing operator to try alternative date/time field names
-                'start' => ($schedule['availability_date'] ?? $schedule['date'] ?? $schedule['schedule_date'] ?? date('Y-m-d')) . ' ' . 
-                           ($schedule['start_time'] ?? '09:00:00'),
-                'end' => ($schedule['availability_date'] ?? $schedule['date'] ?? $schedule['schedule_date'] ?? date('Y-m-d')) . ' ' . 
-                        ($schedule['end_time'] ?? '17:00:00'),
-                'color' => '#28a745'
-            ];
-        
-            // Add the event to the events array (this was missing!)
-            $events[] = $event;
-        }
-        
-        // Format recurring availability
-        $dayOfWeekMap = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        
-        foreach ($recurringSchedules as $recurring) {
-            $dayIndex = $recurring['day_of_week'];
-            if ($dayIndex < 0 || $dayIndex > 6) continue;
+        // CONSOLIDATION FOR MONTH VIEW ONLY
+        if ($isMonthView) {
+            // Track dates with availability to avoid duplicates
+            $availableDates = [];
+            $recurringDates = [];
             
-            $dayName = $dayOfWeekMap[$dayIndex];
-            
-            // Generate events for the next 4 weeks
-            for ($i = 0; $i < 4; $i++) {
-                $date = date('Y-m-d', strtotime("+$i week $dayName"));
+            // Process regular availability for month view (grouped by date)
+            foreach ($schedules as $schedule) {
+                $date = $schedule['availability_date'] ?? $schedule['date'] ??
+                       $schedule['schedule_date'] ?? date('Y-m-d');
                 
-                $events[] = [
-                    'id' => 'recurring_' . $recurring['schedule_id'] . '_' . $i,
-                    'title' => 'Recurring',
-                    'start' => $date . 'T' . $recurring['start_time'],
-                    'end' => $date . 'T' . $recurring['end_time'],
-                    'color' => '#17a2b8', // Blue for recurring
+                // If we haven't added this date yet, add a consolidated event
+                if (!isset($availableDates[$date])) {
+                    $availableDates[$date] = true;
+                    
+                    $events[] = [
+                        'id' => 'consolidated_avail_' . md5($date),
+                        'title' => 'Available',
+                        'start' => $date,
+                        'allDay' => true,
+                        'color' => '#28a745',
+                        'className' => 'consolidated-event',
+                        'extendedProps' => [
+                            'type' => 'consolidated',
+                            'date' => $date
+                        ]
+                    ];
+                }
+            }
+            
+            // Process recurring schedules for month view (one entry per day)
+            $dayOfWeekMap = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            
+            foreach ($recurringSchedules as $recurring) {
+                $dayIndex = $recurring['day_of_week'];
+                if ($dayIndex < 0 || $dayIndex > 6) continue;
+                
+                $dayName = $dayOfWeekMap[$dayIndex];
+                $startTime = $recurring['start_time'];
+                $endTime = $recurring['end_time'];
+                
+                // Format times for display (12-hour with am/pm)
+                $formattedStart = date('g:ia', strtotime($startTime));
+                $formattedEnd = date('g:ia', strtotime($endTime));
+                
+                // Generate events for the next 4 weeks
+                for ($i = 0; $i < 4; $i++) {
+                    $date = date('Y-m-d', strtotime("+$i week $dayName"));
+                    
+                    // Skip if we already have a recurring event for this date
+                    if (isset($recurringDates[$date])) continue;
+                    $recurringDates[$date] = true;
+                    
+                    $events[] = [
+                        'id' => 'consolidated_recurring_' . md5($date),
+                        'title' => 'Working Hours ' . $formattedStart . '-' . $formattedEnd,
+                        'start' => $date,
+                        'allDay' => true,
+                        'color' => '#17a2b8', // Blue for recurring
+                        'className' => 'consolidated-recurring',
+                        'extendedProps' => [
+                            'type' => 'consolidated_recurring',
+                            'date' => $date,
+                            'start_time' => $startTime,
+                            'end_time' => $endTime
+                        ]
+                    ];
+                }
+            }
+        } else {
+            // DETAILED VIEW FOR WEEK/DAY VIEWS
+            
+            // Format regular availability slots with time in title
+            foreach ($schedules as $schedule) {
+                $date = $schedule['availability_date'] ?? $schedule['date'] ??
+                       $schedule['schedule_date'] ?? date('Y-m-d');
+                $startTime = $schedule['start_time'] ?? '09:00:00';
+                $endTime = $schedule['end_time'] ?? '17:00:00';
+                
+                // Format times for display (12-hour with am/pm)
+                $formattedStart = date('g:ia', strtotime($startTime));
+                $formattedEnd = date('g:ia', strtotime($endTime));
+                
+                $event = [
+                    'id' => $schedule['availability_id'] ?? $schedule['id'] ?? $schedule['schedule_id'] ?? ('reg_' . uniqid()),
+                    'title' => 'Available ' . $formattedStart . '-' . $formattedEnd,
+                    'start' => $date . 'T' . $startTime,
+                    'end' => $date . 'T' . $endTime,
+                    'color' => '#28a745',
                     'extendedProps' => [
-                        'type' => 'recurring',
-                        'original_id' => $recurring['schedule_id']
+                        'type' => 'availability',
+                        'original_id' => $schedule['availability_id'] ?? $schedule['id'] ?? null
                     ]
                 ];
+                
+                $events[] = $event;
+            }
+            
+            // Format recurring availability with time in title
+            $dayOfWeekMap = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            
+            foreach ($recurringSchedules as $recurring) {
+                $dayIndex = $recurring['day_of_week'];
+                if ($dayIndex < 0 || $dayIndex > 6) continue;
+                
+                $dayName = $dayOfWeekMap[$dayIndex];
+                $startTime = $recurring['start_time'];
+                $endTime = $recurring['end_time'];
+                
+                // Format times for display (12-hour with am/pm)
+                $formattedStart = date('g:ia', strtotime($startTime));
+                $formattedEnd = date('g:ia', strtotime($endTime));
+                
+                // Generate events for the next 4 weeks
+                for ($i = 0; $i < 4; $i++) {
+                    $date = date('Y-m-d', strtotime("+$i week $dayName"));
+                    
+                    $events[] = [
+                        'id' => 'recurring_' . $recurring['schedule_id'] . '_' . $i,
+                        'title' => 'Working Hours ' . $formattedStart . '-' . $formattedEnd,
+                        'start' => $date . 'T' . $startTime,
+                        'end' => $date . 'T' . $endTime,
+                        'color' => '#17a2b8', // Blue for recurring
+                        'extendedProps' => [
+                            'type' => 'recurring',
+                            'original_id' => $recurring['schedule_id']
+                        ]
+                    ];
+                }
             }
         }
-        
-        // Debug the final events array
-        error_log("Total events generated: " . count($events));
         
         header('Content-Type: application/json');
         echo json_encode($events);
         exit;
+    }    
+       
+    /**
+     * Generate availability slots from recurring schedule
+     */
+    public function generateAvailabilityFromSchedule() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+            exit;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        
+        // Get JSON data from request
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        
+        // Get parameters
+        $slotDuration = isset($data['slotDuration']) ? intval($data['slotDuration']) : 30; // Default to 30 minutes
+        $weeksAhead = isset($data['weeksAhead']) ? intval($data['weeksAhead']) : 2; // Default to 2 weeks
+        
+        // Get recurring schedules
+        $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
+        $slotsCreated = 0;
+        
+        // Process each recurring schedule
+        foreach ($recurringSchedules as $schedule) {
+            $dayOfWeek = $schedule['day_of_week'];
+            $dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][$dayOfWeek];
+            
+            // Generate slots for the specified number of weeks ahead
+            for ($week = 0; $week < $weeksAhead; $week++) {
+                // Calculate the next occurrence of this day of the week
+                $nextDate = date('Y-m-d', strtotime("+$week week $dayName"));
+                
+                // If the date is in the past, skip it
+                if (strtotime($nextDate) < strtotime(date('Y-m-d'))) {
+                    continue;
+                }
+                
+                // Generate slots based on the specified duration
+                $startTime = strtotime($schedule['start_time']);
+                $endTime = strtotime($schedule['end_time']);
+                
+                for ($time = $startTime; $time < $endTime; $time += ($slotDuration * 60)) {
+                    $slotStart = date('H:i:s', $time);
+                    $slotEnd = date('H:i:s', $time + ($slotDuration * 60));
+                    
+                    // Add availability slot
+                    $success = $this->providerModel->addAvailability([
+                        'provider_id' => $provider_id,
+                        'availability_date' => $nextDate,
+                        'start_time' => $slotStart,
+                        'end_time' => $slotEnd,
+                        'max_appointments' => 1, // Default to 1 appointment per slot
+                        'is_available' => 1 // Set as available
+                    ]);
+                    
+                    if ($success) {
+                        $slotsCreated++;
+                    }
+                }
+            }
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'slotsCreated' => $slotsCreated,
+            'message' => "Successfully created $slotsCreated bookable appointment slots"
+        ]);
+        exit;
     }
+    /**
+     * Clear all availability for a specific day
+     */
+    public function clearDayAvailability() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+            exit;
+        }
+        
+        // Get the JSON data sent in the request
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        
+        if (!$data || !isset($data['date'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Missing required data']);
+            exit;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        $date = $data['date'];
+        
+        // Call the provider model to clear the day's availability
+        $count = $this->providerModel->clearDayAvailability($provider_id, $date);
+        
+        header('Content-Type: application/json');
+        if ($count !== false) {
+            echo json_encode([
+                'success' => true, 
+                'message' => "Cleared all availability for $date",
+                'count' => $count
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to clear day availability']);
+        }
+        exit;
+    }
+
     public function createRecurringSchedule($provider_id, $start_date, $end_date, $days_of_week, $start_time, $end_time) {
         try {
             $stmt = $this->db->prepare("
-                INSERT INTO provider_recurring_schedules (provider_id, start_date, end_date, day_of_week, start_time, end_time) 
+                INSERT INTO recurring_schedules (provider_id, start_date, end_date, day_of_week, start_time, end_time) 
                 VALUES (?, ?, ?, ?, ?, ?)
             ");
             foreach ($days_of_week as $day) {
@@ -324,10 +923,11 @@ class ProviderController {
             $start_time = $_POST['start_time'] ?? null;
             $end_time = $_POST['end_time'] ?? null;
             $max_appointments = $_POST['max_appointments'] ?? 0;
+            $is_available = $_POST['is_available'] ?? 1;
     
             // Log the received data for debugging
             error_log("Received Availability Data: " . json_encode(compact(
-                'provider_id', 'availability_date', 'start_time', 'end_time', 'max_appointments'
+                'provider_id', 'availability_date', 'start_time', 'end_time', 'max_appointments', 'is_available'
             ), JSON_PRETTY_PRINT));
     
             // Ensure no missing values
@@ -342,7 +942,8 @@ class ProviderController {
                 'availability_date' => $availability_date,
                 'start_time' => $start_time,
                 'end_time' => $end_time,
-                'max_appointments' => $max_appointments
+                'max_appointments' => $max_appointments,
+                'is_available' => $is_available // <-- THIS FIXES THE BUG
             ]);
     
             header('Content-Type: application/json');
@@ -357,39 +958,57 @@ class ProviderController {
     public function processRecurringSchedule() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'] ?? null;
-            $start_date = $_POST['start_date'] ?? null;
-            $end_date = $_POST['end_date'] ?? null;
-            $days_of_week = $_POST['days_of_week'] ?? [];
+            $day_of_week = $_POST['day_of_week'] ?? null; // single value: 0-6
             $start_time = $_POST['start_time'] ?? null;
             $end_time = $_POST['end_time'] ?? null;
-    
-            if (!$provider_id || !$start_date || !$end_date || empty($days_of_week) || !$start_time || !$end_time) {
+            $is_active = $_POST['is_active'] ?? 1;
+            $repeat_weekly = $_POST['repeat_weekly'] ?? '0';
+            $repeat_until = $_POST['repeat_until'] ?? null;
+
+            // Use today as the start date
+            $start_date = date('Y-m-d');
+            // Use repeat_until as the end date, or default to 1 month from now if not set
+            $end_date = $repeat_until ?: date('Y-m-d', strtotime('+1 month'));
+
+            if (!$provider_id || $day_of_week === null || !$start_time || !$end_time) {
                 $_SESSION['error'] = "All required fields must be filled.";
                 header("Location: " . base_url("index.php/provider/schedule"));
                 exit;
             }
-    
-            // Ensure `$this->scheduleModel` exists in your controller
-            if (!isset($this->scheduleModel)) {
-                error_log("Error: `scheduleModel` is not initialized in ProviderController.");
-                $_SESSION['error'] = "Internal error: schedule processing failed.";
-                header("Location: " . base_url("index.php/provider/schedule"));
-                exit;
+
+            // Use providerModel instead of scheduleModel
+            if ($repeat_weekly === '1') {
+                $success = $this->providerModel->addRecurringSchedule(
+                    $provider_id,
+                    $day_of_week,
+                    $start_time,
+                    $end_time,
+                    $is_active
+                );
+            } else {
+                // For single slot, use the appropriate method from providerModel
+                $next_date = date('Y-m-d', strtotime("next " . jddayofweek($day_of_week, 1)));
+                $success = $this->providerModel->addAvailability([
+                    'provider_id' => $provider_id,
+                    'availability_date' => $next_date,
+                    'start_time' => $start_time,
+                    'end_time' => $end_time,
+                    'is_available' => $is_active
+                ]);
             }
-    
-            $success = $this->scheduleModel->createRecurringSchedule(
-                $provider_id, $start_date, $end_date, $days_of_week, $start_time, $end_time
-            );
-    
-            $_SESSION[$success ? 'success' : 'error'] = $success 
-                ? "Recurring schedule created successfully!" 
-                : "Failed to create recurring schedule.";
-    
-            header("Location: " . base_url("index.php/provider/schedule"));
+
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => $success,
+                'message' => $success ? 'Schedule created successfully!' : 'Failed to create schedule.'
+            ]);
             exit;
         }
-    }
     
+        // If not a POST request, redirect back to the schedule page
+        header('Location: ' . base_url('index.php/provider/schedule'));
+        exit;
+    }
 
     // Update Provider Profile
     public function updateProfile() {
@@ -497,6 +1116,41 @@ class ProviderController {
         echo json_encode($appointments, JSON_PRETTY_PRINT);
         exit;
     }
+     /**
+     * Export provider's appointments to CSV
+     */
+    public function exportAppointmentsToCSV() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+
+        $provider_id = $_SESSION['user_id'];
+        $appointments = $this->appointmentModel->getByProvider($provider_id);
+
+        // Set headers for CSV download
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment;filename="appointments.csv"');
+
+        $output = fopen('php://output', 'w');
+        // Write CSV header
+        fputcsv($output, ['Appointment ID', 'Patient Name', 'Service', 'Date', 'Start Time', 'End Time', 'Status']);
+
+        foreach ($appointments as $appointment) {
+            fputcsv($output, [
+                $appointment['id'] ?? $appointment['appointment_id'] ?? '',
+                $appointment['patient_name'] ?? $appointment['first_name'] ?? '',
+                $appointment['service_name'] ?? $appointment['service'] ?? '',
+                $appointment['appointment_date'] ?? '',
+                $appointment['start_time'] ?? '',
+                $appointment['end_time'] ?? '',
+                $appointment['status'] ?? ''
+            ]);
+        }
+        fclose($output);
+        exit;
+    }
+
 
     // Provider Services (CRUD)
     public function services() {
@@ -592,9 +1246,9 @@ class ProviderController {
 
     public function manage_services() {
         require_once MODEL_PATH . '/Services.php';
-        $servicesModel = new Services($this->db);
+        $serviceModel = new Services($this->db);
     
-        $services = $servicesModel->getAllServices(); // Fetch services from the database
+        $services = $serviceModel->getAllServices(); // Fetch services from the database
         
         require VIEW_PATH . '/provider/services.php'; // Pass `$services` to the view
     }
@@ -613,6 +1267,48 @@ class ProviderController {
             exit;
         }
     }
+    /**
+     * Delete a schedule slot or recurring schedule
+     */
+    public function deleteSchedule() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+            exit;
+        }
+        
+        // Get JSON data from request
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        
+        if (!$data || !isset($data['id'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Missing event ID']);
+            exit;
+        }
+        
+        $eventId = $data['id'];
+        $success = false;
+        
+        // Check if this is a recurring schedule or regular availability
+        if (strpos($eventId, 'recurring_') === 0) {
+            // Extract the actual schedule ID from the event ID
+            $parts = explode('_', $eventId);
+            $scheduleId = $parts[1] ?? null;
+            
+            if ($scheduleId) {
+                // Delete recurring schedule
+                $success = $this->providerModel->deleteRecurringSchedule($scheduleId);
+            }
+        } else {
+            // Delete regular availability
+            $success = $this->providerModel->deleteAvailabilitySlot($eventId);
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $success]);
+        exit;
+    }
 
     // Appointments Management
     public function appointments() {
@@ -625,9 +1321,12 @@ class ProviderController {
         include VIEW_PATH . '/provider/appointments.php';
     }
     
-    // Scheduling & Availability Management
+   // Scheduling & Availability Management
     public function schedule() {
         $provider_id = $_SESSION['user_id'];
+        
+        // Initialize events array to avoid undefined variable warning
+        $events = [];
         
         // Get the provider's current availability/schedules
         $availability = $this->providerModel->getAvailability($provider_id);
@@ -642,11 +1341,24 @@ class ProviderController {
         
         // 2. Convert these slots to calendar events
         foreach ($availableSlots as $slot) {
+            // Check if we have proper date/time fields
+            $date = $slot['date'] ?? $slot['appointment_date'] ?? $slot['availability_date'] ?? date('Y-m-d');
+            $startTime = $slot['start_time'] ?? $slot['start'] ?? '09:00:00';
+            $endTime = $slot['end_time'] ?? $slot['end'] ?? '17:00:00';
+            
+            // Format the title with proper error handling
+            $title = '';
+            if (isset($slot['start_time']) && !empty($slot['start_time'])) {
+                $title = date('g:ia', strtotime($slot['start_time'])) . ' Available';
+            } else {
+                $title = 'Available Slot';
+            }
+            
             $events[] = [
                 'id' => 'avail_' . uniqid(),
-                'title' => date('g:ia', strtotime($slot['start_time'])) . ' Available',
-                'start' => $slot['date'] . ' ' . $slot['start_time'],
-                'end' => $slot['date'] . ' ' . $slot['end_time'],
+                'title' => $title,
+                'start' => $date . ' ' . $startTime,
+                'end' => $date . ' ' . $endTime,
                 'color' => '#28a745', // Green
                 'className' => 'available-slot' // Add a class for styling
             ];
@@ -672,8 +1384,8 @@ class ProviderController {
                 
                 $events[] = [
                     'id' => 'avail_' . md5($start_dt . $end_dt),
-                    'title' => date('g:ia', strtotime($row['start_time'])) . ' - ' . 
-                              date('g:ia', strtotime($row['end_time'])) . ' Available',
+                    'title' => date('g:ia', strtotime($row['start_time'])) . ' - ' .
+                            date('g:ia', strtotime($row['end_time'])) . ' Available',
                     'start' => $row['availability_date'] . 'T' . $row['start_time'],
                     'end' => $row['availability_date'] . 'T' . $row['end_time'],
                     'color' => '#28a745', // Green
@@ -688,9 +1400,19 @@ class ProviderController {
         $data['events'] = json_encode($events);
         $data['availableSlots'] = $availableSlots;
         
+        // Load the Services model if not already loaded
+        if (!isset($this->serviceModel)) {
+            require_once MODEL_PATH . '/Services.php';
+            $this->serviceModel = new Services($this->db);
+        }
+        
+        // Fetch provider services for the dropdown
+        $provider_services = $this->serviceModel->getProviderServices($provider_id);
+        
         // Load the view
         include VIEW_PATH . '/provider/schedule.php';
     }
+
 
     // Scheduling & Availability Management
     public function addRecurringSchedule() {
@@ -725,18 +1447,74 @@ class ProviderController {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
         
-        if (!$data || !isset($data['id']) || !isset($data['date']) || !isset($data['start_time']) || !isset($data['end_time'])) {
+        // Log the incoming data for debugging
+        error_log("Schedule update received data: " . json_encode($data));
+        
+        if (!$data) {
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Missing required data']);
+            echo json_encode(['success' => false, 'message' => 'Invalid JSON data']);
+            exit;
+        }
+        
+        // Check if we have the required ID field
+        if (!isset($data['id'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Missing event ID']);
             exit;
         }
         
         $eventId = $data['id'];
         $eventType = $data['type'] ?? 'regular';
-        $date = $data['date'];
-        $startTime = $data['start_time'];
-        $endTime = $data['end_time'];
         
+        // Handle different data formats
+        $date = null;
+        $startTime = null;
+        $endTime = null;
+        
+        // Check for ISO datetime format (2023-05-08T09:00:00)
+        if (isset($data['start']) && isset($data['end'])) {
+            // Parse start datetime
+            if (strpos($data['start'], 'T') !== false) {
+                list($date, $startTime) = explode('T', $data['start']);
+            } else {
+                // Handle fallback if format is different
+                $startDate = new DateTime($data['start']);
+                $date = $startDate->format('Y-m-d');
+                $startTime = $startDate->format('H:i:s');
+            }
+            
+            // Parse end datetime
+            if (strpos($data['end'], 'T') !== false) {
+                list(, $endTime) = explode('T', $data['end']);
+            } else {
+                // Handle fallback if format is different
+                $endDate = new DateTime($data['end']);
+                $endTime = $endDate->format('H:i:s');
+            }
+        } 
+        // Check for separate date/time fields
+        else if (isset($data['date'])) {
+            $date = $data['date'];
+            $startTime = $data['start_time'] ?? null;
+            $endTime = $data['end_time'] ?? null;
+        }
+        
+        // Validate we have all required data
+        if (!$date || !$startTime || !$endTime) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Missing required date/time data',
+                'debug' => [
+                    'date' => $date,
+                    'startTime' => $startTime,
+                    'endTime' => $endTime
+                ]
+            ]);
+            exit;
+        }
+        
+        // Process based on event type
         $success = false;
         if (strpos($eventId, 'recurring_') === 0) {
             // Handle recurring schedule updates
@@ -744,7 +1522,6 @@ class ProviderController {
             $scheduleId = $parts[1] ?? null;
             
             if ($scheduleId) {
-                // For recurring events, we might need to update the base recurring schedule
                 $success = $this->providerModel->updateRecurringSchedule($scheduleId, $startTime, $endTime);
             }
         } else {
@@ -753,9 +1530,19 @@ class ProviderController {
         }
         
         header('Content-Type: application/json');
-        echo json_encode(['success' => $success]);
+        echo json_encode([
+            'success' => $success,
+            'data' => [
+                'id' => $eventId,
+                'date' => $date,
+                'start_time' => $startTime,
+                'end_time' => $endTime
+            ]
+        ]);
         exit;
     }
+    
+    
     // Add this method to your ProviderController class
     /**
      * Display provider profile page

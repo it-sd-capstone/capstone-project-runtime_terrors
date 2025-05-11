@@ -387,61 +387,62 @@ class AdminController {
         }
     }
 
-    // ✅ Manage Services
+    // Manage Services
     public function services($action = null, $id = null) {
         // If action is specified (add, edit, delete)
-        if ($action) {
-            if ($action === 'add') {
-                // Handle form submission for adding a new service
-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    // Verify CSRF token
-                    if (!verify_csrf_token()) {
-                        return;
-                    }
-    
-                    $name = $_POST['name'] ?? '';
-                    $description = $_POST['description'] ?? '';
-                    $price = $_POST['price'] ?? 0;
-                    $duration = $_POST['duration'] ?? 30; // Default duration
-    
-                    // Basic validation
-                    $errors = [];
-                    if (empty($name)) {
-                        $errors[] = "Service name is required";
-                    }
-                    if (empty($description)) {
-                        $errors[] = "Description is required";
-                    }
-                    if (!is_numeric($price) || $price <= 0) {
-                        $errors[] = "Price must be a positive number";
-                    }
-    
-                    if (empty($errors)) {
-                        // Create service data array
-                        $serviceData = [
-                            'name' => $name,
-                            'description' => $description,
-                            'price' => $price,
-                            'duration' => $duration,
-                            'is_active' => 1
-                        ];
-                        
-                        // Use the service model to create the service
-                        $result = $this->serviceModel->createService($serviceData);
-                        
-                        if ($result) {
-                            $_SESSION['success'] = "Service added successfully";
-                        } else {
-                            $_SESSION['error'] = "Failed to add service";
-                        }
-                    } else {
-                        $_SESSION['error'] = implode("<br>", $errors);
-                    }
-                    
-                    // Redirect back to services page
-                    header('Location: ' . base_url('index.php/admin/services'));
-                    exit;
-                }
+if ($action === 'add') {
+    // Handle form submission for adding a new service
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // Verify CSRF token
+        if (!verify_csrf_token()) {
+            return;
+        }
+
+        $name = $_POST['name'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $price = $_POST['price'] ?? 0;
+        $duration = $_POST['duration'] ?? 30; // Default duration
+        $is_active = isset($_POST['is_active']) ? 1 : 0;
+
+        // Basic validation
+        $errors = [];
+        if (empty($name)) {
+            $errors[] = "Service name is required";
+        }
+        if (empty($description)) {
+            $errors[] = "Description is required";
+        }
+        if (!is_numeric($price) || $price <= 0) {
+            $errors[] = "Price must be a positive number";
+        }
+
+        if (empty($errors)) {
+            // Create service data array
+            $serviceData = [
+                'name' => $name,
+                'description' => $description,
+                'price' => $price,
+                'duration' => $duration,
+                'is_active' => $is_active
+            ];
+            
+            // Use the service model to create the service
+            $result = $this->serviceModel->createService($serviceData);
+            
+            if ($result) {
+                $_SESSION['success'] = "Service added successfully";
+            } else {
+                $_SESSION['error'] = "Failed to add service";
+            }
+        } else {
+            $_SESSION['error'] = implode("<br>", $errors);
+        }
+        
+        // Redirect back to services page
+        header('Location: ' . base_url('index.php/admin/services'));
+        exit;
+    }
+
             } elseif ($action === 'edit' && $id) {
                 // Handle form submission for editing a service
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -516,7 +517,6 @@ class AdminController {
                 header('Location: ' . base_url('index.php/admin/services'));
                 exit;
             }
-        }
         
         // Get all services for display
         $services = $this->serviceModel->getAllServices();
@@ -747,17 +747,37 @@ class AdminController {
     }
     
     public function providers() {
-        // Get all providers with their profile details using the provider model
-        $providers = $this->providerModel->getAllProvidersWithDetails();
-        
-        // If providers are empty, use a more specific provider method
-        if (empty($providers)) {
-            // This should be implemented in the Provider model
-            $providers = $this->providerModel->getProvidersWithServiceAndAppointmentCounts();
+        // Get provider_id from query if present
+        $provider_id = $_GET['provider_id'] ?? null;
+        $provider = null;
+
+        // Always fetch all providers for the list
+        $providers = $this->providerModel->getAll();
+
+        // If a specific provider is requested, fetch it
+        if ($provider_id) {
+            $provider = $this->providerModel->getById($provider_id);
         }
         
+        // Enhance provider data with service and appointment counts
+        foreach ($providers as &$provider) {
+            // Get count of services for this provider
+            $services = $this->providerModel->getProviderServices($provider['user_id']);
+            $provider['service_count'] = count($services);
+            
+            // Get upcoming appointments for this provider
+            $appointments = $this->providerModel->getBookedAppointments($provider['user_id']);
+            // Filter for only upcoming appointments
+            $upcomingAppointments = array_filter($appointments, function($appt) {
+                return strtotime($appt['appointment_date']) >= strtotime(date('Y-m-d'));
+            });
+            $provider['appointment_count'] = count($upcomingAppointments);
+        }
+
         include VIEW_PATH . '/admin/providers.php';
     }
+
+
     
     /**
      * Run a test from the tests directory
@@ -941,10 +961,17 @@ class AdminController {
                 'first_name' => $_POST['first_name'] ?? '',
                 'last_name' => $_POST['last_name'] ?? '',
                 'email' => $_POST['email'] ?? '',
-                'password' => $_POST['password'] ?? '',
                 'phone' => $_POST['phone'] ?? '',
                 'role' => 'provider' // Force role to be provider
             ];
+            
+            // Generate a secure random password if none provided
+            if (empty($_POST['password'])) {
+                $generatedPassword = bin2hex(random_bytes(4)); // 8 character password
+                $userData['password'] = $generatedPassword; // Store to display once
+            } else {
+                $password = $_POST['password'];
+            }
             
             // Provider-specific data
             $providerData = [
@@ -960,7 +987,6 @@ class AdminController {
             if (empty($userData['first_name'])) $errors[] = "First name is required";
             if (empty($userData['last_name'])) $errors[] = "Last name is required";
             if (empty($userData['email'])) $errors[] = "Email is required";
-            if (empty($userData['password'])) $errors[] = "Password is required";
             
             if (!empty($errors)) {
                 $_SESSION['error'] = implode("<br>", $errors);
@@ -973,7 +999,7 @@ class AdminController {
                 $this->db->begin_transaction();
                 
                 // Register the user first
-                $userId = $this->userModel->register(
+                $result = $this->userModel->register(
                     $userData['email'],
                     password_hash($userData['password'], PASSWORD_DEFAULT),
                     $userData['first_name'],
@@ -981,20 +1007,31 @@ class AdminController {
                     $userData['phone'],
                     'provider'
                 );
-                
-                if (!$userId) {
-                    throw new Exception("Failed to create user account");
+
+                // Handle the result array properly
+                if (isset($result['user_id'])) {
+                    $userId = $result['user_id'];
+                    error_log("User created with ID: " . $userId);
+                } else if (isset($result['error'])) {
+                    throw new Exception($result['error']);
+                } else {
+                    throw new Exception("Unknown error during user registration");
                 }
                 
-                // Create provider profile
+                // Add debug logging
+                error_log("User created with ID: " . $userId);
+                
+                // Create provider profile with detailed logging
+                error_log("Creating provider profile with data: " . print_r($providerData, true));
                 $profileCreated = $this->providerModel->createProviderProfile($userId, $providerData);
                 
                 if (!$profileCreated) {
                     throw new Exception("Failed to create provider profile");
                 }
-                
-                // Commit transaction
-                $this->db->commit();
+
+                // Add debug logging
+                error_log("Provider profile created successfully");
+
                 
                 // Log the activity
                 $this->activityLogModel->logActivity(
@@ -1002,8 +1039,13 @@ class AdminController {
                     "Admin created new provider: {$userData['first_name']} {$userData['last_name']}",
                     $_SESSION['user_id']
                 );
+                // Commit transaction
+                $this->db->commit();
                 
-                $_SESSION['success'] = "Provider created successfully";
+                // Store the password in the session specifically for display
+                $_SESSION['success'] = "Provider created successfully! Temporary password: <strong>" . $generatedPassword . "</strong>";
+                $_SESSION['show_password'] = true; // Add a flag to indicate password should be shown
+                
                 header('Location: ' . base_url('index.php/admin/providers'));
                 exit;
                 
@@ -1020,6 +1062,7 @@ class AdminController {
         // Display the add provider form
         include VIEW_PATH . '/admin/add_provider.php';
     }
+
 
     /**
      * Manage services offered by a provider
