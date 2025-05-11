@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 08, 2025 at 09:20 PM
+-- Generation Time: May 11, 2025 at 01:43 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `activity_log` (
   `related_type` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`log_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=67 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `activity_log`
@@ -66,7 +66,50 @@ INSERT INTO `activity_log` (`log_id`, `user_id`, `description`, `category`, `cre
 (20, 1, 'Auth: logout', 'authentication', '2025-04-27 12:56:19', '::1', NULL, NULL, NULL),
 (21, 3, 'Auth: logout', 'authentication', '2025-04-27 13:07:44', '::1', NULL, NULL, NULL),
 (22, 1, 'Auth: logout', 'authentication', '2025-04-27 13:08:08', '::1', NULL, NULL, NULL),
-(23, 2, 'Auth: logout', 'authentication', '2025-04-27 13:08:25', '::1', NULL, NULL, NULL);
+(23, 2, 'Auth: logout', 'authentication', '2025-04-27 13:08:25', '::1', NULL, NULL, NULL),
+(24, 3, 'Auth: logout', 'authentication', '2025-05-08 14:21:19', '127.0.0.1', NULL, NULL, NULL),
+(25, 2, 'Auth: logout', 'authentication', '2025-05-08 16:33:38', '127.0.0.1', NULL, NULL, NULL),
+(26, 1, 'Auth: logout', 'authentication', '2025-05-08 16:34:05', '127.0.0.1', NULL, NULL, NULL),
+(27, 1, 'Auth: logout', 'authentication', '2025-05-08 16:45:48', '127.0.0.1', NULL, NULL, NULL),
+(28, 2, 'Auth: logout', 'authentication', '2025-05-08 16:48:19', '127.0.0.1', NULL, NULL, NULL),
+(29, 1, 'Auth: logout', 'authentication', '2025-05-08 17:00:58', '127.0.0.1', NULL, NULL, NULL),
+(30, 2, 'Auth: logout', 'authentication', '2025-05-08 17:03:27', '127.0.0.1', NULL, NULL, NULL),
+(31, 3, 'Auth: logout', 'authentication', '2025-05-08 17:10:46', '127.0.0.1', NULL, NULL, NULL),
+(32, 1, 'Auth: logout', 'authentication', '2025-05-08 23:29:29', '127.0.0.1', NULL, NULL, NULL),
+(33, 2, 'Auth: logout', 'authentication', '2025-05-08 23:31:26', '127.0.0.1', NULL, NULL, NULL),
+(34, 1, 'Auth: logout', 'authentication', '2025-05-09 13:26:22', '::1', NULL, NULL, NULL),
+(35, 2, 'Auth: logout', 'authentication', '2025-05-09 13:26:55', '::1', NULL, NULL, NULL),
+(36, 3, 'Auth: login_success', 'authentication', '2025-05-09 13:27:11', '::1', NULL, NULL, NULL),
+(37, 3, 'Auth: logout', 'authentication', '2025-05-09 15:54:39', '::1', NULL, NULL, NULL),
+(38, 2, 'Auth: logout', 'authentication', '2025-05-09 19:09:49', '::1', NULL, NULL, NULL),
+(39, 3, 'Auth: login_success', 'authentication', '2025-05-10 11:26:02', '::1', NULL, NULL, NULL),
+(40, 3, 'Auth: logout', 'authentication', '2025-05-10 11:26:09', '::1', NULL, NULL, NULL),
+(41, 1, 'Auth: logout', 'authentication', '2025-05-10 11:26:26', '::1', NULL, NULL, NULL),
+(42, 2, 'Appointment: status_changed (ID: 5)', 'appointment', '2025-05-10 11:26:49', '::1', '{\"previous_status\":\"scheduled\",\"new_status\":\"confirmed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-29\",\"reason\":\"No reason provided\"}', 5, 'appointment'),
+(43, 2, 'Appointment: status_changed (ID: 5)', 'appointment', '2025-05-10 11:26:53', '::1', '{\"previous_status\":\"confirmed\",\"new_status\":\"completed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-29\",\"reason\":\"No reason provided\"}', 5, 'appointment'),
+(44, 2, 'Appointment: status_changed (ID: 6)', 'appointment', '2025-05-10 11:27:24', '::1', '{\"previous_status\":\"scheduled\",\"new_status\":\"confirmed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-29\",\"reason\":\"No reason provided\"}', 6, 'appointment'),
+(45, 2, 'Appointment: status_changed (ID: 7)', 'appointment', '2025-05-10 11:30:11', '::1', '{\"previous_status\":\"scheduled\",\"new_status\":\"confirmed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-30\",\"reason\":\"No reason provided\"}', 7, 'appointment'),
+(46, 2, 'Appointment: status_changed (ID: 8)', 'appointment', '2025-05-10 11:34:37', '::1', '{\"previous_status\":\"scheduled\",\"new_status\":\"confirmed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-30\",\"reason\":\"No reason provided\"}', 8, 'appointment'),
+(47, 2, 'Appointment: status_changed (ID: 8)', 'appointment', '2025-05-10 11:34:59', '::1', '{\"previous_status\":\"confirmed\",\"new_status\":\"confirmed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-30\",\"reason\":\"No reason provided\"}', 8, 'appointment'),
+(48, 2, 'Appointment: status_changed (ID: 8)', 'appointment', '2025-05-10 11:35:19', '::1', '{\"previous_status\":\"confirmed\",\"new_status\":\"completed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-30\",\"reason\":\"No reason provided\"}', 8, 'appointment'),
+(49, 2, 'Appointment: status_changed (ID: 7)', 'appointment', '2025-05-10 11:35:44', '::1', '{\"previous_status\":\"confirmed\",\"new_status\":\"completed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-30\",\"reason\":\"No reason provided\"}', 7, 'appointment'),
+(50, 2, 'Appointment: status_changed (ID: 6)', 'appointment', '2025-05-10 11:36:10', '::1', '{\"previous_status\":\"confirmed\",\"new_status\":\"completed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-29\",\"reason\":\"No reason provided\"}', 6, 'appointment'),
+(51, 2, 'Auth: logout', 'authentication', '2025-05-10 11:38:19', '::1', NULL, NULL, NULL),
+(52, 3, 'Auth: logout', 'authentication', '2025-05-10 11:38:45', '::1', NULL, NULL, NULL),
+(53, 2, 'Auth: logout', 'authentication', '2025-05-10 11:39:31', '::1', NULL, NULL, NULL),
+(54, 1, 'Auth: logout', 'authentication', '2025-05-10 11:56:22', '::1', NULL, NULL, NULL),
+(55, 2, 'Auth: logout', 'authentication', '2025-05-10 11:56:28', '::1', NULL, NULL, NULL),
+(56, 0, 'Patient scheduled appointment with provider #2', '1', '2025-05-10 13:05:38', '::1', NULL, NULL, NULL),
+(57, 1, 'Auth: logout', 'authentication', '2025-05-10 13:11:06', '::1', NULL, NULL, NULL),
+(58, 2, 'Auth: logout', 'authentication', '2025-05-10 14:54:14', '::1', NULL, NULL, NULL),
+(59, 1, 'Auth: logout', 'authentication', '2025-05-10 15:17:04', '::1', NULL, NULL, NULL),
+(60, 2, 'Auth: logout', 'authentication', '2025-05-10 15:17:23', '::1', NULL, NULL, NULL),
+(61, 1, 'Auth: logout', 'authentication', '2025-05-10 15:56:36', '::1', NULL, NULL, NULL),
+(62, 2, 'Auth: logout', 'authentication', '2025-05-10 15:58:22', '::1', NULL, NULL, NULL),
+(63, 1, 'Auth: logout', 'authentication', '2025-05-10 16:30:28', '::1', NULL, NULL, NULL),
+(64, 2, 'Auth: logout', 'authentication', '2025-05-10 16:42:00', '::1', NULL, NULL, NULL),
+(65, 0, 'Patient scheduled appointment with provider #2', '1', '2025-05-10 18:27:03', '::1', NULL, NULL, NULL),
+(66, 0, 'Patient scheduled appointment with provider #2', '1', '2025-05-10 18:27:23', '::1', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -96,24 +139,24 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   KEY `patient_id` (`patient_id`),
   KEY `provider_id` (`provider_id`),
   KEY `service_id` (`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointments`
 --
 
 INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `service_id`, `appointment_date`, `start_time`, `end_time`, `status`, `type`, `notes`, `reason`, `reminder_sent`, `confirmed_at`, `canceled_at`, `created_at`, `updated_at`) VALUES
-(1, 1, 16, 2, '2025-04-24', '17:55:00', '18:25:00', 'confirmed', 'in_person', 'Notes', 'Visit', 0, NULL, NULL, '2025-04-23 16:16:55', '2025-04-23 16:16:55'),
-(2, 10, 16, 1, '2025-04-26', '13:32:00', '14:02:00', 'confirmed', 'in_person', 'notes', 'reason', 0, NULL, NULL, '2025-04-25 13:32:49', '2025-04-25 13:32:49'),
+(1, 1, 16, 2, '2025-04-24', '17:55:00', '18:25:00', 'canceled', 'in_person', 'Notes', 'Canceled by administrator', 0, NULL, '2025-05-10 11:38:41', '2025-04-23 16:16:55', '2025-05-10 11:38:41'),
+(2, 10, 16, 1, '2025-04-26', '13:32:00', '14:02:00', 'canceled', 'in_person', 'notes', 'Canceled by administrator', 0, NULL, '2025-05-10 11:38:38', '2025-04-25 13:32:49', '2025-05-10 11:38:38'),
 (3, 1, 16, 1, '2025-04-28', '10:00:00', '10:30:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:40:00', '2025-04-26 15:40:00'),
 (4, 1, 16, 2, '2025-04-29', '11:00:00', '11:45:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:40:30', '2025-04-26 15:40:30'),
-(5, 1, 2, 1, '2025-04-29', '14:00:00', '14:30:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:40:45', '2025-04-26 15:40:45'),
-(6, 1, 2, 2, '2025-04-29', '15:00:00', '15:45:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:00', '2025-04-26 15:41:00'),
-(7, 1, 2, 1, '2025-04-30', '09:00:00', '09:30:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:15', '2025-04-26 15:41:15'),
-(8, 1, 2, 2, '2025-04-30', '09:58:00', '10:43:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:23', '2025-04-26 15:58:58'),
+(5, 1, 2, 1, '2025-04-29', '14:00:00', '14:30:00', 'completed', 'in_person', '', '', 0, '2025-05-10 11:26:49', NULL, '2025-04-26 15:40:45', '2025-05-10 11:26:53'),
+(6, 1, 2, 2, '2025-04-29', '15:00:00', '15:45:00', 'completed', 'in_person', '', '', 0, '2025-05-10 11:27:24', NULL, '2025-04-26 15:41:00', '2025-05-10 11:36:10'),
+(7, 1, 2, 1, '2025-04-30', '09:00:00', '09:30:00', 'completed', 'in_person', '', '', 0, '2025-05-10 11:30:11', NULL, '2025-04-26 15:41:15', '2025-05-10 11:35:44'),
+(8, 1, 2, 2, '2025-04-30', '09:58:00', '10:43:00', 'completed', 'in_person', '', '', 0, '2025-05-10 11:34:59', NULL, '2025-04-26 15:41:23', '2025-05-10 11:35:19'),
 (9, 1, 16, 1, '2025-04-30', '09:30:00', '10:00:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:55', '2025-04-26 15:41:55'),
 (10, 1, 16, 2, '2025-04-30', '09:32:00', '10:17:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 16:32:36', '2025-04-26 16:32:36'),
-(11, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-04 17:46:54', '2025-05-04 16:59:02', '2025-05-04 17:46:54'),
+(11, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-09 13:27:47', '2025-05-04 16:59:02', '2025-05-09 13:27:47'),
 (12, 1, 2, 2, '2025-05-07', '10:04:00', '10:49:00', 'canceled', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-04 17:30:35', '2025-05-04 17:16:58', '2025-05-04 17:30:35'),
 (13, 1, 2, 2, '2025-05-05', '09:00:00', '09:45:00', 'canceled', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-04 17:30:41', '2025-05-04 17:17:30', '2025-05-04 17:30:41'),
 (14, 1, 2, 2, '2025-05-06', '14:00:00', '14:45:00', 'canceled', 'in_person', 'Note', 'Canceled by administrator', 0, NULL, '2025-05-04 17:30:37', '2025-05-04 17:22:37', '2025-05-04 17:30:37'),
@@ -126,7 +169,10 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `serv
 (21, 1, 2, 1, '2025-05-06', '14:00:00', '14:30:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-04 19:06:45', '2025-05-04 18:54:57', '2025-05-04 19:06:45'),
 (22, 1, 2, 1, '2025-05-07', '10:04:00', '10:34:00', 'canceled', '', 'notes', 'No reason provided', 0, NULL, '2025-05-07 13:14:38', '2025-05-04 19:35:26', '2025-05-07 13:14:38'),
 (23, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-07 12:37:10', '2025-05-07 12:34:16', '2025-05-07 12:37:10'),
-(24, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-07 13:59:58', '2025-05-07 13:15:04', '2025-05-07 13:59:58');
+(24, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-07 13:59:58', '2025-05-07 13:15:04', '2025-05-07 13:59:58'),
+(30, 1, 2, 2, '2025-05-15', '08:00:00', '08:30:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-05-10 13:05:38', '2025-05-10 13:05:38'),
+(31, 1, 2, 1, '2025-05-15', '11:30:00', '12:00:00', 'scheduled', 'in_person', '', 'note', 0, NULL, NULL, '2025-05-10 18:27:03', '2025-05-10 18:27:03'),
+(32, 1, 2, 1, '2025-05-15', '08:30:00', '09:00:00', 'scheduled', 'in_person', '', 'note', 0, NULL, NULL, '2025-05-10 18:27:23', '2025-05-10 18:27:23');
 
 -- --------------------------------------------------------
 
@@ -335,58 +381,96 @@ CREATE TABLE IF NOT EXISTS `provider_availability` (
   `is_recurring` tinyint(1) DEFAULT 0,
   `weekdays` varchar(20) DEFAULT NULL,
   `max_appointments` int(11) DEFAULT 1,
-  PRIMARY KEY (`availability_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=243 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `service_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`availability_id`),
+  KEY `fk_availability_service` (`service_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1324 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `provider_availability`
 --
 
-INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availability_date`, `start_time`, `end_time`, `is_available`, `created_at`, `is_recurring`, `weekdays`, `max_appointments`) VALUES
-(1, 2, '2025-05-05', '10:00:00', '17:59:00', 1, '2025-05-05 03:05:32', 0, NULL, 0),
-(2, 2, '2025-05-05', '09:00:00', '12:00:00', 1, '2025-04-17 13:59:28', 1, '1,2,3,4,5', 0),
-(3, 2, '2025-05-06', '14:00:00', '17:00:00', 1, '2025-04-17 13:59:28', 1, '1,2,3,4,5', 0),
-(4, 2, '2025-05-07', '10:04:00', '22:04:00', 1, '2025-04-17 15:05:05', 1, '1,2,3,4,5', 0),
-(163, 2, '2025-05-12', '05:00:00', '05:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(164, 2, '2025-05-12', '05:30:00', '06:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(165, 2, '2025-05-12', '06:00:00', '06:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(166, 2, '2025-05-12', '06:30:00', '07:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(167, 2, '2025-05-12', '07:00:00', '07:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(168, 2, '2025-05-12', '07:30:00', '08:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(169, 2, '2025-05-12', '08:00:00', '08:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(170, 2, '2025-05-12', '08:30:00', '09:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(171, 2, '2025-05-12', '09:00:00', '09:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(172, 2, '2025-05-12', '09:30:00', '10:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(173, 2, '2025-05-12', '10:00:00', '10:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(174, 2, '2025-05-12', '10:30:00', '11:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(175, 2, '2025-05-12', '11:00:00', '11:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(176, 2, '2025-05-12', '11:30:00', '12:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(177, 2, '2025-05-12', '12:00:00', '12:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(178, 2, '2025-05-12', '12:30:00', '13:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(179, 2, '2025-05-12', '13:00:00', '13:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(180, 2, '2025-05-12', '13:30:00', '14:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(181, 2, '2025-05-12', '14:00:00', '14:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(182, 2, '2025-05-12', '14:30:00', '15:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(183, 2, '2025-05-12', '15:00:00', '15:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(184, 2, '2025-05-12', '15:30:00', '16:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(207, 2, '2025-05-08', '08:00:00', '08:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(208, 2, '2025-05-08', '08:30:00', '09:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(209, 2, '2025-05-08', '09:00:00', '09:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(210, 2, '2025-05-08', '09:30:00', '10:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(211, 2, '2025-05-08', '10:00:00', '10:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(212, 2, '2025-05-08', '10:30:00', '11:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(213, 2, '2025-05-08', '11:00:00', '11:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(214, 2, '2025-05-08', '11:30:00', '12:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(215, 2, '2025-05-08', '12:00:00', '12:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(216, 2, '2025-05-08', '12:30:00', '13:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(217, 2, '2025-05-08', '13:00:00', '13:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(218, 2, '2025-05-08', '13:30:00', '14:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(219, 2, '2025-05-08', '14:00:00', '14:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(220, 2, '2025-05-08', '14:30:00', '15:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(221, 2, '2025-05-08', '15:00:00', '15:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(222, 2, '2025-05-08', '15:30:00', '16:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(223, 2, '2025-05-08', '16:00:00', '16:30:00', 1, '2025-05-08 17:19:27', 0, NULL, 1),
-(224, 2, '2025-05-08', '16:30:00', '17:00:00', 1, '2025-05-08 17:19:27', 0, NULL, 1);
+INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availability_date`, `start_time`, `end_time`, `is_available`, `created_at`, `is_recurring`, `weekdays`, `max_appointments`, `service_id`) VALUES
+(1, 2, '2025-05-05', '10:00:00', '17:59:00', 1, '2025-05-05 03:05:32', 0, NULL, 0, NULL),
+(2, 2, '2025-05-05', '09:00:00', '12:00:00', 1, '2025-04-17 13:59:28', 1, '1,2,3,4,5', 0, NULL),
+(3, 2, '2025-05-06', '14:00:00', '17:00:00', 1, '2025-04-17 13:59:28', 1, '1,2,3,4,5', 0, NULL),
+(4, 2, '2025-05-07', '10:04:00', '22:04:00', 1, '2025-04-17 15:05:05', 1, '1,2,3,4,5', 0, NULL),
+(447, 2, '2025-05-08', '08:00:00', '08:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(448, 2, '2025-05-08', '08:30:00', '09:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(449, 2, '2025-05-08', '09:00:00', '09:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(450, 2, '2025-05-08', '09:30:00', '10:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(451, 2, '2025-05-08', '10:00:00', '10:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(452, 2, '2025-05-08', '10:30:00', '11:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(453, 2, '2025-05-08', '11:00:00', '11:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(454, 2, '2025-05-08', '11:30:00', '12:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(455, 2, '2025-05-08', '12:00:00', '12:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(456, 2, '2025-05-08', '12:30:00', '13:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(457, 2, '2025-05-08', '13:00:00', '13:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(458, 2, '2025-05-08', '13:30:00', '14:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(459, 2, '2025-05-08', '14:00:00', '14:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(460, 2, '2025-05-08', '14:30:00', '15:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(461, 2, '2025-05-08', '15:00:00', '15:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(462, 2, '2025-05-08', '15:30:00', '16:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(463, 2, '2025-05-08', '16:00:00', '16:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(464, 2, '2025-05-08', '16:30:00', '17:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(527, 2, '2025-05-08', '08:00:00', '08:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(528, 2, '2025-05-08', '08:30:00', '09:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(529, 2, '2025-05-08', '09:00:00', '09:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(530, 2, '2025-05-08', '09:30:00', '10:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(531, 2, '2025-05-08', '10:00:00', '10:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(532, 2, '2025-05-08', '10:30:00', '11:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(533, 2, '2025-05-08', '11:00:00', '11:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(534, 2, '2025-05-08', '11:30:00', '12:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(535, 2, '2025-05-08', '12:00:00', '12:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(536, 2, '2025-05-08', '12:30:00', '13:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(537, 2, '2025-05-08', '13:00:00', '13:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(538, 2, '2025-05-08', '13:30:00', '14:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(539, 2, '2025-05-08', '14:00:00', '14:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(540, 2, '2025-05-08', '14:30:00', '15:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(541, 2, '2025-05-08', '15:00:00', '15:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(542, 2, '2025-05-08', '15:30:00', '16:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(543, 2, '2025-05-08', '16:00:00', '16:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(544, 2, '2025-05-08', '16:30:00', '17:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(1284, 2, '2025-05-12', '05:00:00', '05:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1285, 2, '2025-05-12', '05:30:00', '06:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1286, 2, '2025-05-12', '06:00:00', '06:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1287, 2, '2025-05-12', '06:30:00', '07:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1288, 2, '2025-05-12', '07:00:00', '07:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1289, 2, '2025-05-12', '07:30:00', '08:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1290, 2, '2025-05-12', '08:00:00', '08:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1291, 2, '2025-05-12', '08:30:00', '09:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1292, 2, '2025-05-12', '09:00:00', '09:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1293, 2, '2025-05-12', '09:30:00', '10:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1294, 2, '2025-05-12', '10:00:00', '10:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1295, 2, '2025-05-12', '10:30:00', '11:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1296, 2, '2025-05-12', '11:00:00', '11:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1297, 2, '2025-05-12', '11:30:00', '12:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1298, 2, '2025-05-12', '12:00:00', '12:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1299, 2, '2025-05-12', '12:30:00', '13:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1300, 2, '2025-05-12', '13:00:00', '13:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1301, 2, '2025-05-12', '13:30:00', '14:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1302, 2, '2025-05-12', '14:00:00', '14:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1303, 2, '2025-05-12', '14:30:00', '15:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1304, 2, '2025-05-12', '15:00:00', '15:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1305, 2, '2025-05-12', '15:30:00', '16:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1306, 2, '2025-05-15', '08:00:00', '08:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1307, 2, '2025-05-15', '08:30:00', '09:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1308, 2, '2025-05-15', '09:00:00', '09:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1309, 2, '2025-05-15', '09:30:00', '10:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1310, 2, '2025-05-15', '10:00:00', '10:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1311, 2, '2025-05-15', '10:30:00', '11:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1312, 2, '2025-05-15', '11:00:00', '11:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1313, 2, '2025-05-15', '11:30:00', '12:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1314, 2, '2025-05-15', '12:00:00', '12:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1315, 2, '2025-05-15', '12:30:00', '13:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1316, 2, '2025-05-15', '13:00:00', '13:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1317, 2, '2025-05-15', '13:30:00', '14:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1318, 2, '2025-05-15', '14:00:00', '14:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1319, 2, '2025-05-15', '14:30:00', '15:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1320, 2, '2025-05-15', '15:00:00', '15:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1321, 2, '2025-05-15', '15:30:00', '16:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1322, 2, '2025-05-15', '16:00:00', '16:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1323, 2, '2025-05-15', '16:30:00', '17:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9);
 
 -- --------------------------------------------------------
 
@@ -566,7 +650,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 INSERT INTO `users` (`user_id`, `email`, `password_hash`, `first_name`, `last_name`, `phone`, `role`, `is_active`, `is_verified`, `email_verified_at`, `created_at`, `last_login`, `verification_token`, `reset_token`, `reset_token_expires`, `token_expires`, `password_change_required`) VALUES
 (1, 'patient@example.com', '$2y$10$example_hash', 'John', 'Doe', '2120001234', 'patient', 1, 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
 (2, 'provider@example.com', '$2y$10$example_hash', 'Dr. Smith', 'MD', '7152125151', 'provider', 1, 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
-(3, 'admin@example.com', '$2y$10$mn369d8QchCNaqnZ9DA15OJejiRrlHCzw33TIkq01qepowE42AWkS', 'Admin', 'User', NULL, 'admin', 1, 1, NULL, '2025-04-17 08:59:28', '2025-05-02 12:52:04', NULL, NULL, NULL, NULL, 0),
+(3, 'admin@example.com', '$2y$10$mn369d8QchCNaqnZ9DA15OJejiRrlHCzw33TIkq01qepowE42AWkS', 'Admin', 'User', NULL, 'admin', 1, 1, NULL, '2025-04-17 08:59:28', '2025-05-10 11:26:02', NULL, NULL, NULL, NULL, 0),
 (10, 'Kholley@student.cvtc.edu', '$2y$10$xiDwOmotNFAOn.5R0XJ1huUpLb681/phtw/TCkT9wlddp9s1DiRnG', 'Kaleb', 'Holley', '7156191363', 'patient', 1, 1, '2025-04-22 09:54:17', '2025-04-22 09:54:02', '2025-04-22 09:54:47', NULL, 'd9472a925ebd1c3138bb4731edcaf0a207e72c66c1bd00be9783e31f632bb69e', '2025-04-22 15:55:40', '2025-04-23 14:54:02', 0),
 (16, 'john@doe.com', '$2y$10$nxPUCopIWXPZw442f6B4UOJv.H/6wty9qrJmSqXzYPCmo6i6Zn8sW', 'john', 'doe', '1234567897', 'provider', 1, 1, NULL, '2025-04-22 20:16:51', '2025-04-22 20:25:22', NULL, NULL, NULL, NULL, 0),
 (17, 'trash@gmail.com', '$argon2id$v=19$m=65536,t=4,p=3$cmJXQ2pBVjlVbzR5eVgxSQ$IsmEEXxajVGZfigueXnsUqfYDdPRIjHXCGf1AEk81G8', 'Kaleb', 'Holley', '(715) 619-1363', 'patient', 1, 1, '2025-05-04 13:49:29', '2025-05-04 13:48:54', NULL, NULL, NULL, NULL, NULL, 0);
@@ -623,7 +707,7 @@ CREATE TABLE IF NOT EXISTS `waitlist` (
 ALTER TABLE `appointments`
   ADD CONSTRAINT `appointments_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `users` (`user_id`),
   ADD CONSTRAINT `appointments_ibfk_2` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`),
-  ADD CONSTRAINT `appointments_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services_old` (`service_id`);
+  ADD CONSTRAINT `appointments_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`);
 
 --
 -- Constraints for table `appointment_history`
@@ -664,6 +748,12 @@ ALTER TABLE `notification_preferences`
 --
 ALTER TABLE `patient_profiles`
   ADD CONSTRAINT `patient_profiles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+
+--
+-- Constraints for table `provider_availability`
+--
+ALTER TABLE `provider_availability`
+  ADD CONSTRAINT `fk_availability_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`);
 
 --
 -- Constraints for table `provider_profiles`
