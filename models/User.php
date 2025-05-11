@@ -83,7 +83,166 @@ class User {
             throw $e;
         }
     }
-    
+    /**
+     * Delete a patient's profile information
+     * 
+     * @param int $userId The ID of the user whose patient profile should be deleted
+     * @return bool True on success, false on failure
+     */
+    public function deletePatientProfile($userId) {
+        try {
+            // Check if there's a patient profile for this user
+            $checkStmt = $this->db->prepare("
+                SELECT COUNT(*) as count 
+                FROM patient_profiles 
+                WHERE user_id = ?
+            ");
+            
+            if (!$checkStmt) {
+                error_log("SQL prepare error in deletePatientProfile: " . $this->db->error);
+                return false;
+            }
+            
+            $checkStmt->bind_param("i", $userId);
+            $checkStmt->execute();
+            $result = $checkStmt->get_result();
+            $row = $result->fetch_assoc();
+            
+            if ($row['count'] == 0) {
+                // No patient profile to delete
+                return true;
+            }
+            
+            // Delete from patient_profiles table
+            $stmt = $this->db->prepare("
+                DELETE FROM patient_profiles 
+                WHERE user_id = ?
+            ");
+            
+            if (!$stmt) {
+                error_log("SQL prepare error in deletePatientProfile: " . $this->db->error);
+                return false;
+            }
+            
+            $stmt->bind_param("i", $userId);
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                error_log("Error deleting patient profile for user ID $userId: " . $stmt->error);
+                return false;
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Exception deleting patient profile: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Delete a user and all related records comprehensively
+     * 
+     * @param int $userId The ID of the user to delete
+     * @return bool True on success, false on failure
+     */
+    public function deleteUserComprehensive($userId) {
+        try {
+            // Start a transaction
+            $this->db->begin_transaction();
+            
+            // Log the deletion attempt
+            error_log("Starting comprehensive deletion for user ID: $userId");
+            
+            // 1. Delete from notifications
+            $this->db->query("DELETE FROM notifications WHERE user_id = $userId");
+            error_log("Deleted notifications for user $userId");
+            
+            // 2. Delete from notification_preferences
+            $this->db->query("DELETE FROM notification_preferences WHERE user_id = $userId");
+            error_log("Deleted notification preferences for user $userId");
+            
+            // 3. Delete from appointment_ratings where user is patient or provider
+            $this->db->query("DELETE FROM appointment_ratings WHERE patient_id = $userId OR provider_id = $userId");
+            error_log("Deleted appointment ratings for user $userId");
+            
+            // 4. Get appointment IDs for this user to delete appointment_history
+            $appointmentIds = [];
+            $result = $this->db->query("SELECT appointment_id FROM appointments WHERE patient_id = $userId OR provider_id = $userId");
+            while ($row = $result->fetch_assoc()) {
+                $appointmentIds[] = $row['appointment_id'];
+            }
+            
+            // 5. Delete appointment_history for these appointments
+            if (!empty($appointmentIds)) {
+                $ids = implode(',', $appointmentIds);
+                $this->db->query("DELETE FROM appointment_history WHERE appointment_id IN ($ids)");
+                error_log("Deleted appointment history for user $userId");
+            }
+            
+            // 6. Delete appointments
+            $this->db->query("DELETE FROM appointments WHERE patient_id = $userId OR provider_id = $userId");
+            error_log("Deleted appointments for user $userId");
+            
+            // 7. Delete provider-specific data if applicable
+            $result = $this->db->query("SELECT role FROM users WHERE user_id = $userId");
+            $user = $result->fetch_assoc();
+            
+            if ($user && $user['role'] === 'provider') {
+                // Delete from provider_services
+                $this->db->query("DELETE FROM provider_services WHERE provider_id = $userId");
+                error_log("Deleted provider services for user $userId");
+                
+                // Delete from provider_availability
+                $this->db->query("DELETE FROM provider_availability WHERE provider_id = $userId");
+                error_log("Deleted provider availability for user $userId");
+                
+                // Delete from recurring_schedules
+                $this->db->query("DELETE FROM recurring_schedules WHERE provider_id = $userId");
+                error_log("Deleted recurring schedules for user $userId");
+                
+                // Delete from provider_profiles
+                $this->db->query("DELETE FROM provider_profiles WHERE provider_id = $userId");
+                error_log("Deleted provider profile for user $userId");
+            }
+            
+            // 8. Delete patient-specific data if applicable
+            if ($user && $user['role'] === 'patient') {
+                // Delete from patient_profiles
+                $this->db->query("DELETE FROM patient_profiles WHERE user_id = $userId");
+                error_log("Deleted patient profile for user $userId");
+                
+                // Delete from waitlist if exists
+                $this->db->query("DELETE FROM waitlist WHERE patient_id = $userId");
+                error_log("Deleted waitlist entries for user $userId");
+            }
+            
+            // 9. Delete auth_sessions
+            $this->db->query("DELETE FROM auth_sessions WHERE user_id = $userId");
+            error_log("Deleted auth sessions for user $userId");
+            
+            // 10. Delete user_tokens
+            $this->db->query("DELETE FROM user_tokens WHERE user_id = $userId");
+            error_log("Deleted user tokens for user $userId");
+            
+            // 11. Finally delete the user
+            $this->db->query("DELETE FROM users WHERE user_id = $userId");
+            error_log("Deleted user record for ID $userId");
+            
+            // Commit the transaction
+            $this->db->commit();
+            error_log("Successfully completed deletion of user $userId");
+            
+            return true;
+        } catch (Exception $e) {
+            // Roll back the transaction on error
+            $this->db->rollback();
+            error_log("Error in comprehensive user deletion: " . $e->getMessage());
+            return false;
+        }
+    }
+
+
+
     /**
      * Toggle user active status
      * 
@@ -267,8 +426,8 @@ class User {
                     
                     if ($row['count'] == 0) {
                         // Modified to include user_id field
-                        $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id, user_id) VALUES (?, ?)");
-                        $profileStmt->bind_param("ii", $userId, $userId);
+                        $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id) VALUES (?)");
+                        $profileStmt->bind_param("i", $userId);
                         if (!$profileStmt->execute()) {
                             error_log("Failed to create provider profile: " . $profileStmt->error);
                             throw new Exception("Failed to create provider profile");
@@ -357,9 +516,8 @@ class User {
                     
                     if ($count == 0) {
                         // Modified to include user_id field
-                        $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id, user_id) VALUES (:pid, :uid)");
+                        $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id) VALUES (:pid)");
                         $profileStmt->bindParam(':pid', $userId, PDO::PARAM_INT);
-                        $profileStmt->bindParam(':uid', $userId, PDO::PARAM_INT);
                         
                         if (!$profileStmt->execute()) {
                             $errorInfo = $profileStmt->errorInfo();
@@ -903,6 +1061,46 @@ class User {
             error_log("Get users error: " . $e->getMessage());
             return [];
         }
+    }
+    /**
+     * Get user by verification token
+     *
+     * @param string $token Verification token
+     * @return array|false User data or false if not found
+     */
+    public function getUserByVerificationToken($token) {
+        $stmt = $this->db->prepare("
+            SELECT user_id, email, first_name, last_name, email_verified_at, token_expires
+            FROM users
+            WHERE verification_token = ?
+        ");
+        $stmt->bind_param("s", $token);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if (!$result || $result->num_rows === 0) {
+            return false;
+        }
+        
+        return $result->fetch_assoc();
+    }
+
+    /**
+     * Mark user email as verified
+     *
+     * @param int $userId User ID
+     * @return bool Success flag
+     */
+    public function markEmailAsVerified($userId) {
+        $stmt = $this->db->prepare("
+            UPDATE users
+            SET email_verified_at = NOW(), verification_token = NULL, token_expires = NULL, is_verified = 1
+            WHERE user_id = ?
+        ");
+        $stmt->bind_param("i", $userId);
+        $success = $stmt->execute();
+        
+        return $success;
     }
 
     /**
@@ -1462,6 +1660,47 @@ class User {
             return null;
         }
     }
+    /**
+     * Get user by email
+     *
+     * @param string $email User email
+     * @return array|false User data or false if not found
+     */
+    public function getUserByEmail($email) {
+        $stmt = $this->db->prepare("
+            SELECT user_id, first_name, last_name, email, email_verified_at, is_verified
+            FROM users
+            WHERE email = ?
+        ");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            return false;
+        }
+        
+        return $result->fetch_assoc();
+    }
+    /**
+     * Update user verification token
+     *
+     * @param int $userId User ID
+     * @param string $token Verification token
+     * @param string $tokenExpires Token expiration date
+     * @return bool Success flag
+     */
+    public function updateVerificationToken($userId, $token, $tokenExpires) {
+        $stmt = $this->db->prepare("
+            UPDATE users
+            SET verification_token = ?, token_expires = ?
+            WHERE user_id = ?
+        ");
+        $stmt->bind_param("ssi", $token, $tokenExpires, $userId);
+        $success = $stmt->execute();
+        
+        return $success && $stmt->affected_rows > 0;
+    }
      /**
      * Get all available providers for booking
      * 
@@ -1521,4 +1760,3 @@ class User {
     }
 }
 ?>
-                    

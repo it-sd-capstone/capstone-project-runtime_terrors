@@ -1,5 +1,7 @@
 <?php
 require_once MODEL_PATH . '/Services.php';
+require_once MODEL_PATH . '/Provider.php';
+
 
 class ServiceController {
     protected $db;
@@ -8,6 +10,9 @@ class ServiceController {
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) session_start();
         $this->db = get_db();
+
+
+        $this->providerServicesModel = new Provider($this->db);
         $this->serviceModel = new Services($this->db);
     }
 
@@ -39,6 +44,14 @@ class ServiceController {
      * Process service creation or update
      */
     public function processService() {
+
+
+        $errors = [];
+        error_log("Session user role: " . ($_SESSION['user_role'] ?? 'not set'));
+        error_log("Session user ID: " . ($_SESSION['user_id'] ?? 'not set'));
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = $_POST['action'] ?? '';
+
         // Comprehensive debugging
         error_log("ServiceController::processService called");
         error_log("POST data: " . json_encode($_POST));
@@ -104,12 +117,37 @@ class ServiceController {
             require_once MODEL_PATH . '/Provider.php';
             $providerModel = new Provider($this->db);
             
+
+            $name = $_POST['service_name'] ?? '';
+            $description = $_POST['description'] ?? '';
+            $price = $_POST['price'] ?? 0;
+            $duration = $_POST['duration'] ?? 30;
+            $serviceId = $_POST['service_id'] ?? null;
+
+            // Perform action based on request
+            if (count($errors) === 0) {
+                switch ($action) {
+                    case 'add':
+                        $serviceData = [
+                            'name' => $name,  // Use 'name' to match the database column
+                            'description' => $description,
+                            'price' => $price,
+                            'duration' => $duration
+                        ];
+                        error_log("Data being sent to model: " . json_encode($serviceData));
+                        error_log("Calling createService with data");
+                        $result = $this->serviceModel->createService($serviceData);
+                        error_log("createService result: " . ($result ? "success" : "failure"));
+                        break;
+                }
+
             // Check if this method exists and is correctly implemented
             if (method_exists($providerModel, 'addServiceToProvider')) {
                 $provider_result = $providerModel->addServiceToProvider($provider_id, $service_id);
                 error_log("Provider association result: " . ($provider_result ? "success" : "failure"));
             } else {
                 error_log("ERROR: Method 'addServiceToProvider' does not exist in Provider model!");
+
             }
         } else {
             error_log("Not associating with provider. Success=$success, User ID=" . 

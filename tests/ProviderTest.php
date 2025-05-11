@@ -1,26 +1,37 @@
 <?php
-/**
- * Provider Model Test
- * 
- * Tests for the Provider model including:
- * - Provider profile management
- * - Service association
- * - Availability management
- * - Provider-specific functionality
- */
+require_once dirname(__DIR__) . '/public_html/bootstrap.php';
 
-echo "<h1>Provider Model Test</h1>";
-echo "<p>This test file will validate the Provider model functionality including provider-specific features.</p>";
-echo "<p>Key methods to test:</p>";
-echo "<ul>";
-echo "<li>getProviderById()</li>";
-echo "<li>updateProfile()</li>";
-echo "<li>getProviderServices()</li>";
-echo "<li>addService()</li>";
-echo "<li>removeService()</li>";
-echo "<li>getAvailability()</li>";
-echo "<li>setAvailability()</li>";
-echo "<li>getAppointments()</li>";
-echo "<li>changePassword()</li>";
-echo "</ul>";
-echo "<p>Implement comprehensive tests for these methods to ensure provider functionality works correctly.</p>";
+class ProviderTest {
+    public function setUp() {
+        // Initialize test environment
+    }
+    
+    public function tearDown() {
+        // Clean up resources
+    }
+    
+    public function testProviderProfile() {
+        // Create provider profile
+        // Add services to provider
+        // Test profile visibility settings
+    }
+    
+    public function testProviderServices() {
+        // Add services to provider
+        // Set custom pricing
+        // Remove services
+    }
+    
+    // Run the tests
+    public function run() {
+        $this->setUp();
+        $this->testProviderProfile();
+        $this->testProviderServices();
+        $this->tearDown();
+        echo "Provider tests completed\n";
+    }
+}
+
+// Instantiate and run the tests
+$test = new ProviderTest();
+$test->run();

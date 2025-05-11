@@ -1,0 +1,1183 @@
+# System Architecture Documentation
+
+## 1. System Overview
+
+   ### 1.1 Request Handling Flow
+
+      The application follows a front controller pattern where all requests are routed through a single entry point:
+
+      1. Client makes HTTP request
+      2. The request is directed to `public_html/index.php` (front controller)
+      3. Application bootstrapping occurs (loading configuration, setting up environment)
+      4. URL is parsed to identify controller, action, and parameters
+      5. The appropriate controller is loaded and instantiated
+      6. The requested action method is called with parameters
+      7. Response is generated and returned to the client
+
+   ### 1.2 Application Initialization Process
+
+      The application initializes through `bootstrap.php` which performs these key functions:
+
+      1. Defines application directory constants:
+         - APP_ROOT: Root application directory
+         - CONFIG_PATH: Configuration files location
+         - CONTROLLER_PATH: Controllers location
+         - MODEL_PATH: Models location
+         - VIEW_PATH: Views location
+         - CORE_PATH: Core functionality
+         - SQL_PATH: SQL scripts location
+
+      2. Environment configuration:
+         - Loads variables from .env file
+         - Detects current environment (development/production)
+         - Applies environment-specific configurations
+
+      3. Database connection setup:
+         - Establishes database connection via connection_bridge.php
+         - Connection details differ by environment
+         - Connection is lazy-loaded (only created when needed)
+
+      4. Helper function registration:
+         - app_include(): Safe file inclusion
+         - config(): Configuration value retrieval
+         - get_db(): Database connection access
+         - get_environment(): Current environment detection
+
+      5. Class autoloader registration:
+         - Automatically loads model and controller classes
+         - Eliminates need for manual requires/includes
+
+   ### 1.3 Routing Mechanism
+
+      The application implements a simple MVC routing system:
+
+      1. URL format: `/{controller}/{action}/{params}`
+         - Example: `/appointments/create/5` would call the `create` method on `AppointmentsController` with parameter `5`
+
+      2. Controller resolution:
+         - Controller name is converted to `{Controller}Controller` class
+         - Example: 'home' becomes 'HomeController'
+
+      3. Fallback mechanism:
+         - If controller not found, attempts to load view directly
+         - Checks multiple possible view locations
+         - Falls back to home page if nothing matches
+
+      4. Error handling:
+         - Displays detailed errors in development environment
+         - Shows available controllers and views for debugging
+
+## 2. Component Documentation
+
+   ### 2.1 Controllers
+
+   #### 2.1.1 Authentication Controller (`auth_controller.php`)
+
+      The Authentication Controller handles all user authentication processes including login, registration, password management, and session control.
+
+      **Key Components:**
+
+      1. **Dependencies:**
+         - Database connection
+         - User Model
+         - Activity Log Model
+         - Email Service
+
+      2. **Authentication Flows:**
+
+         a. **Login Process:**
+         - Validates user credentials against database
+         - Verifies email verification status
+         - Handles password change requirements
+         - Manages session creation
+         - Implements role-based redirection
+         - Logs authentication activities
+
+         b. **Registration Process:**
+         - Collects and validates user information
+         - Implements password strength requirements
+         - Creates new user account with default patient role
+         - Generates secure verification token
+         - Sends verification email
+         - Records registration in activity logs
+
+         c. **Email Verification:**
+         - Validates verification tokens
+         - Handles token expiration with automatic renewal
+         - Updates user account status upon verification
+         - Provides verification status feedback
+
+         d. **Password Management:**
+         - Forgot password flow with email-based tokens
+         - Secure password reset with token verification
+         - Forced password change for new accounts
+         - Current password verification for password changes
+
+         e. **Session Management:**
+         - Session creation with user role and permissions
+         - Session termination on logout
+         - Session variable management
+
+      3. **Security Features:**
+         - CSRF protection through token validation
+         - Password hashing using PHP's password_hash() with bcrypt
+         - Input sanitization to prevent XSS attacks
+         - Secure token generation for verification and password resets
+         - Token expiration mechanisms
+         - Activity logging for security events
+
+      4. **Key Methods:**
+         - `index()`: Displays login form
+         - `login()`: Processes login requests
+         - `register()`: Handles user registration
+         - `verify()`: Processes email verification
+         - `forgot_password()` & `reset_password()`: Password recovery flow
+         - `change_password()`: Handles password changes
+         - `logout()`: Terminates user sessions
+         - `settings()`: Manages account settings
+
+   #### 2.1.2 Appointments Controller (`appointments_controller.php`)
+
+      The Appointments Controller serves as the primary interface for managing the core business function of the application: scheduling and managing appointments between patients and providers.
+
+      **Key Components:**
+
+      1. **Dependencies:**
+         - Database connection
+         - Appointment Model
+         - Activity Log Model
+         - Services Model
+         - Authentication validation
+
+      2. **Core Functionality:**
+
+         a. **Appointment Listing and Management:**
+         - Displays available appointment slots based on user role
+         - Shows upcoming appointments for the logged-in user
+         - Manages appointment visibility based on user role (patients see their appointments, providers see their schedule, admins see all)
+
+         b. **Booking Process:**
+         - Validates slot availability in real-time
+         - Manages service selection for appointments
+         - Handles appointment type (in-person/virtual)
+         - Collects booking notes and reasons
+         - Creates appointment records with proper relationships
+         - Logs booking activities
+
+         c. **Appointment Status Management:**
+         - Supports multiple status transitions (scheduled, confirmed, canceled, completed, no-show)
+         - Implements role-based permissions for status changes
+         - Records status change history with reasons
+         - Manages availability slot restoration on cancellation
+
+         d. **Rescheduling:**
+         - Provides date and time slot selection
+         - Validates new slot availability
+         - Updates appointment records
+         - Maintains change history
+
+         e. **Appointment Details:**
+         - Manages appointment notes and updates
+         - Handles appointment viewing with proper access controls
+         - Provides appointment history and activity logs
+
+         f. **Advanced Features:**
+         - Statistical analysis of appointment data
+         - Data export functionality for administrators
+         - AJAX support for dynamic time slot loading
+
+      3. **Security and Access Control:**
+         - Implements authentication requirements
+         - Role-based access controls (patient/provider/admin)
+         - Resource-level permission validation
+         - CSRF protection for all form submissions
+         - Input validation and sanitization
+
+      4. **Key Methods:**
+         - `index()`: Lists appointments and available slots
+         - `book()`: Handles appointment creation
+         - `cancel()`: Processes appointment cancellations
+         - `updateStatus()`: Manages appointment status changes
+         - `reschedule()`: Handles appointment date/time changes
+         - `update_notes()`: Manages appointment notes
+         - `view()`: Displays appointment details
+         - `history()`: Shows appointment history
+         - `statistics()`: Provides appointment analytics
+         - `export()`: Exports appointment data
+
+   #### 2.1.3 Admin Controller (`admin_controller.php`)
+
+      The Admin Controller serves as the central management hub for administrators, providing comprehensive control over all system entities and operations.
+
+      **Key Components:**
+
+      1. **Dependencies:**
+         - Database connection
+         - User Model
+         - Activity Log Model
+         - Appointment Model
+         - Services Model
+         - Provider Model
+
+      2. **Core Administrative Functionality:**
+
+         a. **Dashboard Overview:**
+         - Generates comprehensive system statistics
+         - Tracks total users, patients, providers, and administrators
+         - Monitors appointment metrics across various status categories
+         - Displays service usage analytics
+         - Shows provider availability rates
+         - Presents recent activity logs
+
+         b. **User Management:**
+         - Complete CRUD operations for all user types
+         - User activation/deactivation functionality
+         - User search with filtering by role and status
+         - Password management
+         - Multi-step user deletion with cascading effects
+
+         c. **Service Management:**
+         - Creates and maintains service catalog
+         - Updates service details, pricing, and duration
+         - Manages service activation status
+         - Tracks service usage and popularity
+
+         d. **Appointment Administration:**
+         - Direct appointment creation and management
+         - Cross-user appointment scheduling
+         - Status management across the appointment lifecycle
+         - Appointment editing and cancellation
+
+         e. **Provider Management:**
+         - Provider-specific creation process
+         - Provider profile maintenance
+         - Service association management
+         - Custom pricing for provider services
+
+      3. **Advanced Features:**
+         - System testing interface
+         - Statistical data generation
+         - Activity logging for administrative actions
+         - Transaction-based operations for data integrity
+
+      4. **Security and Access Control:**
+         - Admin-only access enforcement
+         - Role validation for sensitive operations
+         - Error handling and messaging
+         - Audit trail creation for administrative actions
+
+      5. **Key Methods:**
+         - `index()`: Generates administrative dashboard
+         - `users()`: Manages user accounts with multiple sub-actions
+         - `services()`: Handles service catalog maintenance
+         - `appointments()`: Provides appointment administration
+         - `providers()`: Manages healthcare providers
+         - `addProvider()`: Specialized provider creation workflow
+         - `manageProviderServices()`: Handles provider-service associations
+         - `runTest()`: Provides testing interface for administrators
+
+   #### 2.1.4 Patient Controller (`patient_controller.php`)
+
+      The Patient Controller manages all functionality specific to patients in the healthcare application, serving as the primary interface for patient users to interact with medical providers and appointments.
+
+      **Key Components:**
+
+      1. **Dependencies and Security:**
+         - Leverages User, Appointment, Services, Provider, and ActivityLog models
+         - Implements strict authentication checks in the constructor
+         - Ensures only authenticated patients can access controller methods
+         - Maintains session validation throughout all operations
+
+      2. **Patient Dashboard:**
+         - `index()`: Displays patient overview with profile information
+         - Shows upcoming and past appointments
+         - Presents patient health data from their profile
+
+      3. **Appointment Management:**
+         - `book()`: Interface for scheduling new appointments
+         - `processBooking()`: Handles appointment creation logic with validation
+         - `checkAvailability()`: AJAX endpoint for real-time slot availability checking
+         - `processPatientAction()`: Multi-purpose method handling booking, cancellation, and rescheduling
+
+      4. **Provider Interactions:**
+         - `view_provider()`: Detailed provider profile view with services and availability
+         - `search()`: Advanced provider search with multiple filtering criteria
+         - `findProviders()`: Service-based provider discovery
+         - `selectService()`: First step in the guided booking workflow
+
+      5. **Patient Profile Management:**
+         - `profile()`: Displays patient personal and medical information
+         - `updateProfile()`: Handles profile information updates
+         - Manages both basic user data and patient-specific health information
+
+      6. **Multi-step Booking Process:**
+         - Service selection → Provider selection → Appointment scheduling
+         - Guided workflow with proper validation at each step
+         - Implements availability checking to prevent double-booking
+
+      7. **Validation and Error Handling:**
+         - Comprehensive form validation
+         - CSRF protection for form submissions
+         - Slot availability validation
+         - Patient schedule conflict checking
+         - Detailed error messaging
+
+      8. **Activity Logging:**
+         - Records all significant patient actions
+         - Maintains audit trail of appointment-related activities
+         - Tracks profile changes and provider interactions
+
+   #### 2.1.5 Provider Controller (`provider_controller.php`)
+
+      The Provider Controller manages all functionality specific to healthcare providers, serving as the central interface for provider users to manage their appointments, availability, services, and patient interactions.
+
+      **Key Components:**
+
+      1. **Initialization and Security:**
+         - Requires multiple models: Provider, Appointment, Services, User, and Notification
+         - Implements strict session validation in constructor
+         - Restricts access to provider and admin roles only
+         - Enforces authentication checks throughout all operations
+
+      2. **Provider Dashboard:**
+         - `index()`: Displays comprehensive provider overview
+         - Shows upcoming appointments and availability
+         - Presents appointment statistics and provider information
+         - Integrates with notification system for alerts
+
+      3. **Schedule Management:**
+         - `schedule()`: Provides calendar-based interface for managing availability
+         - `addRecurringSchedule()`: Handles weekly recurring availability patterns
+         - `updateSchedule()`: Updates individual or recurring availability slots
+         - `deleteScheduleEvent()`: Removes schedule entries with proper validation
+         - `clearDayAvailability()`: Bulk-deletes availability for specific dates
+         - `generateAvailabilityFromSchedule()`: Converts recurring schedules into bookable slots
+         - `deleteAvailabilityRange()`: Removes availability within a date range
+
+      4. **Appointment Management:**
+         - `appointments()`: Lists all provider appointments
+         - `viewAppointment()`: Displays detailed appointment information
+         - `updateAppointmentStatus()`: Manages status transitions (confirmed, completed, etc.)
+         - `updateAppointmentNotes()`: Handles clinical notes for appointments
+         - `getAppointmentEvents()`: Provides calendar-formatted appointment data
+         - `exportAppointmentsToCSV()`: Generates appointment data exports
+
+      5. **Service Management:**
+         - `services()`: Lists and manages provider service offerings
+         - `addService()`: Creates new provider services
+         - `processService()`: Handles service updates and creation
+         - `deleteService()`: Removes services from provider offerings
+         - `editProviderService()`: Updates service-specific details like duration and notes
+         - `deleteProviderService()`: Removes service associations
+
+      6. **Provider Profile Management:**
+         - `profile()`: Displays provider profile information
+         - `updateProfile()`: Handles profile information updates
+         - `processUpdateProfile()`: Processes form submissions for profile changes
+         - `processPasswordChange()`: Manages provider password updates
+
+      7. **Availability Management:**
+         - `manage_availability()`: Interface for managing provider schedules
+         - `getAvailableSlots()`: Retrieves and formats available appointment slots
+         - `getAvailabilityEvents()`: Provides calendar-formatted availability data
+         - Complex slot management with recurring and one-time availability options
+
+      8. **Notifications and Communication:**
+         - `notifications()`: Displays provider notification center
+         - Integrates with notification model for alerts
+         - Tracks unread notifications
+
+      9. **Reporting:**
+         - `reports()`: Provides statistical analysis of provider activities
+         - `getAppointmentStatistics()`: Calculates metrics on appointment outcomes
+         - Supports data visualization and business intelligence
+
+      10. **AJAX Support:**
+          - Multiple endpoints supporting asynchronous calendar operations
+          - Real-time availability checking and updates
+          - JSON-formatted responses for frontend integration
+          - Handles dynamic slot generation and management
+
+   #### 2.1.6 Provider Services Controller (`provider_services_controller.php`)
+
+      The Provider Services Controller manages the relationship between healthcare providers and the services they offer, enabling providers to customize their service offerings while maintaining the core service catalog.
+
+      **Key Components:**
+
+      1. **Dependencies:**
+         - Database connection
+         - ProviderServices Model
+         - Services Model
+         - Authentication validation
+
+      2. **Service Management:**
+         - `services()`: Lists all services offered by the current provider
+         - Identifies available services that can be added to provider offerings
+         - Shows provider-specific customizations for each service
+
+      3. **Service Customization:**
+         - `addProviderService()`: Associates services with providers
+         - `editProviderService()`: Updates provider-specific service details
+         - `deleteProviderService()`: Removes services from provider offerings
+         - Manages custom durations and provider-specific notes for services
+
+      4. **Service Creation:**
+         - `processService()`: Handles creation of new services
+         - Validates service data before creation
+         - Performs error checking and user feedback
+
+      5. **Security Features:**
+         - CSRF token verification for form submissions
+         - Session validation for provider authentication
+         - Input validation and sanitization
+         - Proper error handling and user feedback
+
+      6. **Provider-Service Relationship Management:**
+         - Maintains many-to-many relationship between providers and services
+         - Filters available services to prevent duplicate associations
+         - Supports provider-specific customizations of global services
+         - Preserves service relationships across the application
+
+   #### 2.1.7 Home Controller (`home_controller.php`)
+
+      The Home Controller serves as the primary entry point for the application, managing the landing page and providing role-specific content for all user types while offering general site pages like about and contact.
+
+      **Key Components:**
+
+      1. **Dependencies:**
+         - Database connection
+         - Home Model (for data retrieval)
+         - Session management
+
+      2. **Dynamic Content Management:**
+         - Renders appropriate content based on user authentication status
+         - Provides role-specific dashboards for patients, providers, and administrators
+         - Displays featured services and providers for all users
+         - Shows testimonials and application benefits for guests
+
+      3. **Role-Based Information Display:**
+         - Patients: Shows upcoming appointments and booking shortcuts
+         - Providers: Displays today's appointments and availability
+         - Administrators: Presents system-wide statistics and quick action links
+         - Guests: Offers service information and registration benefits
+
+      4. **Analytics and Statistics:**
+         - `getAppointmentTrends()`: Analyzes appointment patterns by day and time
+         - `getPatientDemographics()`: Provides patient age distribution data
+         - `getSatisfactionRating()`: Calculates patient satisfaction metrics
+         - `getAdminStats()`: Compiles system-wide usage statistics
+
+      5. **Static Page Management:**
+         - `about()`: Renders the about page with service information
+         - `contact()`: Handles contact form display and submission processing
+
+      6. **Database Utilities:**
+         - Includes methods to verify database connectivity
+         - Performs table existence checking for feature availability
+         - Provides fallback data when database queries cannot be completed
+
+      7. **Appointment Information:**
+         - `getPatientAppointments()`: Retrieves upcoming appointments for patients
+         - `getProviderAppointments()`: Lists today's schedule for providers
+         - `getProviderAvailability()`: Shows upcoming available slots for providers
+
+      8. **Adaptive Display Logic:**
+         - Gracefully handles missing tables or incomplete database setup
+         - Provides sensible defaults when actual data is unavailable
+         - Implements progressive enhancement based on database maturity
+
+   #### 2.1.8 Notification Controller (`notification_controller.php`)
+
+      The Notification Controller handles all notification-related functionality across the application, including user alerts, system notifications, and communication preferences.
+
+      **Key Components:**
+
+      1. **Dependencies:**
+         - Database connection
+         - Notification Model
+         - Session management
+
+      2. **Notification Management:**
+         - `notifications()`: Retrieves and displays user-specific notifications
+         - `getAdminNotifications()`: Provides system-wide alerts for administrators
+         - `markAsRead()`: Updates notification status when viewed
+         - `addSystemNotification()`: Creates new system-level notifications
+
+      3. **Communication Features:**
+         - `sendPendingNotifications()`: Processes notification queue for delivery
+         - Supports multiple notification channels (email, in-app)
+         - Formats notifications based on type and severity
+         - Converts notification types to appropriate alert levels
+
+      4. **User Preferences:**
+         - `settings()`: Manages notification preferences
+         - Controls email notification opt-in/out
+         - Configures reminder timing and delivery methods
+         - Stores user communication preferences
+
+      5. **Security Features:**
+         - Authorization checks for notification access
+         - API key validation for automated processes
+         - Role-based access control for system notifications
+         - Activity logging for security auditing
+
+      6. **Activity Tracking:**
+         - `logActivity()`: Records user interactions with notifications
+         - Maintains audit trail of notification-related events
+         - Tracks notification delivery statistics
+         - Records read/unread notification metrics
+
+      7. **Administrative Functions:**
+         - Real-time notification dashboard for administrators
+         - Notification filtering and categorization
+         - System status and health monitoring
+         - Security alert consolidation
+
+   #### 2.1.9 API Controller (`api_controller.php`)
+
+      The API Controller provides backend services for dynamic frontend functionality, primarily focused on appointment scheduling and availability management with JSON responses for asynchronous operations.
+
+      **Key Components:**
+
+      1. **Dependencies:**
+         - Database connection
+         - Provider Model
+         - Appointment Model
+         - Service Model (for duration calculations)
+
+      2. **Availability Management:**
+         - `getAvailableSlots()`: Retrieves and formats provider availability as calendar events
+         - Applies complex filtering based on date, provider, and service parameters
+         - Performs conflict detection with existing appointments
+         - Formats response for calendar integrations with proper event metadata
+
+      3. **Real-Time Validation:**
+         - `checkSlotAvailability()`: Performs on-demand validation of time slot availability
+         - Processes JSON request data for appointment creation
+         - Implements time slot overlap detection algorithms
+         - Returns availability status with descriptive reason codes
+
+      4. **Appointment Scheduling Logic:**
+         - Handles service duration calculations for proper time slot allocation
+         - Supports rescheduling with appointment exclusion logic
+         - Maintains schedule integrity through conflict prevention
+         - Implements recurring availability pattern recognition
+
+      5. **JSON Response Handling:**
+         - Standardized JSON output formatting
+         - Proper HTTP content type headers
+         - Error state encoding for frontend interpretation
+         - Extended metadata for client-side processing
+
+      6. **Debugging and Diagnostics:**
+         - Comprehensive error logging for troubleshooting
+         - Input validation with detailed error tracing
+         - Data integrity verification through direct database checks
+         - Method reflection for debugging configuration issues
+
+      7. **Security Features:**
+         - Input sanitization and validation
+         - Provider existence verification
+         - Parameter presence checking
+         - Proper error handling without exposing system details
+
+## 3. Models
+
+   ### 3.1 User Model (`models/User.php`)
+
+      The User Model serves as the core data layer component for all user-related operations including authentication, registration, profile management, and security.
+
+      **Key Components:**
+
+      1. **Database Connectivity:**
+         - Supports both MySQLi and PDO database adapters
+         - Implements connection-agnostic queries
+         - Handles database exceptions with detailed logging
+
+      2. **Authentication & Security:**
+         - `authenticate()`: Secure password verification with bcrypt
+         - Password rehashing when algorithm updates
+         - Token generation for verification and reset flows
+         - Security logging for authentication attempts
+         - Implements modern password policy enforcement
+
+      3. **User Management:**
+         - Full CRUD operations for user records
+         - Role-based user retrieval (`getUsersByRole()`)
+         - User activation and deactivation (`toggleStatus()`)
+         - Profile management across user types (patients, providers)
+         - Activity logging for audit trails
+
+      4. **Password Management:**
+         - `validatePasswordStrength()`: Complex password validation (length, character types)
+         - Secure password reset workflow with tokens
+         - Password change with current password verification
+         - Forced password change functionality
+
+      5. **Email Verification:**
+         - Secure token generation for email verification
+         - Token validation and account activation
+         - Support for resending verification emails
+         - Expired token handling
+
+      6. **Profile Management:**
+         - Specialized patient profile operations
+         - Insurance information management
+         - Emergency contact handling
+         - Medical history tracking
+         - Profile data validation
+
+      7. **Search & Filtering:**
+         - Provider search by specialty and location
+         - Flexible user filtering for administrative purposes
+         - Patient discovery for appointment booking
+         - Available provider filtering
+
+      8. **Security Features:**
+         - Prepared statements for SQL injection prevention
+         - Input validation and sanitization
+         - Strong password policies
+         - Token-based security for sensitive operations
+         - Transaction-based operations for data integrity
+
+      9. **Key Methods:**
+         - `authenticate()`: Verifies user credentials
+         - `register()`: Creates new user accounts with appropriate role setup
+         - `updateUser()`: Modifies user information securely
+         - `changePassword()`: Handles password updates with verification
+         - `requestPasswordReset()`: Initiates password recovery process
+         - `resetPassword()`: Completes password recovery with token validation
+         - `getUserById()`: Retrieves complete user information
+         - `getPatientProfile()`: Provides detailed patient information
+         - `updatePatientProfile()`: Manages patient-specific data
+         - `logActivity()`: Records user actions for auditing
+         - `getAvailableProviders()`: Lists providers accepting appointments
+
+
+   ### 3.2 Appointment Model (`models/Appointment.php`)
+
+      The Appointment Model serves as the data layer component for all appointment-related operations, providing a comprehensive set of methods for scheduling, managing, and analyzing appointments between patients and healthcare providers.
+
+      **Key Components:**
+
+      1. **Database Connectivity:**
+         - Utilizes database connection passed through constructor
+         - Implements prepared statements for all database operations
+         - Handles database exceptions with detailed logging
+         - Ensures transaction integrity for multi-step operations
+
+      2. **Appointment Management:**
+         - `scheduleAppointment()`: Creates new appointments with comprehensive details
+         - `rescheduleAppointment()`: Updates appointment date and time with proper validation
+         - `cancelAppointment()`: Handles appointment cancellations with reason tracking
+         - `updateStatus()`: Manages status transitions (scheduled, confirmed, completed, etc.)
+         - `updateNotes()`: Maintains clinical and administrative notes for appointments
+
+      3. **Availability Management:**
+         - `isSlotAvailable()`: Validates time slot availability for scheduling
+         - `findAvailableSlots()`: Discovers open appointment times with service duration matching
+         - `getAvailableSlots()`: Retrieves provider availability for booking interfaces
+         - `generateBookableSlots()`: Creates time-formatted slot data for calendar integrations
+         - `restoreAvailabilitySlot()`: Handles slot restoration when appointments are canceled
+
+      4. **Appointment Retrieval:**
+         - `getById()`: Retrieves detailed appointment information with related entities
+         - `getByProvider()`: Gets appointments for specific healthcare providers
+         - `getUpcomingAppointments()`: Retrieves future appointments for patients
+         - `getPastAppointments()`: Provides historical appointment data
+         - `getAllAppointments()`: Retrieves all appointments with patient and provider details
+
+      5. **Booking Process:**
+         - `bookAppointment()`: Handles the complete booking process with availability checks
+         - `getPatientAppointmentAtTime()`: Prevents double-booking for patients
+         - Transaction-based appointment creation with rollback support
+         - Manages provider availability status during booking
+
+      6. **Analytics and Reporting:**
+         - `getAppointmentStatistics()`: Generates appointment metrics by time period
+         - `getAppointmentCountsByType()`: Analyzes appointment distribution by type
+         - `getCountByStatus()`: Tracks appointment status distribution
+         - `getBookedSlotsCount()`: Monitors overall system utilization
+         - `getTotalCount()`: Provides appointment volume metrics
+
+      7. **History Tracking:**
+         - `getAppointmentHistory()`: Retrieves chronological history of appointment changes
+         - `getAppointmentLogs()`: Formats appointment history for display in views
+         - Captures user information for audit purposes
+         - Maintains comprehensive change records
+
+      8. **Security Features:**
+         - Input validation and sanitization
+         - Prepared statements for SQL injection prevention
+         - Exception handling with controlled error exposure
+         - Transaction isolation for data integrity
+         - Comprehensive error logging
+
+      9. **Time Management:**
+         - Handles time slot calculations based on service duration
+         - Manages appointment conflicts and overlaps
+         - Supports recurring availability patterns
+         - Implements proper date and time formatting for different contexts
+
+   ### 3.3 Provider Model (`models/Provider.php`)
+
+      The Provider Model serves as the data layer component for all healthcare provider-related operations, serving as the backbone for scheduling, service offerings, and profile management.
+
+      **Key Components:**
+
+      1. **Database Connectivity:**
+         - Maintains connection to database through constructor dependency injection
+         - Implements comprehensive error handling with detailed logging
+         - Uses prepared statements for all database operations
+         - Supports transaction-based operations for data integrity
+
+      2. **Provider Profile Management:**
+         - `getById()`: Retrieves complete provider profile with user details
+         - `updateProfile()`: Modifies provider-specific information
+         - `updateProfileImage()`: Handles provider profile picture management
+         - `createProfile()`: Creates new provider profile records
+         - `getProviderById()`: Retrieves provider information with proper security checks
+
+      3. **Availability Management:**
+         - `getAvailability()`: Retrieves provider's available appointment slots
+         - `addAvailability()`: Creates new availability records
+         - `deleteAvailability()`: Removes individual availability slots
+         - `clearDayAvailability()`: Bulk-deletes availability for specific dates
+         - `deleteAvailabilityRange()`: Removes availability within a date range
+         - `updateAvailabilitySlot()`: Modifies existing availability slots
+
+      4. **Recurring Schedule Management:**
+         - `addRecurringSchedule()`: Creates weekly repeating availability patterns
+         - `getRecurringSchedules()`: Retrieves repeating schedule patterns
+         - `deleteRecurringSchedule()`: Removes recurring schedule entries
+         - `updateRecurringSchedule()`: Modifies existing recurring schedules
+         - `generateAvailabilityFromSchedule()`: Converts recurring patterns to individual slots
+
+      5. **Provider Service Management:**
+         - `addService()`: Associates services with providers
+         - `getServices()`: Retrieves services offered by a provider
+         - `updateService()`: Modifies provider-specific service details
+         - `deleteService()`: Removes service associations
+         - `hasService()`: Verifies if a provider offers a specific service
+         - `getProvidersByService()`: Finds providers offering a particular service
+
+      6. **Provider Search & Discovery:**
+         - `getAll()`: Returns all active providers
+         - `searchProviders()`: Implements multi-criteria provider search
+         - `getSuggestedProviders()`: Provides alternative providers when search yields no results
+         - `getDistinctSpecializations()`: Retrieves all available specialties for filtering
+         - `getTopProviders()`: Identifies providers with highest appointment counts
+
+      7. **Analytics & Reporting:**
+         - `getProviderUtilization()`: Calculates provider usage metrics over time
+         - `getWorkloadDistribution()`: Analyzes appointment patterns by day and time
+         - `getAvailabilitySummary()`: Summarizes provider availability statistics
+         - `getServiceStatistics()`: Provides insights into service-specific metrics
+         - `getProviderComparisonMetrics()`: Enables comparative analysis between providers
+         - `getProviderEfficiency()`: Measures provider performance against expectations
+
+      8. **Password & Security Management:**
+         - `changePassword()`: Implements secure password updates with verification
+         - Validates current password before allowing changes
+         - Properly hashes new passwords using PHP's password_hash()
+         - Maintains provider permission boundaries
+
+      9. **Provider Administration:**
+         - `createProvider()`: Creates new provider accounts with proper profiles
+         - `bulkUpdateStatus()`: Manages provider active/inactive status in bulk
+         - `getInactiveProviders()`: Identifies providers without recent activity
+         - Security validation across administrative operations
+
+   ### 3.4 Services Model (`models/Services.php`)
+
+      The Services Model handles all business logic related to medical services, including retrieval, creation, updating, and management of service offerings across the application.
+
+      **Key Components:**
+
+      1. **Database Connectivity:**
+         - Supports both MySQLi and PDO database interfaces for flexibility
+         - Implements prepared statements for all database operations
+         - Provides comprehensive error logging for troubleshooting
+         - Handles transaction integrity for related operations
+
+      2. **Service Retrieval:**
+         - `getServices()`: Flexible service retrieval with filtering options
+         - `getServiceById()`: Retrieves detailed service information by ID
+         - `getServicesByProvider()`: Retrieves services offered by specific providers
+         - `searchServices()`: Implements term-based search functionality
+         - `getServicesByCategory()`: Retrieves services by category
+         - `getTotalCount()`: Provides metrics on service volume
+
+      3. **Service Administration:**
+         - `createService()`: Creates new service records with validation
+         - `updateService()`: Handles service information updates
+         - `deleteService()`: Manages service deletion or deactivation
+         - `toggleServiceStatus()`: Controls service availability status
+         - `serviceExists()`: Verifies service existence for validation
+
+      4. **Service Presentation Enhancement:**
+         - `enrichServiceData()`: Adds rich metadata to service information
+         - `getServiceIcon()`: Provides appropriate FontAwesome icons based on service type
+         - Handles duration formatting for human-readable display
+         - Supports customized service information for different contexts
+
+      5. **Provider-Service Relationships:**
+         - `getServicesByProvider()`: Retrieves provider-specific service offerings
+         - `addService()`: Associates services with healthcare providers
+         - Supports custom price and duration information per provider
+         - Maintains provider-specific service customizations
+
+      6. **Analytics and Statistics:**
+         - `getTopServicesByUsage()`: Identifies most frequently booked services
+         - Supports usage tracking for service optimization
+         - Provides insights into service popularity metrics
+
+      7. **Special Service Collections:**
+         - `getFeaturedServices()`: Retrieves highlighted services for front page display
+         - `getServicesBasic()`: Provides simplified service information for dropdown menus
+         - `getAllServicesWithInactive()`: Admin-specific view including disabled services
+
+      8. **Security Features:**
+         - Implements comprehensive input validation
+         - Uses prepared statements to prevent SQL injection
+         - Validates order parameters to prevent SQL injection
+         - Provides proper error handling and logging
+         - Implements access controls for service management
+
+      9. **Key Methods:**
+         - `getServices()`: Core service retrieval with flexible filtering
+         - `getServiceById()`: Single service retrieval by ID
+         - `createService()`: Adds new services to the catalog
+         - `updateService()`: Manages service information changes
+         - `deleteService()`: Handles service removal/deactivation
+         - `getServicesByProvider()`: Retrieves customized provider service offerings
+         - `getTopServicesByUsage()`: Provides service popularity analytics
+         - `toggleServiceStatus()`: Controls service visibility
+         - `enrichServiceData()`: Enhances service data for presentation
+
+   ### 3.5 Home Model (`models/Home.php`)
+
+      The Home Model serves as the data provider for the application's landing page and dashboard, delivering role-specific statistics, insights, and upcoming activities for patients, providers, and administrators.
+
+      **Key Components:**
+
+      1. **Dashboard Data Retrieval:**
+         - Leverages database connection for data gathering
+         - Provides specialized data sets for each user role
+         - Implements graceful degradation when data is unavailable
+         - Offers fallback mechanisms for incomplete database setup
+
+      2. **Appointment Overview Functions:**
+         - `getPatientAppointments()`: Retrieves upcoming appointments for patients
+         - `getProviderAppointments()`: Gets today's schedule for healthcare providers
+         - `getProviderAvailability()`: Accesses availability data for scheduling displays
+         - Formats appointment data with related entity information
+
+      3. **Statistical Analysis:**
+         - `getAdminStats()`: Compiles system-wide metrics for administrators
+         - `getAppointmentTrends()`: Analyzes appointment patterns by day and time
+         - `getPatientDemographics()`: Generates age distribution data for patient population
+         - `getSatisfactionRating()`: Calculates quality metrics from appointment outcomes
+
+      4. **Adaptive Data Handling:**
+         - Performs database structure validation via `tableExists()`
+         - Provides synthetic data when tables are missing or empty
+         - Implements progressive enhancement based on available data sources
+         - Maintains consistent response structures regardless of data availability
+
+      5. **Role-Based Information:**
+         - Patient data focuses on upcoming appointments and personal statistics
+         - Provider data emphasizes daily schedule and availability
+         - Administrative data includes system-wide metrics and performance indicators
+         - Handles missing data gracefully with sensible defaults
+
+      6. **Demographic Analysis:**
+         - Age group distribution analysis
+         - Appointment time preference tracking
+         - Day-of-week pattern recognition
+         - Service utilization trends
+
+      7. **Performance Metrics:**
+         - Satisfaction rating calculations
+         - Appointment completion rate analysis
+         - Provider utilization metrics
+         - System activity level indicators
+
+      8. **Data Visualization Support:**
+         - Provides pre-formatted data for dashboard charts and graphs
+         - Maintains consistent data structures for frontend components
+         - Offers percentage calculations for proportional displays
+         - Ensures data compatibility with visualization libraries
+
+   ### 3.6 Notification Model (`models/Notification.php`)
+
+      The Notification Model handles all notification-related functionality across the application, managing the creation, retrieval, and processing of user alerts and system notifications.
+
+      **Key Components:**
+
+      1. **Notification Management:**
+         - `createNotification()`: Creates new notifications with comprehensive metadata
+         - `getUserNotifications()`: Retrieves user-specific notifications
+         - `getLatestSystemNotifications()`: Obtains system-wide alerts for administrators
+         - `addNotification()`: Flexible notification creation with extensive parameters
+         - Provides duplicate prevention for system notifications
+
+      2. **Notification Processing:**
+         - `getPendingNotifications()`: Retrieves notifications waiting to be sent
+         - `markNotificationSent()`: Updates notification status after delivery
+         - `markAsRead()` & `markAllAsRead()`: Manages notification read status
+         - `getUnreadCount()`: Calculates unread notification metrics
+         - Supports notification queuing with scheduled delivery times
+
+      3. **Preference Management:**
+         - `getNotificationPreferences()`: Retrieves user communication preferences
+         - `updateNotificationPreferences()`: Modifies notification settings
+         - Supports multiple notification channels (email, SMS)
+         - Manages reminder timing preferences
+         - Controls opt-in/out for different notification types
+
+      4. **System Notifications:**
+         - Provides specialized handling for system-wide alerts
+         - Supports role-based notification filtering
+         - Implements notification categorization by type and severity
+         - Prevents duplicate system notifications
+         - Enables audience targeting for notifications
+
+      5. **Activity Logging:**
+         - `logActivity()`: Records system activities for audit purposes
+         - Captures user actions with IP address and timestamp
+         - Maintains comprehensive audit trail for compliance
+         - Supports security event tracking
+
+      6. **Adaptive Database Management:**
+         - `ensureNotificationsTable()`: Creates required tables if missing
+         - Automatically adds missing columns to existing tables
+         - Provides schema version compatibility
+         - Manages data integrity with unique constraints
+
+      7. **Fallback Mechanisms:**
+         - `getSampleNotifications()`: Provides sample data when real notifications unavailable
+         - Implements graceful degradation when database issues occur
+         - Offers sensible defaults for notification preferences
+         - Ensures consistent response formats regardless of data availability
+
+      8. **Security Features:**
+         - Input validation and sanitization
+         - Proper error handling and logging
+         - Support for both MySQLi and PDO database connections
+         - Transaction-based operations for data integrity
+         - Prevention of notification flooding
+
+   ### 3.7 Activity Log Model (`models/ActivityLog.php`)
+
+      The Activity Log Model manages all system auditing functionality, tracking user and system actions to provide a comprehensive audit trail for security, compliance, and troubleshooting purposes.
+
+      **Key Components:**
+
+      1. **Activity Recording:**
+         - `logActivity()`: Core method for recording all system activities
+         - Specialized logging methods for different activity types
+         - Supports detailed contextual information capture
+         - Tracks IP addresses for security auditing
+         - Categorizes events for easier filtering and reporting
+
+      2. **Type-Specific Logging:**
+         - `logAuth()`: Records authentication-related activities (login, logout, failures)
+         - `logUserActivity()`: Tracks user account management actions
+         - `logAppointment()`: Monitors appointment-related activities
+         - `logService()`: Captures service configuration changes
+         - `logConfigChange()`: Records system setting modifications
+
+      3. **Audit Trail Management:**
+         - `getRecentActivity()`: Retrieves recent system activities with filtering
+         - `getAppointmentLogs()`: Provides appointment-specific activity history
+         - Maintains chronological record of all system interactions
+         - Links activities to specific entities through relationship tracking
+         - Associates logs with user identities for accountability
+
+      4. **Adaptive Schema Management:**
+         - `ensureTableExists()`: Creates activity_log table if missing
+         - `ensureColumnsExist()`: Adds required columns to existing tables
+         - Implements automatic schema migration for compatibility
+         - Creates appropriate database indexes for performance
+         - Handles both MySQL and PDO database connections
+
+      5. **Security Features:**
+         - Intelligent client IP detection through multiple headers
+         - Proper input sanitization for log entries
+         - Transaction-based logging for data integrity
+         - Error handling with graceful degradation
+         - Comprehensive exception management
+
+      6. **Data Relationship Management:**
+         - Tracks related entity IDs for context-aware auditing
+         - Maintains entity type information for polymorphic relationships
+         - Supports JSON-encoded detail storage for complex data
+         - Provides entity-specific activity retrieval methods
+         - Links user identities with their performed actions
+
+      7. **Performance Optimization:**
+         - Strategic index creation for efficient querying
+         - Minimal database schema footprint
+         - Optimized query patterns for log retrieval
+         - Support for high-volume logging operations
+         - Effective storage of variable-length content
+
+      8. **Integration Capabilities:**
+         - Seamless integration with authentication flows
+         - Appointment status change tracking
+         - User management event recording
+         - Service modification auditing
+         - Configuration change monitoring
+
+## 4. Views
+
+   ### 4.1 View Organization and Structure
+
+      The views in the application follow a hierarchical organization that promotes reusability, maintainability, and role-specific content delivery:
+
+      1. **Directory Structure:**
+         - `/views/`: Main views directory
+         - `/views/partials/`: Reusable UI components (headers, footers, navigation)
+         - `/views/{controller}/`: Controller-specific view files
+         - Role-based views: Specialized views for patients, providers, and administrators
+
+      2. **Security Mechanisms:**
+         - Direct access prevention through application constants
+         - Input sanitization using htmlspecialchars()
+         - Content security checks based on user authentication
+         - Role-based access control for view rendering
+
+      3. **View Composition Pattern:**
+         - Views include common layout elements through partials
+         - Content sections are conditionally rendered based on user role
+         - Adaptive UI that responds to data availability
+         - Mobile-responsive design through Bootstrap framework
+
+      4. **Error Handling:**
+         - Graceful degradation when data is missing
+         - Fallback content for unavailable information
+         - Empty state handling with meaningful user guidance
+         - User-friendly error messages
+
+   ### 4.2 Template System
+
+      The application implements a PHP-based template system with several key features:
+
+      1. **Include-Based Templating:**
+         - PHP includes for header, footer, and navigation components
+         - File existence checks before inclusion
+         - Path constants for reliable file location
+         - Dynamic partial selection based on context
+
+      2. **Data Passing:**
+         - Controller-to-view data transfer through PHP variables
+         - Context-aware data filtering and formatting
+         - Role-specific data preparation
+         - Fallback data generation when primary sources are unavailable
+
+      3. **HTML Generation:**
+         - PHP-based dynamic HTML construction
+         - Content escaping for security (htmlspecialchars())
+         - Conditional rendering based on data presence
+         - Template structure reuse across different data contexts
+
+      4. **CSS Framework Integration:**
+         - Bootstrap 5 for responsive layout and components
+         - Custom styling extensions for application-specific elements
+         - Component-based UI with cards, carousels, and grids
+         - Consistent styling through class-based design
+
+   ### 4.3 Role-Specific Views
+
+      The application delivers customized experiences based on user roles:
+
+      1. **Patient Views:**
+         - Appointment-focused interfaces showing upcoming visits
+         - Service selection workflows
+         - Provider discovery and filtering tools
+         - Personal health data visualization
+         - Historical appointment access
+
+      2. **Provider Views:**
+         - Schedule management dashboards
+         - Patient appointment overviews
+         - Availability management tools
+         - Statistical insights on patient demographics
+         - Service offering management
+
+      3. **Administrator Views:**
+         - System-wide statistics and metrics
+         - User management interfaces
+         - Service catalog maintenance
+         - Comprehensive data access across all entities
+         - System configuration tools
+
+      4. **Guest Views:**
+         - Informational content about services
+         - Registration and login prompts
+         - Feature highlights and benefits
+         - Testimonials and social proof sections
+         - Step-by-step explanations of the appointment process
+
+   ### 4.4 Frontend Components
+
+      The application utilizes several reusable frontend components:
+
+      1. **Dashboard Cards:**
+         - Statistical summary cards with metrics
+         - Color-coded status indicators
+         - Contextual icons for visual recognition
+         - Responsive sizing for different screen sizes
+
+      2. **Data Visualization:**
+         - Progress bars for comparative metrics
+         - Star ratings for satisfaction scores
+         - Dynamic charts for demographic data
+         - Timeline displays for scheduling data
+
+      3. **Input Forms:**
+         - Standardized form layouts with Bootstrap styling
+         - Inline validation mechanisms
+         - Role-appropriate input restrictions
+         - Mobile-friendly form controls
+
+      4. **Navigation Elements:**
+         - Role-based navigation options
+         - Contextual action buttons
+         - Breadcrumb trails for complex workflows
+         - Responsive navigation collapse for mobile devices
+
+      5. **Status Indicators:**
+         - Color-coded badges for appointment status
+         - Progress indicators for multi-step processes
+         - Availability highlights for scheduling
+         - Alert components for system messages
+
+   ### 4.5 Client-Side Features
+
+      The application enhances user experience through several client-side features:
+
+      1. **JavaScript Integration:**
+         - Bootstrap JS for interactive components
+         - Form validation enhancement
+         - Dynamic content loading for calendar views
+         - Interactive carousel controls
+
+      2. **Responsive Design:**
+         - Mobile-first approach with Bootstrap grid system
+         - Adaptive layouts for different device sizes
+         - Touch-friendly interface elements
+         - Appropriate typography scaling
+
+      3. **Visual Enhancements:**
+         - Icon integration with Font Awesome
+         - Subtle animations for interactive elements
+         - Card hover effects
+         - Consistent visual hierarchy
+
+      4. **Accessibility Features:**
+         - ARIA attributes for screen readers
+         - Color contrast compliance
+         - Keyboard navigation support
+         - Focus state management

@@ -27,8 +27,12 @@ function base_url($path = '') {
     // Get the protocol
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
     
-    // Get the host
-    $host = $_SERVER['HTTP_HOST'];
+    // Handle CLI environment for PHPStan
+    if (php_sapi_name() === 'cli') {
+        return 'http://localhost/' . ltrim($path, '/');
+    }
+
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     
     // Get the script name and its directory
     $script_name = $_SERVER['SCRIPT_NAME'];

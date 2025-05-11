@@ -37,7 +37,7 @@
                                     <option value="">Select Patient</option>
                                     <?php foreach ($patients as $patient): ?>
                                     <option value="<?= $patient['user_id'] ?>" <?= $appointment['patient_id'] == $patient['user_id'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($patient['full_name']) ?>
+                                        <?= htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']) ?>
                                     </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -48,7 +48,7 @@
                                     <option value="">Select Provider</option>
                                     <?php foreach ($providers as $provider): ?>
                                     <option value="<?= $provider['user_id'] ?>" <?= $appointment['provider_id'] == $provider['user_id'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($provider['full_name']) ?>
+                                        <?= htmlspecialchars($provider['first_name'] . ' ' . $provider['last_name']) ?>
                                     </option>
                                     <?php endforeach; ?>
                                 </select>

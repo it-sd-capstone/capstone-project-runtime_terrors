@@ -2,7 +2,7 @@
 header("Content-Type: application/json");
 
 require_once "../models/Provider.php";
-require_once "../core/Database.php";
+require_once __DIR__ . '/../config/database.php';
 
 session_start();
 $db = Database::getInstance()->getConnection();

@@ -3,7 +3,10 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 05, 2025 at 02:54 AM
+
+-- Generation Time: May 11, 2025 at 04:27 AM
+=======-- Generation Time: May 11, 2025 at 01:43 AM
+
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -32,7 +35,7 @@ USE `kholley_appointment_system`;
 
 DROP TABLE IF EXISTS `activity_log`;
 CREATE TABLE IF NOT EXISTS `activity_log` (
-  `log_id` int(11) NOT NULL,
+  `log_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) DEFAULT NULL,
   `description` text NOT NULL,
   `category` varchar(50) DEFAULT 'general',
@@ -43,14 +46,15 @@ CREATE TABLE IF NOT EXISTS `activity_log` (
   `related_type` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`log_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 --
 -- Dumping data for table `activity_log`
 --
 
 INSERT INTO `activity_log` (`log_id`, `user_id`, `description`, `category`, `created_at`, `ip_address`, `details`, `related_id`, `related_type`) VALUES
-(0, 1, 'Auth: logout', 'authentication', '2025-05-02 12:49:35', '::1', NULL, NULL, NULL),
 (1, 3, 'Admin logged in', 'general', '2025-04-25 12:38:20', NULL, NULL, NULL, NULL),
 (2, 3, 'Created new provider account: Dr. Jane Smith', 'general', '2025-04-25 11:08:20', NULL, NULL, NULL, NULL),
 (3, 3, 'Updated system settings: appointment reminder time changed to 24 hours', 'general', '2025-04-25 09:08:20', NULL, NULL, NULL, NULL),
@@ -62,11 +66,65 @@ INSERT INTO `activity_log` (`log_id`, `user_id`, `description`, `category`, `cre
 (9, 2, 'Auth: logout', 'authentication', '2025-04-26 13:58:41', '::1', NULL, NULL, NULL),
 (10, 3, 'Auth: logout', 'authentication', '2025-04-26 14:00:11', '::1', NULL, NULL, NULL),
 (11, 2, 'Auth: logout', 'authentication', '2025-04-26 14:18:36', '::1', NULL, NULL, NULL),
+(12, 1, 'Auth: logout', 'authentication', '2025-05-02 12:49:35', '::1', NULL, NULL, NULL),
 (19, 1, 'Auth: logout', 'authentication', '2025-04-26 17:27:49', '::1', NULL, NULL, NULL),
 (20, 1, 'Auth: logout', 'authentication', '2025-04-27 12:56:19', '::1', NULL, NULL, NULL),
 (21, 3, 'Auth: logout', 'authentication', '2025-04-27 13:07:44', '::1', NULL, NULL, NULL),
 (22, 1, 'Auth: logout', 'authentication', '2025-04-27 13:08:08', '::1', NULL, NULL, NULL),
-(23, 2, 'Auth: logout', 'authentication', '2025-04-27 13:08:25', '::1', NULL, NULL, NULL);
+(23, 2, 'Auth: logout', 'authentication', '2025-04-27 13:08:25', '::1', NULL, NULL, NULL),
+(24, 3, 'Auth: logout', 'authentication', '2025-05-08 14:21:19', '127.0.0.1', NULL, NULL, NULL),
+(25, 2, 'Auth: logout', 'authentication', '2025-05-08 16:33:38', '127.0.0.1', NULL, NULL, NULL),
+(26, 1, 'Auth: logout', 'authentication', '2025-05-08 16:34:05', '127.0.0.1', NULL, NULL, NULL),
+(27, 1, 'Auth: logout', 'authentication', '2025-05-08 16:45:48', '127.0.0.1', NULL, NULL, NULL),
+(28, 2, 'Auth: logout', 'authentication', '2025-05-08 16:48:19', '127.0.0.1', NULL, NULL, NULL),
+(29, 1, 'Auth: logout', 'authentication', '2025-05-08 17:00:58', '127.0.0.1', NULL, NULL, NULL),
+(30, 2, 'Auth: logout', 'authentication', '2025-05-08 17:03:27', '127.0.0.1', NULL, NULL, NULL),
+(31, 3, 'Auth: logout', 'authentication', '2025-05-08 17:10:46', '127.0.0.1', NULL, NULL, NULL),
+(32, 1, 'Auth: logout', 'authentication', '2025-05-08 23:29:29', '127.0.0.1', NULL, NULL, NULL),
+(33, 2, 'Auth: logout', 'authentication', '2025-05-08 23:31:26', '127.0.0.1', NULL, NULL, NULL),
+(34, 1, 'Auth: logout', 'authentication', '2025-05-09 13:26:22', '::1', NULL, NULL, NULL),
+(35, 2, 'Auth: logout', 'authentication', '2025-05-09 13:26:55', '::1', NULL, NULL, NULL),
+(36, 3, 'Auth: login_success', 'authentication', '2025-05-09 13:27:11', '::1', NULL, NULL, NULL),
+(37, 3, 'Auth: logout', 'authentication', '2025-05-09 15:54:39', '::1', NULL, NULL, NULL),
+(38, 2, 'Auth: logout', 'authentication', '2025-05-09 19:09:49', '::1', NULL, NULL, NULL),
+(39, 3, 'Auth: login_success', 'authentication', '2025-05-10 11:26:02', '::1', NULL, NULL, NULL),
+(40, 3, 'Auth: logout', 'authentication', '2025-05-10 11:26:09', '::1', NULL, NULL, NULL),
+(41, 1, 'Auth: logout', 'authentication', '2025-05-10 11:26:26', '::1', NULL, NULL, NULL),
+(42, 2, 'Appointment: status_changed (ID: 5)', 'appointment', '2025-05-10 11:26:49', '::1', '{\"previous_status\":\"scheduled\",\"new_status\":\"confirmed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-29\",\"reason\":\"No reason provided\"}', 5, 'appointment'),
+(43, 2, 'Appointment: status_changed (ID: 5)', 'appointment', '2025-05-10 11:26:53', '::1', '{\"previous_status\":\"confirmed\",\"new_status\":\"completed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-29\",\"reason\":\"No reason provided\"}', 5, 'appointment'),
+(44, 2, 'Appointment: status_changed (ID: 6)', 'appointment', '2025-05-10 11:27:24', '::1', '{\"previous_status\":\"scheduled\",\"new_status\":\"confirmed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-29\",\"reason\":\"No reason provided\"}', 6, 'appointment'),
+(45, 2, 'Appointment: status_changed (ID: 7)', 'appointment', '2025-05-10 11:30:11', '::1', '{\"previous_status\":\"scheduled\",\"new_status\":\"confirmed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-30\",\"reason\":\"No reason provided\"}', 7, 'appointment'),
+(46, 2, 'Appointment: status_changed (ID: 8)', 'appointment', '2025-05-10 11:34:37', '::1', '{\"previous_status\":\"scheduled\",\"new_status\":\"confirmed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-30\",\"reason\":\"No reason provided\"}', 8, 'appointment'),
+(47, 2, 'Appointment: status_changed (ID: 8)', 'appointment', '2025-05-10 11:34:59', '::1', '{\"previous_status\":\"confirmed\",\"new_status\":\"confirmed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-30\",\"reason\":\"No reason provided\"}', 8, 'appointment'),
+(48, 2, 'Appointment: status_changed (ID: 8)', 'appointment', '2025-05-10 11:35:19', '::1', '{\"previous_status\":\"confirmed\",\"new_status\":\"completed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-30\",\"reason\":\"No reason provided\"}', 8, 'appointment'),
+(49, 2, 'Appointment: status_changed (ID: 7)', 'appointment', '2025-05-10 11:35:44', '::1', '{\"previous_status\":\"confirmed\",\"new_status\":\"completed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-30\",\"reason\":\"No reason provided\"}', 7, 'appointment'),
+(50, 2, 'Appointment: status_changed (ID: 6)', 'appointment', '2025-05-10 11:36:10', '::1', '{\"previous_status\":\"confirmed\",\"new_status\":\"completed\",\"changed_by\":2,\"changed_by_role\":\"provider\",\"appointment_date\":\"2025-04-29\",\"reason\":\"No reason provided\"}', 6, 'appointment'),
+(51, 2, 'Auth: logout', 'authentication', '2025-05-10 11:38:19', '::1', NULL, NULL, NULL),
+(52, 3, 'Auth: logout', 'authentication', '2025-05-10 11:38:45', '::1', NULL, NULL, NULL),
+(53, 2, 'Auth: logout', 'authentication', '2025-05-10 11:39:31', '::1', NULL, NULL, NULL),
+(54, 1, 'Auth: logout', 'authentication', '2025-05-10 11:56:22', '::1', NULL, NULL, NULL),
+(55, 2, 'Auth: logout', 'authentication', '2025-05-10 11:56:28', '::1', NULL, NULL, NULL),
+(56, 0, 'Patient scheduled appointment with provider #2', '1', '2025-05-10 13:05:38', '::1', NULL, NULL, NULL),
+(57, 1, 'Auth: logout', 'authentication', '2025-05-10 13:11:06', '::1', NULL, NULL, NULL),
+(58, 2, 'Auth: logout', 'authentication', '2025-05-10 14:54:14', '::1', NULL, NULL, NULL),
+(59, 1, 'Auth: logout', 'authentication', '2025-05-10 15:17:04', '::1', NULL, NULL, NULL),
+(60, 2, 'Auth: logout', 'authentication', '2025-05-10 15:17:23', '::1', NULL, NULL, NULL),
+(61, 1, 'Auth: logout', 'authentication', '2025-05-10 15:56:36', '::1', NULL, NULL, NULL),
+(62, 2, 'Auth: logout', 'authentication', '2025-05-10 15:58:22', '::1', NULL, NULL, NULL),
+(63, 1, 'Auth: logout', 'authentication', '2025-05-10 16:30:28', '::1', NULL, NULL, NULL),
+(64, 2, 'Auth: logout', 'authentication', '2025-05-10 16:42:00', '::1', NULL, NULL, NULL),
+(65, 0, 'Patient scheduled appointment with provider #2', '1', '2025-05-10 18:27:03', '::1', NULL, NULL, NULL),
+
+(66, 0, 'Patient scheduled appointment with provider #2', '1', '2025-05-10 18:27:23', '::1', NULL, NULL, NULL),
+(67, 22, 'Updated patient profile information', 'profile', '2025-05-08 20:05:43', '192.168.1.100', NULL, NULL, NULL),
+(68, 25, 'Added new availability slots', 'schedule', '2025-05-07 20:05:43', '192.168.1.101', NULL, NULL, NULL),
+(69, 3, 'System settings updated', 'system', '2025-05-09 20:05:43', '192.168.1.102', '{\"changed_settings\":[\"appointment_reminder_time\"]}', NULL, NULL),
+(70, 3, 'Auth: logout', 'authentication', '2025-05-10 20:07:01', '::1', NULL, NULL, NULL),
+(71, 1, 'Auth: logout', 'authentication', '2025-05-10 20:07:44', '::1', NULL, NULL, NULL),
+(72, 1, 'Auth: logout', 'authentication', '2025-05-10 20:11:57', '::1', NULL, NULL, NULL),
+(76, 3, 'User deleted', 'security', '2025-05-10 21:07:34', '::1', '{\"deleted_user_id\":\"17\",\"performed_by\":3,\"user_data\":null}', 17, 'user'),
+(77, 3, 'User deleted', 'security', '2025-05-10 21:09:15', '::1', '{\"deleted_user_id\":\"28\",\"performed_by\":3,\"user_data\":null}', 28, 'user'),
+(78, 3, 'User deleted', 'security', '2025-05-10 21:09:27', '::1', '{\"deleted_user_id\":\"29\",\"performed_by\":3,\"user_data\":null}', 29, 'user');
 
 -- --------------------------------------------------------
 
@@ -96,24 +154,27 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   KEY `patient_id` (`patient_id`),
   KEY `provider_id` (`provider_id`),
   KEY `service_id` (`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointments`
 --
 
 INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `service_id`, `appointment_date`, `start_time`, `end_time`, `status`, `type`, `notes`, `reason`, `reminder_sent`, `confirmed_at`, `canceled_at`, `created_at`, `updated_at`) VALUES
-(1, 1, 16, 2, '2025-04-24', '17:55:00', '18:25:00', 'confirmed', 'in_person', 'Notes', 'Visit', 0, NULL, NULL, '2025-04-23 16:16:55', '2025-04-23 16:16:55'),
-(2, 10, 16, 1, '2025-04-26', '13:32:00', '14:02:00', 'confirmed', 'in_person', 'notes', 'reason', 0, NULL, NULL, '2025-04-25 13:32:49', '2025-04-25 13:32:49'),
+(1, 1, 16, 2, '2025-04-24', '17:55:00', '18:25:00', 'canceled', 'in_person', 'Notes', 'Canceled by administrator', 0, NULL, '2025-05-10 11:38:41', '2025-04-23 16:16:55', '2025-05-10 11:38:41'),
+(2, 10, 16, 1, '2025-04-26', '13:32:00', '14:02:00', 'canceled', 'in_person', 'notes', 'Canceled by administrator', 0, NULL, '2025-05-10 11:38:38', '2025-04-25 13:32:49', '2025-05-10 11:38:38'),
 (3, 1, 16, 1, '2025-04-28', '10:00:00', '10:30:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:40:00', '2025-04-26 15:40:00'),
 (4, 1, 16, 2, '2025-04-29', '11:00:00', '11:45:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:40:30', '2025-04-26 15:40:30'),
-(5, 1, 2, 1, '2025-04-29', '14:00:00', '14:30:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:40:45', '2025-04-26 15:40:45'),
-(6, 1, 2, 2, '2025-04-29', '15:00:00', '15:45:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:00', '2025-04-26 15:41:00'),
-(7, 1, 2, 1, '2025-04-30', '09:00:00', '09:30:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:15', '2025-04-26 15:41:15'),
-(8, 1, 2, 2, '2025-04-30', '09:58:00', '10:43:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:23', '2025-04-26 15:58:58'),
+(5, 1, 2, 1, '2025-04-29', '14:00:00', '14:30:00', 'completed', 'in_person', '', '', 0, '2025-05-10 11:26:49', NULL, '2025-04-26 15:40:45', '2025-05-10 11:26:53'),
+(6, 1, 2, 2, '2025-04-29', '15:00:00', '15:45:00', 'completed', 'in_person', '', '', 0, '2025-05-10 11:27:24', NULL, '2025-04-26 15:41:00', '2025-05-10 11:36:10'),
+(7, 1, 2, 1, '2025-04-30', '09:00:00', '09:30:00', 'completed', 'in_person', '', '', 0, '2025-05-10 11:30:11', NULL, '2025-04-26 15:41:15', '2025-05-10 11:35:44'),
+(8, 1, 2, 2, '2025-04-30', '09:58:00', '10:43:00', 'completed', 'in_person', '', '', 0, '2025-05-10 11:34:59', NULL, '2025-04-26 15:41:23', '2025-05-10 11:35:19'),
 (9, 1, 16, 1, '2025-04-30', '09:30:00', '10:00:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:55', '2025-04-26 15:41:55'),
 (10, 1, 16, 2, '2025-04-30', '09:32:00', '10:17:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 16:32:36', '2025-04-26 16:32:36'),
-(11, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-04 17:46:54', '2025-05-04 16:59:02', '2025-05-04 17:46:54'),
+
+(11, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'completed', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-09 13:27:47', '2025-05-04 16:59:02', '2025-05-10 20:36:10'),
+
 (12, 1, 2, 2, '2025-05-07', '10:04:00', '10:49:00', 'canceled', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-04 17:30:35', '2025-05-04 17:16:58', '2025-05-04 17:30:35'),
 (13, 1, 2, 2, '2025-05-05', '09:00:00', '09:45:00', 'canceled', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-04 17:30:41', '2025-05-04 17:17:30', '2025-05-04 17:30:41'),
 (14, 1, 2, 2, '2025-05-06', '14:00:00', '14:45:00', 'canceled', 'in_person', 'Note', 'Canceled by administrator', 0, NULL, '2025-05-04 17:30:37', '2025-05-04 17:22:37', '2025-05-04 17:30:37'),
@@ -124,7 +185,19 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `serv
 (19, 1, 2, 1, '2025-05-07', '10:04:00', '10:34:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-04 18:23:50', '2025-05-04 17:47:24', '2025-05-04 18:23:50'),
 (20, 1, 2, 1, '2025-05-05', '09:00:00', '09:30:00', 'canceled', 'in_person', 'note', 'No reason provided', 0, NULL, '2025-05-04 19:06:42', '2025-05-04 18:26:30', '2025-05-04 19:06:42'),
 (21, 1, 2, 1, '2025-05-06', '14:00:00', '14:30:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-04 19:06:45', '2025-05-04 18:54:57', '2025-05-04 19:06:45'),
-(22, 1, 2, 1, '2025-05-07', '10:04:00', '10:34:00', 'scheduled', '', '', '', 0, NULL, NULL, '2025-05-04 19:35:26', '2025-05-04 19:35:26');
+(22, 1, 2, 1, '2025-05-07', '10:04:00', '10:34:00', 'canceled', '', 'notes', 'No reason provided', 0, NULL, '2025-05-07 13:14:38', '2025-05-04 19:35:26', '2025-05-07 13:14:38'),
+(23, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-07 12:37:10', '2025-05-07 12:34:16', '2025-05-07 12:37:10'),
+(24, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-07 13:59:58', '2025-05-07 13:15:04', '2025-05-07 13:59:58'),
+
+(30, 1, 2, 2, '2025-05-15', '08:00:00', '08:30:00', 'confirmed', 'in_person', '', '', 0, NULL, NULL, '2025-05-10 13:05:38', '2025-05-10 20:35:53'),
+(31, 1, 2, 1, '2025-05-15', '11:30:00', '12:00:00', 'confirmed', 'in_person', '', 'note', 0, NULL, NULL, '2025-05-10 18:27:03', '2025-05-10 20:35:34'),
+(32, 1, 2, 1, '2025-05-15', '08:30:00', '09:00:00', 'confirmed', 'in_person', '', 'note', 0, NULL, NULL, '2025-05-10 18:27:23', '2025-05-10 20:35:46'),
+(33, 22, 25, 2, '2025-05-13', '10:00:00', '10:30:00', 'scheduled', 'in_person', 'Annual checkup', NULL, 0, NULL, NULL, '2025-05-10 20:05:43', '2025-05-10 20:05:43'),
+(34, 23, 26, 12, '2025-05-14', '09:00:00', '09:15:00', 'scheduled', 'in_person', 'Flu shot', NULL, 0, NULL, NULL, '2025-05-10 20:05:43', '2025-05-10 20:05:43'),
+(35, 24, 25, 14, '2025-05-15', '14:00:00', '14:30:00', 'confirmed', 'in_person', 'Chest X-Ray', 'Canceled by administrator', 0, NULL, '2025-05-10 20:36:45', '2025-05-10 20:05:43', '2025-05-10 20:36:58'),
+(36, 22, 25, 3, '2025-05-05', '11:00:00', '11:30:00', 'confirmed', 'in_person', 'Follow-up consultation', '', 0, '2025-05-04 20:05:43', NULL, '2025-04-30 20:05:43', '2025-05-10 20:36:00'),
+(37, 23, 26, 13, '2025-05-03', '13:00:00', '14:00:00', 'completed', 'virtual', 'Initial assessment', NULL, 0, '2025-05-02 20:05:43', NULL, '2025-04-26 20:05:43', '2025-05-10 20:05:43');
+
 
 -- --------------------------------------------------------
 
@@ -134,7 +207,7 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `serv
 
 DROP TABLE IF EXISTS `appointment_history`;
 CREATE TABLE IF NOT EXISTS `appointment_history` (
-  `history_id` int(11) NOT NULL,
+  `history_id` int(11) NOT NULL AUTO_INCREMENT,
   `appointment_id` int(11) NOT NULL,
   `action` enum('created','updated','canceled','rescheduled','completed','no_show') NOT NULL,
   `changed_fields` text DEFAULT NULL,
@@ -145,7 +218,7 @@ CREATE TABLE IF NOT EXISTS `appointment_history` (
   PRIMARY KEY (`history_id`),
   KEY `appointment_id` (`appointment_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointment_history`
@@ -162,7 +235,7 @@ INSERT INTO `appointment_history` (`history_id`, `appointment_id`, `action`, `ch
 
 DROP TABLE IF EXISTS `appointment_ratings`;
 CREATE TABLE IF NOT EXISTS `appointment_ratings` (
-  `rating_id` int(11) NOT NULL,
+  `rating_id` int(11) NOT NULL AUTO_INCREMENT,
   `appointment_id` int(11) NOT NULL,
   `patient_id` int(11) NOT NULL,
   `provider_id` int(11) NOT NULL,
@@ -173,7 +246,7 @@ CREATE TABLE IF NOT EXISTS `appointment_ratings` (
   KEY `appointment_id` (`appointment_id`),
   KEY `patient_id` (`patient_id`),
   KEY `provider_id` (`provider_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `appointment_ratings`
@@ -193,7 +266,9 @@ INSERT INTO `appointment_ratings` (`rating_id`, `appointment_id`, `patient_id`, 
 (15, 4, 1, 16, 4, 'Good appointment, doctor was knowledgeable.', '2025-04-27 05:09:53'),
 (16, 5, 1, 2, 5, 'The doctor answered all my questions thoroughly', '2025-04-27 05:09:53'),
 (17, 6, 1, 2, 4, 'Short wait time and professional service', '2025-04-27 05:09:53'),
-(18, 7, 1, 2, 4, 'Appointment ran slightly late but care was excellent', '2025-04-27 05:09:53');
+(18, 7, 1, 2, 4, 'Appointment ran slightly late but care was excellent', '2025-04-27 05:09:53'),
+(19, 36, 22, 25, 5, 'Excellent consultation, doctor was very thorough and explained everything clearly', '2025-05-10 20:05:43'),
+(20, 37, 23, 26, 4, 'Good session, felt comfortable discussing my concerns', '2025-05-10 20:05:43');
 
 -- --------------------------------------------------------
 
@@ -203,7 +278,7 @@ INSERT INTO `appointment_ratings` (`rating_id`, `appointment_id`, `patient_id`, 
 
 DROP TABLE IF EXISTS `auth_sessions`;
 CREATE TABLE IF NOT EXISTS `auth_sessions` (
-  `session_id` int(11) NOT NULL,
+  `session_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `token` varchar(255) NOT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
@@ -223,7 +298,7 @@ CREATE TABLE IF NOT EXISTS `auth_sessions` (
 
 DROP TABLE IF EXISTS `notifications`;
 CREATE TABLE IF NOT EXISTS `notifications` (
-  `notification_id` int(11) NOT NULL,
+  `notification_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `appointment_id` int(11) DEFAULT NULL,
   `subject` varchar(255) NOT NULL,
@@ -240,7 +315,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   UNIQUE KEY `unique_system_notification` (`subject`(100),`message`(100),`is_system`,`audience`),
   KEY `user_id` (`user_id`),
   KEY `appointment_id` (`appointment_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `notifications`
@@ -256,7 +331,10 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `su
 (7, 3, NULL, 'System Update Completed', 'The appointment system has been successfully updated to version 2.0', 'system', 'sent', NULL, NULL, '2025-04-25 12:05:49', 1, 0, 'all'),
 (8, 3, NULL, 'Welcome New Provider', 'Dr. Jane Smith has joined our medical team', 'system', 'sent', NULL, NULL, '2025-04-25 11:05:49', 1, 0, 'admin'),
 (9, 3, NULL, 'Scheduled Maintenance', 'The system will be undergoing scheduled maintenance tonight at 11 PM', 'system', 'sent', NULL, NULL, '2025-04-25 10:05:49', 1, 0, 'all'),
-(10, 3, NULL, 'Christmas Closure', 'The practice will be closed on December 25th for the Christmas holiday', 'system', 'sent', NULL, NULL, '2025-04-24 13:05:49', 1, 0, 'all');
+(10, 3, NULL, 'Christmas Closure', 'The practice will be closed on December 25th for the Christmas holiday', 'system', 'sent', NULL, NULL, '2025-04-24 13:05:49', 1, 0, 'all'),
+(11, 22, NULL, 'Appointment Reminder', 'You have an upcoming appointment tomorrow at 10:00 AM', 'email', 'sent', NULL, NULL, '2025-05-10 20:05:43', 1, 0, 'patient'),
+(12, 25, NULL, 'New Patient Registration', 'A new patient has registered and selected you as their provider', 'system', 'sent', NULL, NULL, '2025-05-10 20:05:43', 1, 0, 'provider'),
+(13, 3, NULL, 'System Maintenance', 'The system will be undergoing maintenance on Saturday from 2 AM to 4 AM', 'system', 'sent', NULL, NULL, '2025-05-10 20:05:43', 1, 0, 'all');
 
 -- --------------------------------------------------------
 
@@ -266,7 +344,7 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `su
 
 DROP TABLE IF EXISTS `notification_preferences`;
 CREATE TABLE IF NOT EXISTS `notification_preferences` (
-  `preference_id` int(11) NOT NULL,
+  `preference_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `email_notifications` tinyint(1) NOT NULL DEFAULT 1,
   `sms_notifications` tinyint(1) NOT NULL DEFAULT 0,
@@ -287,7 +365,7 @@ CREATE TABLE IF NOT EXISTS `notification_preferences` (
 
 DROP TABLE IF EXISTS `patient_profiles`;
 CREATE TABLE IF NOT EXISTS `patient_profiles` (
-  `patient_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `date_of_birth` date DEFAULT NULL,
@@ -301,7 +379,7 @@ CREATE TABLE IF NOT EXISTS `patient_profiles` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`patient_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `patient_profiles`
@@ -309,8 +387,13 @@ CREATE TABLE IF NOT EXISTS `patient_profiles` (
 
 INSERT INTO `patient_profiles` (`patient_id`, `user_id`, `phone`, `date_of_birth`, `address`, `emergency_contact`, `emergency_contact_phone`, `medical_conditions`, `medical_history`, `insurance_info`, `created_at`, `updated_at`) VALUES
 (1, 1, '2120001234', '1997-10-31', '123 Main Street', 'example', '1112223333', 'Na', NULL, '{\"provider\":\"Example\",\"policy_number\":\"8778599455d\"}', '2025-04-23 00:49:59', '2025-04-26 22:46:30'),
-(17, 17, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-04 18:48:54', '2025-05-04 18:48:54'),
-(18, 18, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-04 18:54:30', '2025-05-04 18:54:30');
+(18, 18, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-04 18:54:30', '2025-05-04 18:54:30'),
+(19, 19, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-07 16:31:56', '2025-05-07 16:31:56'),
+(20, 20, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-07 16:33:37', '2025-05-07 16:33:37'),
+(21, 21, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-05-07 17:26:07', '2025-05-07 17:26:07'),
+(22, 22, '2125551234', '1990-01-15', '456 Oak Street, Anytown, USA', 'Family Member', '5551234567', 'None', NULL, '{\"provider\":\"Blue Cross\",\"policy_number\":\"BC123456789\"}', '2025-05-11 01:02:56', '2025-05-11 01:02:56'),
+(23, 23, '2125552345', '1985-07-22', '789 Pine Avenue, Anytown, USA', 'Spouse', '5552345678', 'Asthma', NULL, '{\"provider\":\"Aetna\",\"policy_number\":\"AE987654321\"}', '2025-05-11 01:02:56', '2025-05-11 01:02:56'),
+(24, 24, '2125553456', '1992-11-05', '123 Maple Drive, Anytown, USA', 'Parent', '5553456789', 'Allergies', NULL, '{\"provider\":\"UnitedHealth\",\"policy_number\":\"UH567891234\"}', '2025-05-11 01:02:56', '2025-05-11 01:02:56');
 
 -- --------------------------------------------------------
 
@@ -320,28 +403,112 @@ INSERT INTO `patient_profiles` (`patient_id`, `user_id`, `phone`, `date_of_birth
 
 DROP TABLE IF EXISTS `provider_availability`;
 CREATE TABLE IF NOT EXISTS `provider_availability` (
-  `availability_id` int(11) NOT NULL,
+  `availability_id` int(11) NOT NULL AUTO_INCREMENT,
   `provider_id` int(11) NOT NULL,
-  `availability_date` date DEFAULT NULL,
+  `availability_date` date NOT NULL,
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
   `is_available` tinyint(1) DEFAULT 1,
-  `created_at` datetime DEFAULT current_timestamp(),
-  `is_recurring` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `is_recurring` tinyint(1) DEFAULT 0,
   `weekdays` varchar(20) DEFAULT NULL,
+  `max_appointments` int(11) DEFAULT 1,
+  `service_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`availability_id`),
-  KEY `provider_id` (`provider_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `fk_availability_service` (`service_id`)
+
+) ENGINE=InnoDB AUTO_INCREMENT=1326 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 --
 -- Dumping data for table `provider_availability`
 --
 
-INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availability_date`, `start_time`, `end_time`, `is_available`, `created_at`, `is_recurring`, `weekdays`) VALUES
-(1, 2, '2025-05-05', '09:00:00', '12:00:00', 1, '2025-04-17 08:59:28', 1, '1,2,3,4,5'),
-(2, 2, '2025-05-06', '14:00:00', '17:00:00', 1, '2025-04-17 08:59:28', 1, '1,2,3,4,5'),
-(4, 2, '2025-05-07', '10:04:00', '22:04:00', 1, '2025-04-17 10:05:05', 1, '1,2,3,4,5'),
-(5, 2, '2025-05-08', '10:11:00', '22:11:00', 1, '2025-04-17 10:11:09', 1, '1,2,3,4,5');
+INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availability_date`, `start_time`, `end_time`, `is_available`, `created_at`, `is_recurring`, `weekdays`, `max_appointments`, `service_id`) VALUES
+(1, 2, '2025-05-05', '10:00:00', '17:59:00', 1, '2025-05-05 03:05:32', 0, NULL, 0, NULL),
+(2, 2, '2025-05-05', '09:00:00', '12:00:00', 1, '2025-04-17 13:59:28', 1, '1,2,3,4,5', 0, NULL),
+(3, 2, '2025-05-06', '14:00:00', '17:00:00', 1, '2025-04-17 13:59:28', 1, '1,2,3,4,5', 0, NULL),
+(4, 2, '2025-05-07', '10:04:00', '22:04:00', 1, '2025-04-17 15:05:05', 1, '1,2,3,4,5', 0, NULL),
+(447, 2, '2025-05-08', '08:00:00', '08:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(448, 2, '2025-05-08', '08:30:00', '09:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(449, 2, '2025-05-08', '09:00:00', '09:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(450, 2, '2025-05-08', '09:30:00', '10:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(451, 2, '2025-05-08', '10:00:00', '10:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(452, 2, '2025-05-08', '10:30:00', '11:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(453, 2, '2025-05-08', '11:00:00', '11:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(454, 2, '2025-05-08', '11:30:00', '12:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(455, 2, '2025-05-08', '12:00:00', '12:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(456, 2, '2025-05-08', '12:30:00', '13:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(457, 2, '2025-05-08', '13:00:00', '13:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(458, 2, '2025-05-08', '13:30:00', '14:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(459, 2, '2025-05-08', '14:00:00', '14:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(460, 2, '2025-05-08', '14:30:00', '15:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(461, 2, '2025-05-08', '15:00:00', '15:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(462, 2, '2025-05-08', '15:30:00', '16:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(463, 2, '2025-05-08', '16:00:00', '16:30:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(464, 2, '2025-05-08', '16:30:00', '17:00:00', 1, '2025-05-08 20:15:04', 0, NULL, 1, NULL),
+(527, 2, '2025-05-08', '08:00:00', '08:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(528, 2, '2025-05-08', '08:30:00', '09:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(529, 2, '2025-05-08', '09:00:00', '09:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(530, 2, '2025-05-08', '09:30:00', '10:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(531, 2, '2025-05-08', '10:00:00', '10:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(532, 2, '2025-05-08', '10:30:00', '11:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(533, 2, '2025-05-08', '11:00:00', '11:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(534, 2, '2025-05-08', '11:30:00', '12:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(535, 2, '2025-05-08', '12:00:00', '12:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(536, 2, '2025-05-08', '12:30:00', '13:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(537, 2, '2025-05-08', '13:00:00', '13:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(538, 2, '2025-05-08', '13:30:00', '14:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(539, 2, '2025-05-08', '14:00:00', '14:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(540, 2, '2025-05-08', '14:30:00', '15:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(541, 2, '2025-05-08', '15:00:00', '15:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(542, 2, '2025-05-08', '15:30:00', '16:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(543, 2, '2025-05-08', '16:00:00', '16:30:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(544, 2, '2025-05-08', '16:30:00', '17:00:00', 1, '2025-05-08 21:47:05', 0, NULL, 1, NULL),
+(1284, 2, '2025-05-12', '05:00:00', '05:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1285, 2, '2025-05-12', '05:30:00', '06:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1286, 2, '2025-05-12', '06:00:00', '06:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1287, 2, '2025-05-12', '06:30:00', '07:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1288, 2, '2025-05-12', '07:00:00', '07:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1289, 2, '2025-05-12', '07:30:00', '08:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1290, 2, '2025-05-12', '08:00:00', '08:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1291, 2, '2025-05-12', '08:30:00', '09:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1292, 2, '2025-05-12', '09:00:00', '09:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1293, 2, '2025-05-12', '09:30:00', '10:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1294, 2, '2025-05-12', '10:00:00', '10:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1295, 2, '2025-05-12', '10:30:00', '11:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1296, 2, '2025-05-12', '11:00:00', '11:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1297, 2, '2025-05-12', '11:30:00', '12:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1298, 2, '2025-05-12', '12:00:00', '12:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1299, 2, '2025-05-12', '12:30:00', '13:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1300, 2, '2025-05-12', '13:00:00', '13:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1301, 2, '2025-05-12', '13:30:00', '14:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1302, 2, '2025-05-12', '14:00:00', '14:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1303, 2, '2025-05-12', '14:30:00', '15:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1304, 2, '2025-05-12', '15:00:00', '15:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1305, 2, '2025-05-12', '15:30:00', '16:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1306, 2, '2025-05-15', '08:00:00', '08:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1307, 2, '2025-05-15', '08:30:00', '09:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1308, 2, '2025-05-15', '09:00:00', '09:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1309, 2, '2025-05-15', '09:30:00', '10:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1310, 2, '2025-05-15', '10:00:00', '10:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1311, 2, '2025-05-15', '10:30:00', '11:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1312, 2, '2025-05-15', '11:00:00', '11:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1313, 2, '2025-05-15', '11:30:00', '12:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1314, 2, '2025-05-15', '12:00:00', '12:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1315, 2, '2025-05-15', '12:30:00', '13:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1316, 2, '2025-05-15', '13:00:00', '13:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1317, 2, '2025-05-15', '13:30:00', '14:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1318, 2, '2025-05-15', '14:00:00', '14:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1319, 2, '2025-05-15', '14:30:00', '15:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+(1320, 2, '2025-05-15', '15:00:00', '15:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1321, 2, '2025-05-15', '15:30:00', '16:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
+(1322, 2, '2025-05-15', '16:00:00', '16:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+
+(1323, 2, '2025-05-15', '16:30:00', '17:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
+(1324, 25, '2025-05-11', '09:00:00', '17:00:00', 1, '2025-05-11 01:05:43', 1, '1,2,3,4,5', 8, NULL),
+(1325, 26, '2025-05-12', '08:00:00', '16:00:00', 1, '2025-05-11 01:05:43', 1, '1,3,5', 6, NULL);
+
 
 -- --------------------------------------------------------
 
@@ -351,7 +518,7 @@ INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availabi
 
 DROP TABLE IF EXISTS `provider_profiles`;
 CREATE TABLE IF NOT EXISTS `provider_profiles` (
-  `profile_id` int(11) NOT NULL,
+  `profile_id` int(11) NOT NULL AUTO_INCREMENT,
   `provider_id` int(11) NOT NULL,
   `specialization` varchar(100) DEFAULT NULL,
   `title` varchar(50) DEFAULT NULL,
@@ -363,15 +530,19 @@ CREATE TABLE IF NOT EXISTS `provider_profiles` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`profile_id`),
   KEY `provider_id` (`provider_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `provider_profiles`
 --
 
 INSERT INTO `provider_profiles` (`profile_id`, `provider_id`, `specialization`, `title`, `bio`, `accepting_new_patients`, `max_patients_per_day`, `profile_image`, `created_at`, `updated_at`) VALUES
+
 (1, 16, 'Practisioner', 'MD', 'Hello', 1, 20, NULL, '2025-04-23 01:16:51', '2025-04-23 01:16:51'),
-(2, 2, 'General Medicine', 'MD', 'Experienced general practitioner', 1, 20, NULL, '2025-05-04 20:15:52', '2025-05-04 20:15:52');
+(2, 2, 'General Medicine', NULL, 'Experienced general practitioner', 0, 0, NULL, '2025-05-04 20:15:52', '2025-05-05 02:41:47'),
+(3, 25, 'Cardiology', 'MD', 'Board-certified cardiologist with 15 years of experience', 1, 15, NULL, '2025-05-11 01:05:43', '2025-05-11 01:05:43'),
+(4, 26, 'Pediatrics', 'MD', 'Specialized in pediatric care with focus on early childhood development', 1, 20, NULL, '2025-05-11 01:05:43', '2025-05-11 01:05:43');
+
 
 -- --------------------------------------------------------
 
@@ -381,7 +552,7 @@ INSERT INTO `provider_profiles` (`profile_id`, `provider_id`, `specialization`, 
 
 DROP TABLE IF EXISTS `provider_services`;
 CREATE TABLE IF NOT EXISTS `provider_services` (
-  `provider_service_id` int(11) NOT NULL,
+  `provider_service_id` int(11) NOT NULL AUTO_INCREMENT,
   `provider_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL,
   `custom_duration` int(11) DEFAULT NULL COMMENT 'Override default duration if needed',
@@ -390,15 +561,22 @@ CREATE TABLE IF NOT EXISTS `provider_services` (
   PRIMARY KEY (`provider_service_id`),
   KEY `provider_id` (`provider_id`),
   KEY `service_id` (`service_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `provider_services`
 --
 
 INSERT INTO `provider_services` (`provider_service_id`, `provider_id`, `service_id`, `custom_duration`, `custom_notes`, `created_at`) VALUES
-(1, 2, 1, NULL, NULL, '2025-04-17 08:59:28'),
-(2, 2, 2, NULL, NULL, '2025-04-17 08:59:28');
+(1, 2, 9, NULL, NULL, '2025-05-07 15:50:21'),
+(2, 2, 1, NULL, NULL, '2025-04-17 08:59:28'),
+(3, 2, 2, NULL, NULL, '2025-04-17 08:59:28'),
+(4, 25, 2, NULL, NULL, '2025-05-10 20:05:43'),
+(5, 25, 3, NULL, NULL, '2025-05-10 20:05:43'),
+(6, 25, 14, NULL, NULL, '2025-05-10 20:05:43'),
+(7, 26, 2, NULL, NULL, '2025-05-10 20:05:43'),
+(8, 26, 12, NULL, NULL, '2025-05-10 20:05:43'),
+(9, 26, 13, NULL, NULL, '2025-05-10 20:05:43');
 
 -- --------------------------------------------------------
 
@@ -408,7 +586,7 @@ INSERT INTO `provider_services` (`provider_service_id`, `provider_id`, `service_
 
 DROP TABLE IF EXISTS `recurring_schedules`;
 CREATE TABLE IF NOT EXISTS `recurring_schedules` (
-  `schedule_id` int(11) NOT NULL,
+  `schedule_id` int(11) NOT NULL AUTO_INCREMENT,
   `provider_id` int(11) NOT NULL,
   `day_of_week` int(11) NOT NULL COMMENT '0=Sunday, 1=Monday, etc.',
   `start_time` time NOT NULL,
@@ -420,16 +598,15 @@ CREATE TABLE IF NOT EXISTS `recurring_schedules` (
   `updated_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`schedule_id`),
   KEY `provider_id` (`provider_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `recurring_schedules`
 --
 
 INSERT INTO `recurring_schedules` (`schedule_id`, `provider_id`, `day_of_week`, `start_time`, `end_time`, `is_active`, `effective_from`, `effective_until`, `created_at`, `updated_at`) VALUES
-(1, 2, 1, '14:00:00', '22:00:00', 1, '2025-04-01', NULL, '2025-04-17 08:59:28', '2025-04-17 08:59:28'),
-(2, 2, 3, '09:00:00', '17:00:00', 1, '2025-04-01', NULL, '2025-04-17 08:59:28', '2025-04-17 08:59:28'),
-(3, 2, 5, '09:00:00', '12:00:00', 1, '2025-04-01', NULL, '2025-04-17 08:59:28', '2025-04-17 08:59:28');
+(1, 2, 1, '05:00:00', '16:00:00', 1, NULL, NULL, '2025-05-08 10:27:46', '2025-05-08 10:27:46'),
+(2, 2, 4, '08:00:00', '17:00:00', 1, NULL, NULL, '2025-05-08 12:19:02', '2025-05-08 12:19:02');
 
 -- --------------------------------------------------------
 
@@ -439,7 +616,7 @@ INSERT INTO `recurring_schedules` (`schedule_id`, `provider_id`, `day_of_week`, 
 
 DROP TABLE IF EXISTS `services`;
 CREATE TABLE IF NOT EXISTS `services` (
-  `service_id` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
   `duration` int(11) DEFAULT 30,
@@ -447,15 +624,23 @@ CREATE TABLE IF NOT EXISTS `services` (
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`service_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `services`
 --
 
 INSERT INTO `services` (`service_id`, `name`, `description`, `duration`, `price`, `is_active`, `created_at`) VALUES
-(1, 'Regular Checkup', 'Standard medical examination', 30, 75.00, 1, '2025-04-22 23:34:16'),
-(2, 'Consultation', 'Medical consultation with specialist', 45, 125.00, 1, '2025-04-22 23:34:16');
+(1, 'test', 'test', 30, 50.00, 1, '2025-05-07 19:37:48'),
+(2, 'Regular Checkup', 'Standard medical examination', 30, 75.00, 1, '2025-04-22 23:34:16'),
+(3, 'Consultation', 'Medical consultation with specialist', 45, 125.00, 1, '2025-04-22 23:34:16'),
+(7, 'TESTT', 'TESTT', 30, 50.00, 0, '2025-05-07 20:24:26'),
+(9, 'testtest', 'testtest', 30, 50.00, 1, '2025-05-07 20:50:21'),
+(10, 'Physical Therapy', 'Therapeutic exercises and treatments', 60, 90.00, 1, '2025-05-11 01:05:43'),
+(11, 'Dental Cleaning', 'Basic dental cleaning and examination', 45, 85.00, 1, '2025-05-11 01:05:43'),
+(12, 'Vaccination', 'Standard vaccination service', 15, 40.00, 1, '2025-05-11 01:05:43'),
+(13, 'Mental Health Consultation', 'Initial mental health assessment', 60, 150.00, 1, '2025-05-11 01:05:43'),
+(14, 'X-Ray', 'Diagnostic imaging service', 20, 120.00, 1, '2025-05-11 01:05:43');
 
 -- --------------------------------------------------------
 
@@ -465,13 +650,13 @@ INSERT INTO `services` (`service_id`, `name`, `description`, `duration`, `price`
 
 DROP TABLE IF EXISTS `settings`;
 CREATE TABLE IF NOT EXISTS `settings` (
-  `setting_id` int(11) NOT NULL,
+  `setting_id` int(11) NOT NULL AUTO_INCREMENT,
   `setting_key` varchar(100) NOT NULL,
   `setting_value` text DEFAULT NULL,
   `description` text DEFAULT NULL,
   `updated_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`setting_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `settings`
@@ -491,7 +676,7 @@ INSERT INTO `settings` (`setting_id`, `setting_key`, `setting_value`, `descripti
 
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE IF NOT EXISTS `users` (
-  `user_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `first_name` varchar(100) NOT NULL,
@@ -509,7 +694,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `token_expires` datetime DEFAULT NULL,
   `password_change_required` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
@@ -517,12 +702,16 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 INSERT INTO `users` (`user_id`, `email`, `password_hash`, `first_name`, `last_name`, `phone`, `role`, `is_active`, `is_verified`, `email_verified_at`, `created_at`, `last_login`, `verification_token`, `reset_token`, `reset_token_expires`, `token_expires`, `password_change_required`) VALUES
 (1, 'patient@example.com', '$2y$10$example_hash', 'John', 'Doe', '2120001234', 'patient', 1, 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
-(2, 'provider@example.com', '$2y$10$example_hash', 'Dr. Smith', 'MD', NULL, 'provider', 1, 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
-(3, 'admin@example.com', '$2y$10$q/l96RJfI9YX3D1jtI/ZBue7hSr.F6/zVjzrOI1loV9lNj3W.hMY.', 'Admin', 'User', NULL, 'admin', 1, 1, NULL, '2025-04-17 08:59:28', '2025-05-02 12:52:04', NULL, NULL, NULL, NULL, 0),
+(2, 'provider@example.com', '$2y$10$example_hash', 'Dr. Smith', 'MD', '7152125151', 'provider', 1, 1, NULL, '2025-04-17 08:59:28', NULL, NULL, NULL, NULL, NULL, 0),
+(3, 'admin@example.com', '$2y$10$mn369d8QchCNaqnZ9DA15OJejiRrlHCzw33TIkq01qepowE42AWkS', 'Admin', 'User', NULL, 'admin', 1, 1, NULL, '2025-04-17 08:59:28', '2025-05-10 11:26:02', NULL, NULL, NULL, NULL, 0),
 (10, 'Kholley@student.cvtc.edu', '$2y$10$xiDwOmotNFAOn.5R0XJ1huUpLb681/phtw/TCkT9wlddp9s1DiRnG', 'Kaleb', 'Holley', '7156191363', 'patient', 1, 1, '2025-04-22 09:54:17', '2025-04-22 09:54:02', '2025-04-22 09:54:47', NULL, 'd9472a925ebd1c3138bb4731edcaf0a207e72c66c1bd00be9783e31f632bb69e', '2025-04-22 15:55:40', '2025-04-23 14:54:02', 0),
 (16, 'john@doe.com', '$2y$10$nxPUCopIWXPZw442f6B4UOJv.H/6wty9qrJmSqXzYPCmo6i6Zn8sW', 'john', 'doe', '1234567897', 'provider', 1, 1, NULL, '2025-04-22 20:16:51', '2025-04-22 20:25:22', NULL, NULL, NULL, NULL, 0),
-(17, 'trash@gmail.com', '$argon2id$v=19$m=65536,t=4,p=3$cmJXQ2pBVjlVbzR5eVgxSQ$IsmEEXxajVGZfigueXnsUqfYDdPRIjHXCGf1AEk81G8', 'Kaleb', 'Holley', '(715) 619-1363', 'patient', 1, 1, '2025-05-04 13:49:29', '2025-05-04 13:48:54', NULL, NULL, NULL, NULL, NULL, 0),
-(18, 'kalebholley43@gmail.com', '$2y$10$JYJGb6bvRyph/Ciqn9pA9eu6Jl7e3PAtPKTU64dhhUbGRVXnpf4O.', 'Kaleb', 'Holley', '(715) 619-1363', 'patient', 1, 1, '2025-05-04 13:54:45', '2025-05-04 13:54:30', '2025-05-04 13:54:58', NULL, NULL, NULL, NULL, 0);
+(22, 'patient2@example.com', '$2y$10$example_hash', 'Sarah', 'Johnson', '2125551234', 'patient', 1, 1, NULL, '2025-05-10 20:02:56', NULL, NULL, NULL, NULL, NULL, 0),
+(23, 'patient3@example.com', '$2y$10$example_hash', 'Michael', 'Brown', '2125552345', 'patient', 1, 1, NULL, '2025-05-10 20:02:56', NULL, NULL, NULL, NULL, NULL, 0),
+(24, 'patient4@example.com', '$2y$10$example_hash', 'Emily', 'Davis', '2125553456', 'patient', 1, 1, NULL, '2025-05-10 20:02:56', NULL, NULL, NULL, NULL, NULL, 0),
+(25, 'provider2@example.com', '$2y$10$example_hash', 'Dr. James', 'Wilson', '7155551234', 'provider', 1, 1, NULL, '2025-05-10 20:02:56', NULL, NULL, NULL, NULL, NULL, 0),
+(26, 'provider3@example.com', '$2y$10$example_hash', 'Dr. Maria', 'Garcia', '7155552345', 'provider', 1, 1, NULL, '2025-05-10 20:02:56', NULL, NULL, NULL, NULL, NULL, 0),
+(27, 'admin2@example.com', '$2y$10$example_hash', 'Support', 'Admin', '7155553456', 'admin', 1, 1, NULL, '2025-05-10 20:02:56', NULL, NULL, NULL, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -550,7 +739,7 @@ CREATE TABLE IF NOT EXISTS `user_tokens` (
 
 DROP TABLE IF EXISTS `waitlist`;
 CREATE TABLE IF NOT EXISTS `waitlist` (
-  `waitlist_id` int(11) NOT NULL,
+  `waitlist_id` int(11) NOT NULL AUTO_INCREMENT,
   `patient_id` int(11) NOT NULL,
   `provider_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL,
@@ -569,12 +758,6 @@ CREATE TABLE IF NOT EXISTS `waitlist` (
 --
 -- Constraints for dumped tables
 --
-
---
--- Constraints for table `activity_log`
---
-ALTER TABLE `activity_log`
-  ADD CONSTRAINT `activity_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
 
 --
 -- Constraints for table `appointments`
@@ -628,7 +811,7 @@ ALTER TABLE `patient_profiles`
 -- Constraints for table `provider_availability`
 --
 ALTER TABLE `provider_availability`
-  ADD CONSTRAINT `provider_availability_ibfk_1` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`);
+  ADD CONSTRAINT `fk_availability_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`);
 
 --
 -- Constraints for table `provider_profiles`
@@ -661,7 +844,7 @@ ALTER TABLE `user_tokens`
 ALTER TABLE `waitlist`
   ADD CONSTRAINT `waitlist_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `users` (`user_id`),
   ADD CONSTRAINT `waitlist_ibfk_2` FOREIGN KEY (`provider_id`) REFERENCES `users` (`user_id`),
-  ADD CONSTRAINT `waitlist_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`);
+  ADD CONSTRAINT `waitlist_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services_old` (`service_id`);
 SET FOREIGN_KEY_CHECKS=1;
 COMMIT;
 

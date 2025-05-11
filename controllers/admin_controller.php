@@ -112,31 +112,15 @@ class AdminController {
                         exit;
                     }
                     
-                    
-                    // Begin transaction for safe deletion
-                    $this->db->begin_transaction();
-                    
-                    try {
-                        // Use model methods for deletion
-                        $this->appointmentModel->deleteAppointmentsByUser($userId);
-                        
-                        if ($user['role'] === 'provider') {
-                            $this->providerModel->deleteProviderAvailability($userId);
-                            $this->providerModel->deleteProviderProfile($userId);
-                        } elseif ($user['role'] === 'patient') {
-                            $this->userModel->deletePatientProfile($userId);
-                        }
-                        
-                        $this->userModel->deleteUser($userId);
-                        
+                    // Replace multiple delete calls with one comprehensive deletion
+                    $success = $this->userModel->deleteUserComprehensive($userId);
+
+                    if ($success) {
                         // Log the activity
                         $this->activityLogModel->logUserDeletion($userId, $_SESSION['user_id']);
-                        
-                        // Commit is handled by the models
                         $_SESSION['success'] = "User has been permanently deleted";
-                    } catch (Exception $e) {
-                        error_log("Error deleting user ID {$userId}: " . $e->getMessage());
-                        $_SESSION['error'] = "Error deleting user: " . $e->getMessage();
+                    } else {
+                        $_SESSION['error'] = "Failed to delete user. Check server logs for details.";
                     }
                     
                     // Redirect back to user list
@@ -623,7 +607,7 @@ if ($action === 'add') {
                     }
                     if (empty($errors)) {
                         // First get the existing appointment
-                        $appointment = $this->appointmentModel->getAppointmentById($id);
+                        $appointment = $this->appointmentModel->getById($id);
                         
                         if (!$appointment) {
                             $_SESSION['error'] = "Appointment not found";
@@ -663,7 +647,7 @@ if ($action === 'add') {
                 // Get appointment details for editing
                 try {
                     // Get appointment details using the model
-                    $appointment = $this->appointmentModel->getAppointmentById($id);
+                    $appointment = $this->appointmentModel->getById($id);
                     
                     if (!$appointment) {
                         $_SESSION['error'] = "Appointment not found";
@@ -710,27 +694,6 @@ if ($action === 'add') {
         // Use the appointment model to get all appointments
         $appointments = $this->appointmentModel->getAllAppointments();
         
-        // If the model doesn't have this method yet, fall back to the original code
-        if (empty($appointments) && method_exists($this, 'db')) {
-            $query = "SELECT a.*,
-                CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
-                CONCAT(pr.first_name, ' ', pr.last_name) AS provider_name,
-                s.name AS service_name
-                FROM appointments a
-                JOIN users p ON a.patient_id = p.user_id
-                JOIN users pr ON a.provider_id = pr.user_id
-                JOIN services s ON a.service_id = s.service_id
-                ORDER BY a.appointment_date DESC, a.start_time DESC";
-            $result = $this->db->query($query);
-            $appointments = [];
-            
-            if ($result && $result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    $appointments[] = $row;
-                }
-            }
-        }
-        
         // Get lists of patients, providers, and services for the add form
         $patients = $this->getPatients();
         $providers = $this->getProviders();
@@ -757,6 +720,7 @@ if ($action === 'add') {
         // If a specific provider is requested, fetch it
         if ($provider_id) {
             $provider = $this->providerModel->getById($provider_id);
+
         }
         
         // Enhance provider data with service and appointment counts
@@ -1168,10 +1132,6 @@ if ($action === 'add') {
             return !in_array($service['service_id'], $providerServiceIds);
         });
         
-        // Include the admin header
-        include VIEW_PATH . '/partials/admin_header.php';
-        
-        include VIEW_PATH . '/admin/provider_services.php';
         
         // Include the footer
         include VIEW_PATH . '/partials/footer.php';

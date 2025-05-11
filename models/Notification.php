@@ -459,7 +459,7 @@ class Notification {
             
             $conditions[] = "is_read = 0";
             
-            $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+            $whereClause = "WHERE " . implode(" AND ", $conditions);
             
             $query = "SELECT COUNT(*) FROM notifications $whereClause";
             
@@ -487,170 +487,54 @@ class Notification {
     }
     
     /**
-     * Ensure the notifications table exists with all required columns
-     * This is a helper function to create the table if it doesn't exist
+     * Ensure the notifications table exists in the database
+     * Creates it if it doesn't exist
+     * 
+     * @return bool True if table exists or was created
      */
     private function ensureNotificationsTable() {
         try {
+            // Check if table exists
+            $exists = false;
+            
             if ($this->db instanceof mysqli) {
-                // Check if table exists
                 $result = $this->db->query("SHOW TABLES LIKE 'notifications'");
-                $tableExists = $result && $result->num_rows > 0;
-                
-                if (!$tableExists) {
-                    error_log("Creating notifications table");
-                    
-                    // Create the notifications table
-                    $createTableQuery = "
-                        CREATE TABLE notifications (
-                            notification_id INT AUTO_INCREMENT PRIMARY KEY,
-                            user_id INT NULL,
-                            appointment_id INT NULL,
-                            subject VARCHAR(255) NOT NULL,
-                            message TEXT NOT NULL,
-                            type VARCHAR(50) NOT NULL,
-                            status VARCHAR(20) DEFAULT 'pending',
-                            scheduled_for DATETIME NULL,
-                            sent_at DATETIME NULL,
-                            is_system TINYINT(1) DEFAULT 0,
-                            is_read TINYINT(1) DEFAULT 0,
-                            audience VARCHAR(50) NULL,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            UNIQUE KEY unique_system_notification (subject(100), message(100), is_system, audience)
-                        )
-                    ";
-                    
-                    $this->db->query($createTableQuery);
-                    error_log("Notifications table created successfully");
-                    
-                    // Add some sample notifications
-                    $this->addSampleNotificationsToDb();
-                    return;
-                }
-                
-                // Check for required columns
-                $columns = $this->db->query("SHOW COLUMNS FROM notifications");
-                $columnList = [];
-                while ($column = $columns->fetch_assoc()) {
-                    $columnList[] = $column['Field'];
-                }
-                
-                // Check for is_system column
-                if (!in_array('is_system', $columnList)) {
-                    error_log("Adding is_system column to notifications table");
-                    $this->db->query("ALTER TABLE notifications ADD COLUMN is_system TINYINT(1) DEFAULT 0");
-                }
-                
-                // Check for is_read column
-                if (!in_array('is_read', $columnList)) {
-                    error_log("Adding is_read column to notifications table");
-                    $this->db->query("ALTER TABLE notifications ADD COLUMN is_read TINYINT(1) DEFAULT 0");
-                }
-                
-                // Check for audience column
-                if (!in_array('audience', $columnList)) {
-                    error_log("Adding audience column to notifications table");
-                    $this->db->query("ALTER TABLE notifications ADD COLUMN audience VARCHAR(50) NULL");
-                }
-                
-                // Check for the unique index to prevent duplicates
-                $indices = $this->db->query("SHOW INDEX FROM notifications WHERE Key_name = 'unique_system_notification'");
-                $hasUniqueIndex = $indices && $indices->num_rows > 0;
-                
-                if (!$hasUniqueIndex) {
-                    try {
-                        error_log("Adding unique constraint to prevent duplicate system notifications");
-                        $this->db->query("ALTER TABLE notifications ADD CONSTRAINT unique_system_notification UNIQUE (subject(100), message(100), is_system, audience)");
-                    } catch (Exception $e) {
-                        // It's possible there are duplicates already, so let's handle that
-                        error_log("Error adding unique constraint: " . $e->getMessage());
-                        error_log("Trying to remove duplicates first...");
-                        
-                        // Run a query to detect duplicates
-                        $duplicatesQuery = "
-                            SELECT subject, message, is_system, audience, COUNT(*) as count
-                            FROM notifications
-                            WHERE is_system = 1
-                            GROUP BY subject, message, is_system, audience
-                            HAVING COUNT(*) > 1
-                        ";
-                        $duplicatesResult = $this->db->query($duplicatesQuery);
-                        
-                        if ($duplicatesResult && $duplicatesResult->num_rows > 0) {
-                            error_log("Found " . $duplicatesResult->num_rows . " sets of duplicates");
-                            
-                            // Create a temporary table to store the IDs we want to keep
-                            $this->db->query("CREATE TEMPORARY TABLE IF NOT EXISTS notifications_to_keep (notification_id INT PRIMARY KEY)");
-                            
-                            // Add the highest ID (newest) of each duplicate set to the temporary table
-                            $keepQuery = "
-                                INSERT INTO notifications_to_keep
-                                SELECT MAX(notification_id) as notification_id
-                                FROM notifications
-                                WHERE is_system = 1
-                                GROUP BY subject, message, is_system, audience
-                            ";
-                            $this->db->query($keepQuery);
-                            
-                            // Delete all system notifications except those in the temporary table
-                            $deleteQuery = "
-                                DELETE FROM notifications
-                                WHERE is_system = 1
-                                AND notification_id NOT IN (SELECT notification_id FROM notifications_to_keep)
-                            ";
-                            $deleteResult = $this->db->query($deleteQuery);
-                            
-                            if ($deleteResult) {
-                                error_log("Successfully removed duplicate notifications. Affected rows: " . $this->db->affected_rows);
-                                
-                                // Try to add the unique constraint again
-                                $this->db->query("ALTER TABLE notifications ADD CONSTRAINT unique_system_notification UNIQUE (subject(100), message(100), is_system, audience)");
-                            }
-                            
-                            // Drop the temporary table
-                            $this->db->query("DROP TEMPORARY TABLE IF EXISTS notifications_to_keep");
-                        }
-                    }
-                }
+                $exists = ($result && $result->num_rows > 0);
+            } else {
+                // For PDO (assuming SQLite or another database)
+                $result = $this->db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='notifications'");
+                $exists = ($result && count($result->fetchAll()) > 0);
             }
+            
+            // If table doesn't exist, create it
+            if (!$exists) {
+                $sql = "CREATE TABLE IF NOT EXISTS notifications (
+                    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT,
+                    type VARCHAR(50) NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    is_read TINYINT(1) DEFAULT 0,
+                    link VARCHAR(255) NULL,
+                    metadata TEXT NULL
+                )";
+                
+                if ($this->db instanceof mysqli) {
+                    $this->db->query($sql);
+                } else {
+                    $this->db->exec($sql);
+                }
+                
+                error_log("Created notifications table");
+            }
+            
+            return true;
         } catch (Exception $e) {
             error_log("Error ensuring notifications table: " . $e->getMessage());
+            return false;
         }
     }
-    
-    /**
-     * Add sample notifications to the database
-     */
-    private function addSampleNotificationsToDb() {
-        try {
-            $sampleNotifications = $this->getSampleNotifications();
-            
-            foreach ($sampleNotifications as $notification) {
-                if ($this->db instanceof mysqli) {
-                    $stmt = $this->db->prepare("
-                        INSERT INTO notifications 
-                        (subject, message, type, created_at, is_read, is_system) 
-                        VALUES (?, ?, ?, ?, ?, 1)
-                    ");
-                    
-                    $stmt->bind_param(
-                        "ssssi", 
-                        $notification['subject'],
-                        $notification['message'],
-                        $notification['type'],
-                        $notification['created_at'],
-                        $notification['is_read']
-                    );
-                    
-                    $stmt->execute();
-                }
-            }
-            
-            error_log("Sample notifications added to database");
-        } catch (Exception $e) {
-            error_log("Error adding sample notifications: " . $e->getMessage());
-        }
-    }
+
     /**
      * Get notification preferences for a user
      * 
