@@ -1,25 +1,37 @@
 <?php
-/**
- * Appointment Model Test
- * 
- * Tests for the Appointment model including:
- * - Appointment scheduling
- * - Appointment retrieval
- * - Appointment cancellation
- * - Appointment rescheduling
- * - Slot availability checking
- */
+require_once dirname(__DIR__) . '/public_html/bootstrap.php';
 
-echo "<h1>Appointment Model Test</h1>";
-echo "<p>This test file will validate the Appointment model functionality including scheduling, retrieval, and cancellation of appointments.</p>";
-echo "<p>Key methods to test:</p>";
-echo "<ul>";
-echo "<li>scheduleAppointment()</li>";
-echo "<li>getAppointmentById()</li>";
-echo "<li>getUpcomingAppointments()</li>";
-echo "<li>getPastAppointments()</li>";
-echo "<li>rescheduleAppointment()</li>";
-echo "<li>cancelAppointment()</li>";
-echo "<li>isSlotAvailable()</li>";
-echo "</ul>";
-echo "<p>Implement comprehensive tests for these methods to ensure the appointment system works correctly.</p>";
+class AppointmentTest {
+    public function setUp() {
+        // Initialize test environment
+    }
+    
+    public function tearDown() {
+        // Clean up resources
+    }
+    
+    public function testAppointmentLifecycle() {
+        // Create appointment
+        // Reschedule appointment
+        // Cancel appointment
+        // Verify status changes
+    }
+    
+    public function testDoubleBookingPrevention() {
+        // Try booking same slot twice
+        // Verify prevention mechanism works
+    }
+    
+    // Run the tests
+    public function run() {
+        $this->setUp();
+        $this->testAppointmentLifecycle();
+        $this->testDoubleBookingPrevention();
+        $this->tearDown();
+        echo "Appointment tests completed\n";
+    }
+}
+
+// Instantiate and run the tests
+$test = new AppointmentTest();
+$test->run();

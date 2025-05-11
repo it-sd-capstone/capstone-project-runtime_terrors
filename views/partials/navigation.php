@@ -6,8 +6,10 @@ if (session_status() === PHP_SESSION_NONE) {
 $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['logged_in'] === true;
 $userRole = $isLoggedIn ? $_SESSION['role'] : '';
 $userName = $isLoggedIn ? ($_SESSION['name'] ?? ($_SESSION['email'] ?? 'User')) : '';
-$current_url = $_SERVER['REQUEST_URI'];
-$is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_url === '/' || $current_url === '/index.php');
+
+// Add null coalescing operator to handle CLI environment
+$current_url = $_SERVER['REQUEST_URI'] ?? '';
+$is_home_page = !empty($current_url) && (strpos($current_url, 'index.php/home') !== false || $current_url === '/' || $current_url === '/index.php');
 ?>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">

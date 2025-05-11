@@ -1,0 +1,40 @@
+parameters:
+    level: 9
+    paths:
+        - ../controllers
+        - ../models
+        - ../views
+    excludePaths:
+        - ../vendor
+    bootstrapFiles:
+        - ../core/helpers.php
+        - ../config/connection_bridge.php
+        - ../services/EmailService.php
+        - ../services/NotificationService.php
+        - ../public_html/bootstrap.php
+        - ../public_html/index.php
+        - phpstan-bootstrap.php
+    scanDirectories:
+        - ../views 
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Helper functions
+        - '#Function get_db not found#'
+        - '#Function redirect not found#'
+        - '#Function base_url not found#'
+        - '#Function csrf_field not found#'
+        - '#Function verify_csrf_token not found#'
+        - '#Function set_flash_message not found#'
+        
+        # Missing classes
+        - '#Instantiated class Service not found#'
+        - '#Constant [A-Z_]+ not found#'
+
+includes:
+    - ../vendor/phpstan/phpstan-deprecation-rules/rules.neon
+
+services:
+    -
+        class: PHPStan\Rules\DeadCode\UnusedPrivateMethodRule
+        tags:
+            - phpstan.rules.rule

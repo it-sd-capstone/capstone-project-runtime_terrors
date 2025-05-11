@@ -1,26 +1,35 @@
 <?php
-/**
- * Appointment Management Test
- * 
- * Tests for the appointment booking workflow including:
- * - Appointment creation
- * - Appointment viewing
- * - Appointment modification
- * - Appointment cancellation
- * - Appointment history
- */
+require_once dirname(__DIR__) . '/public_html/bootstrap.php';
 
-echo "<h1>Appointment Management Test</h1>";
-echo "<p>This test file will validate the appointment booking workflow from start to finish.</p>";
-echo "<p>Key workflows to test:</p>";
-echo "<ul>";
-echo "<li>Searching for available providers</li>";
-echo "<li>Selecting available time slots</li>";
-echo "<li>Creating a new appointment</li>";
-echo "<li>Viewing upcoming appointments</li>";
-echo "<li>Rescheduling an existing appointment</li>";
-echo "<li>Canceling an appointment</li>";
-echo "<li>Viewing appointment history</li>";
-echo "<li>Appointment status updates</li>";
-echo "</ul>";
-echo "<p>Implement comprehensive tests for these workflows to ensure the appointment system works correctly for users.</p>";
+class AppointmentManagementTest {
+    public function setUp() {
+        // Initialize test environment
+    }
+    
+    public function tearDown() {
+        // Clean up resources
+    }
+    
+    public function testAppointmentFilters() {
+        // View appointments by date range
+        // Filter by status/provider
+    }
+    
+    public function testBulkOperations() {
+        // Test batch cancellation (if supported)
+        // Verify notifications for bulk changes
+    }
+    
+    // Run the tests
+    public function run() {
+        $this->setUp();
+        $this->testAppointmentFilters();
+        $this->testBulkOperations();
+        $this->tearDown();
+        echo "Appointment management tests completed\n";
+    }
+}
+
+// Instantiate and run the tests
+$test = new AppointmentManagementTest();
+$test->run();

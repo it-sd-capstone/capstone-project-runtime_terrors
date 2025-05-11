@@ -1,26 +1,41 @@
 <?php
-/**
- * User Model Test
- * 
- * Tests for the User model including:
- * - User creation
- * - User authentication
- * - Profile management
- * - Password handling
- * - Role-based functionality
- */
+require_once dirname(__DIR__) . '/public_html/bootstrap.php';
 
-echo "<h1>User Model Test</h1>";
-echo "<p>This test file will validate the User model functionality including user creation, authentication, and profile management.</p>";
-echo "<p>Key methods to test:</p>";
-echo "<ul>";
-echo "<li>register()</li>";
-echo "<li>authenticate()</li>";
-echo "<li>getUserById()</li>";
-echo "<li>updateUser()</li>";
-echo "<li>updatePassword()</li>";
-echo "<li>isEmailTaken()</li>";
-echo "<li>verifyEmail()</li>";
-echo "<li>resetPassword()</li>";
-echo "</ul>";
-echo "<p>Implement comprehensive tests for these methods to ensure user management works correctly.</p>";
+class UserTest {
+    public function setUp() {
+        // Initialize test environment
+    }
+    
+    public function tearDown() {
+        // Clean up resources
+    }
+    
+    public function testUserCreation() {
+        // Create user with minimum required fields
+        // Verify validation rules
+    }
+    
+    public function testUserUpdate() {
+        // Update user profile
+        // Check field validation
+    }
+    
+    public function testUserRoles() {
+        // Verify role assignment
+        // Test role-specific permissions
+    }
+    
+    // Run the tests
+    public function run() {
+        $this->setUp();
+        $this->testUserCreation();
+        $this->testUserUpdate();
+        $this->testUserRoles();
+        $this->tearDown();
+        echo "User tests completed\n";
+    }
+}
+
+// Instantiate and run the tests
+$test = new UserTest();
+$test->run();

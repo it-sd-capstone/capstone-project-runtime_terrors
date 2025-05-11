@@ -33,8 +33,42 @@ class AuthController {
         $this->activityLogModel = new ActivityLog($this->db);
     }
     
-    private function setError($message) {
+    // private function setError($message) {
+        // $_SESSION['error'] = $message;
+    // }
+    
+    /**
+     * Set error message in session
+     */
+    private function setErrorMessage($message) {
         $_SESSION['error'] = $message;
+    }
+
+    /**
+     * Set success message in session
+     */
+    private function setSuccessMessage($message) {
+        $_SESSION['success'] = $message;
+    }
+
+    /**
+     * Load view with data
+     */
+    private function loadView($viewPath, $data = []) {
+        extract($data);
+        include VIEW_PATH . '/' . $viewPath . '.php';
+    }
+
+    /**
+     * Validate CSRF token
+     */
+    private function validateCsrfToken() {
+        if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+            $this->setErrorMessage('Invalid CSRF token');
+            redirect('auth/login');
+            return false;
+        }
+        return true;
     }
     
     public function index() {
@@ -163,26 +197,17 @@ class AuthController {
     
     /**
      * Resend verification email
-     * 
+     *
      * @param string $email User email
      * @return boolean Success flag
      */
     private function resendVerificationEmail($email) {
-        // Check if email exists and user is not verified
-        $stmt = $this->db->prepare("
-            SELECT user_id, first_name, last_name, email, email_verified_at, is_verified 
-            FROM users 
-            WHERE email = ?
-        ");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        // Use User model to get user by email
+        $user = $this->userModel->getUserByEmail($email);
         
-        if ($result->num_rows === 0) {
+        if (!$user) {
             return false; // Email doesn't exist
         }
-        
-        $user = $result->fetch_assoc();
         
         // Check if already verified
         if (!empty($user['email_verified_at']) || ($user['is_verified'] ?? 0) == 1) {
@@ -193,14 +218,12 @@ class AuthController {
         $token = bin2hex(random_bytes(32));
         $tokenExpires = date('Y-m-d H:i:s', strtotime('+24 hours'));
         
-        // Update token in database
-        $updateStmt = $this->db->prepare("
-            UPDATE users 
-            SET verification_token = ?, token_expires = ? 
-            WHERE user_id = ?
-        ");
-        $updateStmt->bind_param("ssi", $token, $tokenExpires, $user['user_id']);
-        $updateStmt->execute();
+        // Update token using User model
+        $updated = $this->userModel->updateVerificationToken($user['user_id'], $token, $tokenExpires);
+        
+        if (!$updated) {
+            return false; // Failed to update token
+        }
         
         // Send verification email
         $emailService = new EmailService();
@@ -209,12 +232,13 @@ class AuthController {
         
         // Log the activity
         if (method_exists($this, 'activityLogModel')) {
-            $this->activityLogModel->logAuth($user['user_id'], 'verification_resent', 
+            $this->activityLogModel->logAuth($user['user_id'], 'verification_resent',
                 "Verification email resent during login attempt, Status: " . ($emailSent ? "Success" : "Failed"));
         }
         
         return $emailSent;
     }
+
     
     
     public function register() {
@@ -396,24 +420,15 @@ class AuthController {
             return;
         }
         
-        // Fetch user with this verification token
-        $stmt = $this->db->prepare("
-            SELECT user_id, email, first_name, last_name, email_verified_at, token_expires 
-            FROM users 
-            WHERE verification_token = ?
-        ");
-        $stmt->bind_param("s", $token);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        // Use User model to fetch user by verification token
+        $user = $this->userModel->getUserByVerificationToken($token);
         
         // Check if token exists
-        if (!$result || $result->num_rows === 0) {
+        if (!$user) {
             $error = 'Invalid verification token. Please check your email and try the link again.';
             include VIEW_PATH . '/auth/verify.php';
             return;
         }
-        
-        $user = $result->fetch_assoc();
         
         // Check if account is already verified
         if (!empty($user['email_verified_at'])) {
@@ -428,39 +443,31 @@ class AuthController {
             $newToken = bin2hex(random_bytes(32));
             $tokenExpires = date('Y-m-d H:i:s', strtotime('+24 hours'));
             
-            // Update token in database
-            $updateStmt = $this->db->prepare("
-                UPDATE users 
-                SET verification_token = ?, token_expires = ? 
-                WHERE user_id = ?
-            ");
-            $updateStmt->bind_param("ssi", $newToken, $tokenExpires, $user['user_id']);
-            $updateStmt->execute();
+            // Use User model to update token
+            $updated = $this->userModel->updateVerificationToken($user['user_id'], $newToken, $tokenExpires);
             
-            // Send new verification email
-            $emailService = new EmailService();
-            $fullName = $user['first_name'] . ' ' . $user['last_name'];
-            $emailSent = $emailService->sendVerificationEmail($user['email'], $fullName, $newToken);
-            
-            $error = 'Your verification link has expired. We have sent a new verification email to your address.';
-            
-            // Log activity
-            if (method_exists($this, 'activityLogModel')) {
-                $this->activityLogModel->logAuth($user['user_id'], 'verification_resent', "New verification email sent due to expired token");
+            if ($updated) {
+                // Send new verification email
+                $emailService = new EmailService();
+                $fullName = $user['first_name'] . ' ' . $user['last_name'];
+                $emailSent = $emailService->sendVerificationEmail($user['email'], $fullName, $newToken);
+                
+                $error = 'Your verification link has expired. We have sent a new verification email to your address.';
+                
+                // Log activity
+                if (method_exists($this, 'activityLogModel')) {
+                    $this->activityLogModel->logAuth($user['user_id'], 'verification_resent', "New verification email sent due to expired token");
+                }
+            } else {
+                $error = 'There was an error processing your verification. Please try again later.';
             }
             
             include VIEW_PATH . '/auth/verify.php';
             return;
         }
         
-        // Mark account as verified
-        $updateStmt = $this->db->prepare("
-            UPDATE users 
-            SET email_verified_at = NOW(), verification_token = NULL, token_expires = NULL, is_verified = 1 
-            WHERE user_id = ?
-        ");
-        $updateStmt->bind_param("i", $user['user_id']);
-        $success = $updateStmt->execute();
+        // Mark account as verified using User model
+        $success = $this->userModel->markEmailAsVerified($user['user_id']);
         
         if ($success) {
             // Log the verification
@@ -476,6 +483,7 @@ class AuthController {
         
         include VIEW_PATH . '/auth/verify.php';
     }
+
     
     /**
      * Helper function to sanitize input
@@ -506,62 +514,45 @@ class AuthController {
             return;
         }
         
-        // Check if email exists in database
-        $stmt = $this->db->prepare("
-            SELECT user_id, first_name, last_name, email 
-            FROM users 
-            WHERE email = ? AND is_active = 1
-        ");
-        
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        // Use existing User model method to handle password reset request
+        // This method already checks if email exists, generates token and updates database
+        $resetRequest = $this->userModel->requestPasswordReset($email);
         
         // Always show success message even if email doesn't exist (security best practice)
-        if ($result->num_rows === 0) {
+        if (!$resetRequest) {
             $this->setSuccessMessage('If your email is registered, you will receive instructions to reset your password.');
             redirect('auth/login');
             return;
         }
         
-        $user = $result->fetch_assoc();
+        // Get user data for logging
+        $user = $this->userModel->getUserByEmail($email);
         
-        // Generate reset token
-        $token = bin2hex(random_bytes(32));
-        $token_expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
-        
-        // Store token in database
-        $updateStmt = $this->db->prepare("
-            UPDATE users 
-            SET reset_token = ?, token_expires = ? 
-            WHERE user_id = ?
-        ");
-        
-        $updateStmt->bind_param("ssi", $token, $token_expires, $user['user_id']);
-        $updateStmt->execute();
-        
-        // Send password reset email
-        $emailService = new EmailService();
-        $fullName = $user['first_name'] . ' ' . $user['last_name'];
-        $emailSent = $emailService->sendPasswordResetEmail($email, $fullName, $token);
-        
-        // Log the activity
-        if (method_exists($this, 'logActivity')) {
-            $this->logActivity($user['user_id'], 'password_reset_request', 
-                              "Password reset requested, Email sent: " . ($emailSent ? 'Yes' : 'No'));
-        }
-        
-        // Set success message
-        $this->setSuccessMessage('Password reset instructions have been sent to your email.');
-        
-        // For development, also show the link directly
-        if (ENVIRONMENT === 'development') {
-            $resetUrl = base_url("index.php/auth/reset_password?token=$token");
-            $this->setSuccessMessage('For development: <a href="' . $resetUrl . '">Reset password now</a>');
+        if ($user) {
+            // Send password reset email
+            $emailService = new EmailService();
+            $fullName = $user['first_name'] . ' ' . $user['last_name'];
+            $emailSent = $emailService->sendPasswordResetEmail($email, $fullName, $resetRequest['token']);
+            
+            // Log the activity
+            if (method_exists($this, 'logActivity')) {
+                $this->logActivity($user['user_id'], 'password_reset_request',
+                            "Password reset requested, Email sent: " . ($emailSent ? 'Yes' : 'No'));
+            }
+            
+            // Set success message
+            $this->setSuccessMessage('Password reset instructions have been sent to your email.');
+            
+            // For development, also show the link directly
+            if (ENVIRONMENT === 'development') {
+                $resetUrl = base_url("index.php/auth/reset_password?token=" . $resetRequest['token']);
+                $this->setSuccessMessage('For development: <a href="' . $resetUrl . '">Reset password now</a>');
+            }
         }
         
         redirect('auth/login');
     }
+
 
     /**
      * Display reset password form
@@ -624,61 +615,30 @@ class AuthController {
             return;
         }
         
-        if (strlen($password) < 8) {
-            $this->setErrorMessage('Password must be at least 8 characters.');
-            redirect('auth/reset_password?token=' . urlencode($token));
-            return;
-        }
-        
         if ($password !== $confirm_password) {
             $this->setErrorMessage('Passwords do not match.');
             redirect('auth/reset_password?token=' . urlencode($token));
             return;
         }
         
-        // Check if token exists and is valid
-        $stmt = $this->db->prepare("
-            SELECT user_id, token_expires 
-            FROM users 
-            WHERE reset_token = ?
-        ");
+        // Use the existing User model method to reset the password
+        // This method already handles validation, token verification, hashing, and DB update
+        $result = $this->userModel->resetPassword($token, $password);
         
-        $stmt->bind_param("s", $token);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows === 0) {
-            $this->setErrorMessage('Invalid reset token.');
-            redirect('auth/login');
+        if (is_array($result) && isset($result['error'])) {
+            // If there's an error, show it to the user
+            $this->setErrorMessage($result['error']);
+            redirect('auth/reset_password?token=' . urlencode($token));
             return;
         }
         
-        $user = $result->fetch_assoc();
-        
-        // Check if token is expired
-        if (strtotime($user['token_expires']) < time()) {
-            $this->setErrorMessage('Reset token has expired. Please request a new one.');
-            redirect('auth/forgot_password');
-            return;
-        }
-        
-        // Hash new password
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        
-        // Update password and clear reset token
-        $updateStmt = $this->db->prepare("
-            UPDATE users 
-            SET password = ?, reset_token = NULL, token_expires = NULL, updated_at = NOW() 
-            WHERE user_id = ?
-        ");
-        
-        $updateStmt->bind_param("si", $hashed_password, $user['user_id']);
-        $success = $updateStmt->execute();
-        
-        if ($success) {
+        if ($result === true) {
+            // Get user data for activity logging
+            $userId = $this->getUserIdByResetToken($token);
+            
             // Log the activity
-            if (method_exists($this, 'logActivity')) {
-                $this->logActivity($user['user_id'], 'password_reset', "Password was reset successfully");
+            if (method_exists($this, 'logActivity') && $userId) {
+                $this->logActivity($userId, 'password_reset', "Password was reset successfully");
             }
             
             $this->setSuccessMessage('Your password has been reset successfully. You can now log in with your new password.');
@@ -686,6 +646,31 @@ class AuthController {
         } else {
             $this->setErrorMessage('An error occurred while resetting your password. Please try again.');
             redirect('auth/reset_password?token=' . urlencode($token));
+        }
+    }
+
+    /**
+     * Helper method to get user ID by reset token
+     * (This is needed because after reset, the token is cleared)
+     */
+    private function getUserIdByResetToken($token) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT user_id FROM users 
+                WHERE reset_token = ?
+            ");
+            $stmt->bind_param("s", $token);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result && $result->num_rows > 0) {
+                $user = $result->fetch_assoc();
+                return $user['user_id'];
+            }
+            return null;
+        } catch (Exception $e) {
+            error_log("Error getting user ID by reset token: " . $e->getMessage());
+            return null;
         }
     }
     

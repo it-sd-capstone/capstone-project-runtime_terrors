@@ -29,10 +29,15 @@ class ApiController {
         
         // Initialize response array
         $events = [];
+
         
-        // Debug logging
-        error_log("Fetching availability for provider $provider_id from $start_date to $end_date" . 
-                ($service_id ? " for service $service_id" : ""));
+        $provider = $this->providerModel->getProviderById($provider_id);
+        
+        if (!$provider) {
+            error_log("ERROR: Provider with ID $provider_id not found in database");
+            echo json_encode([]);
+            exit;
+        }
         
         try {
             // First, check if service-specific slots exist for this service
@@ -55,50 +60,26 @@ class ApiController {
                     ? "Found service-specific availability for service_id: $service_id" 
                     : "No service-specific slots found for service_id: $service_id, using general availability");
             }
-            
-            // 1. Get one-time availability (non-recurring slots)
-            $oneTimeQuery = "
-                SELECT
-                    a.availability_id,
-                    a.provider_id,
-                    a.availability_date,
-                    a.start_time,
-                    a.end_time,
-                    a.is_available,
-                    a.is_recurring,
-                    a.service_id
-                FROM
-                    provider_availability a
-                WHERE
-                    a.provider_id = ?
-                    AND a.availability_date BETWEEN ? AND ?
-                    AND a.is_available = 1
-                    AND a.is_recurring = 0
-                    AND NOT EXISTS (
-                        SELECT 1 FROM appointments
-                        WHERE
-                            provider_id = a.provider_id AND
-                            appointment_date = a.availability_date AND
-                            start_time = a.start_time AND
-                            status != 'canceled'
-                    )
-            ";
-            
-            // Add service filter - if service-specific slots exist, only show those
-            // Otherwise, show general availability (NULL) slots
-            if ($service_id) {
-                if ($serviceSpecificExists) {
-                    $oneTimeQuery .= " AND a.service_id = ?";
-                } else {
-                    $oneTimeQuery .= " AND (a.service_id = ? OR a.service_id IS NULL)";
-                }
-            }
-            
-            $stmt = $this->db->prepare($oneTimeQuery);
-            if ($service_id) {
-                $stmt->bind_param("issi", $provider_id, $start_date, $end_date, $service_id);
-            } else {
-                $stmt->bind_param("iss", $provider_id, $start_date, $end_date);
+
+        }
+        
+        // Get provider availability
+        $schedules = $this->providerModel->getAvailability($provider_id);
+        
+        
+        $appointments = $this->appointmentModel->getByProvider($provider_id);
+        error_log("Found " . count($appointments) . " appointments for provider $provider_id");
+        
+        $calendarEvents = [];
+        $processedCount = 0;
+        $skippedCount = 0;
+        $filteredDate = date('Y-m-d', strtotime($date)); // Normalize date format
+        
+        foreach ($schedules as $index => $schedule) {
+            // Filter by the requested date
+            if (isset($schedule['availability_date']) && $schedule['availability_date'] != $filteredDate) {
+                // Skip slots that don't match our requested date
+                continue;
             }
             
             $stmt->execute();
