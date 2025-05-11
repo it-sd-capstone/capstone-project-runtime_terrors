@@ -708,4 +708,37 @@ class Services {
         
         return $services;
     }
+
+    /**
+     * Edit a provider's service (custom duration and notes)
+     *
+     * @param int $provider_service_id
+     * @param int|null $custom_duration
+     * @param string|null $custom_notes
+     * @return bool Success flag
+     */
+    public function editService($provider_service_id, $custom_duration = null, $custom_notes = null) {
+        try {
+            $query = "UPDATE provider_services SET custom_duration = ?, custom_notes = ? WHERE provider_service_id = ?";
+            if ($this->db instanceof mysqli) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bind_param(
+                    "ssi",
+                    $custom_duration,
+                    $custom_notes,
+                    $provider_service_id
+                );
+                return $stmt->execute();
+            } elseif ($this->db instanceof PDO) {
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(1, $custom_duration, PDO::PARAM_STR);
+                $stmt->bindParam(2, $custom_notes, PDO::PARAM_STR);
+                $stmt->bindParam(3, $provider_service_id, PDO::PARAM_INT);
+                return $stmt->execute();
+            }
+        } catch (Exception $e) {
+            error_log("Error in editProviderService: " . $e->getMessage());
+        }
+        return false;
+    }
 }

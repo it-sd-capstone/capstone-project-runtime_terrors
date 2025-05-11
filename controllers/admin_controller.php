@@ -748,7 +748,7 @@ class AdminController {
     
     public function providers() {
         // Get all providers with their profile details using the provider model
-        $providers = $this->providerModel->getAllProvidersWithDetails();
+        $providers = $this->providerModel->getById();
         
         // If providers are empty, use a more specific provider method
         if (empty($providers)) {
