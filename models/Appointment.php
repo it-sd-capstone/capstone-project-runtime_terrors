@@ -746,6 +746,79 @@ class Appointment {
         }
         return $slots;
     }
+    /**
+     * Update an appointment with all details.
+     * @param int $appointment_id The ID of the appointment to update
+     * @param array $appointmentData Array containing appointment data
+     * @return bool True on success, false on failure
+     */
+    public function updateAppointment($appointment_id, $appointmentData) {
+        try {
+            $query = "UPDATE appointments SET ";
+            $params = [];
+            $types = "";
+            
+            $allowedFields = [
+                'patient_id' => 'i',
+                'provider_id' => 'i',
+                'service_id' => 'i',
+                'appointment_date' => 's',
+                'start_time' => 's',
+                'end_time' => 's',
+                'status' => 's',
+                'type' => 's',
+                'notes' => 's',
+                'reason' => 's'
+            ];
+            
+            $updateParts = [];
+            
+            foreach ($allowedFields as $field => $paramType) {
+                if (isset($appointmentData[$field])) {
+                    $updateParts[] = "$field = ?";
+                    $params[] = $appointmentData[$field];
+                    $types .= $paramType;
+                }
+            }
+            
+            // Add updated_at timestamp
+            $updateParts[] = "updated_at = NOW()";
+            
+            if (empty($updateParts)) {
+                error_log("No fields to update in appointment");
+                return false;
+            }
+            
+            $query .= implode(", ", $updateParts);
+            $query .= " WHERE appointment_id = ?";
+            $params[] = $appointment_id;
+            $types .= "i";
+            
+            $stmt = $this->db->prepare($query);
+            
+            if (!$stmt) {
+                error_log("SQL prepare error in updateAppointment: " . $this->db->error);
+                return false;
+            }
+            
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                error_log("SQL execution error in updateAppointment: " . $stmt->error);
+                return false;
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Exception updating appointment: " . $e->getMessage());
+            return false;
+        }
+    }
+
 
     /**
      * Get appointment counts by type.

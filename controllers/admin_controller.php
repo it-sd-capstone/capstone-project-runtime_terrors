@@ -112,31 +112,15 @@ class AdminController {
                         exit;
                     }
                     
-                    
-                    // Begin transaction for safe deletion
-                    $this->db->begin_transaction();
-                    
-                    try {
-                        // Use model methods for deletion
-                        $this->appointmentModel->deleteAppointmentsByUser($userId);
-                        
-                        if ($user['role'] === 'provider') {
-                            $this->providerModel->deleteProviderAvailability($userId);
-                            $this->providerModel->deleteProviderProfile($userId);
-                        } elseif ($user['role'] === 'patient') {
-                            $this->userModel->deletePatientProfile($userId);
-                        }
-                        
-                        $this->userModel->deleteUser($userId);
-                        
+                    // Replace multiple delete calls with one comprehensive deletion
+                    $success = $this->userModel->deleteUserComprehensive($userId);
+
+                    if ($success) {
                         // Log the activity
                         $this->activityLogModel->logUserDeletion($userId, $_SESSION['user_id']);
-                        
-                        // Commit is handled by the models
                         $_SESSION['success'] = "User has been permanently deleted";
-                    } catch (Exception $e) {
-                        error_log("Error deleting user ID {$userId}: " . $e->getMessage());
-                        $_SESSION['error'] = "Error deleting user: " . $e->getMessage();
+                    } else {
+                        $_SESSION['error'] = "Failed to delete user. Check server logs for details.";
                     }
                     
                     // Redirect back to user list
@@ -623,7 +607,7 @@ class AdminController {
                     }
                     if (empty($errors)) {
                         // First get the existing appointment
-                        $appointment = $this->appointmentModel->getAppointmentById($id);
+                        $appointment = $this->appointmentModel->getById($id);
                         
                         if (!$appointment) {
                             $_SESSION['error'] = "Appointment not found";
@@ -663,7 +647,7 @@ class AdminController {
                 // Get appointment details for editing
                 try {
                     // Get appointment details using the model
-                    $appointment = $this->appointmentModel->getAppointmentById($id);
+                    $appointment = $this->appointmentModel->getById($id);
                     
                     if (!$appointment) {
                         $_SESSION['error'] = "Appointment not found";
@@ -727,7 +711,7 @@ class AdminController {
     
     public function providers() {
         // Get all providers with their profile details using the provider model
-        $providers = $this->providerModel->getAllProvidersWithDetails();
+        $providers = $this->providerModel->getbyId($provider_id);
         
         // If providers are empty, use a more specific provider method
         if (empty($providers)) {

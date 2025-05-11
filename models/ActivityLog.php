@@ -309,7 +309,75 @@ class ActivityLog {
             error_log("Error ensuring columns exist: " . $e->getMessage());
         }
     }
-    
+    /**
+     * Log a user deletion activity
+     * 
+     * @param int $deletedUserId The ID of the user being deleted
+     * @param int $performedByUserId The ID of the user performing the deletion
+     * @return bool True on successful logging, false otherwise
+     */
+    public function logUserDeletion($deletedUserId, $performedByUserId) {
+        try {
+            // Get information about the deleted user for more detailed logging
+            $userData = null;
+            $userStmt = $this->db->prepare("
+                SELECT CONCAT(first_name, ' ', last_name) as full_name, email, role
+                FROM users 
+                WHERE user_id = ?
+            ");
+            
+            if ($userStmt) {
+                $userStmt->bind_param("i", $deletedUserId);
+                $userStmt->execute();
+                $result = $userStmt->get_result();
+                if ($result->num_rows > 0) {
+                    $userData = $result->fetch_assoc();
+                }
+            }
+            
+            // Create the description of the activity
+            $description = "User deleted";
+            if ($userData) {
+                $description = "User deleted: {$userData['full_name']} ({$userData['email']}, role: {$userData['role']})";
+            }
+            
+            // Prepare additional details as JSON
+            $details = json_encode([
+                'deleted_user_id' => $deletedUserId,
+                'performed_by' => $performedByUserId,
+                'user_data' => $userData
+            ]);
+            
+            // Insert the activity log record
+            $stmt = $this->db->prepare("
+                INSERT INTO activity_log 
+                (user_id, description, category, ip_address, details, related_id, related_type) 
+                VALUES (?, ?, 'security', ?, ?, ?, 'user')
+            ");
+            
+            if (!$stmt) {
+                error_log("SQL prepare error in logUserDeletion: " . $this->db->error);
+                return false;
+            }
+            
+            // Get the IP address of the current request
+            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+            
+            $stmt->bind_param("isssi", $performedByUserId, $description, $ipAddress, $details, $deletedUserId);
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                error_log("Error logging user deletion: " . $stmt->error);
+                return false;
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Exception logging user deletion: " . $e->getMessage());
+            return false;
+        }
+    }
+
     /**
      * Get activity logs for a specific appointment
      * 
