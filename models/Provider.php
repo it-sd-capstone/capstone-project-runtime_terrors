@@ -1496,6 +1496,55 @@ class Provider {
             return false;
         }
     }
+    /**
+     * Create a provider profile
+     * 
+     * @param int $providerId The user ID of the provider
+     * @param array $profileData Profile data (specialization, title, bio, etc.)
+     * @return bool True on success, false on failure
+     */
+    public function createProviderProfile($providerId, $profileData) {
+        try {
+            // Prepare default values
+            $specialization = $profileData['specialization'] ?? '';
+            $title = $profileData['title'] ?? '';
+            $bio = $profileData['bio'] ?? '';
+            $acceptingNewPatients = isset($profileData['accepting_new_patients']) ? 1 : 0;
+            $maxPatientsPerDay = $profileData['max_patients_per_day'] ?? 20;
+
+            // Create the SQL query - note we're not including user_id column
+            $query = "INSERT INTO provider_profiles 
+                    (provider_id, specialization, title, bio, accepting_new_patients, max_patients_per_day) 
+                    VALUES (?, ?, ?, ?, ?, ?)";
+            
+            $stmt = $this->db->prepare($query);
+            if (!$stmt) {
+                error_log("Provider profile prepare error: " . $this->db->error);
+                return false;
+            }
+            
+            $stmt->bind_param("isssii", 
+                $providerId, 
+                $specialization, 
+                $title, 
+                $bio, 
+                $acceptingNewPatients,
+                $maxPatientsPerDay
+            );
+            
+            $result = $stmt->execute();
+            if (!$result) {
+                error_log("Provider profile execute error: " . $stmt->error);
+                return false;
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Provider profile creation error: " . $e->getMessage());
+            return false;
+        }
+    }
+
 
     /**
      * Add a new provider with profile
