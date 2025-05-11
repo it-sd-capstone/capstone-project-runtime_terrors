@@ -499,8 +499,8 @@ CREATE TABLE IF NOT EXISTS `provider_profiles` (
 --
 
 INSERT INTO `provider_profiles` (`profile_id`, `provider_id`, `specialization`, `title`, `bio`, `accepting_new_patients`, `max_patients_per_day`, `profile_image`, `created_at`, `updated_at`) VALUES
-(1, 16, 'Practisioner', 'MD', 'Hello', 1, 20, NULL, '2025-04-23 01:16:51', '2025-04-23 01:16:51'),
-(2, 2, 'General Medicine', NULL, 'Experienced general practitioner', 0, 0, NULL, '2025-05-04 20:15:52', '2025-05-05 02:41:47');
+(1, 16, '', 'MD', 'Hello', 1, 20, NULL, '2025-04-23 01:16:51', '2025-04-23 01:16:51'),
+(2, 2, 'GeneralPractitioner Medicine', NULL, 'Experienced general practitioner', 0, 0, NULL, '2025-05-04 20:15:52', '2025-05-05 02:41:47');
 
 -- --------------------------------------------------------
 
