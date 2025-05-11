@@ -56,6 +56,21 @@ try {
         }
         exit;
     }
+
+    // Special case for legal pages (terms and privacy)
+    if ($controller_name == 'terms') {
+        require_once APP_ROOT . '/controllers/LegalController.php';
+        $controller = new LegalController();
+        $controller->terms();
+        exit;
+    }
+
+    if ($controller_name == 'privacy') {
+        require_once APP_ROOT . '/controllers/LegalController.php';
+        $controller = new LegalController();
+        $controller->privacy();
+        exit;
+    }
    
     // Debug controller loading
     $controller_file = APP_ROOT . '/controllers/' . strtolower($controller_name) . '_controller.php';
