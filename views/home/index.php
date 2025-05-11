@@ -6,7 +6,7 @@ if (!defined('APP_ROOT')) {
 
 // Determine user role
 $isLoggedIn = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
-$userRole = $isLoggedIn ? $_SESSION['role'] : 'guest';
+$role = $isLoggedIn ? $_SESSION['role'] : 'guest';
 $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . $_SESSION['last_name']) : '';
 ?>
 <!DOCTYPE html>
@@ -162,13 +162,13 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
             <!-- Personalized welcome message for logged-in users -->
             <h1 class="display-4 fw-bold mb-3">Welcome back, <?= htmlspecialchars($userName) ?>!</h1>
             
-            <?php if ($userRole === 'patient'): ?>
+            <?php if ($role === 'patient'): ?>
                 <p class="lead mb-4">Ready to schedule your next appointment?</p>
-                <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-light btn-lg px-4 fw-bold">Book Appointment</a>
-            <?php elseif ($userRole === 'provider'): ?>
+                <a href="<?= base_url('index.php/patient/selectService') ?>" class="btn btn-light btn-lg px-4 fw-bold">Book Appointment</a>
+            <?php elseif ($role === 'provider'): ?>
                 <p class="lead mb-4">Manage your schedule and patient appointments</p>
                 <a href="<?= base_url('index.php/provider/schedule') ?>" class="btn btn-light btn-lg px-4 fw-bold">Manage Schedule</a>
-            <?php elseif ($userRole === 'admin'): ?>
+            <?php elseif ($role === 'admin'): ?>
                 <p class="lead mb-4">Manage the appointment system</p>
                 <a href="<?= base_url('index.php/admin') ?>" class="btn btn-light btn-lg px-4 fw-bold">Admin Dashboard</a>
             <?php endif; ?>
@@ -183,382 +183,52 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
         <?php endif; ?>
     </div>
     </section>
-
-    <!-- User-Specific Dashboard Section -->
-    <?php if ($isLoggedIn): ?>
-    <section class="container user-dashboard">
-        <?php if ($userRole === 'patient'): ?>
-            <h2 class="mb-4">Your Upcoming Appointments</h2>
-            
-            <?php if (empty($upcomingAppointments)): ?>
-                <div class="alert alert-info">
-                    <p class="mb-0">You have no upcoming appointments scheduled. Would you like to book one?</p>
-                </div>
-                <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-primary">Book Now</a>
-            <?php else: ?>
-                <div class="row">
-                    <?php foreach ($upcomingAppointments as $appointment): ?>
-                        <div class="col-md-4 mb-3">
-                            <div class="appointment-card">
-                                <h5><?= htmlspecialchars($appointment['service_name'] ?? 'Appointment') ?></h5>
-                                <div class="d-flex justify-content-between">
-                                    <span class="text-muted">
-                                        <i class="fas fa-calendar me-2"></i>
-                                        <?= date('M d, Y', strtotime($appointment['appointment_date'])) ?>
-                                    </span>
-                                    <span class="badge bg-primary"><?= htmlspecialchars($appointment['status'] ?? 'Scheduled') ?></span>
-                                </div>
-                                <p class="mb-1">
-                                    <i class="fas fa-clock me-2"></i>
-                                    <?= date('g:i A', strtotime($appointment['start_time'])) ?> - 
-                                    <?= date('g:i A', strtotime($appointment['end_time'])) ?>
-                                </p>
-                                <p class="mb-2">
-                                    <i class="fas fa-user-md me-2"></i>
-                                    Dr. <?= htmlspecialchars($appointment['provider_first_name'] ?? '') ?> 
-                                    <?= htmlspecialchars($appointment['provider_last_name'] ?? '') ?>
-                                </p>
-                                <div class="mt-2">
-                                <a href="<?= base_url('index.php/appointments/history?id=' . $appointment['appointment_id']) ?>" 
-                                class="btn btn-info btn-sm">Details</a>
-                                    <?php if ($appointment['status'] === 'scheduled' && ($appointment['patient_id'] == $_SESSION['user_id'] || $_SESSION['role'] === 'admin')): ?>
-                                        <a href="<?= base_url('index.php/appointments/cancel?id=' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-danger ms-1">Cancel</a>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-primary mt-3">View All Appointments</a>
-            <?php endif; ?>
-
-        <?php elseif ($userRole === 'provider'): ?>
-            <h2 class="mb-4">Today's Schedule</h2>
-            
-            <?php if (empty($upcomingAppointments)): ?>
-                <div class="alert alert-info">
-                    <p class="mb-0">You have no appointments scheduled for today.</p>
-                </div>
-            <?php else: ?>
-                <div class="row mb-4">
-                    <?php foreach ($upcomingAppointments as $appointment): ?>
-                        <div class="col-md-4 mb-3">
-                            <div class="appointment-card">
-                                <h5><?= htmlspecialchars($appointment['service_name'] ?? 'Appointment') ?></h5>
-                                <p class="mb-1">
-                                    <i class="fas fa-clock me-2"></i>
-                                    <?= date('g:i A', strtotime($appointment['start_time'])) ?> - 
-                                    <?= date('g:i A', strtotime($appointment['end_time'])) ?>
-                                </p>
-                                <p class="mb-2">
-                                    <i class="fas fa-user me-2"></i>
-                                    <?= htmlspecialchars($appointment['patient_first_name'] ?? '') ?> 
-                                    <?= htmlspecialchars($appointment['patient_last_name'] ?? '') ?>
-                                </p>
-                                <div class="mt-2">
-                                    <a href="<?= base_url('index.php/provider/appointments/details/' . $appointment['appointment_id']) ?>" class="btn btn-sm btn-outline-primary">Details</a>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-            
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <h3>Your Availability</h3>
-                    <?php if (empty($availabilityData)): ?>
-                        <div class="alert alert-warning">
-                            <p class="mb-0">You haven't set your availability for upcoming dates.</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($availabilityData as $availability): ?>
-                            <div class="availability-slot">
-                                <div class="d-flex justify-content-between">
-                                    <span><i class="fas fa-calendar me-2"></i> <?= date('M d, Y', strtotime($availability['available_date'])) ?></span>
-                                    <span class="badge bg-success">Available</span>
-                                </div>
-                                <p class="mb-0">
-                                    <i class="fas fa-clock me-2"></i>
-                                    <?= date('g:i A', strtotime($availability['start_time'])) ?> - 
-                                    <?= date('g:i A', strtotime($availability['end_time'])) ?>
-                                </p>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                    <a href="<?= base_url('index.php/provider/manage_availability') ?>" class="btn btn-success mt-3">Manage Availability</a>
-                </div>
-                <div class="col-md-6">
-                    <h3>Quick Actions</h3>
-                    <div class="d-grid gap-2">
-                        <a href="<?= base_url('index.php/provider/appointments') ?>" class="btn btn-primary">View All Appointments</a>
-                        <a href="<?= base_url('index.php/provider/schedule') ?>" class="btn btn-success">Add New Availability</a>
-                        <a href="<?= base_url('index.php/provider/profile') ?>" class="btn btn-outline-secondary">Update Profile</a>
-                    </div>
-                </div>
-            </div>
-
-        <?php elseif ($userRole === 'admin'): ?>
-            <h2 class="mb-4">System Overview</h2>
-            
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="stat-card blue">
-                        <h2><?= $dashboardStats['total_appointments'] ?? 0 ?></h2>
-                        <p>Total Appointments</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card green">
-                        <h2><?= $dashboardStats['appointments_today'] ?? 0 ?></h2>
-                        <p>Today's Appointments</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card yellow">
-                        <h2><?= $dashboardStats['active_patients'] ?? 0 ?></h2>
-                        <p>Active Patients</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card red">
-                        <h2><?= $dashboardStats['active_providers'] ?? 0 ?></h2>
-                        <p>Active Providers</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-12">
-                    <h3>Quick Actions</h3>
-                    <div class="d-flex flex-wrap gap-2">
-                        <a href="<?= base_url('index.php/admin') ?>" class="btn btn-primary">Admin Dashboard</a>
-                        <a href="<?= base_url('index.php/admin/users') ?>" class="btn btn-outline-primary">Manage Users</a>
-                        <a href="<?= base_url('index.php/admin/appointments') ?>" class="btn btn-outline-success">Manage Appointments</a>
-                        <a href="<?= base_url('index.php/admin/services') ?>" class="btn btn-outline-secondary">Manage Services</a>
-                    </div>
-                </div>
-            </div>
-        <?php endif; ?>
-    </section>
-    <?php endif; ?>
-
-    <?php if ($userRole === 'provider' || $userRole === 'admin'): ?>
-    <!-- Patient Insights for Providers/Admins -->
-    <section class="py-5">
+    <!-- For guests/non-logged in users -->
+    <section class="py-5 bg-light">
         <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="display-6 fw-bold">Patient Insights</h2>
-                <p class="lead">Understanding your patient needs and patterns</p>
-            </div>
-            
-            <div class="row g-4">
-                <!-- Appointment Trends Card -->
-                <div class="col-md-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="service-icon">
-                                <i class="fas fa-chart-line"></i>
-                            </div>
-                            <h3 class="h4">Appointment Trends</h3>
-                            <p>
-                                <?php if (!empty($patientInsights['trends']['busiest_days'])): ?>
-                                    <?= implode(' and ', $patientInsights['trends']['busiest_days']) ?> 
-                                    <?= count($patientInsights['trends']['busiest_days']) > 1 ? 'are' : 'is' ?> your busiest 
-                                    <?= count($patientInsights['trends']['busiest_days']) > 1 ? 'days' : 'day' ?> with 
-                                    <?= $patientInsights['trends']['busiest_times']['percentage'] ?>% of appointments scheduled during the 
-                                    <?= $patientInsights['trends']['busiest_times']['time'] ?>.
-                                <?php else: ?>
-                                    Monday and Wednesday mornings are your busiest times with 65% of appointments scheduled between 9-11 AM.
-                                <?php endif; ?>
-                            </p>
-                            <div class="mt-3">
-                                <div class="progress mb-2">
-                                    <div class="progress-bar bg-primary" role="progressbar" 
-                                         style="width: <?= $patientInsights['trends']['busiest_times']['percentage'] ?? 65 ?>%" 
-                                         aria-valuenow="<?= $patientInsights['trends']['busiest_times']['percentage'] ?? 65 ?>" 
-                                         aria-valuemin="0" aria-valuemax="100">
-                                        <?= $patientInsights['trends']['busiest_times']['percentage'] ?? 65 ?>%
-                                    </div>
-                                </div>
-                                <small class="text-muted">
-                                    <?= ucfirst($patientInsights['trends']['busiest_times']['time'] ?? 'Morning') ?> appointment concentration
-                                </small>
-                            </div>
-                        </div>
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h2 class="display-5 fw-bold mb-3">Looking for Healthcare Services?</h2>
+                    <p class="lead mb-4">Sign up or log in to schedule appointments with our healthcare professionals.</p>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        <a href="<?= base_url('index.php/auth/register') ?>" class="btn btn-primary btn-lg px-4 me-md-2">
+                            <i class="fas fa-user-plus me-2"></i>Sign Up
+                        </a>
+                        <a href="<?= base_url('index.php/auth/login') ?>" class="btn btn-outline-primary btn-lg px-4">
+                            <i class="fas fa-sign-in-alt me-2"></i>Log In
+                        </a>
                     </div>
                 </div>
-                
-                <!-- Demographics Card -->
-                <div class="col-md-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="service-icon">
-                                <i class="fas fa-user-friends"></i>
-                            </div>
-                            <h3 class="h4">Demographics</h3>
-                            <?php
-                            // Find largest age group
-                            $largest_group = '';
-                            $largest_percentage = 0;
-                            foreach ($patientInsights['demographics']['age_groups'] ?? [] as $group => $data) {
-                                if ($data['percentage'] > $largest_percentage) {
-                                    $largest_percentage = $data['percentage'];
-                                    $largest_group = $group;
-                                }
-                            }
-                            ?>
-                            <p>
-                                <?php if (!empty($patientInsights['demographics']['age_groups']) && $largest_percentage > 0): ?>
-                                    Your patient base is primarily ages <?= $largest_group ?> (<?= $largest_percentage ?>%),
-                                    with growing numbers in the 25-35 age range.
-                                <?php else: ?>
-                                    Your patient base is primarily ages 35-65 (72%), with growing numbers in the 25-35 age range.
-                                <?php endif; ?>
-                            </p>
-                            <div class="mt-3 text-start">
-                                <?php foreach ($patientInsights['demographics']['age_groups'] ?? [] as $group => $data): 
-                                    if ($data['percentage'] > 0): 
-                                        // Set color based on age group
-                                        $color = $group === '25-35' ? 'success' : 
-                                               ($group === '35-65' ? 'primary' : 'warning');
-                                ?>
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span>Ages <?= $group ?></span>
-                                        <span><?= $data['percentage'] ?>%</span>
-                                    </div>
-                                    <div class="progress mb-2" style="height: 10px;">
-                                        <div class="progress-bar bg-<?= $color ?>" role="progressbar" 
-                                             style="width: <?= $data['percentage'] ?>%" 
-                                             aria-valuenow="<?= $data['percentage'] ?>" 
-                                             aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                <?php 
-                                    endif;
-                                endforeach; 
-                                
-                                // If no data, show fallback values
-                                if (empty($patientInsights['demographics']['age_groups']) || 
-                                    count(array_filter($patientInsights['demographics']['age_groups'], 
-                                        function($g) { return $g['percentage'] > 0; })) === 0): 
-                                ?>
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span>Ages 25-35</span>
-                                        <span>18%</span>
-                                    </div>
-                                    <div class="progress mb-2" style="height: 10px;">
-                                        <div class="progress-bar bg-success" role="progressbar" style="width: 18%" aria-valuenow="18" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                    
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span>Ages 35-65</span>
-                                        <span>72%</span>
-                                    </div>
-                                    <div class="progress mb-2" style="height: 10px;">
-                                        <div class="progress-bar bg-primary" role="progressbar" style="width: 72%" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                    
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span>Ages 65+</span>
-                                        <span>10%</span>
-                                    </div>
-                                    <div class="progress mb-2" style="height: 10px;">
-                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 10%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Satisfaction Rating Card -->
-                <div class="col-md-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="service-icon">
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <h3 class="h4">Satisfaction Rating</h3>
-                            <p>
-                                <?php if (isset($patientInsights['satisfaction']) && $patientInsights['satisfaction']['average'] > 0): ?>
-                                    Your patient satisfaction rating is <?= $patientInsights['satisfaction']['average'] ?>/5.0
-                                    <?php if ($patientInsights['satisfaction']['average'] >= 4.5): ?>
-                                        , with especially high marks for appointment timeliness.
-                                    <?php elseif ($patientInsights['satisfaction']['average'] >= 4.0): ?>
-                                        , showing consistent quality of care.
-                                    <?php else: ?>
-                                        . There's room for improvement in patient experience.
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    Your patient satisfaction rating is 4.8/5, with especially high marks for appointment timeliness.
-                                <?php endif; ?>
-                            </p>
-                            <div class="mt-3">
-                                <div class="d-flex justify-content-center">
-                                    <?php
-                                    $rating = $patientInsights['satisfaction']['average'] ?? 4.8;
-                                    $full_stars = floor($rating);
-                                    $half_star = ($rating - $full_stars) >= 0.3;
-                                    
-                                    for ($i = 0; $i < $full_stars; $i++) {
-                                        echo '<i class="fas fa-star text-warning fs-3 mx-1"></i>';
-                                    }
-                                    
-                                    if ($half_star) {
-                                        echo '<i class="fas fa-star-half-alt text-warning fs-3 mx-1"></i>';
-                                    }
-                                    
-                                    $empty_stars = 5 - $full_stars - ($half_star ? 1 : 0);
-                                    for ($i = 0; $i < $empty_stars; $i++) {
-                                        echo '<i class="far fa-star text-warning fs-3 mx-1"></i>';
-                                    }
-                                    ?>
-                                </div>
-                                <p class="mt-2 mb-0 fw-bold"><?= $patientInsights['satisfaction']['average'] ?? 4.8 ?>/5.0</p>
-                                <small class="text-muted">Based on <?= $patientInsights['satisfaction']['count'] ?? 125 ?> patient reviews</small>
-                            </div>
+                <div class="col-lg-6 mt-5 mt-lg-0">
+                    <div class="card border-0 shadow">
+                        <div class="card-body p-4">
+                            <h4 class="mb-3">Our Services Include:</h4>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item bg-transparent border-0 ps-0">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Primary Care
+                                </li>
+                                <li class="list-group-item bg-transparent border-0 ps-0">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Specialist Consultations
+                                </li>
+                                <li class="list-group-item bg-transparent border-0 ps-0">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Preventive Care
+                                </li>
+                                <li class="list-group-item bg-transparent border-0 ps-0">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Follow-up Appointments
+                                </li>
+                                <li class="list-group-item bg-transparent border-0 ps-0">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Virtual Consultations
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-<?php else: ?>
-    <!-- Service Highlights for Patients/Guests -->
-    <section class="py-5">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="display-6 fw-bold">Our Services</h2>
-                <p class="lead">Schedule appointments for the healthcare services you need</p>
-            </div>
-            
-            <div class="row g-4">
-                <?php foreach ($featuredServices as $service): ?>
-                <div class="col-md-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="service-icon">
-                                <i class="fas fa-<?= $service['icon'] ?>"></i>
-                            </div>
-                            <h3 class="h4"><?= htmlspecialchars($service['name']) ?></h3>
-                            <p><?= htmlspecialchars($service['description']) ?></p>
-                            <p><i class="fas fa-clock me-2"></i> <?= $service['duration'] ?> minutes</p>
-                            <?php if ($isLoggedIn): ?>
-                                <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-primary">Book Now</a>
-                            <?php else: ?>
-                                <a href="<?= base_url('index.php/auth') ?>" class="btn btn-primary">Sign In to Book</a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </section>
-<?php endif; ?>
 
     <!-- How It Works Section (Only show for guests and patients) -->
-    <?php if ($userRole === 'guest' || $userRole === 'patient'): ?>
+    <?php if ($role === 'guest'): ?>
     <section class="py-5 bg-light">
         <div class="container">
             <div class="text-center mb-5">
@@ -612,7 +282,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
     <?php endif; ?>
 
     <!-- Provider Showcase with Avatars (Only show for guests and patients) -->
-    <?php if ($userRole === 'guest' || $userRole === 'patient'): ?>
+    <?php if ($role === 'guest'): ?>
     <section class="py-5">
         <div class="container">
             <div class="text-center mb-5">
@@ -709,15 +379,15 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . 
         <div class="container">
             <div class="card text-center bg-primary text-white">
                 <div class="card-body py-5">
-                    <?php if ($userRole === 'patient'): ?>
+                    <?php if ($role === 'patient'): ?>
                         <h2 class="card-title mb-3">Ready to schedule your next appointment?</h2>
                         <p class="card-text mb-4">Take control of your healthcare journey by scheduling your next appointment.</p>
-                        <a href="<?= base_url('index.php/patient/book') ?>" class="btn btn-light btn-lg">Book Now</a>
-                    <?php elseif ($userRole === 'provider'): ?>
+                        <a href="<?= base_url('index.php/patient/selectService') ?>" class="btn btn-light btn-lg">Book Now</a>
+                    <?php elseif ($role === 'provider'): ?>
                         <h2 class="card-title mb-3">Update your availability</h2>
                         <p class="card-text mb-4">Keep your schedule up-to-date to ensure patients can book appointments when you're available.</p>
                         <a href="<?= base_url('index.php/provider/manage_availability') ?>" class="btn btn-light btn-lg">Manage Availability</a>
-                    <?php elseif ($userRole === 'admin'): ?>
+                    <?php elseif ($role === 'admin'): ?>
                         <h2 class="card-title mb-3">Manage your healthcare system</h2>
                         <p class="card-text mb-4">Access the administrative dashboard to manage users, services, and system settings.</p>
                         <a href="<?= base_url('index.php/admin') ?>" class="btn btn-light btn-lg">Admin Dashboard</a>

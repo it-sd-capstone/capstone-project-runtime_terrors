@@ -2,7 +2,7 @@
 header("Content-Type: application/json");
 require_once "../models/Provider.php";
 require_once "../models/Appointment.php";
-require_once "../core/Database.php";
+require_once __DIR__ . '/../config/database.php';
 
 // Get JSON data
 $json = file_get_contents('php://input');
