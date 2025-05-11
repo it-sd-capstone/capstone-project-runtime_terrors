@@ -1,6 +1,4 @@
-
 <?php include_once VIEW_PATH . '/partials/header.php'; ?>
-
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-10">
@@ -9,7 +7,6 @@
                     <h3 class="mb-0"><i class="fas fa-calendar-plus me-2"></i>Book an Appointment</h3>
                 </div>
                 <div class="card-body">
-
                     <!-- Step 1: Select Service -->
                     <div class="mb-4">
                         <label for="service_id" class="form-label fw-bold">1. What service do you need?</label>
@@ -17,14 +14,14 @@
                             <option value="">-- Please select a service --</option>
                             <?php foreach ($services as $service): ?>
                                 <option value="<?= $service['service_id'] ?>" data-duration="<?= $service['duration'] ?? 30 ?>">
-                                    <?= htmlspecialchars($service['name']) ?> 
-                                    - <?= htmlspecialchars($service['description']) ?>
-                                    ($<?= htmlspecialchars($service['price']) ?>)
+                                    <?= htmlspecialchars($service['name']) ?> - 
+                                    <?= htmlspecialchars($service['description']) ?>
+                                    ($<?= htmlspecialchars(number_format((float)$service['price'], 2)) ?>)
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-
+                    
                     <!-- Step 2: Select Provider (hidden until service selected) -->
                     <div class="mb-4" id="provider-section" style="display:none;">
                         <label for="provider_id" class="form-label fw-bold">2. Choose a provider:</label>
@@ -40,17 +37,20 @@
                         </select>
                         <div id="provider-bio" class="mt-2 text-muted" style="display:none;"></div>
                     </div>
-
+                    
                     <!-- Step 3: Calendar (hidden until provider selected) -->
                     <div class="mb-4" id="calendar-section" style="display:none;">
                         <label class="form-label fw-bold">3. Pick an available time slot:</label>
+                        <div id="calendar-error" class="alert alert-warning" style="display:none;">
+                            Unable to load availability. Please try again later or contact support.
+                        </div>
                         <div id="calendar"></div>
                         <div id="calendar-loading" class="text-center py-4" style="display:none;">
                             <div class="spinner-border text-primary" role="status"></div>
                             <p class="mt-2">Loading available slots...</p>
                         </div>
                     </div>
-
+                    
                     <!-- Step 4: Booking Form (hidden until slot picked) -->
                     <form id="bookForm" method="POST" action="<?= base_url('index.php/patient/processBooking') ?>" class="needs-validation" novalidate style="display:none;">
                         <?= csrf_field() ?>
@@ -58,17 +58,15 @@
                         <input type="hidden" id="form_provider_id" name="provider_id">
                         <input type="hidden" id="appointment_date" name="appointment_date">
                         <input type="hidden" id="start_time" name="start_time">
-
                         <div class="mb-3">
                             <label class="form-label fw-bold">4. Confirm your appointment details:</label>
-                            <div>
+                            <div class="mb-2">
                                 <span class="badge bg-info text-dark" id="summary-service"></span>
                                 <span class="badge bg-secondary" id="summary-provider"></span>
                                 <span class="badge bg-success" id="summary-date"></span>
                                 <span class="badge bg-success" id="summary-time"></span>
                             </div>
                         </div>
-
                         <div class="mb-3">
                             <label for="type" class="form-label">Appointment Type:</label>
                             <select class="form-select" id="type" name="type" required>
@@ -78,23 +76,20 @@
                             </select>
                             <div class="invalid-feedback">Please select an appointment type.</div>
                         </div>
-
                         <div class="mb-3">
                             <label for="reason" class="form-label">Reason for Visit:</label>
-                            <textarea class="form-control" id="reason" name="reason" rows="2"></textarea>
+                            <textarea class="form-control" id="reason" name="reason" rows="2" required></textarea>
+                            <div class="invalid-feedback">Please provide a reason for your visit.</div>
                         </div>
-
                         <div class="mb-3">
                             <label for="notes" class="form-label">Additional Notes (optional):</label>
                             <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
                         </div>
-
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="<?= base_url('index.php/patient') ?>" class="btn btn-secondary me-md-2">Cancel</a>
                             <button type="submit" class="btn btn-primary">Book Appointment</button>
                         </div>
                     </form>
-
                 </div>
             </div>
         </div>
@@ -106,6 +101,7 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
 
 <script>
+// DOM elements
 const serviceSelect = document.getElementById('service_id');
 const providerSection = document.getElementById('provider-section');
 const providerSelect = document.getElementById('provider_id');
@@ -113,46 +109,69 @@ const providerBio = document.getElementById('provider-bio');
 const calendarSection = document.getElementById('calendar-section');
 const calendarEl = document.getElementById('calendar');
 const calendarLoading = document.getElementById('calendar-loading');
+const calendarError = document.getElementById('calendar-error');
 const bookForm = document.getElementById('bookForm');
-
 let calendar = null;
 
 // Step 1: Service Selection
 serviceSelect.addEventListener('change', function() {
     const selectedService = this.value;
+    
     // Reset downstream steps
     providerSelect.value = "";
     providerBio.style.display = "none";
     providerSection.style.display = selectedService ? "block" : "none";
     calendarSection.style.display = "none";
+    calendarError.style.display = "none";
     bookForm.style.display = "none";
+    
     // Filter providers
+    let availableProviderCount = 0;
     Array.from(providerSelect.options).forEach(opt => {
         if (!opt.value) return; // skip placeholder
-        const services = JSON.parse(opt.getAttribute('data-services'));
-        opt.style.display = services.includes(selectedService) ? '' : 'none';
+        
+        let services = [];
+        try {
+            const servicesData = opt.getAttribute('data-services');
+            services = JSON.parse(servicesData || '[]');
+        } catch (e) {
+            console.error('Error parsing services data:', e);
+            services = [];
+        }
+        
+        // Using String() to ensure comparison works regardless of type
+        const show = services.some(id => String(id) === String(selectedService));
+        opt.style.display = show ? '' : 'none';
+        if (show) availableProviderCount++;
     });
+    
+    // Show message if no providers offer this service
+    if (selectedService && availableProviderCount === 0) {
+        providerSection.innerHTML += '<div class="alert alert-info mt-2">No providers currently offer this service. Please select a different service or contact us for assistance.</div>';
+    }
 });
 
 // Step 2: Provider Selection
 providerSelect.addEventListener('change', function() {
     const selectedProvider = this.value;
+    
     // Show bio if available
     let bio = "";
     if (selectedProvider) {
         const opt = providerSelect.options[providerSelect.selectedIndex];
         const providerName = opt.textContent;
         <?php // Output provider bios as a JS object ?>
-        const providerBios = <?=
-            json_encode(array_column($providers, 'bio', 'user_id'))
-        ?>;
+        const providerBios = <?= json_encode(array_column($providers, 'bio', 'user_id')) ?>;
         bio = providerBios[selectedProvider] || "";
     }
     providerBio.textContent = bio ? bio.substring(0, 200) + (bio.length > 200 ? "..." : "") : "";
     providerBio.style.display = bio ? "block" : "none";
+    
     // Reset downstream
     calendarSection.style.display = selectedProvider ? "block" : "none";
+    calendarError.style.display = "none";
     bookForm.style.display = "none";
+    
     if (selectedProvider && serviceSelect.value) {
         loadCalendar(selectedProvider, serviceSelect.value);
     } else {
@@ -164,60 +183,116 @@ providerSelect.addEventListener('change', function() {
 // Step 3: Calendar
 function loadCalendar(providerId, serviceId) {
     calendarLoading.style.display = "block";
+    calendarError.style.display = "none";
     calendarEl.innerHTML = "";
+    
     if (calendar) calendar.destroy();
+    
+    // Build API URL - make sure to use consistent URL format
+    const apiUrl = `<?= base_url('index.php/api/getAvailableSlots') ?>?provider_id=${providerId}&service_id=${serviceId}`;
+    
     setTimeout(() => { // Simulate loading
-        calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridWeek',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'timeGridWeek,dayGridMonth'
-            },
-            timeZone: 'local',
-            events: "<?= base_url('index.php/api/getAvailableSlots') ?>?provider_id=" + providerId + "&service_id=" + serviceId,
-            eventClick: function(info) {
-                if (info.event.extendedProps.type !== 'availability') {
-                    alert("This slot is not available for booking.");
-                    return;
-                }
-                const eventDate = info.event.start;
-                const year = eventDate.getFullYear();
-                const month = (eventDate.getMonth() + 1).toString().padStart(2, '0');
-                const day = eventDate.getDate().toString().padStart(2, '0');
-                const hours = eventDate.getHours().toString().padStart(2, '0');
-                const minutes = eventDate.getMinutes().toString().padStart(2, '0');
-                const formattedDate = `${year}-${month}-${day}`;
-                const formattedTime = `${hours}:${minutes}`;
-                // Fill form hidden fields
-                document.getElementById("form_service_id").value = serviceSelect.value;
-                document.getElementById("form_provider_id").value = providerSelect.value;
-                document.getElementById("appointment_date").value = formattedDate;
-                document.getElementById("start_time").value = formattedTime;
-                // Show summary
-                document.getElementById("summary-service").textContent = serviceSelect.options[serviceSelect.selectedIndex].textContent;
-                document.getElementById("summary-provider").textContent = providerSelect.options[providerSelect.selectedIndex].textContent;
-                document.getElementById("summary-date").textContent = formattedDate;
-                document.getElementById("summary-time").textContent = formattedTime;
-                // Show form
-                bookForm.style.display = "block";
-                bookForm.scrollIntoView({behavior: "smooth"});
-            },
-            eventDisplay: 'block',
-            eventTimeFormat: {
-                hour: 'numeric',
-                minute: '2-digit',
-                meridiem: 'short'
-            },
-            eventDidMount: function(info) {
-                if (info.event.extendedProps.type === 'availability') {
-                    const time = info.event.start ? new Date(info.event.start).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'}) : '';
+        try {
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'timeGridWeek,dayGridMonth'
+                },
+                timeZone: 'local',
+                events: apiUrl,
+                eventClick: function(info) {
+                    // Check if this is an available slot (check all possible prop locations)
+                    const isAvailable = 
+                        info.event.extendedProps.type === 'availability' || 
+                        info.event.title === 'Available' ||
+                        (info.event.extendedProps && info.event.backgroundColor === '#28a745');
+                    
+                    if (!isAvailable) {
+                        alert("This slot is not available for booking.");
+                        return;
+                    }
+                    
+                    const eventDate = info.event.start;
+                    const year = eventDate.getFullYear();
+                    const month = (eventDate.getMonth() + 1).toString().padStart(2, '0');
+                    const day = eventDate.getDate().toString().padStart(2, '0');
+                    const hours = eventDate.getHours().toString().padStart(2, '0');
+                    const minutes = eventDate.getMinutes().toString().padStart(2, '0');
+                    const formattedDate = `${year}-${month}-${day}`;
+                    const formattedTime = `${hours}:${minutes}`;
+                    
+                    // Fill form hidden fields
+                    document.getElementById("form_service_id").value = serviceSelect.value;
+                    document.getElementById("form_provider_id").value = providerSelect.value;
+                    document.getElementById("appointment_date").value = formattedDate;
+                    document.getElementById("start_time").value = formattedTime;
+                    
+                    // Show summary - truncate long text for better display
+                    const serviceText = serviceSelect.options[serviceSelect.selectedIndex].textContent;
+                    const providerText = providerSelect.options[providerSelect.selectedIndex].textContent;
+                    
+                    document.getElementById("summary-service").textContent = 
+                        serviceText.length > 30 ? serviceText.substring(0, 30) + '...' : serviceText;
+                    document.getElementById("summary-provider").textContent = providerText;
+                    document.getElementById("summary-date").textContent = formattedDate;
+                    document.getElementById("summary-time").textContent = 
+                        new Date(eventDate).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
+                    
+                    // Show form
+                    bookForm.style.display = "block";
+                    bookForm.scrollIntoView({behavior: "smooth"});
+                },
+                eventDisplay: 'block',
+                eventTimeFormat: {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    meridiem: 'short'
+                },
+                eventDidMount: function(info) {
+                    // Always add a useful title tooltip
+                    const time = info.event.start ? 
+                        new Date(info.event.start).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'}) : '';
                     info.el.setAttribute('title', `Available: ${time}`);
+                },
+                loading: function(isLoading) {
+                    calendarLoading.style.display = isLoading ? "block" : "none";
+                },
+                eventSourceFailure: function(error) {
+                    console.error("Calendar failed to load events:", error);
+                    calendarError.style.display = "block";
                 }
-            }
-        });
-        calendar.render();
-        calendarLoading.style.display = "none";
+            });
+            
+            calendar.render();
+            
+            // Additional fetch to handle empty slots case
+            fetch(apiUrl)
+              .then(response => {
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+              })
+              .then(data => {
+                console.log("Available slots data:", data);
+                
+                if (!data || data.length === 0) {
+                    // Show a message to the user
+                    calendarEl.innerHTML = '<div class="alert alert-info">No available appointments found for this provider and service. Please try another provider or contact us.</div>';
+                }
+              })
+              .catch(error => {
+                console.error("Error fetching slots:", error);
+                calendarError.style.display = "block";
+              });
+              
+        } catch (err) {
+            console.error("Error setting up calendar:", err);
+            calendarError.style.display = "block";
+            calendarLoading.style.display = "none";
+        }
     }, 400); // Simulate loading delay
 }
 
@@ -232,7 +307,90 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('was-validated');
         });
     }
+    
+    // Debug: Log provider service information
+    const options = document.querySelectorAll('#provider_id option');
+    options.forEach(opt => {
+        if (opt.value) {
+            console.log(
+                'Provider:', opt.textContent.trim(),
+                'Service IDs:', opt.getAttribute('data-services')
+            );
+        }
+    });
+    
+    // Fix calendar rendering issues with Bootstrap tabs (if applicable)
+    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tabEl => {
+        tabEl.addEventListener('shown.bs.tab', function() {
+            if (calendar) {
+                calendar.updateSize();
+            }
+        });
+    });
+    
+    // Handle network issues by providing a retry button
+    document.getElementById('calendar-error')?.addEventListener('click', function() {
+        if (providerSelect.value && serviceSelect.value) {
+            loadCalendar(providerSelect.value, serviceSelect.value);
+        }
+    });
+    
+    // Highlight the currently selected service
+    serviceSelect.addEventListener('change', function() {
+        document.querySelectorAll('.service-highlight').forEach(el => el.classList.remove('service-highlight'));
+        if (this.value) {
+            this.closest('.mb-4').classList.add('service-highlight');
+        }
+    });
 });
+
+// Helper function for API diagnostics
+function diagnoseApiConnection(url) {
+    console.log("Testing API connection to:", url);
+    fetch(url, { method: 'HEAD' })
+        .then(response => {
+            console.log("API HEAD response status:", response.status);
+            if (!response.ok) {
+                console.error("API may not be accessible. Consider checking server logs.");
+            }
+        })
+        .catch(error => {
+            console.error("API connection error:", error);
+        });
+}
+
+// Run API diagnostics for troubleshooting
+diagnoseApiConnection("<?= base_url('index.php/api/test') ?>");
 </script>
 
-<?php include_once VIEW_PATH . '/partials/footer.php'; ?>
+<style>
+.service-highlight {
+    border-left: 3px solid #0d6efd;
+    padding-left: 10px;
+}
+.fc-event {
+    cursor: pointer;
+}
+#calendar-error {
+    cursor: pointer;
+}
+#calendar-error:hover:after {
+    content: " (Click to retry)";
+}
+</style>
+
+<?php
+// Debug information for development
+if (defined('ENVIRONMENT') && ENVIRONMENT !== 'production') {
+    echo '<div class="container mt-4 p-3 bg-light small" style="border-radius: 5px;">';
+    echo '<h6>Debug Information:</h6>';
+    echo '<pre>';
+    echo 'Number of providers: ' . count($providers) . "\n";
+    if (!empty($providers)) {
+        echo 'First provider data: ';
+        print_r($providers[0]);
+    }
+    echo '</pre>';
+    echo '</div>';
+}
+?>

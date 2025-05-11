@@ -3,7 +3,10 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
+
 -- Generation Time: May 11, 2025 at 04:27 AM
+=======-- Generation Time: May 11, 2025 at 01:43 AM
+
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -43,7 +46,9 @@ CREATE TABLE IF NOT EXISTS `activity_log` (
   `related_type` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`log_id`),
   KEY `user_id` (`user_id`)
+
 ) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 --
 -- Dumping data for table `activity_log`
@@ -109,6 +114,7 @@ INSERT INTO `activity_log` (`log_id`, `user_id`, `description`, `category`, `cre
 (63, 1, 'Auth: logout', 'authentication', '2025-05-10 16:30:28', '::1', NULL, NULL, NULL),
 (64, 2, 'Auth: logout', 'authentication', '2025-05-10 16:42:00', '::1', NULL, NULL, NULL),
 (65, 0, 'Patient scheduled appointment with provider #2', '1', '2025-05-10 18:27:03', '::1', NULL, NULL, NULL),
+
 (66, 0, 'Patient scheduled appointment with provider #2', '1', '2025-05-10 18:27:23', '::1', NULL, NULL, NULL),
 (67, 22, 'Updated patient profile information', 'profile', '2025-05-08 20:05:43', '192.168.1.100', NULL, NULL, NULL),
 (68, 25, 'Added new availability slots', 'schedule', '2025-05-07 20:05:43', '192.168.1.101', NULL, NULL, NULL),
@@ -148,6 +154,7 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   KEY `patient_id` (`patient_id`),
   KEY `provider_id` (`provider_id`),
   KEY `service_id` (`service_id`)
+
 ) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -165,7 +172,9 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `serv
 (8, 1, 2, 2, '2025-04-30', '09:58:00', '10:43:00', 'completed', 'in_person', '', '', 0, '2025-05-10 11:34:59', NULL, '2025-04-26 15:41:23', '2025-05-10 11:35:19'),
 (9, 1, 16, 1, '2025-04-30', '09:30:00', '10:00:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 15:41:55', '2025-04-26 15:41:55'),
 (10, 1, 16, 2, '2025-04-30', '09:32:00', '10:17:00', 'scheduled', 'in_person', '', '', 0, NULL, NULL, '2025-04-26 16:32:36', '2025-04-26 16:32:36'),
+
 (11, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'completed', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-09 13:27:47', '2025-05-04 16:59:02', '2025-05-10 20:36:10'),
+
 (12, 1, 2, 2, '2025-05-07', '10:04:00', '10:49:00', 'canceled', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-04 17:30:35', '2025-05-04 17:16:58', '2025-05-04 17:30:35'),
 (13, 1, 2, 2, '2025-05-05', '09:00:00', '09:45:00', 'canceled', 'in_person', '', 'Canceled by administrator', 0, NULL, '2025-05-04 17:30:41', '2025-05-04 17:17:30', '2025-05-04 17:30:41'),
 (14, 1, 2, 2, '2025-05-06', '14:00:00', '14:45:00', 'canceled', 'in_person', 'Note', 'Canceled by administrator', 0, NULL, '2025-05-04 17:30:37', '2025-05-04 17:22:37', '2025-05-04 17:30:37'),
@@ -179,6 +188,7 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `serv
 (22, 1, 2, 1, '2025-05-07', '10:04:00', '10:34:00', 'canceled', '', 'notes', 'No reason provided', 0, NULL, '2025-05-07 13:14:38', '2025-05-04 19:35:26', '2025-05-07 13:14:38'),
 (23, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-07 12:37:10', '2025-05-07 12:34:16', '2025-05-07 12:37:10'),
 (24, 1, 2, 1, '2025-05-08', '10:11:00', '10:41:00', 'canceled', 'in_person', '', 'No reason provided', 0, NULL, '2025-05-07 13:59:58', '2025-05-07 13:15:04', '2025-05-07 13:59:58'),
+
 (30, 1, 2, 2, '2025-05-15', '08:00:00', '08:30:00', 'confirmed', 'in_person', '', '', 0, NULL, NULL, '2025-05-10 13:05:38', '2025-05-10 20:35:53'),
 (31, 1, 2, 1, '2025-05-15', '11:30:00', '12:00:00', 'confirmed', 'in_person', '', 'note', 0, NULL, NULL, '2025-05-10 18:27:03', '2025-05-10 20:35:34'),
 (32, 1, 2, 1, '2025-05-15', '08:30:00', '09:00:00', 'confirmed', 'in_person', '', 'note', 0, NULL, NULL, '2025-05-10 18:27:23', '2025-05-10 20:35:46'),
@@ -187,6 +197,7 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `serv
 (35, 24, 25, 14, '2025-05-15', '14:00:00', '14:30:00', 'confirmed', 'in_person', 'Chest X-Ray', 'Canceled by administrator', 0, NULL, '2025-05-10 20:36:45', '2025-05-10 20:05:43', '2025-05-10 20:36:58'),
 (36, 22, 25, 3, '2025-05-05', '11:00:00', '11:30:00', 'confirmed', 'in_person', 'Follow-up consultation', '', 0, '2025-05-04 20:05:43', NULL, '2025-04-30 20:05:43', '2025-05-10 20:36:00'),
 (37, 23, 26, 13, '2025-05-03', '13:00:00', '14:00:00', 'completed', 'virtual', 'Initial assessment', NULL, 0, '2025-05-02 20:05:43', NULL, '2025-04-26 20:05:43', '2025-05-10 20:05:43');
+
 
 -- --------------------------------------------------------
 
@@ -405,7 +416,9 @@ CREATE TABLE IF NOT EXISTS `provider_availability` (
   `service_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`availability_id`),
   KEY `fk_availability_service` (`service_id`)
+
 ) ENGINE=InnoDB AUTO_INCREMENT=1326 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 --
 -- Dumping data for table `provider_availability`
@@ -491,9 +504,11 @@ INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availabi
 (1320, 2, '2025-05-15', '15:00:00', '15:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
 (1321, 2, '2025-05-15', '15:30:00', '16:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 2),
 (1322, 2, '2025-05-15', '16:00:00', '16:30:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 1),
+
 (1323, 2, '2025-05-15', '16:30:00', '17:00:00', 1, '2025-05-10 21:40:22', 0, NULL, 1, 9),
 (1324, 25, '2025-05-11', '09:00:00', '17:00:00', 1, '2025-05-11 01:05:43', 1, '1,2,3,4,5', 8, NULL),
 (1325, 26, '2025-05-12', '08:00:00', '16:00:00', 1, '2025-05-11 01:05:43', 1, '1,3,5', 6, NULL);
+
 
 -- --------------------------------------------------------
 
@@ -522,10 +537,12 @@ CREATE TABLE IF NOT EXISTS `provider_profiles` (
 --
 
 INSERT INTO `provider_profiles` (`profile_id`, `provider_id`, `specialization`, `title`, `bio`, `accepting_new_patients`, `max_patients_per_day`, `profile_image`, `created_at`, `updated_at`) VALUES
+
 (1, 16, 'Practisioner', 'MD', 'Hello', 1, 20, NULL, '2025-04-23 01:16:51', '2025-04-23 01:16:51'),
 (2, 2, 'General Medicine', NULL, 'Experienced general practitioner', 0, 0, NULL, '2025-05-04 20:15:52', '2025-05-05 02:41:47'),
 (3, 25, 'Cardiology', 'MD', 'Board-certified cardiologist with 15 years of experience', 1, 15, NULL, '2025-05-11 01:05:43', '2025-05-11 01:05:43'),
 (4, 26, 'Pediatrics', 'MD', 'Specialized in pediatric care with focus on early childhood development', 1, 20, NULL, '2025-05-11 01:05:43', '2025-05-11 01:05:43');
+
 
 -- --------------------------------------------------------
 

@@ -27,6 +27,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     
     if ($appointmentModel->create($patient_id, $availability_id)) {
+        // Get the booked availability details
+        $availability = $providerModel->getAvailabilityById($availability_id);
+        
+        // Mark conflicting slots as unavailable
+        $conflictingAvailabilities = $providerModel->getConflictingAvailabilities(
+            $availability['provider_id'],
+            $availability['availability_date'],
+            $availability['start_time'],
+            $availability['end_time'],
+            $availability['service_id']
+        );
+        
+        foreach ($conflictingAvailabilities as $conflictingAvailability) {
+            $providerModel->updateAvailabilityStatus(
+                $conflictingAvailability['id'],
+                0 // Set as unavailable
+            );
+        }
+        
         $_SESSION['success'] = "Appointment booked successfully!";
         header("Location: " . base_url('index.php/appointments'));
         exit;

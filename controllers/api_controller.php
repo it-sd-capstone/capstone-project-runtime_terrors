@@ -14,28 +14,22 @@ class ApiController {
     }
     
     public function getAvailableSlots() {
-        header("Content-Type: application/json");
+        // Get parameters with validation
+        $provider_id = isset($_GET['provider_id']) ? (int)$_GET['provider_id'] : null;
+        $service_id = isset($_GET['service_id']) ? (int)$_GET['service_id'] : null;
+        $start_date = isset($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : date('Y-m-d');
+        $end_date = isset($_GET['end']) ? date('Y-m-d', strtotime($_GET['end'])) : date('Y-m-d', strtotime('+14 days'));
         
-        $date = $_GET['date'] ?? null;
-        $provider_id = $_GET['provider_id'] ?? null;
-        $service_id = $_GET['service_id'] ?? null;
-        $appointment_id = $_GET['appointment_id'] ?? null;
-        
-        // Debug output to check what's being received
-        error_log("API getAvailableSlots called with date: $date, provider: $provider_id, service: $service_id");
-        
+        // Validate provider_id
         if (!$provider_id) {
-            error_log("No provider_id specified in request");
-            echo json_encode([]);
-            exit;
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Provider ID is required']);
+            return;
         }
         
-        if (!$date) {
-            error_log("No date specified in request");
-            echo json_encode([]);
-            exit;
-        }
-        
+        // Initialize response array
+        $events = [];
+
         
         $provider = $this->providerModel->getProviderById($provider_id);
         
@@ -45,18 +39,28 @@ class ApiController {
             exit;
         }
         
-        error_log("Found provider: " . $provider['first_name'] . " " . $provider['last_name']);
-        
-        // Get service duration if service_id is provided
-        $service_duration = 30; // Default duration in minutes
-        if ($service_id) {
-            require_once MODEL_PATH . '/services.php';
-            $serviceModel = new Service($db);
-            $service = $serviceModel->getServiceById($service_id);
-            if ($service && isset($service['duration'])) {
-                $service_duration = (int)$service['duration'];
-                error_log("Using service duration: $service_duration minutes for service ID: $service_id");
+        try {
+            // First, check if service-specific slots exist for this service
+            $serviceSpecificExists = false;
+            if ($service_id) {
+                $checkQuery = "
+                    SELECT COUNT(*) as count
+                    FROM provider_availability 
+                    WHERE provider_id = ? 
+                    AND service_id = ?
+                    AND is_available = 1
+                ";
+                $stmt = $this->db->prepare($checkQuery);
+                $stmt->bind_param("ii", $provider_id, $service_id);
+                $stmt->execute();
+                $result = $stmt->get_result()->fetch_assoc();
+                $serviceSpecificExists = ($result['count'] > 0);
+                
+                error_log($serviceSpecificExists 
+                    ? "Found service-specific availability for service_id: $service_id" 
+                    : "No service-specific slots found for service_id: $service_id, using general availability");
             }
+
         }
         
         // Get provider availability
@@ -78,108 +82,310 @@ class ApiController {
                 continue;
             }
             
-            // Validate each required field is present
-            $requiredFields = ['availability_date', 'start_time', 'end_time'];
-            $missingFields = [];
+            $stmt->execute();
+            $oneTimeResult = $stmt->get_result();
+            error_log("Found " . $oneTimeResult->num_rows . " one-time availability slots");
             
-            foreach ($requiredFields as $field) {
-                if (!isset($schedule[$field]) || empty($schedule[$field])) {
-                    $missingFields[] = $field;
+            // Process one-time availability slots
+            while ($row = $oneTimeResult->fetch_assoc()) {
+                // Get service duration (default 30 min)
+                $duration = 30;
+                if ($service_id) {
+                    $serviceDuration = $this->getServiceDuration($service_id);
+                    if ($serviceDuration) $duration = $serviceDuration;
+                } else if ($row['service_id']) {
+                    $serviceDuration = $this->getServiceDuration($row['service_id']);
+                    if ($serviceDuration) $duration = $serviceDuration;
+                }
+                
+                // Format datetime for calendar
+                $startDateTime = $row['availability_date'] . 'T' . $row['start_time'];
+                $endDateTime = $row['availability_date'] . 'T' . $row['end_time'];
+                
+                // Add the slot to events
+                $events[] = [
+                    'id' => 'slot_' . $row['availability_id'] . '_' . str_replace(':', '', $row['start_time']),
+                    'title' => 'Available',
+                    'start' => $startDateTime,
+                    'end' => $endDateTime,
+                    'color' => '#28a745',
+                    'extendedProps' => [
+                        'availability_id' => $row['availability_id'],
+                        'duration' => $duration,
+                        'service_id' => $service_id ?: $row['service_id'],
+                        'is_recurring' => $row['is_recurring']
+                    ]
+                ];
+            }
+            
+            // 2. Get recurring availability and expand based on weekdays
+            $recurringQuery = "
+                SELECT
+                    a.availability_id,
+                    a.provider_id,
+                    a.availability_date AS template_date,
+                    a.start_time,
+                    a.end_time,
+                    a.is_available,
+                    a.is_recurring,
+                    a.weekdays,
+                    a.service_id
+                FROM
+                    provider_availability a
+                WHERE
+                    a.provider_id = ?
+                    AND a.is_available = 1
+                    AND a.is_recurring = 1
+            ";
+            
+            // Add service filter - if service-specific slots exist, only show those
+            // Otherwise, show general availability (NULL) slots
+            if ($service_id) {
+                if ($serviceSpecificExists) {
+                    $recurringQuery .= " AND a.service_id = ?";
+                } else {
+                    $recurringQuery .= " AND (a.service_id = ? OR a.service_id IS NULL)";
                 }
             }
             
-            if (!empty($missingFields)) {
-                error_log("Schedule[$index] missing required fields: " . implode(', ', $missingFields));
-                error_log("Schedule[$index] data: " . json_encode($schedule));
-                $skippedCount++;
-                continue;
+            $stmt = $this->db->prepare($recurringQuery);
+            if ($service_id) {
+                $stmt->bind_param("ii", $provider_id, $service_id);
+            } else {
+                $stmt->bind_param("i", $provider_id);
             }
             
-            // Check if date and time are valid
-            if (!strtotime($schedule['availability_date'] . ' ' . $schedule['start_time'])) {
-                error_log("Schedule[$index] has invalid date/time format: " .
-                         $schedule['availability_date'] . ' ' . $schedule['start_time']);
-                $skippedCount++;
-                continue;
+            $stmt->execute();
+            $recurringResult = $stmt->get_result();
+            error_log("Found " . $recurringResult->num_rows . " recurring availability patterns");
+            
+            // Process recurring availability patterns
+            while ($row = $recurringResult->fetch_assoc()) {
+                // Get service duration (default 30 min)
+                $duration = 30;
+                if ($service_id) {
+                    $serviceDuration = $this->getServiceDuration($service_id);
+                    if ($serviceDuration) $duration = $serviceDuration;
+                } else if ($row['service_id']) {
+                    $serviceDuration = $this->getServiceDuration($row['service_id']);
+                    if ($serviceDuration) $duration = $serviceDuration;
+                }
+                
+                // Generate applicable dates within the range based on weekdays
+                $weekdays = explode(',', $row['weekdays']);
+                
+                // Loop through each day in the date range
+                $currentDate = new DateTime($start_date);
+                $endDateObj = new DateTime($end_date);
+                
+                while ($currentDate <= $endDateObj) {
+                    $dayOfWeek = $currentDate->format('w'); // 0 (Sunday) to 6 (Saturday)
+                    
+                    // Check if this day of week is in the recurring pattern
+                    if (in_array($dayOfWeek, $weekdays)) {
+                        $currentDateStr = $currentDate->format('Y-m-d');
+                        
+                        // Check if there's no appointment already booked for this slot
+                        if (!$this->isSlotBooked($provider_id, $currentDateStr, $row['start_time'])) {
+                            $startDateTime = $currentDateStr . 'T' . $row['start_time'];
+                            $endDateTime = $currentDateStr . 'T' . $row['end_time'];
+                            
+                            // Create a unique ID for this recurring slot
+                            $slotId = 'slot_' . $row['availability_id'] . '_' . $currentDateStr . '_' . str_replace(':', '', $row['start_time']);
+                            
+                            // Add the slot to events
+                            $events[] = [
+                                'id' => $slotId,
+                                'title' => 'Available',
+                                'start' => $startDateTime,
+                                'end' => $endDateTime,
+                                'color' => '#28a745',
+                                'extendedProps' => [
+                                    'availability_id' => $row['availability_id'],
+                                    'duration' => $duration,
+                                    'service_id' => $service_id ?: $row['service_id'],
+                                    'is_recurring' => $row['is_recurring']
+                                ]
+                            ];
+                        }
+                    }
+                    
+                    // Move to next day
+                    $currentDate->modify('+1 day');
+                }
             }
             
-            // Check if this slot overlaps with any existing appointments
-            $isBooked = false;
-            $start = strtotime($schedule['availability_date'] . ' ' . $schedule['start_time']);
-            $end = strtotime($schedule['availability_date'] . ' ' . $schedule['end_time']);
+            // Debug the result
+            error_log("Returning " . count($events) . " total availability slots");
             
-            if (!$start || !$end) {
-                error_log("Failed to convert date/time to timestamp for schedule[$index]: " .
-                         $schedule['availability_date'] . ' ' . $schedule['start_time'] . '-' . $schedule['end_time']);
-                $skippedCount++;
-                continue;
+            // Return JSON response
+            header('Content-Type: application/json');
+            echo json_encode($events);
+            
+        } catch (Exception $e) {
+            error_log("Error getting available slots: " . $e->getMessage());
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Failed to retrieve availability data']);
+        }
+    }
+
+    /**
+     * Helper method to add time slots to events array
+     */
+    private function addTimeSlots(&$events, $row, $startDateTime, $endDateTime, $duration) {
+        // Convert to DateTime objects
+        $start = new DateTime($startDateTime);
+        $end = new DateTime($endDateTime);
+        
+        // Calculate time difference
+        $interval = $start->diff($end);
+        $totalMinutes = ($interval->h * 60) + $interval->i;
+        
+        // Skip if less than minimum duration
+        if ($totalMinutes < $duration) {
+            return;
+        }
+        
+        // Create slots based on duration
+        $currentStart = clone $start;
+        while ($currentStart < $end) {
+            $currentEnd = clone $currentStart;
+            $currentEnd->modify("+{$duration} minutes");
+            
+            // Don't create partial slots at the end
+            if ($currentEnd > $end) {
+                break;
             }
             
-            // Skip the appointment we're trying to reschedule
-            $apptToIgnore = $appointment_id ? (int)$appointment_id : null;
+            // Format dates for the slot
+            $slotStart = $currentStart->format('Y-m-d\TH:i:s');
+            $slotEnd = $currentEnd->format('Y-m-d\TH:i:s');
+            $slotTime = $currentStart->format('His'); // Time component for ID
             
-            foreach ($appointments as $apptIndex => $appt) {
-                if ($appt['status'] === 'canceled') continue;
+            // Create a unique ID for the slot (including date and time)
+            $slotId = "slot_{$row['availability_id']}_{$slotTime}";
+            if ($row['is_recurring']) {
+                // For recurring slots, include the date in the ID to make it unique
+                $slotId = "slot_{$row['availability_id']}_{$currentStart->format('Ymd')}_{$slotTime}";
+            }
+            
+            // Add the event
+            $events[] = [
+                'id' => $slotId,
+                'title' => 'Available',
+                'start' => $slotStart,
+                'end' => $slotEnd,
+                'color' => '#28a745', // Green for available
+                'extendedProps' => [
+                    'availability_id' => $row['availability_id'],
+                    'duration' => $duration,
+                    'service_id' => $row['service_id'] ?: null,
+                    'is_recurring' => $row['is_recurring']
+                ]
+            ];
+            
+            // Move to next slot
+            $currentStart->modify("+{$duration} minutes");
+        }
+    }
+
+    /**
+     * Helper method to check if a slot is already booked
+     */
+    private function isSlotBooked($provider_id, $date, $start_time) {
+        $query = "
+            SELECT COUNT(*) as count
+            FROM appointments
+            WHERE provider_id = ?
+            AND appointment_date = ?
+            AND start_time = ?
+            AND status != 'canceled'
+        ";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bind_param("iss", $provider_id, $date, $start_time);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        return ($result['count'] > 0);
+    }
+
+    /**
+     * Helper method to get service duration
+     */
+    private function getServiceDuration($service_id) {
+        $query = "SELECT duration FROM services WHERE service_id = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->bind_param("i", $service_id);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        return $result ? (int)$result['duration'] : 30;
+    }
+
+
+    // Helper method to remove slots that conflict with existing appointments
+    private function removeConflictingAppointments($events, $provider_id, $start_date, $end_date) {
+        // Get all booked appointments in this date range
+        $sql = "
+            SELECT 
+                appointment_id,
+                appointment_date,
+                start_time,
+                end_time,
+                status
+            FROM 
+                appointments
+            WHERE 
+                provider_id = ?
+                AND appointment_date BETWEEN ? AND ?
+                AND status != 'canceled'
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("iss", $provider_id, $start_date, $end_date);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $appointments = [];
+        while ($row = $result->fetch_assoc()) {
+            $appointments[] = $row;
+        }
+        
+        error_log("Found " . count($appointments) . " booked appointments to check for conflicts");
+        
+        if (empty($appointments)) {
+            return $events; // No appointments to check against
+        }
+        
+        $filtered_events = [];
+        
+        // Check each event against each appointment for conflicts
+        foreach ($events as $event) {
+            $event_start = strtotime(substr($event['start'], 0, 10) . ' ' . substr($event['start'], 11));
+            $event_end = strtotime(substr($event['end'], 0, 10) . ' ' . substr($event['end'], 11));
+            $has_conflict = false;
+            
+            foreach ($appointments as $appointment) {
+                $appt_start = strtotime($appointment['appointment_date'] . ' ' . $appointment['start_time']);
+                $appt_end = strtotime($appointment['appointment_date'] . ' ' . $appointment['end_time']);
                 
-                // Skip the appointment we're trying to reschedule
-                if ($apptToIgnore && isset($appt['appointment_id']) && (int)$appt['appointment_id'] === $apptToIgnore) {
-                    error_log("Ignoring appointment ID $apptToIgnore for rescheduling");
-                    continue;
-                }
-                
-                if (!isset($appt['appointment_date']) || !isset($appt['start_time']) || !isset($appt['end_time'])) {
-                    error_log("Appointment[$apptIndex] missing required date/time fields");
-                    continue;
-                }
-                
-                $apptStart = strtotime($appt['appointment_date'] . ' ' . $appt['start_time']);
-                $apptEnd = strtotime($appt['appointment_date'] . ' ' . $appt['end_time']);
-                
-                if (!$apptStart || !$apptEnd) {
-                    error_log("Failed to convert date/time for appointment[$apptIndex]");
-                    continue;
-                }
-                
-                // If appointment overlaps this availability slot
-                if (($apptStart >= $start && $apptStart < $end) ||
-                    ($apptEnd > $start && $apptEnd <= $end) ||
-                    ($apptStart <= $start && $apptEnd >= $end)) {
-                    $isBooked = true;
-                    error_log("Schedule[$index] overlaps with appointment ID: " . ($appt['appointment_id'] ?? 'unknown'));
+                // Check for overlap - exclude if slot overlaps with appointment
+                if (!($event_end <= $appt_start || $event_start >= $appt_end)) {
+                    $has_conflict = true;
                     break;
                 }
             }
             
-            // Only add available slots (not booked)
-            if (!$isBooked) {
-                // Format start and end times to include seconds for proper ISO format
-                $startTime = date('H:i:s', strtotime($schedule['start_time']));
-                $endTime = date('H:i:s', strtotime($schedule['end_time']));
-                
-                $calendarEvents[] = [
-                    "id" => $schedule['id'] ?? $schedule['availability_id'] ?? $index,
-                    "title" => "Available" . (isset($schedule['recurring_id']) ? " (Recurring)" : ""),
-                    "start" => $schedule['availability_date'] . "T" . $startTime,
-                    "end" => $schedule['availability_date'] . "T" . $endTime,
-                    "color" => "#28a745", // Success/green for available slots
-                    "extendedProps" => [
-                        "type" => "availability",
-                        "isRecurring" => isset($schedule['recurring_id']),
-                        "recurring_id" => $schedule['recurring_id'] ?? null
-                    ]
-                ];
-                $processedCount++;
-            } else {
-                $skippedCount++;
+            if (!$has_conflict) {
+                $filtered_events[] = $event;
             }
         }
         
-        error_log("Processed $processedCount available slots, skipped $skippedCount slots (booked or invalid)");
-        error_log("Final calendar events count: " . count($calendarEvents));
+        error_log("Removed " . (count($events) - count($filtered_events)) . " conflicting slots");
         
-        echo json_encode($calendarEvents);
+        return $filtered_events;
     }
-    
     
     public function checkSlotAvailability() {
         header("Content-Type: application/json");
@@ -198,7 +404,8 @@ class ApiController {
         $time = $data['time'];
         
         // Get provider availability
-        $schedules = $this->providerModel->getAvailability($provider_id);
+        $service_id = $data['service_id'] ?? null;
+        $schedules = $this->providerModel->getAvailability($provider_id, $service_id);
         // Get existing appointments
         $appointments = $this->appointmentModel->getByProvider($provider_id);
         
@@ -243,6 +450,12 @@ class ApiController {
         }
         
         echo json_encode(['available' => !$isBooked]);
+    }
+    
+    public function test() {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'success', 'message' => 'API is working']);
+        exit;
     }
 }
 ?>

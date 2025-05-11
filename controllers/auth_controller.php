@@ -2,6 +2,15 @@
 require_once(__DIR__ . '/../services/EmailService.php');
 require_once(__DIR__ . '/../config/email_config.php');
 
+// Add reCAPTCHA configuration
+if (file_exists(__DIR__ . '/../config/recaptcha_config.php')) {
+    require_once(__DIR__ . '/../config/recaptcha_config.php');
+} else {
+    // Use test keys if config file doesn't exist
+    define('RECAPTCHA_SITE_KEY', '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI');
+    define('RECAPTCHA_SECRET_KEY', '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe');
+}
+
 class AuthController {
     private $db;
     private $userModel;
@@ -304,6 +313,46 @@ class AuthController {
             if (!isset($_POST['terms'])) {
                 $errors[] = "You must agree to the Terms of Service";
             }
+
+            // Validate reCAPTCHA (only if the constant is defined)
+            if (defined('RECAPTCHA_SECRET_KEY') && defined('RECAPTCHA_SITE_KEY')) {
+                if (empty($_POST['g-recaptcha-response'])) {
+                    $errors[] = "Please complete the reCAPTCHA verification";
+                } else {
+                    // Verify reCAPTCHA response
+                    $recaptchaResponse = $_POST['g-recaptcha-response'];
+                    $recaptchaUrl = 'https://www.google.com/recaptcha/api/siteverify';
+                    $recaptchaData = [
+                        'secret' => RECAPTCHA_SECRET_KEY,
+                        'response' => $recaptchaResponse,
+                        'remoteip' => $_SERVER['REMOTE_ADDR']
+                    ];
+                    
+                    $recaptchaOptions = [
+                        'http' => [
+                            'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+                            'method' => 'POST',
+                            'content' => http_build_query($recaptchaData)
+                        ]
+                    ];
+                    
+                    $recaptchaContext = stream_context_create($recaptchaOptions);
+                    $recaptchaResult = @file_get_contents($recaptchaUrl, false, $recaptchaContext);
+                    
+                    if ($recaptchaResult) {
+                        $recaptchaData = json_decode($recaptchaResult);
+                        
+                        if (!$recaptchaData->success) {
+                            $errors[] = "reCAPTCHA verification failed. Please try again.";
+                        }
+                    } else {
+                        error_log("Failed to connect to reCAPTCHA service");
+                        // Optionally, you can skip reCAPTCHA validation if the service is unavailable
+                        // Or add an error: $errors[] = "Could not verify reCAPTCHA. Please try again.";
+                    }
+                }
+            }
+
 
             // Only proceed if no errors
             if (empty($errors)) {

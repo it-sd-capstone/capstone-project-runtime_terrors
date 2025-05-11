@@ -426,8 +426,8 @@ class User {
                     
                     if ($row['count'] == 0) {
                         // Modified to include user_id field
-                        $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id, user_id) VALUES (?, ?)");
-                        $profileStmt->bind_param("ii", $userId, $userId);
+                        $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id) VALUES (?)");
+                        $profileStmt->bind_param("i", $userId);
                         if (!$profileStmt->execute()) {
                             error_log("Failed to create provider profile: " . $profileStmt->error);
                             throw new Exception("Failed to create provider profile");
@@ -516,9 +516,8 @@ class User {
                     
                     if ($count == 0) {
                         // Modified to include user_id field
-                        $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id, user_id) VALUES (:pid, :uid)");
+                        $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id) VALUES (:pid)");
                         $profileStmt->bindParam(':pid', $userId, PDO::PARAM_INT);
-                        $profileStmt->bindParam(':uid', $userId, PDO::PARAM_INT);
                         
                         if (!$profileStmt->execute()) {
                             $errorInfo = $profileStmt->errorInfo();

@@ -1,4 +1,3 @@
-
 <?php
 
 class Appointment {
@@ -12,7 +11,9 @@ class Appointment {
      * Schedule an appointment securely.
      * @return int|false Appointment ID on success, false on failure.
      */
-    public function scheduleAppointment($patient_id, $provider_id, $service_id, $appointment_date, $start_time, $end_time, $type = 'in_person', $notes = null, $reason = null) {
+    public function scheduleAppointment($patient_id, $provider_id, $service_id, $date, $start_time, $end_time, $type, $notes, $reason) {
+        error_log("scheduleAppointment called with: patient=$patient_id, provider=$provider_id, service=$service_id, date=$date, start=$start_time, end=$end_time");
+        
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO appointments (
@@ -27,7 +28,7 @@ class Appointment {
             }
             $stmt->bind_param("iiissssss", 
                 $patient_id, $provider_id, $service_id,
-                $appointment_date, $start_time, $end_time, $type, $notes, $reason
+                $date, $start_time, $end_time, $type, $notes, $reason
             );
             $result = $stmt->execute();
             if (!$result) {
@@ -38,7 +39,7 @@ class Appointment {
             $stmt->close();
             return $appointment_id > 0 ? $appointment_id : false;
         } catch (Exception $e) {
-            error_log("Exception scheduling appointment: " . $e->getMessage());
+            error_log("Error in scheduleAppointment: " . $e->getMessage());
             return false;
         }
     }

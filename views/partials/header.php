@@ -38,6 +38,9 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
+    <link rel="icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
+    <link rel="shortcut icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
+
     <?php if ($userRole === 'provider'): ?>
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
@@ -59,12 +62,13 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
         .card {
             margin-bottom: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease-in-out;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+            transition: none !important;
         }
         
         .card:hover {
-            transform: scale(1.02);
+            transform: none !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
         }
         
         .bg-role-admin {
@@ -167,9 +171,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                             <?php if ($userRole === 'admin'): ?>
                                 <!-- Admin Navigation -->
                                 <li class="nav-item">
-                                    <a class="nav-link" href="<?= base_url('index.php/admin') ?>">Dashboard</a>
-                                </li>
-                                <li class="nav-item">
                                     <a class="nav-link" href="<?= base_url('index.php/admin/providers') ?>">Providers</a>
                                 </li>
                                 <li class="nav-item">
@@ -184,9 +185,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                             <?php elseif ($userRole === 'provider'): ?>
                                 <!-- Provider Navigation -->
                                 <li class="nav-item">
-                                    <a class="nav-link" href="<?= base_url('index.php/provider') ?>">Dashboard</a>
-                                </li>
-                                <li class="nav-item">
                                     <a class="nav-link" href="<?= base_url('index.php/provider/services') ?>">Services</a>
                                 </li>
                                 <li class="nav-item">
@@ -197,9 +195,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                                 </li>
                             <?php elseif ($userRole === 'patient'): ?>
                                 <!-- Patient Navigation -->
-                                <li class="nav-item">
-                                    <a class="nav-link" href="<?= base_url('index.php/patient') ?>">Dashboard</a>
-                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="<?= base_url('index.php/patient/book') ?>">Book</a>
                                 </li>
