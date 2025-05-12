@@ -570,26 +570,65 @@ class Provider {
 
     /**
      * Clear all availability for a specific day
-     * 
-     * @param int $provider_id The provider ID
-     * @param string $date The date (YYYY-MM-DD)
-     * @return int|bool Number of deleted slots or false on failure
+     * @param int $provider_id The provider's ID
+     * @param string $date The date to clear (YYYY-MM-DD)
+     * @return int The number of deleted rows
      */
     public function clearDayAvailability($provider_id, $date) {
         try {
+            $this->db->begin_transaction();
+
+            // Delete one-time availability slots
             $stmt = $this->db->prepare("
                 DELETE FROM provider_availability 
                 WHERE provider_id = ? 
                 AND availability_date = ?
             ");
-            
             $stmt->bind_param("is", $provider_id, $date);
             $stmt->execute();
-            
-            return $stmt->affected_rows;
+            $affected_rows = $stmt->affected_rows;
+            $stmt->close();
+
+            // Check for recurring schedules that apply to this day
+            $day_of_week = date('w', strtotime($date)); // 0=Sunday, 1=Monday, etc.
+            $stmt = $this->db->prepare("
+                SELECT schedule_id 
+                FROM recurring_schedules 
+                WHERE provider_id = ? 
+                AND day_of_week = ? 
+                AND is_active = 1
+            ");
+            $stmt->bind_param("ii", $provider_id, $day_of_week);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $recurring_schedules = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+
+            // If there are recurring schedules, create a one-time unavailability slot
+            if (!empty($recurring_schedules)) {
+                foreach ($recurring_schedules as $schedule) {
+                    // Add a slot with is_available = 0 to block the recurring schedule for this day
+                    $stmt = $this->db->prepare("
+                        INSERT INTO provider_availability 
+                        (provider_id, availability_date, start_time, end_time, is_available, max_appointments)
+                        SELECT provider_id, ?, start_time, end_time, 0, 0
+                        FROM recurring_schedules
+                        WHERE schedule_id = ?
+                    ");
+                    $stmt->bind_param("si", $date, $schedule['schedule_id']);
+                    $stmt->execute();
+                    $affected_rows += $stmt->affected_rows;
+                    $stmt->close();
+                }
+            }
+
+            $this->db->commit();
+            error_log("Cleared $affected_rows availability slots (including recurring overrides) for provider $provider_id on $date");
+            return $affected_rows;
         } catch (Exception $e) {
-            error_log("Error clearing day availability: " . $e->getMessage());
-            return false;
+            $this->db->rollback();
+            error_log("Error clearing availability for provider $provider_id on $date: " . $e->getMessage());
+            return 0;
         }
     }
     public function addRecurringSchedule($provider_id, $day_of_week, $start_time, $end_time, $is_active) {

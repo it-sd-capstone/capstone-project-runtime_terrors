@@ -73,7 +73,39 @@
     text-transform: uppercase;
     font-size: 0.8rem;
     font-weight: 600;
-    padding: 0.5rem 1rem;
+    CONV: 0.5rem 1rem;
+}
+
+.fc .fc-prev-button,
+.fc .fc-next-button {
+    position: relative;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.fc .fc-prev-button .fc-icon,
+.fc .fc-next-button .fc-icon {
+    display: none; 
+}
+
+.fc .fc-prev-button::before {
+    content: '\f053'; 
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 1.2rem;
+    color: white;
+}
+
+.fc .fc-next-button::before {
+    content: '\f054'; 
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 1.2rem;
+    color: white;
 }
 
 .fc .fc-button-primary:hover {
@@ -88,14 +120,7 @@
     border-color: var(--secondary);
 }
 
-/* Add navigation arrows to prev/next buttons */
-.fc .fc-prev-button .fc-icon,
-.fc .fc-next-button .fc-icon {
-    font-size: 1.2em;
-    font-weight: bold;
-}
 
-/* Premium Event Styling */
 .fc-event {
     cursor: pointer;
     border-radius: 0.5rem;
@@ -118,7 +143,6 @@
     text-overflow: ellipsis;
 }
 
-/* Calendar Day Styling */
 .fc-daygrid-day {
     transition: var(--transition);
 }
@@ -137,7 +161,6 @@
     padding: 0.5rem !important;
 }
 
-/* Event Types */
 .available-event, .regular-availability {
     background-color: #4cc9f0 !important;
     border-left: 4px solid #3a86ff !important;
@@ -153,7 +176,6 @@
     border-left: 4px solid #3a86ff !important;
 }
 
-/* Action Panel Styling */
 .action-panel {
     background-color: #fff;
     border-radius: var(--border-radius);
@@ -205,13 +227,11 @@
     margin-bottom: 1.5rem;
 }
 
-/* Modified padding-y class to provide more vertical space */
 .py-2 {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
 }
 
-/* Form Controls */
 .form-control, .form-select {
     border-radius: 0.5rem;
     padding: 0.75rem 1rem;
@@ -240,14 +260,13 @@
     margin-bottom: 0.5rem;
 }
 
-/* Button styling - make them smaller */
 .btn {
     border-radius: 0.5rem;
-    padding: 0.5rem 1rem; /* Smaller padding */
+    padding: 0.5rem 1rem; 
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-size: 0.8rem; /* Smaller font */
+    font-size: 0.8rem; 
     transition: var(--transition);
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
@@ -283,13 +302,11 @@
     color: white;
 }
 
-/* Special styling for clear day button */
 #clearDayBtn {
     padding: 0.3rem 0.6rem;
     font-size: 0.75rem;
 }
 
-/* Card styling for management actions */
 .action-card {
     background-color: white;
     border-radius: 0.75rem;
@@ -1022,8 +1039,8 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showNotification('Error clearing day availability', 'danger');
+                console.error('Error clearing day availability:', error);
+                showNotification('Error clearing day availability: ' + error.message, 'danger');
             });
         }
         

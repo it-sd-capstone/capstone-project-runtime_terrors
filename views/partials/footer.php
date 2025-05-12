@@ -10,17 +10,33 @@
             
             <div class="col-md-2">
                 <h5 class="mb-3">Links</h5>
-                    <ul class="list-unstyled">
-                        <li class="mb-2"><a href="<?= base_url('index.php/home') ?>" class="text-white">Home</a></li>
-                        <li class="mb-2"><a href="<?= base_url('index.php/appointments') ?>" class="text-white">Appointments</a></li>
-                        <?php if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']): ?>
-                            <li class="mb-2"><a href="<?= base_url('index.php/auth') ?>" class="text-white">Login</a></li>
-                        <?php else: ?>
-                            <li class="mb-2"><a href="<?= base_url('index.php/auth/logout') ?>" class="text-white">Logout</a></li>
-                        <?php endif; ?>
-                        <li class="mb-2"><a href="<?= base_url('index.php/terms') ?>" class="text-white" target="_blank">Terms of Service</a></li>
-                        <li class="mb-2"><a href="<?= base_url('index.php/privacy') ?>" class="text-white" target="_blank">Privacy Policy</a></li>
-                    </ul>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="<?= base_url('index.php/home') ?>" class="text-white">Home</a></li>
+                    <li class="mb-2">
+                        <?php
+                        // Dynamically set the Appointments link based on user role
+                        $isLoggedIn = isset($_SESSION['user_id']) && ($_SESSION['logged_in'] ?? false) === true;
+                        $userRole = $isLoggedIn ? ($_SESSION['role'] ?? 'guest') : 'guest';
+                        $appointmentsUrl = base_url('index.php/appointments'); // Default for guests and patients
+                        if ($isLoggedIn) {
+                            if ($userRole === 'admin') {
+                                $appointmentsUrl = base_url('index.php/admin/appointments');
+                            } elseif ($userRole === 'provider') {
+                                $appointmentsUrl = base_url('index.php/provider/appointments');
+                            }
+                            // Patient uses the default appointments URL (index.php/appointments)
+                        }
+                        ?>
+                        <a href="<?= $appointmentsUrl ?>" class="text-white">Appointments</a>
+                    </li>
+                    <?php if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']): ?>
+                        <li class="mb-2"><a href="<?= base_url('index.php/auth') ?>" class="text-white">Login</a></li>
+                    <?php else: ?>
+                        <li class="mb-2"><a href="<?= base_url('index.php/auth/logout') ?>" class="text-white">Logout</a></li>
+                    <?php endif; ?>
+                    <li class="mb-2"><a href="<?= base_url('index.php/terms') ?>" class="text-white" target="_blank">Terms of Service</a></li>
+                    <li class="mb-2"><a href="<?= base_url('index.php/privacy') ?>" class="text-white" target="_blank">Privacy Policy</a></li>
+                </ul>
             </div>
                         
             <div class="col-md-3">
