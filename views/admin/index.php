@@ -236,8 +236,8 @@
                         <a href="<?= base_url('index.php/admin/users/create') ?>" class="btn btn-outline-primary">Add New User</a>
                         <a href="<?= base_url('index.php/admin/addProvider') ?>" class="btn btn-outline-success">Add New Provider</a>
                         <a href="<?= base_url('index.php/admin/services/create') ?>" class="btn btn-outline-info">Add New Service</a>
-                        <a href="<?= base_url('index.php/admin/reports') ?>" class="btn btn-outline-secondary">Generate Reports</a>
-                        <a href="<?= base_url('index.php/admin/settings') ?>" class="btn btn-outline-dark">System Settings</a>
+                        <!-- <a href="<?= base_url('index.php/admin/reports') ?>" class="btn btn-outline-secondary">Generate Reports</a> -->
+                        <!-- <a href="<?= base_url('index.php/admin/settings') ?>" class="btn btn-outline-dark">System Settings</a> -->
                     </div>
                 </div>
             </div>

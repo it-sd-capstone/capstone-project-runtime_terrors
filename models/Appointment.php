@@ -113,7 +113,54 @@ class Appointment {
         }
         return $appointments;
     }
-
+      /**
+     * Get appointments for a specific provider
+     *
+     * @param int $providerId The provider ID
+     * @param string|null $startDate Optional start date in Y-m-d format
+     * @param string|null $endDate Optional end date in Y-m-d format
+     * @return array Array of appointments
+     */
+    public function getProviderAppointments($providerId, $startDate = null, $endDate = null) {
+        $query = "SELECT a.*, 
+                        s.name as service_name, 
+                        CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                        p.email as patient_email,
+                        p.phone as patient_phone
+                FROM appointments a
+                JOIN users p ON a.patient_id = p.user_id
+                JOIN services s ON a.service_id = s.service_id
+                WHERE a.provider_id = ?";
+        
+        $params = [$providerId];
+        $types = "i";
+        
+        if ($startDate) {
+            $query .= " AND a.appointment_date >= ?";
+            $params[] = $startDate;
+            $types .= "s";
+        }
+        
+        if ($endDate) {
+            $query .= " AND a.appointment_date <= ?";
+            $params[] = $endDate;
+            $types .= "s";
+        }
+        
+        $query .= " ORDER BY a.appointment_date ASC, a.start_time ASC";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $appointments = [];
+        while ($row = $result->fetch_assoc()) {
+            $appointments[] = $row;
+        }
+        
+        return $appointments;
+    }
     /**
      * Get past appointments for a patient.
      * @return array

@@ -1079,10 +1079,69 @@ class AdminController {
         include VIEW_PATH . '/admin/add_provider.php';
     }
 
+   /**
+     * View a provider's availability schedule
+     *
+     * @return void
+     */
+    public function viewAvailability() {
+        // Check if user is admin
+        if (!$this->isUserAdmin()) {
+            $_SESSION['error'] = "You don't have permission to access this page";
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
+        }
+        
+        // First, check if ID is passed as query parameter (most reliable method)
+        $providerId = isset($_GET['id']) ? $_GET['id'] : null;
+        
+        // If not found in query, try to extract from URL path (fallback)
+        if (!$providerId) {
+            $path = '';
+            if (!empty($_SERVER['PATH_INFO'])) {
+                $path = $_SERVER['PATH_INFO'];
+            } elseif (!empty($_SERVER['REQUEST_URI'])) {
+                $path = $_SERVER['REQUEST_URI'];
+                if (($pos = strpos($path, '?')) !== false) {
+                    $path = substr($path, 0, $pos);
+                }
+            }
+            
+            if (preg_match('/\/(\d+)(\/|$)/', $path, $matches)) {
+                $providerId = $matches[1];
+            }
+        }
+        
+        if (!$providerId) {
+            $_SESSION['error'] = "Provider ID is required";
+            header('Location: ' . base_url('index.php/admin/providers'));
+            exit;
+        }
+        
+        // Get provider details
+        $provider = $this->userModel->getUserById($providerId);
+        
+        if (!$provider || $provider['role'] !== 'provider') {
+            $_SESSION['error'] = "Provider not found or user is not a provider";
+            header('Location: ' . base_url('index.php/admin/providers'));
+            exit;
+        }
+        
+        // Get provider's availability schedule
+        $availability = $this->providerModel->getProviderAvailability($providerId);
+        
+        // Get provider's upcoming appointments
+        $appointments = $this->appointmentModel->getProviderAppointments($providerId, 'upcoming');
+        
+        // Use the correct filename with the typo "avaliability" (notice the extra 'i')
+        include VIEW_PATH . '/admin/provider_avaliability.php';
+    }
+
+
 
     /**
      * Manage services offered by a provider
-     * 
+     *
      * @return void
      */
     public function manageProviderServices() {
@@ -1093,10 +1152,33 @@ class AdminController {
             exit;
         }
         
-        // Get provider ID from URL parameters
-        $segments = explode('/', trim($_SERVER['PATH_INFO'] ?? '', '/'));
-        $providerId = $segments[2] ?? null; // admin/manageProviderServices/[providerId]
+        // First, check if ID is passed as query parameter (most reliable method)
+        $providerId = isset($_GET['id']) ? $_GET['id'] : null;
         
+        // If not found in query, try to extract from URL path
+        if (!$providerId) {
+            $path = '';
+            // Try PATH_INFO first
+            if (!empty($_SERVER['PATH_INFO'])) {
+                $path = $_SERVER['PATH_INFO'];
+            }
+            // If PATH_INFO not available, try REQUEST_URI
+            elseif (!empty($_SERVER['REQUEST_URI'])) {
+                $path = $_SERVER['REQUEST_URI'];
+                
+                // Remove query string if present
+                if (($pos = strpos($path, '?')) !== false) {
+                    $path = substr($path, 0, $pos);
+                }
+            }
+            
+            // Extract numeric ID from path
+            if (preg_match('/\/(\d+)(\/|$)/', $path, $matches)) {
+                $providerId = $matches[1];
+            }
+        }
+        
+        // If provider ID still not found, redirect with error
         if (!$providerId) {
             $_SESSION['error'] = "Provider ID is required";
             header('Location: ' . base_url('index.php/admin/providers'));
@@ -1118,56 +1200,54 @@ class AdminController {
             
             if ($action === 'add_service') {
                 $serviceId = $_POST['service_id'] ?? null;
-                $customPrice = $_POST['custom_price'] ?? null;
+                // These are the only fields we have in our database
+                $customDuration = !empty($_POST['custom_duration']) ? (int)$_POST['custom_duration'] : null;
+                $customNotes = !empty($_POST['custom_notes']) ? trim($_POST['custom_notes']) : null;
                 
                 if (!$serviceId) {
-                    $_SESSION['error'] = "Service is required";
+                    // Redirect with error - using query parameter format
+                    header('Location: ' . base_url('index.php/admin/manageProviderServices?id=' . $providerId . '&error=add_failed'));
+                    exit;
                 } else {
-                    // Add service to provider
-                    $result = $this->providerModel->addServiceToProvider($providerId, $serviceId, $customPrice);
+                    // Add service to provider with only the fields our database supports
+                    $result = $this->providerModel->addServiceToProvider(
+                        $providerId,
+                        $serviceId,
+                        $customDuration,
+                        $customNotes
+                    );
                     
                     if ($result) {
-                        $_SESSION['success'] = "Service added to provider successfully";
+                        // Redirect with success - using query parameter format
+                        header('Location: ' . base_url('index.php/admin/manageProviderServices?id=' . $providerId . '&success=added'));
                     } else {
-                        $_SESSION['error'] = "Failed to add service to provider";
+                        // Redirect with error - using query parameter format
+                        header('Location: ' . base_url('index.php/admin/manageProviderServices?id=' . $providerId . '&error=add_failed'));
                     }
+                    exit;
                 }
             } elseif ($action === 'remove_service') {
                 $serviceId = $_POST['service_id'] ?? null;
                 
                 if (!$serviceId) {
-                    $_SESSION['error'] = "Service ID is required";
+                    // Redirect with error - using query parameter format
+                    header('Location: ' . base_url('index.php/admin/manageProviderServices?id=' . $providerId . '&error=remove_failed'));
+                    exit;
                 } else {
                     // Remove service from provider
                     $result = $this->providerModel->removeServiceFromProvider($providerId, $serviceId);
                     
                     if ($result) {
-                        $_SESSION['success'] = "Service removed from provider successfully";
+                        // Redirect with success - using query parameter format
+                        header('Location: ' . base_url('index.php/admin/manageProviderServices?id=' . $providerId . '&success=removed'));
                     } else {
-                        $_SESSION['error'] = "Failed to remove service from provider";
+                        // Redirect with error - using query parameter format
+                        header('Location: ' . base_url('index.php/admin/manageProviderServices?id=' . $providerId . '&error=remove_failed'));
                     }
-                }
-            } elseif ($action === 'update_price') {
-                $serviceId = $_POST['service_id'] ?? null;
-                $customPrice = $_POST['custom_price'] ?? null;
-                
-                if (!$serviceId || !is_numeric($customPrice)) {
-                    $_SESSION['error'] = "Service ID and valid price are required";
-                } else {
-                    // Update service price for provider
-                    $result = $this->providerModel->updateProviderServicePrice($providerId, $serviceId, $customPrice);
-                    
-                    if ($result) {
-                        $_SESSION['success'] = "Service price updated successfully";
-                    } else {
-                        $_SESSION['error'] = "Failed to update service price";
-                    }
+                    exit;
                 }
             }
-            
-            // Redirect to refresh the page
-            header('Location: ' . base_url('index.php/admin/manageProviderServices/' . $providerId));
-            exit;
+            // Removed update_price action as it's not supported by our current database structure
         }
         
         // Get services offered by this provider
@@ -1184,8 +1264,8 @@ class AdminController {
             return !in_array($service['service_id'], $providerServiceIds);
         });
         
-        
-        // Include the footer
-        include VIEW_PATH . '/partials/footer.php';
+        include VIEW_PATH . '/admin/provider_services.php';
     }
+
+
 }
