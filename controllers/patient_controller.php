@@ -420,34 +420,58 @@ class PatientController {
         include VIEW_PATH . '/patient/profile.php';
     }
 
-    /**
-     * Update patient profile
-     */
     public function updateProfile() {
-        if (!isset($_SESSION['user_id'])) {
-            $_SESSION['error'] = "You must be logged in to update your profile";
-            header('Location: ' . base_url('index.php/auth'));
-            exit;
+        // Get all form data using $_POST
+        $data = [
+            'first_name' => $_POST['first_name'] ?? '',
+            'last_name' => $_POST['last_name'] ?? '',
+            'phone' => $_POST['phone'] ?? '',
+            'date_of_birth' => !empty($_POST['date_of_birth']) ? $_POST['date_of_birth'] : null,
+            'address' => $_POST['address'] ?? '',
+            'emergency_contact' => $_POST['emergency_contact'] ?? '',
+            'emergency_contact_phone' => $_POST['emergency_contact_phone'] ?? '',
+            'medical_conditions' => $_POST['medical_conditions'] ?? '',
+            'insurance_provider' => $_POST['insurance_provider'] ?? '',
+            'insurance_policy_number' => $_POST['insurance_policy_number'] ?? ''
+        ];
+        
+        // Remove empty fields (except medical_conditions which can be blank)
+        foreach ($data as $key => $value) {
+            if ($value === '' && $key != 'medical_conditions') {
+                unset($data[$key]);
+            }
         }
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $userId = $_SESSION['user_id'];
-            $userData = [
-                'first_name' => $_POST['first_name'] ?? '',
-                'last_name' => $_POST['last_name'] ?? '',
-                'phone' => $_POST['phone'] ?? ''
-            ];
-            $this->userModel->updateUser($userId, $userData);
-            $patientData = [
-                'address' => $_POST['address'] ?? '',
-                'emergency_contact' => $_POST['emergency_contact'] ?? '',
-                'medical_conditions' => $_POST['medical_conditions'] ?? ''
-            ];
-            $result = $this->userModel->updatePatientProfile($userId, $patientData);
-            $_SESSION[$result ? 'success' : 'error'] = $result ? "Profile updated successfully" : "Failed to update profile";
-            header('Location: ' . base_url('index.php/patient/profile'));
-            exit;
+        
+        // Update patient profile
+        $success = $this->userModel->updatePatientProfile($_SESSION['user_id'], $data);
+        
+        if ($success) {
+            $_SESSION['success'] = 'Profile updated successfully';
+        } else {
+            $_SESSION['error'] = 'Failed to update profile. Please try again.';
         }
+        
+        // Use the SAME variable structure as your profile() method
+        $user_id = $_SESSION['user_id'];
+        $userData = $this->userModel->getUserById($user_id);
+        $patientData = $this->userModel->getPatientProfile($user_id);
+        
+        // This is key: use the same variable name and structure as in profile()
+        $patient = array_merge($userData ?: [], $patientData ?: []);
+        
+        // Add message variables if your view uses them
+        $success = $_SESSION['success'] ?? null;
+        $error = $_SESSION['error'] ?? null;
+        
+        // Clear session messages after using them
+        if (isset($_SESSION['success'])) unset($_SESSION['success']);
+        if (isset($_SESSION['error'])) unset($_SESSION['error']);
+        
+        include VIEW_PATH . '/patient/profile.php';
     }
+
+
+
     public function search() {
         // Check if user is logged in
         if (!isset($_SESSION['user_id'])) {

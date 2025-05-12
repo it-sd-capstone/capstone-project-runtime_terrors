@@ -1141,22 +1141,55 @@ class User {
             return false;
         }
     }
-    /**
-     * Update patient profile information
-     * 
-     * @param int $patientId The patient's user ID
-     * @param array $data The profile data to update
-     * @return bool True on success, false on failure
-     */
+
     public function updatePatientProfile($patientId, $data) {
         try {
-            // Format insurance info as JSON
+            // Start transaction to ensure both tables update or neither does
+            $this->db->begin_transaction();
+            
+            // First update the users table (first_name, last_name, phone)
+            $userUpdateFields = [];
+            $userParams = [];
+            $userTypes = "";
+            
+            if (isset($data['first_name'])) {
+                $userUpdateFields[] = "first_name = ?";
+                $userParams[] = $data['first_name'];
+                $userTypes .= "s";
+            }
+            
+            if (isset($data['last_name'])) {
+                $userUpdateFields[] = "last_name = ?";
+                $userParams[] = $data['last_name'];
+                $userTypes .= "s";
+            }
+            
+            // Update phone in users table too if provided
+            if (isset($data['phone'])) {
+                $userUpdateFields[] = "phone = ?";
+                $userParams[] = $data['phone'];
+                $userTypes .= "s";
+            }
+            
+            if (!empty($userUpdateFields)) {
+                $userUpdateQuery = "UPDATE users SET " . implode(", ", $userUpdateFields) . " WHERE user_id = ?";
+                $userParams[] = $patientId;
+                $userTypes .= "i";
+                
+                $stmt = $this->db->prepare($userUpdateQuery);
+                $stmt->bind_param($userTypes, ...$userParams);
+                $stmt->execute();
+            }
+            
+            // Prepare insurance info correctly
+            $insuranceProvider = $data['insurance_provider'] ?? '';
+            $insurancePolicyNumber = $data['insurance_policy_number'] ?? '';
             $insuranceInfo = json_encode([
-                'provider' => $data['insurance_provider'] ?? '',
-                'policy_number' => $data['insurance_policy_number'] ?? ''
+                'provider' => $insuranceProvider,
+                'policy_number' => $insurancePolicyNumber
             ]);
             
-            // First check if a profile already exists
+            // Check if a profile already exists
             $stmt = $this->db->prepare("SELECT * FROM patient_profiles WHERE patient_id = ?");
             $stmt->bind_param("i", $patientId);
             $stmt->execute();
@@ -1164,10 +1197,10 @@ class User {
             
             if ($result->num_rows > 0) {
                 // Update existing profile
-                $query = "UPDATE patient_profiles SET 
+                $query = "UPDATE patient_profiles SET
                     phone = ?,
-                    date_of_birth = ?, 
-                    address = ?, 
+                    date_of_birth = ?,
+                    address = ?,
                     emergency_contact = ?,
                     emergency_contact_phone = ?,
                     medical_conditions = ?,
@@ -1177,15 +1210,17 @@ class User {
                 
                 $stmt = $this->db->prepare($query);
                 $phone = $data['phone'] ?? '';
+                $dob = $data['date_of_birth'] ?? null;
+                $address = $data['address'] ?? '';
                 $emergencyContact = $data['emergency_contact'] ?? '';
                 $emergencyPhone = $data['emergency_contact_phone'] ?? '';
                 $medicalConditions = $data['medical_conditions'] ?? '';
-            
+                
                 $stmt->bind_param(
-                    "sssssssi", 
+                    "sssssssi",
                     $phone,
-                    $data['date_of_birth'],
-                    $data['address'],
+                    $dob,
+                    $address,
                     $emergencyContact,
                     $emergencyPhone,
                     $medicalConditions,
@@ -1195,10 +1230,10 @@ class User {
             } else {
                 // Insert new profile
                 $query = "INSERT INTO patient_profiles (
-                    patient_id, 
+                    patient_id,
                     user_id,
                     phone,
-                    date_of_birth, 
+                    date_of_birth,
                     address,
                     emergency_contact,
                     emergency_contact_phone,
@@ -1210,17 +1245,19 @@ class User {
                 
                 $stmt = $this->db->prepare($query);
                 $phone = $data['phone'] ?? '';
+                $dob = $data['date_of_birth'] ?? null;
+                $address = $data['address'] ?? '';
                 $emergencyContact = $data['emergency_contact'] ?? '';
                 $emergencyPhone = $data['emergency_contact_phone'] ?? '';
                 $medicalConditions = $data['medical_conditions'] ?? '';
-            
+                
                 $stmt->bind_param(
-                    "iisssssssi", 
+                    "iissssss",
                     $patientId,
                     $patientId, // user_id is the same as patient_id
                     $phone,
-                    $data['date_of_birth'],
-                    $data['address'],
+                    $dob,
+                    $address,
                     $emergencyContact,
                     $emergencyPhone,
                     $medicalConditions,
@@ -1231,12 +1268,18 @@ class User {
             $result = $stmt->execute();
             
             if (!$result) {
+                // Roll back transaction on error
+                $this->db->rollback();
                 error_log("Error updating patient profile: " . $stmt->error);
                 return false;
             }
             
+            // Commit transaction after successful updates
+            $this->db->commit();
             return true;
         } catch (Exception $e) {
+            // Roll back transaction on exception
+            $this->db->rollback();
             error_log("Exception updating patient profile: " . $e->getMessage());
             return false;
         }
