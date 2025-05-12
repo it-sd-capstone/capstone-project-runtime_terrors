@@ -68,17 +68,29 @@ class AdminController {
     
     // ✅ Manage Users - Enhanced version
     public function users() {
-        // Initialize User model if not already done
-        if (!$this->userModel) {
-            $this->userModel = new User($this->db);
-        }
-        
-        // Get action and ID from URL parameters
-        $segments = explode('/', trim($_SERVER['PATH_INFO'] ?? '', '/'));
-        $action = $segments[2] ?? 'list'; // admin/users/[action]
-        $userId = $segments[3] ?? null;   // admin/users/[action]/[id]
-        
-        error_log("Users method called with action: $action, userId: $userId");
+        // Get the full REQUEST_URI
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+
+        // Log the original REQUEST_URI for debugging
+        error_log("Original REQUEST_URI: " . $uri);
+
+        // Parse the URI properly (this preserves slashes)
+        $path = parse_url($uri, PHP_URL_PATH);
+        error_log("Parsed path: " . $path);
+
+        // Remove any script name if it's in the URL (like index.php)
+        $path = preg_replace('/^\/index\.php/', '', $path);
+
+        // Now split the URI into segments with slashes preserved
+        $segments = array_values(array_filter(explode('/', $path)));
+        error_log("Segments: " . print_r($segments, true));
+
+        // Determine action and userID based on segments
+        // Assuming URLs like: /admin/users/view/33
+        $action = isset($segments[2]) ? $segments[2] : 'list';
+        $userId = isset($segments[3]) ? $segments[3] : null;
+
+        error_log("Final action: $action, userId: $userId");
         
         // Check if user is admin for all actions except view/list
         if ($action != 'list' && !$this->isUserAdmin()) {

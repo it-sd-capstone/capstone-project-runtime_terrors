@@ -1,7 +1,8 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+ini_set('display_errors', 2);
+ini_set('display_startup_errors', 2);
 error_reporting(E_ALL);
+
 ?>
 <?php include VIEW_PATH . '/partials/header.php'; ?>
 <div class="container">
@@ -11,6 +12,7 @@ error_reporting(E_ALL);
     <div class="card mb-3">
         <div class="card-header">
             <h5>Filter Users</h5>
+            
         </div>
         <div class="card-body">
             <form action="<?= base_url('index.php/admin/users') ?>" method="get" class="row g-3">
