@@ -484,7 +484,8 @@ class PatientController {
             'date' => $_GET['date'] ?? '',
             'gender' => $_GET['gender'] ?? '',
             'language' => $_GET['language'] ?? '',
-            'insurance' => $_GET['insurance'] ?? ''
+            'insurance' => $_GET['insurance'] ?? '',
+            'only_accepting' => true  // Add this parameter to only show providers accepting new patients
         ];
         
         // Get available specialties for filtering
@@ -492,15 +493,15 @@ class PatientController {
         
         // Determine if search was submitted and validate
         $searchSubmitted = isset($_GET['search_submitted']);
-        $hasSearchCriteria = !empty($searchParams['specialty']) || 
-                             !empty($searchParams['location']) || 
-                             !empty($searchParams['date']) || 
-                             !empty($searchParams['gender']) || 
-                             !empty($searchParams['language']) || 
-                             !empty($searchParams['insurance']);
+        $hasSearchCriteria = !empty($searchParams['specialty']) ||
+                            !empty($searchParams['location']) ||
+                            !empty($searchParams['date']) ||
+                            !empty($searchParams['gender']) ||
+                            !empty($searchParams['language']) ||
+                            !empty($searchParams['insurance']);
         
         // Validate search criteria
-        $error = ($searchSubmitted && !$hasSearchCriteria) 
+        $error = ($searchSubmitted && !$hasSearchCriteria)
             ? "Please enter at least one search criteria."
             : ($_GET['error'] ?? null);
         

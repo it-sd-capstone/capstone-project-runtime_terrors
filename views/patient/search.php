@@ -27,7 +27,7 @@
                                 <select name="specialty" id="specialty" class="form-select">
                                     <option value="">All Specialties</option>
                                     <?php foreach ($specialties as $spec) : ?>
-                                        <?php if (is_array($spec) && isset($spec['specialization'])): ?>
+                                        <?php if (is_array($spec) && isset($spec['specialization']) && !empty(trim($spec['specialization']))): ?>
                                             <option value="<?= htmlspecialchars($spec['specialization']) ?>"
                                                 <?= (isset($searchParams['specialty']) && $searchParams['specialty'] == $spec['specialization']) ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($spec['specialization']) ?>
