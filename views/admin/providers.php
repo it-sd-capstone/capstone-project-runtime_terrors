@@ -134,7 +134,7 @@
                                                     </div>
                                                     <div class="modal-body">
                                                         <div class="list-group">
-                                                            <a href="<?= base_url('index.php/admin/manageProviderServices/' . $provider['user_id']) ?>" 
+                                                            <a href="<?= base_url('admin/manageProviderServices/' . $provider['user_id']) ?>" 
                                                                class="list-group-item list-group-item-action">
                                                                 <div class="d-flex w-100 justify-content-between">
                                                                     <h6 class="mb-1">Manage Services</h6>

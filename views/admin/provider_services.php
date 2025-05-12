@@ -61,6 +61,7 @@
                                         <th>Service Name</th>
                                         <th>Duration</th>
                                         <th>Custom Duration</th>
+                                        <th>Price</th>
                                         <th>Notes</th>
                                         <th>Actions</th>
                                     </tr>
@@ -78,7 +79,11 @@
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <?php if ($service['custom_notes']): ?>
+                                                <!-- Using standard price from services table since we don't have custom_price -->
+                                                <span class="badge bg-secondary">$<?= number_format($service['price'], 2) ?></span>
+                                            </td>
+                                            <td>
+                                                <?php if (!empty($service['custom_notes'])): ?>
                                                     <small class="text-muted"><?= htmlspecialchars($service['custom_notes']) ?></small>
                                                 <?php else: ?>
                                                     <small class="text-muted">-</small>
@@ -102,7 +107,7 @@
                 </div>
             </div>
         </div>
-       
+               
         <!-- Add Service Form -->
         <div class="col-md-5">
             <div class="card shadow-sm">
@@ -118,7 +123,8 @@
                                 <option value="">-- Select a service --</option>
                                 <?php foreach ($availableServices as $service): ?>
                                     <option value="<?= $service['service_id'] ?>">
-                                        <?= htmlspecialchars($service['name']) ?> (<?= $service['duration'] ?> min)
+                                        <?= htmlspecialchars($service['name']) ?>
+                                        (<?= $service['duration'] ?> min, $<?= number_format($service['price'], 2) ?>)
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -126,13 +132,15 @@
                        
                         <div class="mb-3">
                             <label for="custom_duration" class="form-label">Custom Duration (minutes, optional)</label>
-                            <input type="number" class="form-control" id="custom_duration" name="custom_duration" min="5" step="5" placeholder="Leave empty for default duration">
+                            <input type="number" class="form-control" id="custom_duration" name="custom_duration"
+                                   min="5" step="5" placeholder="Leave empty for default duration">
                             <div class="form-text">Override the standard service duration if needed.</div>
                         </div>
                        
                         <div class="mb-3">
                             <label for="custom_notes" class="form-label">Custom Notes (optional)</label>
-                            <textarea class="form-control" id="custom_notes" name="custom_notes" rows="2" placeholder="Any special information about this provider's service"></textarea>
+                            <textarea class="form-control" id="custom_notes" name="custom_notes" rows="2"
+                                      placeholder="Any special information about this provider's service"></textarea>
                         </div>
                        
                         <div class="d-grid">
