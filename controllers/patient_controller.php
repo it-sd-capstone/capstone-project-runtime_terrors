@@ -470,12 +470,13 @@ class PatientController {
         
         // Determine if search was submitted and validate
         $searchSubmitted = isset($_GET['search_submitted']);
-        $hasSearchCriteria = !empty($searchParams['specialty']) || 
-                             !empty($searchParams['location']) || 
-                             !empty($searchParams['date']) || 
-                             !empty($searchParams['gender']) || 
-                             !empty($searchParams['language']) || 
-                             !empty($searchParams['insurance']);
+        // Allow specialty to be empty (for "All Specialties") or non-empty
+        $hasSearchCriteria = isset($searchParams['specialty']) || // Changed to check if set, not empty
+                            !empty($searchParams['location']) || 
+                            !empty($searchParams['date']) || 
+                            !empty($searchParams['gender']) || 
+                            !empty($searchParams['language']) || 
+                            !empty($searchParams['insurance']);
         
         // Validate search criteria
         $error = ($searchSubmitted && !$hasSearchCriteria) 

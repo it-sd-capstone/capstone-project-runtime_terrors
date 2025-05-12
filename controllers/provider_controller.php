@@ -613,6 +613,9 @@ class ProviderController {
 
     
 
+    /**
+     * Get provider schedules for calendar display
+     */
     public function getProviderSchedules() {
         $provider_id = $_SESSION['user_id'] ?? null;
         if (!$provider_id) {
@@ -620,53 +623,33 @@ class ProviderController {
             echo json_encode([]);
             exit;
         }
-        
-        // Check which view we're rendering for
+
         $view_type = $_GET['view'] ?? 'dayGridMonth';
         $isMonthView = ($view_type === 'dayGridMonth');
-        
-        // Get both regular and recurring schedules
+
+        // Get one-time availability slots
         $schedules = $this->providerModel->getAvailability($provider_id);
-        
-        // Add try-catch for recurring schedules
+
+        // Get recurring schedules
         try {
             $recurringSchedules = $this->providerModel->getRecurringSchedules($provider_id);
         } catch (Exception $e) {
             error_log("Error fetching recurring schedules: " . $e->getMessage());
-            // Create default recurring schedules as fallback
             $recurringSchedules = [];
-            
-            // Default recurring schedules for Monday, Wednesday, Friday
-            $daysOfWeek = [1, 3, 5];
-            foreach ($daysOfWeek as $index => $day) {
-                $recurringSchedules[] = [
-                    'schedule_id' => 'default_' . ($index + 1),
-                    'day_of_week' => $day,
-                    'start_time' => '09:00:00',
-                    'end_time' => '17:00:00',
-                    'status' => 'active'
-                ];
-            }
         }
-        
-        // Format events for FullCalendar
+
         $events = [];
-        
-        // CONSOLIDATION FOR MONTH VIEW ONLY
+
         if ($isMonthView) {
-            // Track dates with availability to avoid duplicates
             $availableDates = [];
             $recurringDates = [];
-            
-            // Process regular availability for month view (grouped by date)
+
+            // Process one-time availability for month view
             foreach ($schedules as $schedule) {
-                $date = $schedule['availability_date'] ?? $schedule['date'] ??
-                       $schedule['schedule_date'] ?? date('Y-m-d');
-                
-                // If we haven't added this date yet, add a consolidated event
+                if ($schedule['is_available'] == 0) continue; // Skip unavailable slots
+                $date = $schedule['availability_date'];
                 if (!isset($availableDates[$date])) {
                     $availableDates[$date] = true;
-                    
                     $events[] = [
                         'id' => 'consolidated_avail_' . md5($date),
                         'title' => 'Available',
@@ -681,100 +664,108 @@ class ProviderController {
                     ];
                 }
             }
-            
-            // Process recurring schedules for month view (one entry per day)
+
+            // Process recurring schedules for month view
             $dayOfWeekMap = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-            
             foreach ($recurringSchedules as $recurring) {
                 $dayIndex = $recurring['day_of_week'];
                 if ($dayIndex < 0 || $dayIndex > 6) continue;
-                
                 $dayName = $dayOfWeekMap[$dayIndex];
                 $startTime = $recurring['start_time'];
                 $endTime = $recurring['end_time'];
-                
-                // Format times for display (12-hour with am/pm)
                 $formattedStart = date('g:ia', strtotime($startTime));
                 $formattedEnd = date('g:ia', strtotime($endTime));
-                
-                // Generate events for the next 4 weeks
+
+                // Check for one-time unavailability overrides
                 for ($i = 0; $i < 4; $i++) {
                     $date = date('Y-m-d', strtotime("+$i week $dayName"));
-                    
-                    // Skip if we already have a recurring event for this date
-                    if (isset($recurringDates[$date])) continue;
-                    $recurringDates[$date] = true;
-                    
-                    $events[] = [
-                        'id' => 'consolidated_recurring_' . md5($date),
-                        'title' => 'Working Hours ' . $formattedStart . '-' . $formattedEnd,
-                        'start' => $date,
-                        'allDay' => true,
-                        'color' => '#17a2b8', // Blue for recurring
-                        'className' => 'consolidated-recurring',
-                        'extendedProps' => [
-                            'type' => 'consolidated_recurring',
-                            'date' => $date,
-                            'start_time' => $startTime,
-                            'end_time' => $endTime
-                        ]
-                    ];
+                    // Skip if there's an unavailability slot for this date
+                    $stmt = $this->db->prepare("
+                        SELECT COUNT(*) as count 
+                        FROM provider_availability 
+                        WHERE provider_id = ? 
+                        AND availability_date = ? 
+                        AND is_available = 0
+                    ");
+                    $stmt->bind_param("is", $provider_id, $date);
+                    $stmt->execute();
+                    $result = $stmt->get_result()->fetch_assoc();
+                    if ($result['count'] > 0) continue;
+
+                    if (!isset($recurringDates[$date])) {
+                        $recurringDates[$date] = true;
+                        $events[] = [
+                            'id' => 'consolidated_recurring_' . md5($date),
+                            'title' => 'Working Hours ' . $formattedStart . '-' . $formattedEnd,
+                            'start' => $date,
+                            'allDay' => true,
+                            'color' => '#17a2b8',
+                            'className' => 'consolidated-recurring',
+                            'extendedProps' => [
+                                'type' => 'consolidated_recurring',
+                                'date' => $date,
+                                'start_time' => $startTime,
+                                'end_time' => $endTime
+                            ]
+                        ];
+                    }
                 }
             }
         } else {
-            // DETAILED VIEW FOR WEEK/DAY VIEWS
-            
-            // Format regular availability slots with time in title
+            // Detailed view for week/day views
             foreach ($schedules as $schedule) {
-                $date = $schedule['availability_date'] ?? $schedule['date'] ??
-                       $schedule['schedule_date'] ?? date('Y-m-d');
-                $startTime = $schedule['start_time'] ?? '09:00:00';
-                $endTime = $schedule['end_time'] ?? '17:00:00';
-                
-                // Format times for display (12-hour with am/pm)
+                if ($schedule['is_available'] == 0) continue; // Skip unavailable slots
+                $date = $schedule['availability_date'];
+                $startTime = $schedule['start_time'];
+                $endTime = $schedule['end_time'];
                 $formattedStart = date('g:ia', strtotime($startTime));
                 $formattedEnd = date('g:ia', strtotime($endTime));
-                
-                $event = [
-                    'id' => $schedule['availability_id'] ?? $schedule['id'] ?? $schedule['schedule_id'] ?? ('reg_' . uniqid()),
+
+                $events[] = [
+                    'id' => $schedule['availability_id'] ?? ('reg_' . uniqid()),
                     'title' => 'Available ' . $formattedStart . '-' . $formattedEnd,
                     'start' => $date . 'T' . $startTime,
                     'end' => $date . 'T' . $endTime,
                     'color' => '#28a745',
                     'extendedProps' => [
                         'type' => 'availability',
-                        'original_id' => $schedule['availability_id'] ?? $schedule['id'] ?? null
+                        'original_id' => $schedule['availability_id'] ?? null
                     ]
                 ];
-                
-                $events[] = $event;
             }
-            
-            // Format recurring availability with time in title
+
+            // Recurring schedules for week/day view
             $dayOfWeekMap = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-            
             foreach ($recurringSchedules as $recurring) {
                 $dayIndex = $recurring['day_of_week'];
                 if ($dayIndex < 0 || $dayIndex > 6) continue;
-                
                 $dayName = $dayOfWeekMap[$dayIndex];
                 $startTime = $recurring['start_time'];
                 $endTime = $recurring['end_time'];
-                
-                // Format times for display (12-hour with am/pm)
                 $formattedStart = date('g:ia', strtotime($startTime));
                 $formattedEnd = date('g:ia', strtotime($endTime));
-                
-                // Generate events for the next 4 weeks
+
                 for ($i = 0; $i < 4; $i++) {
                     $date = date('Y-m-d', strtotime("+$i week $dayName"));
-                    
+                    // Skip if there's an unavailability slot for this date
+                    $stmt = $this->db->prepare("
+                        SELECT COUNT(*) as count 
+                        FROM provider_availability 
+                        WHERE provider_id = ? 
+                        AND availability_date = ? 
+                        AND is_available = 0
+                    ");
+                    $stmt->bind_param("is", $provider_id, $date);
+                    $stmt->execute();
+                    $result = $stmt->get_result()->fetch_assoc();
+                    if ($result['count'] > 0) continue;
+
                     $events[] = [
                         'id' => 'recurring_' . $recurring['schedule_id'] . '_' . $i,
                         'title' => 'Working Hours ' . $formattedStart . '-' . $formattedEnd,
                         'start' => $date . 'T' . $startTime,
                         'end' => $date . 'T' . $endTime,
-                        'color' => '#17a2b8', // Blue for recurring
+                        'color' => '#17a2b8',
                         'extendedProps' => [
                             'type' => 'recurring',
                             'original_id' => $recurring['schedule_id']
@@ -783,7 +774,7 @@ class ProviderController {
                 }
             }
         }
-        
+
         header('Content-Type: application/json');
         echo json_encode($events);
         exit;
@@ -871,7 +862,6 @@ class ProviderController {
             exit;
         }
         
-        // Get the JSON data sent in the request
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
         
@@ -884,18 +874,25 @@ class ProviderController {
         $provider_id = $_SESSION['user_id'];
         $date = $data['date'];
         
-        // Call the provider model to clear the day's availability
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) || !strtotime($date)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Invalid date format']);
+            exit;
+        }
+        
         $count = $this->providerModel->clearDayAvailability($provider_id, $date);
         
         header('Content-Type: application/json');
-        if ($count !== false) {
+        if ($count === false) {
+            echo json_encode(['success' => false, 'message' => 'Failed to clear availability due to a server error']);
+        } elseif ($count === 0) {
+            echo json_encode(['success' => false, 'message' => "No availability slots found for $date"]);
+        } else {
             echo json_encode([
-                'success' => true, 
-                'message' => "Cleared all availability for $date",
+                'success' => true,
+                'message' => "Cleared $count availability slot" . ($count > 1 ? "s" : "") . " for $date",
                 'count' => $count
             ]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to clear day availability']);
         }
         exit;
     }
