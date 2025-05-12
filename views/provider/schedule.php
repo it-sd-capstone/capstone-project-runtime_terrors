@@ -1039,8 +1039,8 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showNotification('Error clearing day availability', 'danger');
+                console.error('Error clearing day availability:', error);
+                showNotification('Error clearing day availability: ' + error.message, 'danger');
             });
         }
         
