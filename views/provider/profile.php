@@ -1,5 +1,4 @@
 <?php include VIEW_PATH . '/partials/header.php'; ?>
-
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-8 mx-auto">
@@ -97,7 +96,31 @@
                             </div>
                         </div>
                         
-                        <!-- Additional fields can be added here following the same pattern -->
+                        <!-- Availability Settings Section -->
+                        <div class="card mb-4 border-0 bg-light">
+                            <div class="card-body">
+                                <h5 class="card-title text-warning mb-3">
+                                    <i class="fas fa-calendar-check me-2"></i>Availability Settings
+                                </h5>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="accepting_new_patients" 
+                                           name="accepting_new_patients" <?= isset($provider['accepting_new_patients']) && $provider['accepting_new_patients'] ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="accepting_new_patients">
+                                        Currently accepting new patients
+                                    </label>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="max_patients_per_day" class="form-label">Maximum patients per day</label>
+                                    <input type="number" class="form-control" id="max_patients_per_day" name="max_patients_per_day"
+                                           value="<?= htmlspecialchars($provider['max_patients_per_day'] ?? '10') ?>" min="1" max="50">
+                                    <div class="form-text">
+                                        Limit the number of appointments you can have scheduled per day.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         
                         <hr class="my-4">
                         
@@ -120,17 +143,90 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('providerProfileForm');
+    const phoneField = document.getElementById('phone');
+    
+    // Phone field formatting
+    if (phoneField) {
+        // Format existing value when page loads
+        if (phoneField.value) {
+            phoneField.value = formatPhoneNumber(phoneField.value);
+        }
+        
+        // Format as user types
+        phoneField.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            if (value.length > 0) {
+                // Don't exceed 10 digits
+                value = value.substring(0, 10);
+                
+                // Format the number as (XXX) XXX-XXXX
+                if (value.length <= 3) {
+                    value = value;
+                } else if (value.length <= 6) {
+                    value = '(' + value.substring(0, 3) + ') ' + value.substring(3);
+                } else {
+                    value = '(' + value.substring(0, 3) + ') ' + value.substring(3, 6) + '-' + value.substring(6);
+                }
+            }
+            
+            e.target.value = value;
+        });
+        
+        // Handle special cases like backspace and delete
+        phoneField.addEventListener('keydown', function(e) {
+            // Allow backspace, delete, tab, escape, enter and navigation keys
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                let value = e.target.value;
+                let caretPos = e.target.selectionStart;
+                
+                // If cursor is after a formatting character, move it past the character
+                if (
+                    (caretPos === 5 && value.charAt(4) === ' ') ||
+                    (caretPos === 10 && value.charAt(9) === '-') ||
+                    (caretPos === 2 && value.charAt(1) === '(') ||
+                    (caretPos === 6 && value.charAt(5) === ')')
+                ) {
+                    if (e.key === 'Backspace') {
+                        e.target.setSelectionRange(caretPos - 1, caretPos - 1);
+                    } else { // Delete
+                        e.target.setSelectionRange(caretPos + 1, caretPos + 1);
+                    }
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+    
+    // Helper function to format existing phone numbers
+    function formatPhoneNumber(value) {
+        // Strip all non-digits
+        const phoneDigits = value.replace(/\D/g, '');
+        
+        // Format based on number of digits
+        if (phoneDigits.length === 0) {
+            return '';
+        } else if (phoneDigits.length <= 3) {
+            return phoneDigits;
+        } else if (phoneDigits.length <= 6) {
+            return '(' + phoneDigits.substring(0, 3) + ') ' + phoneDigits.substring(3);
+        } else {
+            return '(' + phoneDigits.substring(0, 3) + ') ' + phoneDigits.substring(3, 6) + '-' + phoneDigits.substring(6, 10);
+        }
+    }
     
     if (form) {
-        // Convert to regular form submission with validation
+        // Form validation on submit
         form.addEventListener('submit', function(event) {
             let isValid = true;
             
-            // Phone validation
-            const phoneField = document.getElementById('phone');
+            // Phone validation - updated to match our format
             if (phoneField && phoneField.value) {
-                const phonePattern = /^\d{10}$|^\d{3}-\d{3}-\d{4}$/;
-                if (!phonePattern.test(phoneField.value)) {
+                // Phone should now be in format (XXX) XXX-XXXX or have at least 10 digits
+                const formattedPhonePattern = /^\(\d{3}\)\s\d{3}-\d{4}$|^\d{10}$/;
+                const digitsOnly = phoneField.value.replace(/\D/g, '');
+                
+                if (!formattedPhonePattern.test(phoneField.value) && digitsOnly.length !== 10) {
                     isValid = false;
                     phoneField.classList.add('is-invalid');
                     
@@ -144,6 +240,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     phoneField.classList.remove('is-invalid');
                     phoneField.classList.add('is-valid');
+                    
+                    // Update hidden field with digits-only version for database storage
+                    const phoneDigitsOnly = document.createElement('input');
+                    phoneDigitsOnly.type = 'hidden';
+                    phoneDigitsOnly.name = 'phone_digits';
+                    phoneDigitsOnly.value = digitsOnly;
+                    form.appendChild(phoneDigitsOnly);
                 }
             }
             
@@ -154,5 +257,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
 <?php include VIEW_PATH . '/partials/footer.php'; ?>

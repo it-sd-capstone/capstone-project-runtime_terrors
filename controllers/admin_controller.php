@@ -70,30 +70,31 @@ class AdminController {
     public function users() {
         // Get the full REQUEST_URI
         $uri = $_SERVER['REQUEST_URI'] ?? '';
-
+        
         // Log the original REQUEST_URI for debugging
         error_log("Original REQUEST_URI: " . $uri);
-
+        
         // Parse the URI properly (this preserves slashes)
         $path = parse_url($uri, PHP_URL_PATH);
         error_log("Parsed path: " . $path);
 
-        // Remove the base path and script name
-        $basePath = '/appointment-system/public_html'; // Adjust based on your actual base path
-        $path = preg_replace('#^' . preg_quote($basePath, '#') . '/index\.php#', '', $path);
-
-        // Ensure leading slash is removed
-        $path = ltrim($path, '/');
-
-        // Split the URI into segments
+        
+        // Extract the part after "index.php" regardless of where it appears in the URL
+        if (strpos($path, 'index.php') !== false) {
+            $parts = explode('index.php', $path, 2);
+            $path = $parts[1] ?? '';
+        }
+        
         $segments = array_values(array_filter(explode('/', $path)));
         error_log("Segments: " . print_r($segments, true));
-
+        
         // Determine action and userID based on segments
+        // URLs should now be correctly parsed like: /admin/users/view/33
+
         // Expected segments: ['admin', 'users', 'view', '21']
+
         $action = isset($segments[2]) ? $segments[2] : 'list';
         $userId = isset($segments[3]) ? $segments[3] : null;
-
         error_log("Final action: $action, userId: $userId");
 
         // Check if user is admin for all actions except view/list

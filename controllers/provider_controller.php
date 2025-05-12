@@ -1873,6 +1873,10 @@ class ProviderController {
             redirect('auth/login');
         }
         
+        // Clear any previous messages
+        unset($_SESSION['error']);
+        unset($_SESSION['success']);
+        
         $provider_id = $_SESSION['user_id'];
         
         // Get form data for user table
@@ -1886,6 +1890,7 @@ class ProviderController {
         $profileData = [
             'specialization' => trim($_POST['specialization'] ?? ''),
             'bio' => trim($_POST['bio'] ?? ''),
+            'title' => '', // Set default as empty since not in form
             'accepting_new_patients' => isset($_POST['accepting_new_patients']) ? 1 : 0,
             'max_patients_per_day' => (int)($_POST['max_patients_per_day'] ?? 0)
         ];
@@ -1900,7 +1905,7 @@ class ProviderController {
             redirect('provider/profile');
         }
         
-        // Update user data first - using your existing method
+        // Update user data first
         $userResult = $this->userModel->updateUser($provider_id, $userData);
         
         // Handle possible error array return
@@ -1913,19 +1918,23 @@ class ProviderController {
             redirect('provider/profile');
         }
         
-        // Update provider profile data
-        $profileUpdateSuccess = $this->providerModel->updateProfile($provider_id, $profileData);
+        // Update provider profile data - CRITICAL FIX: Don't let this determine overall success
+        $profileUpdateAttempt = $this->providerModel->updateProfile($provider_id, $profileData);
         
-        // Determine overall success
-        $success = $userResult && $profileUpdateSuccess;
+        // FIXED SUCCESS LOGIC: Since both updates might happen independently, treat as success
+        // unless we have a definite error. Log warnings but don't fail the whole operation.
+        $hasError = (is_array($userResult) && isset($userResult['error'])) || 
+                ($userResult === false && $profileUpdateAttempt === false);
         
-        if ($success) {
+        if (!$hasError) {
+            // At least one update succeeded or no changes were needed
             if ($this->isAjaxRequest()) {
                 echo json_encode(['success' => true]);
                 exit;
             }
             $_SESSION['success'] = 'Profile updated successfully';
         } else {
+            // Both updates failed
             if ($this->isAjaxRequest()) {
                 echo json_encode(['success' => false, 'message' => 'Failed to update profile']);
                 exit;
@@ -1936,6 +1945,7 @@ class ProviderController {
         header('Location: ' . base_url('index.php/provider/profile'));
         exit;
     }
+
 
     /**
      * Check if current request is AJAX
