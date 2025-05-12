@@ -1620,42 +1620,47 @@ class Provider {
         }
     }
 
-    /**
+       /**
      * Search for providers based on various criteria
-     * 
+     *
      * @param array $params Search parameters (specialty, location, date, gender, language, insurance)
      * @return array List of providers matching the criteria
      */
     public function searchProviders($params) {
         // Modified query to match actual database structure
         $query = "
-            SELECT 
+            SELECT
                 u.user_id AS provider_id,
                 CONCAT(u.first_name, ' ', u.last_name) AS name,
                 pp.specialization AS specialty,
-                u.phone, 
+                u.phone,
                 pp.title,
                 pp.bio,
                 pp.profile_image,
                 pp.accepting_new_patients,
                 (
-                    SELECT MIN(availability_date) 
-                    FROM provider_availability 
-                    WHERE provider_id = u.user_id 
-                    AND is_available = 1 
+                    SELECT MIN(availability_date)
+                    FROM provider_availability
+                    WHERE provider_id = u.user_id
+                    AND is_available = 1
                     AND availability_date >= CURDATE()
                 ) AS next_availability_date
-            FROM 
+            FROM
                 users u
-            JOIN 
+            JOIN
                 provider_profiles pp ON u.user_id = pp.provider_id
-            WHERE 
+            WHERE
                 u.role = 'provider'
         ";
         
         $conditions = [];
         $params_array = [];
         $types = "";
+        
+        // Add condition for only showing providers who are accepting new patients
+        if (isset($params['only_accepting']) && $params['only_accepting']) {
+            $conditions[] = "pp.accepting_new_patients = 1";
+        }
         
         // Add search conditions based on provided parameters
         if (!empty($params['specialty'])) {
@@ -1696,9 +1701,9 @@ class Provider {
         
         if (!empty($params['date'])) {
             $conditions[] = "EXISTS (
-                SELECT 1 FROM provider_availability 
-                WHERE provider_id = u.user_id 
-                AND availability_date = ? 
+                SELECT 1 FROM provider_availability
+                WHERE provider_id = u.user_id
+                AND availability_date = ?
                 AND is_available = 1
             )";
             $params_array[] = $params['date'];
@@ -1737,25 +1742,26 @@ class Provider {
 
     /**
      * Get suggested providers when no search results are found
-     * 
+     *
      * @return array List of suggested providers
      */
     public function getSuggestedProviders() {
+        // This method already has the accepting_new_patients = 1 condition
         $query = "
-            SELECT 
+            SELECT
                 u.user_id AS provider_id,
                 CONCAT(u.first_name, ' ', u.last_name) AS name,
                 pp.specialization AS specialty,
                 pp.bio,
                 pp.profile_image
-            FROM 
+            FROM
                 users u
-            JOIN 
+            JOIN
                 provider_profiles pp ON u.user_id = pp.provider_id
-            WHERE 
+            WHERE
                 u.role = 'provider'
                 AND pp.accepting_new_patients = 1
-            ORDER BY 
+            ORDER BY
                 RAND()
             LIMIT 3
         ";
