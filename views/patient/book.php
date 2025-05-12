@@ -379,19 +379,4 @@ diagnoseApiConnection("<?= base_url('index.php/api/test') ?>");
 }
 </style>
 
-<?php
-// Debug information for development
-if (defined('ENVIRONMENT') && ENVIRONMENT !== 'production') {
-    echo '<div class="container mt-4 p-3 bg-light small" style="border-radius: 5px;">';
-    echo '<h6>Debug Information:</h6>';
-    echo '<pre>';
-    echo 'Number of providers: ' . count($providers) . "\n";
-    if (!empty($providers)) {
-        echo 'First provider data: ';
-        print_r($providers[0]);
-    }
-    echo '</pre>';
-    echo '</div>';
-}
-?>
-
+<?php include VIEW_PATH . '/partials/footer.php'; ?>

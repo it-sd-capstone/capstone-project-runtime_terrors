@@ -10,7 +10,6 @@ require_once 'bootstrap.php';
 // Near the top of the file, where other includes are
 require_once __DIR__ . '/../helpers/flash_helper.php';
 
- 
 // Get the requested path
 $path = $_SERVER['PATH_INFO'] ?? $_SERVER['REQUEST_URI'] ?? '/';
  
