@@ -99,17 +99,44 @@ class Provider {
         }
     }
 
-
-    /**
+     /**
      * Update provider profile
-     * 
+     *
      * @param int $provider_id Provider ID
      * @param array $data Profile data to update
      * @return bool True on success, false on failure
      */
     public function updateProfile($provider_id, $data) {
         try {
-            $sql = "UPDATE provider_profiles SET 
+            // First check if a record exists for this provider
+            $checkSql = "SELECT provider_id FROM provider_profiles WHERE provider_id = ?";
+            $checkStmt = $this->db->prepare($checkSql);
+            $checkStmt->bind_param('i', $provider_id);
+            $checkStmt->execute();
+            $checkStmt->store_result();
+            
+            // If no record exists, insert one instead of updating
+            if ($checkStmt->num_rows == 0) {
+                $insertSql = "INSERT INTO provider_profiles (provider_id, specialization, title, bio, 
+                            accepting_new_patients, max_patients_per_day, created_at, updated_at) 
+                            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                
+                $insertStmt = $this->db->prepare($insertSql);
+                $insertStmt->bind_param(
+                    'issiii',
+                    $provider_id,
+                    $data['specialization'],
+                    $data['title'],
+                    $data['bio'],
+                    $data['accepting_new_patients'],
+                    $data['max_patients_per_day']
+                );
+                
+                return $insertStmt->execute();
+            }
+            
+            // Record exists, proceed with update
+            $sql = "UPDATE provider_profiles SET
                     specialization = ?,
                     title = ?,
                     bio = ?,
@@ -129,9 +156,15 @@ class Provider {
                 $provider_id
             );
             
-            return $stmt->execute();
+            // Execute and ALWAYS return true if no DB error
+            if ($stmt->execute()) {
+                return true; // Success if query executed without errors, regardless of affected rows
+            } else {
+                error_log("Database error in updateProfile: " . $stmt->error);
+                return false;
+            }
         } catch (Exception $e) {
-            error_log("Error updating provider profile: " . $e->getMessage());
+            error_log("Exception in updateProfile: " . $e->getMessage());
             return false;
         }
     }
