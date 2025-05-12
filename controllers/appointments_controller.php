@@ -186,13 +186,13 @@ class AppointmentsController {
                         $this->appointmentModel->restoreAvailabilitySlot($appointment['availability_id']);
                     }
                     set_flash_message('success', 'Appointment canceled successfully');
-                    header('Location: ' . base_url('index.php/appointments?success=canceled'));
+                    header('Location: ' . base_url('index.php/appointments'));
                     exit;
                 }
             }
         }
         set_flash_message('error', 'Failed to cancel appointment');
-        header('Location: ' . base_url('index.php/appointments?error=cancel_failed'));
+        header('Location: ' . base_url('index.php/appointments'));
         exit;
     }
 
