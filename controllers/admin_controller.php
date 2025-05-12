@@ -78,27 +78,31 @@ class AdminController {
         $path = parse_url($uri, PHP_URL_PATH);
         error_log("Parsed path: " . $path);
 
-        // Remove any script name if it's in the URL (like index.php)
-        $path = preg_replace('/^\/index\.php/', '', $path);
+        // Remove the base path and script name
+        $basePath = '/appointment-system/public_html'; // Adjust based on your actual base path
+        $path = preg_replace('#^' . preg_quote($basePath, '#') . '/index\.php#', '', $path);
 
-        // Now split the URI into segments with slashes preserved
+        // Ensure leading slash is removed
+        $path = ltrim($path, '/');
+
+        // Split the URI into segments
         $segments = array_values(array_filter(explode('/', $path)));
         error_log("Segments: " . print_r($segments, true));
 
         // Determine action and userID based on segments
-        // Assuming URLs like: /admin/users/view/33
+        // Expected segments: ['admin', 'users', 'view', '21']
         $action = isset($segments[2]) ? $segments[2] : 'list';
         $userId = isset($segments[3]) ? $segments[3] : null;
 
         error_log("Final action: $action, userId: $userId");
-        
+
         // Check if user is admin for all actions except view/list
         if ($action != 'list' && !$this->isUserAdmin()) {
             $_SESSION['error'] = "You don't have permission to access this page";
             header('Location: ' . base_url('index.php/auth'));
             exit;
         }
-        
+
         // Handle different actions
         switch($action) {
             case 'delete':
@@ -179,6 +183,7 @@ class AdminController {
                 
                 try {
                     $user = $this->userModel->getUserById($userId);
+                    error_log("User data for ID $userId: " . print_r($user, true));
                     if (!$user) {
                         $_SESSION['error'] = "User not found";
                         header('Location: ' . base_url('index.php/admin/users'));
@@ -195,7 +200,7 @@ class AdminController {
                     
                     include VIEW_PATH . '/admin/user_view.php';
                 } catch (Exception $e) {
-                    error_log("Error in users/view: " . $e->getMessage());
+                    error_log("Error in users/view: " . $e->getMessage() . "\nStack trace: " . $e->getTraceAsString());
                     $_SESSION['error'] = "Error loading user: " . $e->getMessage();
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
