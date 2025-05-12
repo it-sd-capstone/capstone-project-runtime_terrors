@@ -20,7 +20,7 @@
             </a>
         </div>
     </div>
-    
+   
     <?php if (isset($_GET['success'])): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <?php if ($_GET['success'] == 'added'): ?>
@@ -31,7 +31,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>
-    
+   
     <?php if (isset($_GET['error'])): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <?php if ($_GET['error'] == 'add_failed'): ?>
@@ -42,7 +42,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>
-    
+   
     <div class="row">
         <!-- Current Provider Services -->
         <div class="col-md-7">
@@ -51,7 +51,7 @@
                     <h5 class="card-title mb-0">Current Services</h5>
                 </div>
                 <div class="card-body">
-                    <?php if (empty($providerServices)): ?>
+                    <?php if (empty($services)): ?>
                         <p class="text-muted">This provider is not offering any services yet.</p>
                     <?php else: ?>
                         <div class="table-responsive">
@@ -66,7 +66,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($providerServices as $service): ?>
+                                    <?php foreach ($services as $service): ?>
                                         <tr>
                                             <td><?= htmlspecialchars($service['name']) ?></td>
                                             <td><?= $service['custom_duration'] ? $service['custom_duration'] : $service['duration'] ?> min</td>
@@ -85,9 +85,10 @@
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <form method="post" action="<?= base_url('index.php/admin/manageProviderServices?id=' . $provider['user_id']) ?>" onsubmit="return confirm('Are you sure you want to remove this service?')">
-                                                    <input type="hidden" name="provider_service_id" value="<?= $service['provider_service_id'] ?>">
-                                                    <button type="submit" name="remove_service" class="btn btn-sm btn-outline-danger">
+                                                <form method="post" action="<?= base_url('index.php/admin/manageProviderServices/' . $provider['user_id']) ?>" onsubmit="return confirm('Are you sure you want to remove this service?')">
+                                                    <input type="hidden" name="action" value="remove_service">
+                                                    <input type="hidden" name="service_id" value="<?= $service['service_id'] ?>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
                                                         <i class="bi bi-trash"></i> Remove
                                                     </button>
                                                 </form>
@@ -101,7 +102,7 @@
                 </div>
             </div>
         </div>
-        
+       
         <!-- Add Service Form -->
         <div class="col-md-5">
             <div class="card shadow-sm">
@@ -109,45 +110,33 @@
                     <h5 class="card-title mb-0">Add New Service</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post" action="<?= base_url('index.php/admin/manageProviderServices?id=' . $provider['user_id']) ?>">
+                    <form method="post" action="<?= base_url('index.php/admin/manageProviderServices/' . $provider['user_id']) ?>">
+                        <input type="hidden" name="action" value="add_service">
                         <div class="mb-3">
                             <label for="service_id" class="form-label">Select Service</label>
                             <select class="form-select" id="service_id" name="service_id" required>
                                 <option value="">-- Select a service --</option>
-                                <?php foreach ($services as $service): ?>
-                                    <?php 
-                                    // Check if this service is already assigned to the provider
-                                    $isAssigned = false;
-                                    foreach ($providerServices as $ps) {
-                                        if ($ps['service_id'] == $service['service_id']) {
-                                            $isAssigned = true;
-                                            break;
-                                        }
-                                    }
-                                    
-                                    // Skip already assigned services
-                                    if ($isAssigned) continue;
-                                    ?>
+                                <?php foreach ($availableServices as $service): ?>
                                     <option value="<?= $service['service_id'] ?>">
                                         <?= htmlspecialchars($service['name']) ?> (<?= $service['duration'] ?> min)
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        
+                       
                         <div class="mb-3">
                             <label for="custom_duration" class="form-label">Custom Duration (minutes, optional)</label>
                             <input type="number" class="form-control" id="custom_duration" name="custom_duration" min="5" step="5" placeholder="Leave empty for default duration">
                             <div class="form-text">Override the standard service duration if needed.</div>
                         </div>
-                        
+                       
                         <div class="mb-3">
                             <label for="custom_notes" class="form-label">Custom Notes (optional)</label>
                             <textarea class="form-control" id="custom_notes" name="custom_notes" rows="2" placeholder="Any special information about this provider's service"></textarea>
                         </div>
-                        
+                       
                         <div class="d-grid">
-                            <button type="submit" name="add_service" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Add Service
                             </button>
                         </div>
