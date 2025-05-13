@@ -1142,7 +1142,15 @@ class User {
         }
     }
 
-    public function updatePatientProfile($patientId, $data) {
+    /**
+     * Update patient profile information
+     * 
+     * @param int $patientId The patient's user ID
+     * @param array $data The profile data to update
+     * @return bool True on success, false on failure
+     */
+        public function updatePatientProfile($patientId, $data) {
+
         try {
             // Start transaction to ensure both tables update or neither does
             $this->db->begin_transaction();

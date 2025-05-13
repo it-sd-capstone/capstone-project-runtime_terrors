@@ -75,8 +75,8 @@ class Provider {
             
             // Insert into provider_services table
             $stmt = $this->db->prepare(
-                "INSERT INTO provider_services 
-                (provider_id, service_id, custom_duration, custom_notes) 
+                "INSERT INTO provider_services
+                (provider_id, service_id, custom_duration, custom_notes)
                 VALUES (?, ?, ?, ?)"
             );
             
@@ -98,9 +98,30 @@ class Provider {
             return false;
         }
     }
-
-
     /**
+     * Get provider's availability schedule
+     *
+     * @param int $providerId Provider ID
+     * @return array Availability schedule
+     */
+    public function getProviderAvailability($providerId) {
+        $stmt = $this->db->prepare(
+            "SELECT *
+            FROM provider_availability
+            WHERE provider_id = ?"
+        );
+        
+        $stmt->bind_param("i", $providerId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            return $result->fetch_all(MYSQLI_ASSOC);
+        }
+        
+        return [];
+    }
+     /**
      * Update provider profile
      *
      * @param int $provider_id Provider ID
@@ -373,13 +394,20 @@ class Provider {
         return $this->addService($serviceData);
     }
 
-    // Legacy method for backward compatibility
     public function getSchedulesByProvider($provider_id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT availability_id AS id, availability_date AS date, 
-                       start_time, end_time, max_appointments, 
-                       (CASE WHEN max_appointments = 0 THEN 1 ELSE 0 END) AS is_booked
+                SELECT 
+                    availability_id AS id, 
+                    provider_id,
+                    availability_date AS date,
+                    DAYOFWEEK(availability_date) as day_of_week,
+                    start_time, 
+                    end_time, 
+                    max_appointments,
+                    is_recurring,
+                    weekdays,
+                    (CASE WHEN max_appointments = 0 THEN 1 ELSE 0 END) AS is_booked
                 FROM provider_availability
                 WHERE provider_id = ?
             ");
@@ -1660,7 +1688,7 @@ class Provider {
         }
     }
 
-    /**
+       /**
      * Search for providers based on various criteria
      *
      * @param array $params Search parameters (specialty, location, date, gender, language, insurance)
@@ -1817,7 +1845,26 @@ class Provider {
         
         return $suggested_providers;
     }
-
+    /**
+     * Remove a service from a provider
+     *
+     * @param int $providerId Provider ID
+     * @param int $serviceId Service ID
+     * @return bool Success or failure
+     */
+    public function removeServiceFromProvider($providerId, $serviceId) {
+        // Prepare the SQL query to delete the provider-service relationship
+        $query = "DELETE FROM provider_services 
+                WHERE provider_id = ? AND service_id = ?";
+        
+        // Prepare and execute the statement
+        $stmt = $this->db->prepare($query);
+        $stmt->bind_param("ii", $providerId, $serviceId);
+        $result = $stmt->execute();
+        
+        // Return true if successful, false otherwise
+        return $result && ($stmt->affected_rows > 0);
+    }
     /**
      * Get all available specializations for the filter dropdown
      * 

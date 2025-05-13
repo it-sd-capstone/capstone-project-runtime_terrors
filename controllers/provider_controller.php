@@ -1859,7 +1859,7 @@ class ProviderController {
         exit;
     }
 
-    /**
+     /**
      * Process provider profile update
      */
     public function processUpdateProfile() {

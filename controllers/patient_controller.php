@@ -470,7 +470,9 @@ class PatientController {
         include VIEW_PATH . '/patient/profile.php';
     }
 
-    public function search() {
+
+     public function search() {
+
         // Check if user is logged in
         if (!isset($_SESSION['user_id'])) {
             redirect('auth/login');
