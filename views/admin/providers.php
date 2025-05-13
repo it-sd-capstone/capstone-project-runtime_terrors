@@ -134,6 +134,7 @@
                                                     </div>
                                                     <div class="modal-body">
                                                         <div class="list-group">
+
                                                             <a href="<?= base_url('index.php/admin/manageProviderServices?id=' . $provider['user_id']) ?>"
                                                                 class="list-group-item list-group-item-action">
                                                                 <div class="d-flex w-100 justify-content-between">
@@ -143,7 +144,9 @@
                                                                 <small class="text-muted">Configure services offered by this provider</small>
                                                             </a>
                                                             
+
                                                             <a href="<?= base_url('index.php/admin/viewAvailability?id=' . $provider['user_id']) ?>" 
+
                                                                class="list-group-item list-group-item-action">
                                                                 <div class="d-flex w-100 justify-content-between">
                                                                     <h6 class="mb-1">View Availability</h6>

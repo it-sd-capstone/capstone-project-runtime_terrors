@@ -186,13 +186,16 @@ include VIEW_PATH . '/partials/header.php';
                 <h3 class="h5 mb-0">Patient Information</h3>
             </div>
             <div class="card-body">
-                <h5><?= htmlspecialchars($appointment['patient_name']) ?></h5>
-                <?php if (!empty($appointment['patient_email'])): ?>
-                <p><strong>Email:</strong> <?= htmlspecialchars($appointment['patient_email']) ?></p>
-                <?php endif; ?>
-                <?php if (!empty($appointment['patient_phone'])): ?>
-                <p><strong>Phone:</strong> <?= htmlspecialchars($appointment['patient_phone']) ?></p>
-                <?php endif; ?>
+                <p><strong>Name:</strong> <?php echo htmlspecialchars($appointment['patient_name'] ?? 'N/A'); ?></p>
+                <p><strong>Email:</strong> <?php echo htmlspecialchars($appointment['patient_email'] ?? 'N/A'); ?></p>
+                <p><strong>Phone:</strong> <?php echo htmlspecialchars($appointment['patient_phone'] ?? 'N/A'); ?></p>
+                <p><strong>Date of Birth:</strong> <?php echo htmlspecialchars($appointment['patient_dob'] ?? 'N/A'); ?></p>
+                <p><strong>Address:</strong> <?php echo htmlspecialchars($appointment['patient_address'] ?? 'N/A'); ?></p>
+                <p><strong>Emergency Contact:</strong> <?php echo htmlspecialchars($appointment['emergency_contact'] ?? 'N/A'); ?></p>
+                <p><strong>Emergency Contact Phone:</strong> <?php echo htmlspecialchars($appointment['emergency_contact_phone'] ?? 'N/A'); ?></p>
+                <p><strong>Medical Conditions:</strong> <?php echo htmlspecialchars($appointment['medical_conditions'] ?? 'None reported'); ?></p>
+                <p><strong>Insurance Provider:</strong> <?php echo htmlspecialchars($appointment['insurance_provider'] ?? 'N/A'); ?></p>
+                <p><strong>Insurance Policy Number:</strong> <?php echo htmlspecialchars($appointment['insurance_policy_number'] ?? 'N/A'); ?></p>
             </div>
         </div>
         

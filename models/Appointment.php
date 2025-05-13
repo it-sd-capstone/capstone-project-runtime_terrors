@@ -204,11 +204,20 @@ class Appointment {
                 CONCAT(provider.first_name, ' ', provider.last_name) AS provider_name,
                 patient.first_name AS patient_first_name,
                 patient.last_name AS patient_last_name,
-                CONCAT(patient.first_name, ' ', patient.last_name) AS patient_name
+                CONCAT(patient.first_name, ' ', patient.last_name) AS patient_name,
+                patient.email AS patient_email,
+                pp.phone AS patient_phone,
+                pp.date_of_birth AS patient_dob,
+                pp.address AS patient_address,
+                pp.emergency_contact,
+                pp.emergency_contact_phone,
+                pp.medical_conditions,
+                pp.insurance_info
             FROM appointments a
             LEFT JOIN services s ON a.service_id = s.service_id
             LEFT JOIN users provider ON a.provider_id = provider.user_id
             LEFT JOIN users patient ON a.patient_id = patient.user_id
+            LEFT JOIN patient_profiles pp ON patient.user_id = pp.user_id
             WHERE a.appointment_id = ?
         ");
         $stmt->bind_param("i", $appointment_id);
@@ -216,6 +225,12 @@ class Appointment {
         $result = $stmt->get_result();
         if ($result && $result->num_rows > 0) {
             $appointment = $result->fetch_assoc();
+            // Decode insurance_info JSON if it exists
+            if (!empty($appointment['insurance_info'])) {
+                $insurance = json_decode($appointment['insurance_info'], true);
+                $appointment['insurance_provider'] = $insurance['provider'] ?? '';
+                $appointment['insurance_policy_number'] = $insurance['policy_number'] ?? '';
+            }
         }
         return $appointment;
     }

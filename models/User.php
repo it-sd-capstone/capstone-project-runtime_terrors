@@ -1141,6 +1141,7 @@ class User {
             return false;
         }
     }
+
     /**
      * Update patient profile information
      * 
@@ -1149,6 +1150,7 @@ class User {
      * @return bool True on success, false on failure
      */
         public function updatePatientProfile($patientId, $data) {
+
         try {
             // Start transaction to ensure both tables update or neither does
             $this->db->begin_transaction();
