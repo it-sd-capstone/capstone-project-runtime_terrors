@@ -39,35 +39,44 @@ class ProviderController {
 
     // Load Provider Dashboard
     public function index() {
-        // Make sure we have a valid session with a provider ID
-        if (!isset($_SESSION['user_id'])) {
-            redirect('auth/login');
-            return;
-        }
-        
-        $provider_id = $_SESSION['user_id'];
-        error_log("Loading provider dashboard for ID: " . $provider_id);
-        
-        // Get provider data
-        $providerData = $this->providerModel->getProviderData($provider_id);
-        
-        // Get upcoming appointments specifically for the dashboard
-        $appointments = $this->appointmentModel->getUpcomingAppointmentsByProvider($provider_id);
-        
-        // Also get provider availability
-        $providerAvailability = $this->providerModel->getAvailability($provider_id);
-        
-        // Add statistics for the dashboard
-        $appointmentStats = [
-            'upcoming' => count($appointments),
-            'total' => $this->appointmentModel->getByProvider($provider_id) ? count($this->appointmentModel->getByProvider($provider_id)) : 0,
-            'completed' => 0,
-            'canceled' => 0
-        ];
-        
-        // Load the view
-        include VIEW_PATH . '/provider/index.php';
+    // Make sure we have a valid session with a provider ID
+    if (!isset($_SESSION['user_id'])) {
+        redirect('auth/login');
+        return;
     }
+    
+    $provider_id = $_SESSION['user_id'];
+    error_log("Loading provider dashboard for ID: " . $provider_id);
+    
+    // Get provider data from users table
+    $provider = $this->userModel->getUserById($provider_id);
+    
+    // Get upcoming appointments specifically for the dashboard
+    $appointments = $this->appointmentModel->getUpcomingAppointmentsByProvider($provider_id);
+    
+    // Also get provider availability
+    $providerAvailability = $this->providerModel->getAvailability($provider_id);
+    
+    // Add statistics for the dashboard
+    $appointmentStats = [
+        'upcoming' => count($appointments),
+        'total' => $this->appointmentModel->getByProvider($provider_id) ? count($this->appointmentModel->getByProvider($provider_id)) : 0,
+        'completed' => 0,
+        'canceled' => 0
+    ];
+    
+    // Pass data to the view
+    $data = [
+        'provider' => $provider, // Pass provider details
+        'provider_id' => $provider_id,
+        'appointments' => $appointments,
+        'providerAvailability' => $providerAvailability,
+        'appointmentStats' => $appointmentStats
+    ];
+    
+    // Load the view
+    include VIEW_PATH . '/provider/index.php';
+}
     /**
      * Delete all availability slots within a date range
      */

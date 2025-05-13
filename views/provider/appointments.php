@@ -263,6 +263,35 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Calendar events manually refreshed");
         });
     }
+
+    // Add filter functionality
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const appointmentItems = document.querySelectorAll('.appointment-item');
+    const dropdownToggle = document.getElementById('filterDropdown');
+
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const filter = this.getAttribute('data-filter');
+
+            appointmentItems.forEach(item => {
+                const status = item.getAttribute('data-status');
+
+                if (filter === 'all' || status === filter) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Update dropdown toggle text
+            dropdownToggle.textContent = this.textContent;
+
+            // Close the dropdown menu
+            const dropdownElement = dropdownToggle.closest('.dropdown');
+            const bsDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+            bsDropdown.hide();
+        });
+    });
 });
 </script>
 

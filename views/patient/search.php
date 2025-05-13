@@ -59,9 +59,9 @@
                         <input type="hidden" name="search_submitted" value="1">
                         
                         <div class="d-flex justify-content-between">
-                            <button type="reset" class="btn btn-outline-secondary">
+                            <a href="<?= base_url('index.php/patient/search') ?>" class="btn btn-outline-secondary">
                                 <i class="fas fa-redo me-1"></i> Reset
-                            </button>
+                            </a>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-search me-1"></i> Search Providers
                             </button>
