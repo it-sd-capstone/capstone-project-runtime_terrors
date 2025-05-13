@@ -13,7 +13,7 @@
                 <div class="card-body">
                     <!-- Error display -->
                     <?php if (isset($error) && !empty($error)): ?>
-                        <div class="alert alert-danger">
+                        <div class="alert alert-primary">
                             <i class="fas fa-exclamation-circle me-2"></i>
                             <?= htmlspecialchars($error) ?>
                         </div>

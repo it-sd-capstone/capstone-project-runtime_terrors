@@ -114,9 +114,10 @@ const bookForm = document.getElementById('bookForm');
 let calendar = null;
 
 // Step 1: Service Selection
+
 serviceSelect.addEventListener('change', function() {
     const selectedService = this.value;
-    
+
     // Reset downstream steps
     providerSelect.value = "";
     providerBio.style.display = "none";
@@ -124,12 +125,16 @@ serviceSelect.addEventListener('change', function() {
     calendarSection.style.display = "none";
     calendarError.style.display = "none";
     bookForm.style.display = "none";
-    
+
+    // --- FIX: Remove any previous 'No providers' alert ---
+    const oldAlert = providerSection.querySelector('.alert.alert-info');
+    if (oldAlert) oldAlert.remove();
+
     // Filter providers
     let availableProviderCount = 0;
     Array.from(providerSelect.options).forEach(opt => {
         if (!opt.value) return; // skip placeholder
-        
+
         let services = [];
         try {
             const servicesData = opt.getAttribute('data-services');
@@ -138,16 +143,22 @@ serviceSelect.addEventListener('change', function() {
             console.error('Error parsing services data:', e);
             services = [];
         }
-        
+
         // Using String() to ensure comparison works regardless of type
         const show = services.some(id => String(id) === String(selectedService));
         opt.style.display = show ? '' : 'none';
         if (show) availableProviderCount++;
     });
-    
-    // Show message if no providers offer this service
+
+    // --- FIX: If no providers, show message and disable dropdown ---
     if (selectedService && availableProviderCount === 0) {
-        providerSection.innerHTML += '<div class="alert alert-info mt-2">No providers currently offer this service. Please select a different service or contact us for assistance.</div>';
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-info mt-2';
+        alertDiv.textContent = 'No providers currently offer this service. Please select a different service or contact us for assistance.';
+        providerSection.appendChild(alertDiv);
+        providerSelect.disabled = true;
+    } else {
+        providerSelect.disabled = false;
     }
 });
 
@@ -194,11 +205,11 @@ function loadCalendar(providerId, serviceId) {
     setTimeout(() => { // Simulate loading
         try {
             calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'timeGridWeek',
+                initialView: 'dayGridMonth',
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'timeGridWeek,dayGridMonth'
+                    right: 'dayGridMonth,timeGridWeek'
                 },
                 timeZone: 'local',
                 events: apiUrl,
@@ -255,6 +266,8 @@ function loadCalendar(providerId, serviceId) {
                     const time = info.event.start ? 
                         new Date(info.event.start).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'}) : '';
                     info.el.setAttribute('title', `Available: ${time}`);
+                    
+                    
                 },
                 loading: function(isLoading) {
                     calendarLoading.style.display = isLoading ? "block" : "none";

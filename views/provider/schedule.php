@@ -114,10 +114,9 @@
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
 
-.fc .fc-button-primary:not(:disabled).fc-button-active,
-.fc .fc-button-primary:not(:disabled):active {
-    background-color: var(--secondary);
-    border-color: var(--secondary);
+.fc .fc-button-primary:focus:not(:active);not(.fc-button-active) {
+    background-color: var(--primary);
+    border-color: var(--primary);
 }
 
 

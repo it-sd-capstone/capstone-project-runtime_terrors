@@ -71,6 +71,9 @@
                                         <label for="specialization" class="form-label">Specialty</label>
                                         <input type="text" class="form-control" id="specialization" name="specialization"
                                             value="<?= htmlspecialchars($provider['specialization'] ?? '') ?>" required>
+                                            <?php if (empty($provider['specialization'])): ?>
+                                                <div class="text-danger mt-1">Specialty is required.</div>
+                                            <?php endif; ?>
                                     </div>
                                     
                                     <div class="col-md-6 mb-3">

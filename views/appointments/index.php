@@ -69,47 +69,7 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
     <?php endif; ?>
 
     <h1 class="mb-4">Appointment Management</h1>
-    
-    <!-- Available Appointment Slots -->
-    <?php if ($_SESSION['role'] === 'patient' || $_SESSION['role'] === 'admin'): ?>
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5>Available Appointment Slots</h5>
-            </div>
-            <div class="card-body">
-                <?php if (!empty($availableSlots)): ?>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Provider</th>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($availableSlots as $slot): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($slot['first_name'] . ' ' . $slot['last_name']) ?></td>
-                                    <td><?= htmlspecialchars(date('F j, Y', strtotime($slot['available_date']))) ?></td>
-                                    <td><?= htmlspecialchars(date('g:i A', strtotime($slot['start_time']))) ?> - 
-                                        <?= htmlspecialchars(date('g:i A', strtotime($slot['end_time']))) ?></td>
-                                    <td>
-                                        <a href="<?= base_url('index.php/patient/book?id=' . $slot['availability_id']) ?>" 
-                                           class="btn btn-primary btn-sm">Book</a>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <p class="mb-0">No available appointment slots found.</p>
-                <?php endif; ?>
-            </div>
-        </div>
-    <?php endif; ?>
+
     
     <!-- User's Appointments -->
     <div class="card">
