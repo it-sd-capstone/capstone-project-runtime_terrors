@@ -261,67 +261,89 @@ if (!isset($appointment)) {
                 <?php endif; ?>
             </div>
             
-            <!-- Patient Information -->
+            <!-- Conditional Information Panel -->
             <div class="col-lg-4">
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Patient Information</h5>
+                <?php if ($_SESSION['role'] === 'patient'): ?>
+                    <!-- Show Provider Information when patient is viewing -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-user-md me-2"></i>Provider Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6 class="text-muted">Name</h6>
+                                <p class="fs-5"><?= htmlspecialchars($appointment['provider_name']) ?></p>
+                            </div>
+                            <!-- Additional provider information could be added here -->
+                            <div class="mb-3">
+                                <h6 class="text-muted">Specialty</h6>
+                                <p><?= htmlspecialchars($appointment['service_name']) ?></p>
+                            </div>
+                            <!-- You could add more provider fields here if they're available in the appointment data -->
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <h6 class="text-muted">Name</h6>
-                            <p class="fs-5"><?= htmlspecialchars($appointment['patient_name']) ?></p>
+                <?php else: ?>
+                    <!-- Show Patient Information for providers and admins -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-user me-2"></i>Patient Information</h5>
                         </div>
-                        <div class="mb-3">
-                            <h6 class="text-muted">Email</h6>
-                            <p><?= htmlspecialchars($appointment['patient_email']) ?></p>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6 class="text-muted">Name</h6>
+                                <p class="fs-5"><?= htmlspecialchars($appointment['patient_name']) ?></p>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="text-muted">Email</h6>
+                                <p><?= htmlspecialchars($appointment['patient_email']) ?></p>
+                            </div>
+                            <?php if (!empty($appointment['patient_phone'])): ?>
+                            <div class="mb-3">
+                                <h6 class="text-muted">Phone</h6>
+                                <p><?= htmlspecialchars($appointment['patient_phone']) ?></p>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($appointment['patient_dob'])): ?>
+                            <div class="mb-3">
+                                <h6 class="text-muted">Date of Birth</h6>
+                                <p><?= htmlspecialchars(date('F j, Y', strtotime($appointment['patient_dob']))) ?></p>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($appointment['patient_address'])): ?>
+                            <div class="mb-3">
+                                <h6 class="text-muted">Address</h6>
+                                <p><?= nl2br(htmlspecialchars($appointment['patient_address'])) ?></p>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($appointment['emergency_contact'])): ?>
+                            <div class="mb-3">
+                                <h6 class="text-muted">Emergency Contact</h6>
+                                <p>
+                                    <?= htmlspecialchars($appointment['emergency_contact']) ?><br>
+                                    <?= htmlspecialchars($appointment['emergency_contact_phone']) ?>
+                                </p>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if (!empty($appointment['medical_conditions'])): ?>
+                            <div class="mb-3">
+                                <h6 class="text-muted">Medical Conditions</h6>
+                                <p><?= nl2br(htmlspecialchars($appointment['medical_conditions'])) ?></p>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if (!empty($appointment['insurance_provider'])): ?>
+                            <div class="mb-3">
+                                <h6 class="text-muted">Insurance Information</h6>
+                                <p>
+                                    Provider: <?= htmlspecialchars($appointment['insurance_provider']) ?><br>
+                                    Policy: <?= htmlspecialchars($appointment['insurance_policy_number']) ?>
+                                </p>
+                            </div>
+                            <?php endif; ?>
                         </div>
-                        <?php if (!empty($appointment['patient_phone'])): ?>
-                        <div class="mb-3">
-                            <h6 class="text-muted">Phone</h6>
-                            <p><?= htmlspecialchars($appointment['patient_phone']) ?></p>
-                        </div>
-                        <?php endif; ?>
-                        <?php if (!empty($appointment['patient_dob'])): ?>
-                        <div class="mb-3">
-                            <h6 class="text-muted">Date of Birth</h6>
-                            <p><?= htmlspecialchars(date('F j, Y', strtotime($appointment['patient_dob']))) ?></p>
-                        </div>
-                        <?php endif; ?>
-                        <?php if (!empty($appointment['patient_address'])): ?>
-                        <div class="mb-3">
-                            <h6 class="text-muted">Address</h6>
-                            <p><?= nl2br(htmlspecialchars($appointment['patient_address'])) ?></p>
-                        </div>
-                        <?php endif; ?>
-                        <?php if (!empty($appointment['emergency_contact'])): ?>
-                        <div class="mb-3">
-                            <h6 class="text-muted">Emergency Contact</h6>
-                            <p>
-                                <?= htmlspecialchars($appointment['emergency_contact']) ?><br>
-                                <?= htmlspecialchars($appointment['emergency_contact_phone']) ?>
-                            </p>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php if (!empty($appointment['medical_conditions'])): ?>
-                        <div class="mb-3">
-                            <h6 class="text-muted">Medical Conditions</h6>
-                            <p><?= nl2br(htmlspecialchars($appointment['medical_conditions'])) ?></p>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php if (!empty($appointment['insurance_provider'])): ?>
-                        <div class="mb-3">
-                            <h6 class="text-muted">Insurance Information</h6>
-                            <p>
-                                Provider: <?= htmlspecialchars($appointment['insurance_provider']) ?><br>
-                                Policy: <?= htmlspecialchars($appointment['insurance_policy_number']) ?>
-                            </p>
-                        </div>
-                        <?php endif; ?>
                     </div>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
     <?php else: ?>
