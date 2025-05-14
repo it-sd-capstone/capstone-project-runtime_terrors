@@ -34,7 +34,10 @@ class AppointmentsController {
         $availableSlots = $this->appointmentModel->getAvailableSlots();
         $userAppointments = [];
         if ($userRole === 'patient') {
-            $userAppointments = $this->appointmentModel->getUpcomingAppointments($userId);
+            $userAppointments = array_merge(
+                $this->appointmentModel->getUpcomingAppointments($userId),
+                $this->appointmentModel->getPastAppointments($userId)
+            );
         } elseif ($userRole === 'provider') {
             $userAppointments = $this->appointmentModel->getByProvider($userId);
         } elseif ($userRole === 'admin') {

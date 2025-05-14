@@ -160,16 +160,16 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
             <?php 
             $pastAndCanceledAppointments = array_filter($userAppointments, function($app) {
                 return $app['status'] === 'completed' || 
-                       $app['status'] === 'canceled' || 
-                       $app['status'] === 'no_show' ||
-                       strtotime($app['appointment_date']) < strtotime(date('Y-m-d'));
+                    $app['status'] === 'canceled' || 
+                    $app['status'] === 'no_show' ||
+                    strtotime($app['appointment_date']) < strtotime(date('Y-m-d'));
             });
             ?>
             
             <?php if (!empty($pastAndCanceledAppointments)): ?>
-                <div class="table-responsive">
+                <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
                     <table class="table table-hover">
-                        <thead class="table-light">
+                        <thead class="table-light sticky-top">
                             <tr>
                                 <th>Date</th>
                                 <th>Provider</th>
@@ -191,7 +191,7 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
                                 </td>
                                 <td>
                                     <a href="<?= base_url('index.php/appointments/history?id=' . $appointment['appointment_id']) ?>" 
-                                       class="btn btn-sm btn-outline-info">
+                                    class="btn btn-sm btn-outline-info">
                                         <i class="fas fa-info-circle me-1"></i> Details
                                     </a>
                                 </td>
