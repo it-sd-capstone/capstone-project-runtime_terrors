@@ -7,10 +7,6 @@ class Appointment {
         $this->db = $db;
     }
 
-    /**
-     * Schedule an appointment securely.
-     * @return int|false Appointment ID on success, false on failure.
-     */
     public function scheduleAppointment($patient_id, $provider_id, $service_id, $date, $start_time, $end_time, $type, $notes, $reason) {
         error_log("scheduleAppointment called with: patient=$patient_id, provider=$provider_id, service=$service_id, date=$date, start=$start_time, end=$end_time");
         
@@ -44,10 +40,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Check if a slot is available for a provider.
-     * @return bool True if available, false otherwise.
-     */
     public function isSlotAvailable($provider_id, $appointment_date, $start_time, $end_time, $exclude_appointment_id = null) {
         try {
             $query = "
@@ -84,10 +76,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Get upcoming appointments for a patient.
-     * @return array
-     */
     public function getUpcomingAppointments($patient_id) {
         $appointments = [];
         $stmt = $this->db->prepare("
@@ -113,20 +101,13 @@ class Appointment {
         }
         return $appointments;
     }
-      /**
-     * Get appointments for a specific provider
-     *
-     * @param int $providerId The provider ID
-     * @param string|null $startDate Optional start date in Y-m-d format
-     * @param string|null $endDate Optional end date in Y-m-d format
-     * @return array Array of appointments
-     */
+
     public function getProviderAppointments($providerId, $startDate = null, $endDate = null) {
         $query = "SELECT a.*, 
-                        s.name as service_name, 
-                        CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                        p.email as patient_email,
-                        p.phone as patient_phone
+                    s.name as service_name, 
+                    CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                    p.email as patient_email,
+                    p.phone as patient_phone
                 FROM appointments a
                 JOIN users p ON a.patient_id = p.user_id
                 JOIN services s ON a.service_id = s.service_id
@@ -161,10 +142,7 @@ class Appointment {
         
         return $appointments;
     }
-    /**
-     * Get past appointments for a patient.
-     * @return array
-     */
+
     public function getPastAppointments($patient_id) {
         try {
             $stmt = $this->db->prepare("
@@ -189,10 +167,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Retrieve an appointment by ID.
-     * @return array|null
-     */
     public function getById($appointment_id) {
         $appointment = null;
         $stmt = $this->db->prepare("
@@ -225,7 +199,6 @@ class Appointment {
         $result = $stmt->get_result();
         if ($result && $result->num_rows > 0) {
             $appointment = $result->fetch_assoc();
-            // Decode insurance_info JSON if it exists
             if (!empty($appointment['insurance_info'])) {
                 $insurance = json_decode($appointment['insurance_info'], true);
                 $appointment['insurance_provider'] = $insurance['provider'] ?? '';
@@ -235,10 +208,6 @@ class Appointment {
         return $appointment;
     }
 
-    /**
-     * Get appointments for a provider.
-     * @return array
-     */
     public function getByProvider($provider_id) {
         try {
             $stmt = $this->db->prepare("
@@ -262,10 +231,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Reschedule an appointment securely.
-     * @return bool
-     */
     public function rescheduleAppointment($appointment_id, $new_date, $new_start_time, $new_end_time) {
         try {
             $stmt = $this->db->prepare("
@@ -285,10 +250,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Cancel an appointment securely.
-     * @return bool
-     */
     public function cancelAppointment($appointment_id, $reason) {
         try {
             $stmt = $this->db->prepare("
@@ -307,10 +268,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Get all appointments with patient and provider details.
-     * @return array
-     */
     public function getAllAppointments() {
         try {
             $query = "SELECT a.*,
@@ -336,10 +293,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Get count of appointments by status.
-     * @return int
-     */
     public function getCountByStatus($status) {
         try {
             $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM appointments WHERE status = ?");
@@ -357,10 +310,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Update appointment status.
-     * @return bool
-     */
     public function updateStatus($appointment_id, $status) {
         try {
             $sql = "UPDATE appointments SET status = ?, updated_at = NOW() ";
@@ -379,10 +328,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Get the total count of appointments.
-     * @return int
-     */
     public function getTotalCount() {
         $stmt = $this->db->query("SELECT COUNT(*) as count FROM appointments");
         if ($stmt) {
@@ -392,10 +337,6 @@ class Appointment {
         return 0;
     }
 
-    /**
-     * Get appointments by date range.
-     * @return array
-     */
     public function getAppointmentsByDateRange($startDate, $endDate, $providerId = null) {
         try {
             $query = "SELECT a.*,
@@ -430,10 +371,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Get appointment statistics (daily, weekly, monthly).
-     * @return array
-     */
     public function getAppointmentStatistics($period = 'weekly', $startDate = null, $limit = 8) {
         try {
             if (!$startDate) {
@@ -489,10 +426,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Find available appointment slots for a provider.
-     * @return array
-     */
     public function findAvailableSlots($providerId, $date, $serviceId = null) {
         try {
             $availQuery = "
@@ -579,10 +512,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Get available provider slots for appointments.
-     * @return array
-     */
     public function getAvailableSlots($provider_id = null) {
         $slots = [];
         $query = "
@@ -616,10 +545,6 @@ class Appointment {
         return $slots;
     }
 
-    /**
-     * Book an appointment with availability check in a single transaction.
-     * @return array|false Array with appointment ID on success, false on failure.
-     */
     public function bookAppointment($patientId, $availabilityId, $serviceId, $type = 'in_person', $notes = '', $reason = '') {
         $this->db->begin_transaction();
         try {
@@ -699,10 +624,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Restore availability slot when an appointment is canceled.
-     * @return bool
-     */
     public function restoreAvailabilitySlot($availabilityId) {
         try {
             $stmt = $this->db->prepare("
@@ -717,12 +638,8 @@ class Appointment {
             return false;
         }
     }
-    /**
-     * Generate bookable slots for a provider, service, and date.
-     * Returns an array of ['start' => 'YYYY-MM-DDTHH:MM:SS', 'end' => 'YYYY-MM-DDTHH:MM:SS']
-     */
+
     public function generateBookableSlots($provider_id, $service_id, $date) {
-        // 1. Get service duration (check for provider override)
         $stmt = $this->db->prepare("
             SELECT 
                 COALESCE(ps.custom_duration, s.duration) AS duration
@@ -735,9 +652,8 @@ class Appointment {
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
-        $duration = $row ? intval($row['duration']) : 30; // fallback to 30 min
+        $duration = $row ? intval($row['duration']) : 30;
 
-        // 2. Get provider's available blocks for the date
         $stmt = $this->db->prepare("
             SELECT start_time, end_time 
             FROM provider_availability 
@@ -756,7 +672,6 @@ class Appointment {
             ];
         }
 
-        // 3. Get existing appointments for the provider on that date (exclude canceled)
         $stmt = $this->db->prepare("
             SELECT start_time, end_time 
             FROM appointments 
@@ -775,7 +690,6 @@ class Appointment {
             ];
         }
 
-        // 4. Generate slots
         $slots = [];
         foreach ($availabilityBlocks as $block) {
             $blockStart = new DateTime("$date {$block['start']}");
@@ -787,7 +701,6 @@ class Appointment {
                 $slotEnd->modify("+{$duration} minutes");
                 if ($slotEnd > $blockEnd) break;
 
-                // Check for overlap with existing appointments
                 $overlap = false;
                 foreach ($existingAppointments as $appt) {
                     $apptStart = new DateTime("$date {$appt['start']}");
@@ -810,12 +723,6 @@ class Appointment {
         return $slots;
     }
 
-    /**
-     * Update an appointment with all details.
-     * @param int $appointment_id The ID of the appointment to update
-     * @param array $appointmentData Array containing appointment data
-     * @return bool True on success, false on failure
-     */
     public function updateAppointment($appointment_id, $appointmentData) {
         try {
             $query = "UPDATE appointments SET ";
@@ -845,7 +752,6 @@ class Appointment {
                 }
             }
             
-            // Add updated_at timestamp
             $updateParts[] = "updated_at = NOW()";
             
             if (empty($updateParts)) {
@@ -883,10 +789,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Get appointment counts by type.
-     * @return array
-     */
     public function getAppointmentCountsByType() {
         try {
             $query = "
@@ -912,10 +814,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Get count of booked slots.
-     * @return int
-     */
     public function getBookedSlotsCount() {
         try {
             $stmt = $this->db->prepare("
@@ -940,10 +838,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Check if patient already has an appointment at the specified time.
-     * @return array|null
-     */
     public function getPatientAppointmentAtTime($patient_id, $date, $time) {
         try {
             $stmt = $this->db->prepare("
@@ -964,10 +858,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Update appointment notes.
-     * @return bool
-     */
     public function updateNotes($appointment_id, $notes) {
         try {
             $sql = "UPDATE appointments SET notes = ?, updated_at = NOW() WHERE appointment_id = ?";
@@ -980,10 +870,6 @@ class Appointment {
         }
     }
 
-    /**
-     * Get history of an appointment's status changes and updates.
-     * @return array
-     */
     public function getAppointmentHistory($appointment_id) {
         $history = [];
         $stmt = $this->db->prepare("
@@ -1024,10 +910,6 @@ class Appointment {
         return $history;
     }
 
-    /**
-     * Get logs for an appointment in the format expected by the view.
-     * @return array
-     */
     public function getAppointmentLogs($appointment_id) {
         $logs = [];
         $history = $this->getAppointmentHistory($appointment_id);
@@ -1064,10 +946,6 @@ class Appointment {
         return $logs;
     }
 
-    /**
-     * Get upcoming appointments for a provider.
-     * @return array
-     */
     public function getUpcomingAppointmentsByProvider($provider_id) {
         try {
             $stmt = $this->db->prepare("
@@ -1103,6 +981,7 @@ class Appointment {
             return [];
         }
     }
+
     public function rateAppointment($appointment_id, $patient_id, $provider_id, $rating, $comment = '') {
         try {
             $stmt = $this->db->prepare("
@@ -1117,6 +996,5 @@ class Appointment {
             return false;
         }
     }
-
 }
 ?>

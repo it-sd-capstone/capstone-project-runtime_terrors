@@ -1,22 +1,10 @@
 <?php
-// Commenting out debugging code
-/*
+// Simple check to ensure $availableSlots is set
 if (!isset($availableSlots)) {
-    echo "<p>Error: \$availableSlots is not set. Controller method may not be executing.</p>";
-    $availableSlots = []; // Prevent foreach error
-}
-// Debug the actual data
-echo "<pre>Available slots: ";
-var_dump($availableSlots);
-echo "</pre>";
-*/
-
-// Just keep this part to ensure $availableSlots is set
-if (!isset($availableSlots)) {
-    $availableSlots = []; // Prevent foreach error
+    $availableSlots = []; 
 }
 
-// Modify the security check to allow controller access
+// Security check
 if (!defined('BASE_PATH') && !isset($availableSlots)) {
     die("Direct access to views is not allowed");
 }
@@ -87,7 +75,6 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
         </div>
         <div class="card-body">
             <?php 
-            // Filter user appointments to get only upcoming ones
             $upcomingAppointments = array_filter($userAppointments, function($app) {
                 return $app['status'] !== 'completed' && $app['status'] !== 'canceled' && 
                        (strtotime($app['appointment_date']) >= strtotime(date('Y-m-d')) || 
@@ -171,7 +158,6 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
         </div>
         <div class="card-body">
             <?php 
-            // Combine past appointments and canceled appointments
             $pastAndCanceledAppointments = array_filter($userAppointments, function($app) {
                 return $app['status'] === 'completed' || 
                        $app['status'] === 'canceled' || 
@@ -231,7 +217,6 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
         </div>
         <div class="card-body">
             <?php 
-            // Use the pre-filtered list from the controller, or create an empty array if not set
             $completedUnratedAppointments = $completedUnratedAppointments ?? [];
             ?>
             
@@ -282,7 +267,6 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
     </div>
 </div>
 
-<!-- Rating Modal -->
 <div class="modal fade" id="ratingModal" tabindex="-1" aria-labelledby="ratingModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -328,7 +312,6 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
     </div>
 </div>
 
-<!-- Status Update Modal -->
 <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -367,7 +350,6 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
 </div>
 
 <style>
-/* Star Rating Styles */
 .star-rating {
     direction: rtl;
     display: inline-block;
@@ -398,7 +380,6 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
 </style>
 
 <script>
-    // Initialize the status modal with appointment data
     document.addEventListener('DOMContentLoaded', function() {
         var statusModal = document.getElementById('statusModal');
         if (statusModal) {
@@ -415,7 +396,6 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
             });
         }
         
-        // Rating modal initialization
         var ratingModal = document.getElementById('ratingModal');
         if (ratingModal) {
             ratingModal.addEventListener('show.bs.modal', function(event) {
@@ -439,7 +419,6 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
             });
         }
         
-        // Star rating functionality
         const ratingLabels = {
             1: "Poor",
             2: "Fair",
@@ -459,7 +438,6 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
 </script>
 
 <?php
-// Helper function for status badge color
 function getStatusBadgeClass($status) {
     switch ($status) {
         case 'scheduled':
