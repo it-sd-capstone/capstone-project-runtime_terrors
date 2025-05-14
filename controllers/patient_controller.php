@@ -505,7 +505,7 @@ class PatientController {
         
         // Validate search criteria
         $error = ($searchSubmitted && !$hasSearchCriteria)
-            ? "Please enter at least one search criteria."
+            ? "For better search results please fill out more than one field."
             : ($_GET['error'] ?? null);
         
         // Initialize providers array
