@@ -894,6 +894,7 @@
         // Define base URL for AJAX calls
         var base_url = '<?= isset($base_url) ? $base_url : rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/' ?>';
         // Required Libraries: Bootstrap, FullCalendar
+        var calendar;
         document.addEventListener('DOMContentLoaded', function() {
             // Show loading indicator
             document.getElementById('calendar-loading')?.classList.remove('d-none');
@@ -943,7 +944,7 @@
             };
             
             // First create the calendar with basic configuration
-            var calendar = new FullCalendar.Calendar(calendarEl, {
+             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 height: 700,
                 dayMaxEventRows: 3,
@@ -1517,6 +1518,304 @@
             });
         });
 
-    </script>
+// Function to show notification (needs to be available globally)
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notificationHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    // Check if notification container exists, create if not
+    let notificationContainer = document.getElementById('notification-container');
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'notification-container';
+        notificationContainer.style.position = 'fixed';
+        notificationContainer.style.top = '20px';
+        notificationContainer.style.right = '20px';
+        notificationContainer.style.zIndex = '9999';
+        notificationContainer.style.maxWidth = '350px';
+        document.body.appendChild(notificationContainer);
+    }
+    
+    // Add notification to container
+    const notificationElement = document.createElement('div');
+    notificationElement.innerHTML = notificationHtml;
+    notificationContainer.appendChild(notificationElement);
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+        notificationElement.querySelector('.alert').classList.remove('show');
+        setTimeout(() => {
+            if (notificationElement.parentNode) {
+                notificationElement.parentNode.removeChild(notificationElement);
+            }
+        }, 500);
+    }, 5000);
+}
+
+// Make sure tabs are properly initialized
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tabs
+    const triggerTabList = [].slice.call(document.querySelectorAll('#actionTabs button'));
+    triggerTabList.forEach(function(triggerEl) {
+        const tabTrigger = new bootstrap.Tab(triggerEl);
+        
+        triggerEl.addEventListener('click', function(event) {
+            event.preventDefault();
+            tabTrigger.show();
+        });
+    });
+    
+    // Modify the recurring form submission handler
+    const recurringForm = document.querySelector('form[action*="processRecurringSchedule"]');
+    if (recurringForm) {
+        recurringForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Create form data object
+            const formData = new FormData(this);
+            
+            // Add a type parameter to indicate this is for work hours
+            formData.append('schedule_type', 'work_hours');
+            
+            // Submit via AJAX
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message || 'Work hours added successfully!', 'success');
+                    
+                    // Refresh calendar if it exists
+                    if (typeof calendar !== 'undefined' && calendar !== null) {
+                        calendar.refetchEvents();
+                    }
+                    
+                    // Optionally reset the form
+                    this.reset();
+                } else {
+                    showNotification(data.message || 'Failed to add work hours', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error adding work hours:', error);
+                showNotification('Error adding work hours: ' + error.message, 'danger');
+            });
+        });
+    }
+
+    
+    // Handle delete slot button
+    const deleteSlotBtn = document.getElementById('deleteSlotBtn');
+    if (deleteSlotBtn) {
+        deleteSlotBtn.addEventListener('click', function() {
+            const availabilityId = document.getElementById('edit_availability_id').value;
+            
+            if (!availabilityId) {
+                showNotification('No availability selected', 'warning');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to delete this availability?')) {
+                fetch(base_url + 'index.php/provider/deleteAvailability', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        availability_id: availabilityId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message || 'Availability deleted successfully', 'success');
+                        
+                        // Refresh calendar
+                        if (typeof calendar !== 'undefined') {
+                            calendar.refetchEvents();
+                        }
+                    } else {
+                        showNotification(data.message || 'Failed to delete availability', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting availability:', error);
+                    showNotification('Error deleting availability: ' + error.message, 'danger');
+                });
+            }
+        });
+    }
+    
+    // Handle edit availability form
+    const editAvailabilityForm = document.getElementById('editAvailabilityForm');
+    if (editAvailabilityForm) {
+        editAvailabilityForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const jsonData = {};
+            
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+            
+            fetch(base_url + 'index.php/provider/updateAvailability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(jsonData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message || 'Availability updated successfully', 'success');
+                    
+                    // Refresh calendar
+                    if (typeof calendar !== 'undefined') {
+                        calendar.refetchEvents();
+                    }
+                } else {
+                    showNotification(data.message || 'Failed to update availability', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating availability:', error);
+                showNotification('Error updating availability: ' + error.message, 'danger');
+            });
+        });
+    }
+    
+    // Generate slots button
+    const generateSlotsBtn = document.getElementById('generateSlotsBtn');
+    if (generateSlotsBtn) {
+        generateSlotsBtn.addEventListener('click', function() {
+            // Get all selected services
+            const selectedServices = [];
+            document.querySelectorAll('.service-checkbox:checked').forEach(checkbox => {
+                selectedServices.push({
+                    service_id: checkbox.value,
+                    duration: checkbox.dataset.duration
+                });
+            });
+            
+            if (selectedServices.length === 0) {
+                showNotification('Please select at least one service', 'warning');
+                return;
+            }
+            
+            // Get distribution mode and period
+            const distribution = document.getElementById('slotDistribution').value;
+            const period = document.getElementById('generatePeriod').value;
+            
+            // Show loading indicator
+            generateSlotsBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
+            generateSlotsBtn.disabled = true;
+            
+            // Submit request
+            fetch(base_url + 'index.php/provider/generateAvailability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    services: selectedServices,
+                    distribution: distribution,
+                    period: period
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Reset button state
+                generateSlotsBtn.innerHTML = '<i class="fas fa-magic me-1"></i>Generate Slots';
+                generateSlotsBtn.disabled = false;
+                
+                if (data.success) {
+                    showNotification(data.message || 'Slots generated successfully', 'success');
+                    
+                    // Refresh calendar
+                    if (typeof calendar !== 'undefined') {
+                        calendar.refetchEvents();
+                    }
+                } else {
+                    showNotification(data.message || 'Failed to generate slots', 'danger');
+                }
+            })
+            .catch(error => {
+                // Reset button state
+                generateSlotsBtn.innerHTML = '<i class="fas fa-magic me-1"></i>Generate Slots';
+                generateSlotsBtn.disabled = false;
+                
+                console.error('Error generating slots:', error);
+                showNotification('Error generating slots: ' + error.message, 'danger');
+            });
+        });
+    }
+    
+    // Delete range form
+    const deleteRangeForm = document.getElementById('deleteRangeForm');
+    if (deleteRangeForm) {
+        deleteRangeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const startDate = document.getElementById('delete_start_date').value;
+            const endDate = document.getElementById('delete_end_date').value;
+            
+            if (!startDate || !endDate) {
+                showNotification('Please select both start and end dates', 'warning');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete all availability from ${startDate} to ${endDate}?`)) {
+                fetch(base_url + 'index.php/provider/deleteRangeAvailability', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        start_date: startDate,
+                        end_date: endDate
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message || 'Availability range deleted successfully', 'success');
+                        
+                        // Refresh calendar
+                        if (typeof calendar !== 'undefined') {
+                            calendar.refetchEvents();
+                        }
+                        
+                        // Reset form
+                        this.reset();
+                    } else {
+                        showNotification(data.message || 'Failed to delete availability range', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting availability range:', error);
+                    showNotification('Error deleting availability range: ' + error.message, 'danger');
+                });
+            }
+        });
+    }
+});
+</script>
+
 
     <?php include VIEW_PATH . '/partials/footer.php'; ?>

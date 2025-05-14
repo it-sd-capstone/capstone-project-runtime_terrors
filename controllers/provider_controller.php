@@ -952,7 +952,7 @@ class ProviderController {
         }
     }
 
-    public function processRecurringSchedule() {
+   public function processRecurringSchedule() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $provider_id = $_SESSION['user_id'] ?? null;
             $day_of_week = $_POST['day_of_week'] ?? null; // single value: 0-6
@@ -961,18 +961,31 @@ class ProviderController {
             $is_active = $_POST['is_active'] ?? 1;
             $repeat_weekly = $_POST['repeat_weekly'] ?? '0';
             $repeat_until = $_POST['repeat_until'] ?? null;
-
+            
+            // Add this line to specify this is for work hours
+            $schedule_type = $_POST['schedule_type'] ?? 'work_hours';
+            
             // Use today as the start date
             $start_date = date('Y-m-d');
             // Use repeat_until as the end date, or default to 1 month from now if not set
             $end_date = $repeat_until ?: date('Y-m-d', strtotime('+1 month'));
-
+            
             if (!$provider_id || $day_of_week === null || !$start_time || !$end_time) {
-                $_SESSION['error'] = "All required fields must be filled.";
-                header("Location: " . base_url("index.php/provider/schedule"));
-                exit;
+                // For AJAX requests, return JSON
+                if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'All required fields must be filled.'
+                    ]);
+                    exit;
+                } else {
+                    $_SESSION['error'] = "All required fields must be filled.";
+                    header("Location: " . base_url("index.php/provider/schedule"));
+                    exit;
+                }
             }
-
+            
             // Use providerModel instead of scheduleModel
             if ($repeat_weekly === '1') {
                 $success = $this->providerModel->addRecurringSchedule(
@@ -980,32 +993,56 @@ class ProviderController {
                     $day_of_week,
                     $start_time,
                     $end_time,
-                    $is_active
+                    $is_active,
+                    $schedule_type // Pass the schedule type
                 );
             } else {
                 // For single slot, use the appropriate method from providerModel
-                $next_date = date('Y-m-d', strtotime("next " . jddayofweek($day_of_week, 1)));
+                // Use a safer function to find the next day of week
+                $next_date = $this->getNextDayOfWeek($day_of_week);
+                
                 $success = $this->providerModel->addAvailability([
                     'provider_id' => $provider_id,
                     'availability_date' => $next_date,
                     'start_time' => $start_time,
                     'end_time' => $end_time,
-                    'is_available' => $is_active
+                    'is_available' => $is_active,
+                    'schedule_type' => $schedule_type // Pass the schedule type
                 ]);
             }
-
-            header('Content-Type: application/json');
-            echo json_encode([
-                'success' => $success,
-                'message' => $success ? 'Schedule created successfully!' : 'Failed to create schedule.'
-            ]);
-            exit;
+            
+            // For AJAX requests, return JSON
+            if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => $success,
+                    'message' => $success ? 'Work hours schedule created successfully!' : 'Failed to create work hours schedule.'
+                ]);
+                exit;
+            } else {
+                // For regular form submissions
+                if ($success) {
+                    $_SESSION['success'] = "Work hours schedule created successfully!";
+                } else {
+                    $_SESSION['error'] = "Failed to create work hours schedule.";
+                }
+                header("Location: " . base_url("index.php/provider/schedule"));
+                exit;
+            }
         }
-    
+        
         // If not a POST request, redirect back to the schedule page
         header('Location: ' . base_url('index.php/provider/schedule'));
         exit;
     }
+
+    // Helper function to safely get the next occurrence of a day of week
+    private function getNextDayOfWeek($day_of_week) {
+        $day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        $day_name = $day_names[$day_of_week] ?? 'Sunday'; // Default to Sunday if invalid
+        return date('Y-m-d', strtotime("next $day_name"));
+    }
+
 
     // Update Provider Profile
     public function updateProfile() {
