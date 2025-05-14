@@ -7,7 +7,7 @@
         <div class="col-md-12">
             <div class="card shadow-sm bg-light">
                 <div class="card-body p-4">
-                    <h2 class="text-primary mb-2">Welcome, Dr. <?= htmlspecialchars($provider['last_name'] ?? 'Provider') ?>!</h2>
+                    <h2 class="text-primary mb-2">Welcome<?= !empty($providerData['first_name']) || !empty($providerData['last_name']) ? ', ' . htmlspecialchars($providerData['first_name'] ?? '') . ' ' . htmlspecialchars($providerData['last_name'] ?? '') : '' ?>!</h2>
                     <p class="text-muted">Your hub for seamless appointment management and patient interactions.</p>
                 </div>
             </div>
