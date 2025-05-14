@@ -36,15 +36,23 @@ class PatientController {
             header('Location: ' . base_url('index.php/auth'));
             exit;
         }
-            // Get patient details
+        // Get patient details
         $userData = $this->userModel->getUserById($patient_id);
         $patientData = $this->userModel->getPatientProfile($patient_id);
 
         // Merge user and patient data
         $patient = array_merge($userData ?: [], $patientData ?: []);
 
+        // Get appointments without modifying the original methods
         $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments($patient_id) ?? [];
         $pastAppointments = $this->appointmentModel->getPastAppointments($patient_id) ?? [];
+        
+        // Filter the upcoming appointments to only include ones with dates in the future
+        // This only affects this page and doesn't modify the original function
+        $currentDate = date('Y-m-d');
+        $upcomingAppointments = array_filter($upcomingAppointments, function($appointment) use ($currentDate) {
+            return $appointment['appointment_date'] >= $currentDate;
+        });
         
         include VIEW_PATH . '/patient/index.php';
     }
