@@ -328,27 +328,32 @@ class AuthController {
                         'remoteip' => $_SERVER['REMOTE_ADDR']
                     ];
                     
-                    $recaptchaOptions = [
-                        'http' => [
-                            'header' => "Content-type: application/x-www-form-urlencoded\r\n",
-                            'method' => 'POST',
-                            'content' => http_build_query($recaptchaData)
-                        ]
-                    ];
+                    // Use cURL for better error handling and security
+                    $ch = curl_init($recaptchaUrl);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($recaptchaData));
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true); // Verify SSL
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Set timeout
                     
-                    $recaptchaContext = stream_context_create($recaptchaOptions);
-                    $recaptchaResult = @file_get_contents($recaptchaUrl, false, $recaptchaContext);
+                    $recaptchaResult = curl_exec($ch);
+                    $curlError = curl_error($ch);
+                    curl_close($ch);
                     
                     if ($recaptchaResult) {
                         $recaptchaData = json_decode($recaptchaResult);
                         
-                        if (!$recaptchaData->success) {
+                        if (!isset($recaptchaData->success) || !$recaptchaData->success) {
                             $errors[] = "reCAPTCHA verification failed. Please try again.";
+                            
+                            // Log the error with error codes if available
+                            if (isset($recaptchaData->{'error-codes'}) && is_array($recaptchaData->{'error-codes'})) {
+                                error_log("reCAPTCHA error codes: " . implode(', ', $recaptchaData->{'error-codes'}));
+                            }
                         }
                     } else {
-                        error_log("Failed to connect to reCAPTCHA service");
-                        // Optionally, you can skip reCAPTCHA validation if the service is unavailable
-                        // Or add an error: $errors[] = "Could not verify reCAPTCHA. Please try again.";
+                        error_log("Failed to connect to reCAPTCHA service: " . $curlError);
+                        $errors[] = "Could not verify reCAPTCHA. Please try again later.";
                     }
                 }
             }
