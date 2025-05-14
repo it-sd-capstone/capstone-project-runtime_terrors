@@ -2152,6 +2152,27 @@ public function getSuggestedProviders() {
         }
     }
 
+    public function setActiveStatus($providerId, $isActive) {
+    try {
+        $stmt = $this->db->prepare("UPDATE users SET is_active = ? WHERE user_id = ? AND role = 'provider'");
+        $stmt->bind_param("ii", $isActive, $providerId);
+        return $stmt->execute();
+    } catch (Exception $e) {
+        error_log("Error updating provider active status: " . $e->getMessage());
+        return false;
+    }
+}
+
+public function setAcceptingNewPatients($providerId, $accepting) {
+    try {
+        $stmt = $this->db->prepare("UPDATE provider_profiles SET accepting_new_patients = ? WHERE provider_id = ?");
+        $stmt->bind_param("ii", $accepting, $providerId);
+        return $stmt->execute();
+    } catch (Exception $e) {
+        error_log("Error updating accepting_new_patients: " . $e->getMessage());
+        return false;
+    }
+}
     /**
      * Get provider comparison metrics for admin analysis
      * 
@@ -2496,7 +2517,8 @@ public function getSuggestedProviders() {
                     u.email, 
                     u.first_name, 
                     u.last_name, 
-                    u.phone 
+                    u.phone,
+                    u.is_active
                 FROM provider_profiles pp
                 JOIN users u ON pp.provider_id = u.user_id
                 WHERE pp.provider_id = ?";
