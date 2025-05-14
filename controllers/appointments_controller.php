@@ -327,11 +327,11 @@ class AppointmentsController {
             $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments($user_id) ?? [];
             $pastAppointments = $this->appointmentModel->getPastAppointments($user_id) ?? [];
         } elseif ($role === 'provider') {
-            $upcomingAppointments = $this->appointmentModel->getProviderUpcomingAppointments($user_id) ?? [];
-            $pastAppointments = $this->appointmentModel->getProviderPastAppointments($user_id) ?? [];
+            $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments($user_id) ?? [];
+            $pastAppointments = $this->appointmentModel->getPastAppointments($user_id) ?? [];
         } else { // admin
-            $upcomingAppointments = $this->appointmentModel->getAllUpcomingAppointments() ?? [];
-            $pastAppointments = $this->appointmentModel->getAllPastAppointments() ?? [];
+            $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments() ?? [];
+            $pastAppointments = $this->appointmentModel->getPastAppointments() ?? [];
         }
         include VIEW_PATH . '/appointments/history.php';
     }
