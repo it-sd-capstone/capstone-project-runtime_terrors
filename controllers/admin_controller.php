@@ -1009,6 +1009,7 @@ class AdminController {
                 $userData['password'] = $generatedPassword; // Store to display once
             } else {
                 $password = $_POST['password'];
+                $userData['password'] = $password;
             }
             
             // Provider-specific data
@@ -1026,8 +1027,15 @@ class AdminController {
             if (empty($userData['last_name'])) $errors[] = "Last name is required";
             if (empty($userData['email'])) $errors[] = "Email is required";
             
+            // Check for duplicate email before proceeding
+            if (!empty($userData['email']) && $this->userModel->emailExists($userData['email'])) {
+                $errors[] = "Email already registered. Please use a different email address.";
+            }
+            
             if (!empty($errors)) {
                 $_SESSION['error'] = implode("<br>", $errors);
+                // Store form data in session for refilling the form
+                $_SESSION['form_data'] = $userData + $providerData;
                 header('Location: ' . base_url('index.php/admin/addProvider'));
                 exit;
             }
@@ -1044,7 +1052,8 @@ class AdminController {
                     $userData['last_name'],
                     $userData['phone'],
                     'provider',
-                    true  // Set is_verified to true
+                    true,  // Set is_verified to true
+                    true   // skipProfileCreation
                 );
                 
                 // Handle the result array properly
@@ -1080,7 +1089,7 @@ class AdminController {
                 $this->db->commit();
                 
                 // Store the password in the session specifically for display
-                $_SESSION['success'] = "Provider created successfully! Temporary password: <strong>" . $generatedPassword . "</strong>";
+                $_SESSION['success'] = "Provider created successfully! Temporary password: <strong>" . $userData['password'] . "</strong>";
                 $_SESSION['show_password'] = true; // Add a flag to indicate password should be shown
                 
                 header('Location: ' . base_url('index.php/admin/providers'));
@@ -1091,6 +1100,8 @@ class AdminController {
                 $this->db->rollback();
                 error_log("Error creating provider: " . $e->getMessage());
                 $_SESSION['error'] = "Error creating provider: " . $e->getMessage();
+                // Store form data in session for refilling the form
+                $_SESSION['form_data'] = $userData + $providerData;
                 header('Location: ' . base_url('index.php/admin/addProvider'));
                 exit;
             }
@@ -1099,70 +1110,71 @@ class AdminController {
         // Display the add provider form
         include VIEW_PATH . '/admin/add_provider.php';
     }
-    
-public function toggleAcceptingPatients() {
-    if (!$this->isUserAdmin()) {
-        $_SESSION['error'] = "Unauthorized access";
+
+        
+    public function toggleAcceptingPatients() {
+        if (!$this->isUserAdmin()) {
+            $_SESSION['error'] = "Unauthorized access";
+            header('Location: ' . base_url('index.php/admin/providers'));
+            exit;
+        }
+
+        $providerId = $_GET['provider_id'] ?? $_POST['provider_id'] ?? null;
+        $accepting = $_GET['accepting'] ?? $_POST['accepting'] ?? null;
+
+        if (!$providerId || $accepting === null) {
+            $_SESSION['error'] = "Provider ID and accepting status are required";
+            header('Location: ' . base_url('index.php/admin/providers'));
+            exit;
+        }
+
+        $accepting = (int)$accepting ? 1 : 0;
+
+        $result = $this->providerModel->setAcceptingNewPatients($providerId, $accepting);
+
+        if ($result) {
+            $_SESSION['success'] = $accepting
+                ? "Provider is now accepting new patients."
+                : "Provider is no longer accepting new patients.";
+        } else {
+            $_SESSION['error'] = "Failed to update accepting new patients status.";
+        }
+
         header('Location: ' . base_url('index.php/admin/providers'));
         exit;
     }
 
-    $providerId = $_GET['provider_id'] ?? $_POST['provider_id'] ?? null;
-    $accepting = $_GET['accepting'] ?? $_POST['accepting'] ?? null;
+    public function toggleUserStatus() {
+        if (!$this->isUserAdmin()) {
+            $_SESSION['error'] = "Unauthorized access";
+            header('Location: ' . base_url('index.php/admin/users'));
+            exit;
+        }
 
-    if (!$providerId || $accepting === null) {
-        $_SESSION['error'] = "Provider ID and accepting status are required";
-        header('Location: ' . base_url('index.php/admin/providers'));
-        exit;
-    }
+        $userId = $_GET['user_id'] ?? $_POST['user_id'] ?? null;
+        $isActive = $_GET['is_active'] ?? $_POST['is_active'] ?? null;
 
-    $accepting = (int)$accepting ? 1 : 0;
+        if (!$userId || $isActive === null) {
+            $_SESSION['error'] = "User ID and status are required";
+            header('Location: ' . base_url('index.php/admin/users'));
+            exit;
+        }
 
-    $result = $this->providerModel->setAcceptingNewPatients($providerId, $accepting);
+        $isActive = (int)$isActive ? 1 : 0;
 
-    if ($result) {
-        $_SESSION['success'] = $accepting
-            ? "Provider is now accepting new patients."
-            : "Provider is no longer accepting new patients.";
-    } else {
-        $_SESSION['error'] = "Failed to update accepting new patients status.";
-    }
+        $result = $this->userModel->updateUser($userId, ['is_active' => $isActive]);
 
-    header('Location: ' . base_url('index.php/admin/providers'));
-    exit;
-}
+        if ($result) {
+            $_SESSION['success'] = $isActive
+                ? "User activated successfully."
+                : "User deactivated successfully.";
+        } else {
+            $_SESSION['error'] = "Failed to update user status.";
+        }
 
-public function toggleUserStatus() {
-    if (!$this->isUserAdmin()) {
-        $_SESSION['error'] = "Unauthorized access";
         header('Location: ' . base_url('index.php/admin/users'));
         exit;
     }
-
-    $userId = $_GET['user_id'] ?? $_POST['user_id'] ?? null;
-    $isActive = $_GET['is_active'] ?? $_POST['is_active'] ?? null;
-
-    if (!$userId || $isActive === null) {
-        $_SESSION['error'] = "User ID and status are required";
-        header('Location: ' . base_url('index.php/admin/users'));
-        exit;
-    }
-
-    $isActive = (int)$isActive ? 1 : 0;
-
-    $result = $this->userModel->updateUser($userId, ['is_active' => $isActive]);
-
-    if ($result) {
-        $_SESSION['success'] = $isActive
-            ? "User activated successfully."
-            : "User deactivated successfully.";
-    } else {
-        $_SESSION['error'] = "Failed to update user status.";
-    }
-
-    header('Location: ' . base_url('index.php/admin/users'));
-    exit;
-}
 
 
    /**

@@ -204,10 +204,12 @@
             <!-- Hidden forms for actions -->
             <form id="status-form-<?= $providers[$i]['user_id'] ?>" method="post" action="<?= base_url('index.php/admin/toggleUserStatus') ?>" style="display: none;">
                 <input type="hidden" name="user_id" value="<?= $providers[$i]['user_id'] ?>">
+                <input type="hidden" name="is_active" value="<?= $providers[$i]['is_active'] ? 0 : 1 ?>">
             </form>
             
             <form id="patients-form-<?= $providers[$i]['user_id'] ?>" method="post" action="<?= base_url('index.php/admin/toggleAcceptingPatients') ?>" style="display: none;">
                 <input type="hidden" name="provider_id" value="<?= $providers[$i]['user_id'] ?>">
+                <input type="hidden" name="accepting" value="<?= isset($providers[$i]['accepting_new_patients']) && $providers[$i]['accepting_new_patients'] ? 0 : 1 ?>">
             </form>
         <?php endfor; ?>
     <?php endif; ?>

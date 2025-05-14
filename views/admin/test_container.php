@@ -197,24 +197,6 @@ foreach ($testFiles as $testName => $fileName) {
 <!-- All JS in One Place -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Accordion Toggle Fix: allow closing by clicking again
-    document.querySelectorAll('.accordion-button').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            var targetId = btn.getAttribute('data-bs-target');
-            var target = document.querySelector(targetId);
-            if (target && target.classList.contains('show')) {
-                // If already open, close it and prevent Bootstrap's default open
-                e.stopPropagation();
-                e.preventDefault();
-                var collapse = bootstrap.Collapse.getOrCreateInstance(target);
-                collapse.hide();
-            }
-            // Otherwise, let Bootstrap handle opening
-        });
-    });
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
     // Initialize variables
     let selectedTest = null;
     const testItems = document.querySelectorAll('.test-item');

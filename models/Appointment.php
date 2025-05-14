@@ -430,11 +430,11 @@ class Appointment {
         try {
             $availQuery = "
                 SELECT 
-                    available_date, start_time, end_time
+                    availability_date, start_time, end_time
                 FROM 
                     provider_availability
                 WHERE 
-                    provider_id = ? AND available_date = ?
+                    provider_id = ? AND availability_date = ?
             ";
             $availStmt = $this->db->prepare($availQuery);
             $availStmt->bind_param("is", $providerId, $date);
