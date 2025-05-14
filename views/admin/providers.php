@@ -21,6 +21,18 @@
         <?php unset($_SESSION['success']); ?>
     <?php endif; ?>
 
+    <!-- Simple Debug Output -->
+    <?php if (isset($_GET['debug'])): ?>
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Debug: Providers Array</h5>
+            </div>
+            <div class="card-body">
+                <pre><?php print_r($providers); ?></pre>
+            </div>
+        </div>
+    <?php endif; ?>
+    
     <!-- Page header -->
     <div class="row mb-4">
         <div class="col-md-6">
@@ -85,7 +97,13 @@
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($providers as $provider): ?>
+                            <?php 
+                            $seen = [];
+                            foreach ($providers as $provider): 
+                                // Skip duplicates
+                                if (isset($seen[$provider['user_id']])) continue;
+                                $seen[$provider['user_id']] = true;
+                            ?>
                                 <tr>
                                     <td class="py-3"><?= htmlspecialchars($provider['first_name'] . ' ' . $provider['last_name']) ?></td>
                                     <td class="py-3"><?= htmlspecialchars($provider['email']) ?></td>
@@ -116,13 +134,13 @@
                                     </td>
                                     <td class="py-3">
                                         <!-- Button to trigger modal -->
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
                                                 data-bs-toggle="modal" data-bs-target="#actionModal<?= $provider['user_id'] ?>">
                                             Actions <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         
                                         <!-- Modal for actions -->
-                                        <div class="modal fade" id="actionModal<?= $provider['user_id'] ?>" tabindex="-1" 
+                                        <div class="modal fade" id="actionModal<?= $provider['user_id'] ?>" tabindex="-1"
                                              aria-labelledby="actionModalLabel<?= $provider['user_id'] ?>" aria-hidden="true">
                                             <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content">
@@ -134,7 +152,6 @@
                                                     </div>
                                                     <div class="modal-body">
                                                         <div class="list-group">
-
                                                             <a href="<?= base_url('index.php/admin/manageProviderServices?id=' . $provider['user_id']) ?>"
                                                                 class="list-group-item list-group-item-action">
                                                                 <div class="d-flex w-100 justify-content-between">
@@ -144,9 +161,7 @@
                                                                 <small class="text-muted">Configure services offered by this provider</small>
                                                             </a>
                                                             
-
-                                                            <a href="<?= base_url('index.php/admin/viewAvailability?id=' . $provider['user_id']) ?>" 
-
+                                                            <a href="<?= base_url('index.php/admin/viewAvailability?id=' . $provider['user_id']) ?>"
                                                                class="list-group-item list-group-item-action">
                                                                 <div class="d-flex w-100 justify-content-between">
                                                                     <h6 class="mb-1">View Availability</h6>
@@ -155,7 +170,7 @@
                                                                 <small class="text-muted">See provider's schedule and available time slots</small>
                                                             </a>
                                                             
-                                                            <button type="button" class="list-group-item list-group-item-action" 
+                                                            <button type="button" class="list-group-item list-group-item-action"
                                                                     onclick="submitForm('status-form-<?= $provider['user_id'] ?>')">
                                                                 <div class="d-flex w-100 justify-content-between">
                                                                     <h6 class="mb-1"><?= $provider['is_active'] ? 'Deactivate' : 'Activate' ?> Account</h6>
@@ -166,7 +181,7 @@
                                                                 </small>
                                                             </button>
                                                             
-                                                            <button type="button" class="list-group-item list-group-item-action" 
+                                                            <button type="button" class="list-group-item list-group-item-action"
                                                                     onclick="submitForm('patients-form-<?= $provider['user_id'] ?>')">
                                                                 <div class="d-flex w-100 justify-content-between">
                                                                     <h6 class="mb-1"><?= isset($provider['accepting_new_patients']) && $provider['accepting_new_patients'] ? 'Stop' : 'Start' ?> Accepting Patients</h6>

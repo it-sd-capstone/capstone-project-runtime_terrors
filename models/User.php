@@ -330,9 +330,10 @@ class User {
      * @param string $lastName User last name
      * @param string $phone User phone number
      * @param string $role User role (default: 'patient')
+     * @param bool $isVerified Whether the user is already verified (default: false)
      * @return array Result with user_id or error message
      */
-    public function register($email, $password, $firstName, $lastName, $phone, $role = 'patient') {
+    public function register($email, $password, $firstName, $lastName, $phone, $role = 'patient', $isVerified = false) {
         try {
             // Validate email format
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -357,19 +358,24 @@ class User {
                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
             }
             
+            // Set password_change_required for providers
+            $passwordChangeRequired = ($role === 'provider') ? 1 : 0;
+            
             if ($this->db instanceof mysqli) {
                 // Start transaction
                 $this->db->begin_transaction();
                 
                 // MySQLi implementation
-                $query = "INSERT INTO users (email, password_hash, first_name, last_name, phone, role)
-                        VALUES (?, ?, ?, ?, ?, ?)";
+                $query = "INSERT INTO users (email, password_hash, first_name, last_name, phone, role, is_verified, password_change_required)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 $stmt = $this->db->prepare($query);
                 if (!$stmt) {
                     throw new Exception("Prepare failed: " . $this->db->error);
                 }
-                $stmt->bind_param("ssssss", $email, $passwordHash, $firstName, $lastName, $phone, $role);
+                
+                $isVerifiedInt = $isVerified ? 1 : 0;
+                $stmt->bind_param("ssssssii", $email, $passwordHash, $firstName, $lastName, $phone, $role, $isVerifiedInt, $passwordChangeRequired);
                 
                 if (!$stmt->execute()) {
                     error_log("User insert error: " . $stmt->error);
@@ -445,13 +451,15 @@ class User {
                 $this->db->beginTransaction();
                 
                 // PDO implementation
-                $query = "INSERT INTO users (email, password_hash, first_name, last_name, phone, role)
-                        VALUES (:email, :password_hash, :first_name, :last_name, :phone, :role)";
+                $query = "INSERT INTO users (email, password_hash, first_name, last_name, phone, role, is_verified, password_change_required)
+                        VALUES (:email, :password_hash, :first_name, :last_name, :phone, :role, :is_verified, :password_change_required)";
                 
                 $stmt = $this->db->prepare($query);
                 if (!$stmt) {
                     throw new Exception("PDO prepare failed");
                 }
+                
+                $isVerifiedInt = $isVerified ? 1 : 0;
                 
                 $stmt->bindParam(':email', $email, PDO::PARAM_STR);
                 $stmt->bindParam(':password_hash', $passwordHash, PDO::PARAM_STR);
@@ -459,6 +467,8 @@ class User {
                 $stmt->bindParam(':last_name', $lastName, PDO::PARAM_STR);
                 $stmt->bindParam(':phone', $phone, PDO::PARAM_STR);
                 $stmt->bindParam(':role', $role, PDO::PARAM_STR);
+                $stmt->bindParam(':is_verified', $isVerifiedInt, PDO::PARAM_INT);
+                $stmt->bindParam(':password_change_required', $passwordChangeRequired, PDO::PARAM_INT);
                 
                 if (!$stmt->execute()) {
                     $errorInfo = $stmt->errorInfo();
@@ -547,6 +557,7 @@ class User {
             return ['error' => 'Registration failed: ' . $e->getMessage()];
         }
     }
+
     
     /**
      * Check if a string is already a password hash

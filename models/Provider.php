@@ -1404,23 +1404,24 @@ class Provider {
 
     // Get all providers (needed for listing providers)
 
-  public function getAll() {
-      try {
-          $stmt = $this->db->prepare("
-              SELECT u.user_id, u.first_name, u.last_name, u.email, u.phone, u.is_active,
-                     pp.specialization, pp.title, pp.bio, pp.accepting_new_patients
-              FROM users u
-              JOIN provider_profiles pp ON u.user_id = pp.provider_id
-              WHERE u.role = 'provider' AND u.is_active = 1
-          ");
-          $stmt->execute();
-          $result = $stmt->get_result();
-          return $result->fetch_all(MYSQLI_ASSOC) ?: [];
-      } catch (Exception $e) {
-          error_log("Error fetching all providers: " . $e->getMessage());
-          return [];
-      }
-  }
+    public function getAll() {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT u.user_id, u.first_name, u.last_name, u.email, u.phone, u.is_active,
+                    pp.specialization, pp.title, pp.bio, pp.accepting_new_patients
+                FROM users u
+                LEFT JOIN provider_profiles pp ON u.user_id = pp.provider_id
+                WHERE u.role = 'provider' AND u.is_active = 1
+            ");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            return $result->fetch_all(MYSQLI_ASSOC) ?: [];
+        } catch (Exception $e) {
+            error_log("Error fetching all providers: " . $e->getMessage());
+            return [];
+        }
+    }
+
 
     public function getServiceAvailability($provider_id, $service_id = null, $date = null) {
         // Base query
@@ -1463,7 +1464,6 @@ class Provider {
         
         return $result->fetch_all(MYSQLI_ASSOC);
     }
-
 
     public function getRecurringSchedules($providerId) {
         try {
@@ -1511,8 +1511,6 @@ class Provider {
         }
     }
     
-
-
     /**
      * Get top providers by appointment count
      * @param int $limit Number of providers to return
@@ -1569,70 +1567,77 @@ class Provider {
         }
     }
 
-    /**
-     * Create a new provider profile
-     * @param array $profileData Provider profile data
-     * @return bool Success status
-     */
     public function createProfile($profileData) {
-        try {
-            $stmt = $this->db->prepare("
-                INSERT INTO provider_profiles
-                (provider_id, specialization, title, bio, accepting_new_patients)
-                VALUES (?, ?, ?, ?, ?)
-            ");
-            
-            $acceptingPatients = $profileData['accepting_new_patients'] ?? 1;
-            
-            $stmt->bind_param("isssi",
-                $profileData['provider_id'],
-                $profileData['specialization'],
-                $profileData['title'],
-                $profileData['bio'],
-                $acceptingPatients
-            );
-            
-            return $stmt->execute();
-        } catch (Exception $e) {
-            error_log("Error creating provider profile: " . $e->getMessage());
-            return false;
-        }
+        // Just call the main method
+        return $this->createProviderProfile(
+            $profileData['provider_id'],
+            $profileData
+        );
     }
-    /**
-     * Create a provider profile
-     * 
-     * @param int $providerId The user ID of the provider
-     * @param array $profileData Profile data (specialization, title, bio, etc.)
-     * @return bool True on success, false on failure
-     */
+
     public function createProviderProfile($providerId, $profileData) {
         try {
+            // First check if a profile already exists
+            $checkStmt = $this->db->prepare("SELECT profile_id FROM provider_profiles WHERE provider_id = ?");
+            $checkStmt->bind_param("i", $providerId);
+            $checkStmt->execute();
+            $result = $checkStmt->get_result();
+            
             // Prepare default values
             $specialization = $profileData['specialization'] ?? '';
             $title = $profileData['title'] ?? '';
             $bio = $profileData['bio'] ?? '';
             $acceptingNewPatients = isset($profileData['accepting_new_patients']) ? 1 : 0;
             $maxPatientsPerDay = $profileData['max_patients_per_day'] ?? 20;
-
-            // Create the SQL query - note we're not including user_id column
-            $query = "INSERT INTO provider_profiles 
-                    (provider_id, specialization, title, bio, accepting_new_patients, max_patients_per_day) 
-                    VALUES (?, ?, ?, ?, ?, ?)";
             
-            $stmt = $this->db->prepare($query);
-            if (!$stmt) {
-                error_log("Provider profile prepare error: " . $this->db->error);
-                return false;
+            if ($result->num_rows > 0) {
+                // Profile exists, update it
+                $profile = $result->fetch_assoc();
+                $profileId = $profile['profile_id'];
+                
+                $query = "UPDATE provider_profiles 
+                        SET specialization = ?, 
+                            title = ?, 
+                            bio = ?, 
+                            accepting_new_patients = ?, 
+                            max_patients_per_day = ? 
+                        WHERE profile_id = ?";
+                        
+                $stmt = $this->db->prepare($query);
+                if (!$stmt) {
+                    error_log("Provider profile update prepare error: " . $this->db->error);
+                    return false;
+                }
+                
+                $stmt->bind_param("sssiii",
+                    $specialization,
+                    $title,
+                    $bio,
+                    $acceptingNewPatients,
+                    $maxPatientsPerDay,
+                    $profileId
+                );
+            } else {
+                // No profile exists, create a new one
+                $query = "INSERT INTO provider_profiles
+                        (provider_id, specialization, title, bio, accepting_new_patients, max_patients_per_day)
+                        VALUES (?, ?, ?, ?, ?, ?)";
+                        
+                $stmt = $this->db->prepare($query);
+                if (!$stmt) {
+                    error_log("Provider profile prepare error: " . $this->db->error);
+                    return false;
+                }
+                
+                $stmt->bind_param("isssii",
+                    $providerId,
+                    $specialization,
+                    $title,
+                    $bio,
+                    $acceptingNewPatients,
+                    $maxPatientsPerDay
+                );
             }
-            
-            $stmt->bind_param("isssii", 
-                $providerId, 
-                $specialization, 
-                $title, 
-                $bio, 
-                $acceptingNewPatients,
-                $maxPatientsPerDay
-            );
             
             $result = $stmt->execute();
             if (!$result) {
@@ -1647,7 +1652,6 @@ class Provider {
         }
     }
 
-
     /**
      * Add a new provider with profile
      * @param array $userData User data
@@ -1661,8 +1665,8 @@ class Provider {
             // Insert user
             $stmt = $this->db->prepare("
                 INSERT INTO users
-                (email, password_hash, first_name, last_name, phone, role, is_active, password_change_required)
-                VALUES (?, ?, ?, ?, ?, 'provider', 1, 1)
+                (email, password_hash, first_name, last_name, phone, role, is_active, is_verified, password_change_required)
+                VALUES (?, ?, ?, ?, ?, 'provider', 1, 1, 1)
             ");
             $stmt->bind_param("sssss",
                 $userData['email'],
@@ -1675,9 +1679,9 @@ class Provider {
             
             $userId = $this->db->insert_id;
             
-            // Create provider profile
+            // Create provider profile using the main method
             $profileData['provider_id'] = $userId;
-            $this->createProfile($profileData);
+            $this->createProviderProfile($userId, $profileData);
             
             $this->db->commit();
             return $userId;
