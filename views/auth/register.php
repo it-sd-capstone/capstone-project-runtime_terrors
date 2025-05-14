@@ -415,6 +415,70 @@ if (!defined('RECAPTCHA_SITE_KEY')) {
         if (email.value) validateEmail();
         if (password.value) validatePassword();
         if (confirmPassword.value) validatePasswordMatch();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find all name input fields
+            const nameFields = document.querySelectorAll('input[name="first_name"], input[name="last_name"]');
+            
+            // Function to validate name fields
+            function validateNameField(input) {
+                const value = input.value.trim();
+                
+                // Check for titles (Dr., Mr., Mrs., etc.)
+                const titlePattern = /^(Dr|Mr|Mrs|Ms|Prof|Rev|Hon)\.\s/i;
+                if (titlePattern.test(value)) {
+                    input.setCustomValidity("Please enter your name without titles (e.g., Dr., Mr., Mrs.)");
+                    return false;
+                }
+                
+                // Check for special characters (allowing letters, spaces, hyphens, and apostrophes)
+                const specialCharPattern = /[^a-zA-Z\s\-\']/;
+                if (specialCharPattern.test(value)) {
+                    input.setCustomValidity("Name should only contain letters, spaces, hyphens, and apostrophes");
+                    return false;
+                }
+                
+                // Input is valid
+                input.setCustomValidity("");
+                return true;
+            }
+            
+            // Add validation to all name fields
+            nameFields.forEach(function(field) {
+                // Validate on input
+                field.addEventListener('input', function() {
+                    validateNameField(this);
+                });
+                
+                // Validate on blur (when leaving the field)
+                field.addEventListener('blur', function() {
+                    validateNameField(this);
+                });
+            });
+            
+            // Add form submission validation
+            const forms = document.querySelectorAll('form');
+            forms.forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    let isValid = true;
+                    
+                    // Validate all name fields in this form
+                    const formNameFields = this.querySelectorAll('input[name="first_name"], input[name="last_name"]');
+                    formNameFields.forEach(function(field) {
+                        if (!validateNameField(field)) {
+                            isValid = false;
+                            // Show validation message
+                            field.reportValidity();
+                        }
+                    });
+                    
+                    // Prevent form submission if validation fails
+                    if (!isValid) {
+                        event.preventDefault();
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__ . '/../services/EmailService.php');
 require_once(__DIR__ . '/../config/email_config.php');
+require_once(__DIR__ . '/../helpers/validation_helpers.php');
 
 // Add reCAPTCHA configuration
 if (file_exists(__DIR__ . '/../config/recaptcha_config.php')) {
@@ -264,6 +265,29 @@ class AuthController {
             $lastName = $_POST['last_name'] ?? '';
             $phone = $_POST['phone'] ?? '';
             $role = 'patient'; // Default role for new users
+
+            // Validate first name
+            $firstNameValidation = validateName($firstName);
+            if (!$firstNameValidation['valid']) {
+                $errors[] = $firstNameValidation['error'];
+            } else {
+                $firstName = $firstNameValidation['sanitized'];
+            }
+
+            // Validate last name
+            $lastNameValidation = validateName($lastName);
+            if (!$lastNameValidation['valid']) {
+                $errors[] = $lastNameValidation['error'];
+            } else {
+                $lastName = $lastNameValidation['sanitized'];
+            }
+
+            // Basic field validation (your existing code continues here)
+            if (empty($email)) {
+                $errors[] = "Email address is required";
+            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Invalid email format";
+            }
             
             // Basic field validation
             if (empty($email)) {

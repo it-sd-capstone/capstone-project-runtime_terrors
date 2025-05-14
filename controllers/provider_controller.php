@@ -4,7 +4,7 @@ require_once MODEL_PATH . '/Appointment.php';
 require_once MODEL_PATH . '/Services.php';
 require_once MODEL_PATH . '/User.php';
 require_once MODEL_PATH . '/Notification.php';
-
+require_once __DIR__ . '/../helpers/validation_helpers.php';
 
 class ProviderController {
     protected $db;
@@ -1878,12 +1878,44 @@ class ProviderController {
         
         $provider_id = $_SESSION['user_id'];
         
+        // Initialize errors array
+        $errors = [];
+        
         // Get form data for user table
         $userData = [
-            'first_name' => trim($_POST['first_name'] ?? ''),
-            'last_name' => trim($_POST['last_name'] ?? ''),
             'phone' => trim($_POST['phone'] ?? '')
         ];
+        
+        // Validate first name
+        if (isset($_POST['first_name'])) {
+            $firstNameValidation = validateName(trim($_POST['first_name']));
+            if (!$firstNameValidation['valid']) {
+                $errors[] = $firstNameValidation['error'];
+            } else {
+                $userData['first_name'] = $firstNameValidation['sanitized'];
+            }
+        }
+        
+        // Validate last name
+        if (isset($_POST['last_name'])) {
+            $lastNameValidation = validateName(trim($_POST['last_name']));
+            if (!$lastNameValidation['valid']) {
+                $errors[] = $lastNameValidation['error'];
+            } else {
+                $userData['last_name'] = $lastNameValidation['sanitized'];
+            }
+        }
+        
+        // Continue with update only if no errors
+        if (!empty($errors)) {
+            if ($this->isAjaxRequest()) {
+                echo json_encode(['success' => false, 'message' => implode('<br>', $errors)]);
+                exit;
+            }
+            $_SESSION['error'] = implode('<br>', $errors);
+            redirect('provider/profile');
+            return;
+        }
         
         // Get form data for provider_profiles table
         $profileData = [

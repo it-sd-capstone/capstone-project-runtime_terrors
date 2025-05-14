@@ -1,4 +1,3 @@
-
 <?php
 class AppointmentsController {
     private $db;
@@ -35,12 +34,28 @@ class AppointmentsController {
         $availableSlots = $this->appointmentModel->getAvailableSlots();
         $userAppointments = [];
         if ($userRole === 'patient') {
-            $userAppointments = $this->appointmentModel->getUpcomingAppointments($userId);
+            $userAppointments = array_merge(
+                $this->appointmentModel->getUpcomingAppointments($userId),
+                $this->appointmentModel->getPastAppointments($userId)
+            );
         } elseif ($userRole === 'provider') {
             $userAppointments = $this->appointmentModel->getByProvider($userId);
         } elseif ($userRole === 'admin') {
             $userAppointments = $this->appointmentModel->getAllAppointments();
         }
+        
+        $pastAppointments = $this->appointmentModel->getPastAppointments($userId);
+        
+        $completedUnratedAppointments = [];
+        if ($userRole === 'patient') {
+            foreach ($pastAppointments as $appointment) {
+                if ($appointment['status'] === 'completed' && 
+                    !$this->isAppointmentRated($appointment['appointment_id'], $userId)) {
+                    $completedUnratedAppointments[] = $appointment;
+                }
+            }
+        }
+        
         include VIEW_PATH . '/appointments/index.php';
     }
 
@@ -132,11 +147,7 @@ class AppointmentsController {
         include VIEW_PATH . '/appointments/book.php';
     }
 
-    /**
-     * Marks conflicting time slots as unavailable after booking
-     */
     private function markTimeSlotAsBooked($provider_id, $date, $start_time, $end_time, $booked_service_id) {
-        // Find all other service availabilities at the same time slot
         $conflictingAvailabilities = $this->providerModel->getConflictingAvailabilities(
             $provider_id, 
             $date, 
@@ -145,11 +156,10 @@ class AppointmentsController {
             $booked_service_id
         );
         
-        // Mark all conflicting slots as unavailable
         foreach ($conflictingAvailabilities as $availability) {
             $this->providerModel->updateAvailabilityStatus(
                 $availability['id'], 
-                0 // Set is_available to 0
+                0
             );
         }
     }
@@ -197,9 +207,6 @@ class AppointmentsController {
         exit;
     }
 
-    /**
-     * Unified status update method (POST only)
-     */
     public function updateStatus() {
         if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'provider') {
             set_flash_message('error', 'You do not have permission to update status');
@@ -253,9 +260,6 @@ class AppointmentsController {
         exit;
     }
 
-    /**
-     * Update appointment notes (POST only)
-     */
     public function update_notes() {
         if (!isset($_SESSION['user_id'])) {
             redirect('auth/login');
@@ -329,7 +333,7 @@ class AppointmentsController {
         } elseif ($role === 'provider') {
             $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments($user_id) ?? [];
             $pastAppointments = $this->appointmentModel->getPastAppointments($user_id) ?? [];
-        } else { // admin
+        } else {
             $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments() ?? [];
             $pastAppointments = $this->appointmentModel->getPastAppointments() ?? [];
         }
@@ -346,106 +350,103 @@ class AppointmentsController {
         return false;
     }
 
-    
-public function reschedule() {
-    if (!in_array($_SESSION['role'], ['patient', 'provider', 'admin'])) {
-        set_flash_message('error', 'You do not have permission to reschedule');
-        header('Location: ' . base_url('index.php/appointments'));
-        exit;
-    }
-
-    // Accept appointment ID from GET or POST for robustness
-    $appointmentId = $_GET['id'] ?? $_POST['appointment_id'] ?? null;
-    if (!$appointmentId) {
-        set_flash_message('error', "Appointment ID is required to reschedule.");
-        header('Location: ' . base_url('index.php/appointments'));
-        exit;
-    }
-
-    $appointment = $this->appointmentModel->getById($appointmentId);
-    if (!$appointment) {
-        set_flash_message('error', "Appointment not found");
-        header('Location: ' . base_url('index.php/appointments'));
-        exit;
-    }
-    if (
-        $_SESSION['user_id'] != $appointment['patient_id'] &&
-        $_SESSION['user_id'] != $appointment['provider_id'] &&
-        $_SESSION['role'] !== 'admin'
-    ) {
-        set_flash_message('error', "You don't have permission to reschedule this appointment");
-        header('Location: ' . base_url('index.php/appointments'));
-        exit;
-    }
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if (!verify_csrf_token()) {
-            set_flash_message('error', 'Invalid security token.');
-            header('Location: ' . base_url('index.php/appointments/reschedule?id=' . urlencode($appointmentId)));
+    public function reschedule() {
+        if (!in_array($_SESSION['role'], ['patient', 'provider', 'admin'])) {
+            set_flash_message('error', 'You do not have permission to reschedule');
+            header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
-        $newDate = $_POST['appointment_date'] ?? '';
-        $newTime = $_POST['appointment_time'] ?? '';
-        if (empty($newDate) || empty($newTime)) {
-            set_flash_message('error', "New date and time are required");
-        } else {
-            $serviceId = $appointment['service_id'];
-            $availableSlots = $this->appointmentModel->findAvailableSlots(
-                $appointment['provider_id'],
-                $newDate,
-                $serviceId
-            );
-            $matchingSlot = null;
-            foreach ($availableSlots as $slot) {
-                if ($slot['start_time'] == $newTime) {
-                    $matchingSlot = $slot;
-                    break;
-                }
+
+        $appointmentId = $_GET['id'] ?? $_POST['appointment_id'] ?? null;
+        if (!$appointmentId) {
+            set_flash_message('error', "Appointment ID is required to reschedule.");
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+
+        $appointment = $this->appointmentModel->getById($appointmentId);
+        if (!$appointment) {
+            set_flash_message('error', "Appointment not found");
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        if (
+            $_SESSION['user_id'] != $appointment['patient_id'] &&
+            $_SESSION['user_id'] != $appointment['provider_id'] &&
+            $_SESSION['role'] !== 'admin'
+        ) {
+            set_flash_message('error', "You don't have permission to reschedule this appointment");
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!verify_csrf_token()) {
+                set_flash_message('error', 'Invalid security token.');
+                header('Location: ' . base_url('index.php/appointments/reschedule?id=' . urlencode($appointmentId)));
+                exit;
             }
-            if (!$matchingSlot) {
-                set_flash_message('error', "Selected time slot is not available");
+            $newDate = $_POST['appointment_date'] ?? '';
+            $newTime = $_POST['appointment_time'] ?? '';
+            if (empty($newDate) || empty($newTime)) {
+                set_flash_message('error', "New date and time are required");
             } else {
-                $endTimeStr = $matchingSlot['end_time'];
-                $result = $this->appointmentModel->rescheduleAppointment(
-                    $appointmentId, $newDate, $newTime, $endTimeStr
+                $serviceId = $appointment['service_id'];
+                $availableSlots = $this->appointmentModel->findAvailableSlots(
+                    $appointment['provider_id'],
+                    $newDate,
+                    $serviceId
                 );
-                if ($result) {
-                    $details = json_encode([
-                        'previous_date' => $appointment['appointment_date'],
-                        'previous_time' => $appointment['start_time'],
-                        'new_date' => $newDate,
-                        'new_time' => $newTime,
-                        'rescheduled_by' => $_SESSION['user_id'],
-                        'rescheduled_by_role' => $_SESSION['role']
-                    ]);
-                    $this->activityLogModel->logAppointment(
-                        $_SESSION['user_id'], 'rescheduled', $appointmentId, $details
-                    );
-                    set_flash_message('success', "Appointment rescheduled successfully");
-                    header('Location: ' . base_url('index.php/appointments/view?id=' . $appointmentId));
-                    exit;
+                $matchingSlot = null;
+                foreach ($availableSlots as $slot) {
+                    if ($slot['start_time'] == $newTime) {
+                        $matchingSlot = $slot;
+                        break;
+                    }
+                }
+                if (!$matchingSlot) {
+                    set_flash_message('error', "Selected time slot is not available");
                 } else {
-                    set_flash_message('error', "Failed to reschedule appointment");
+                    $endTimeStr = $matchingSlot['end_time'];
+                    $result = $this->appointmentModel->rescheduleAppointment(
+                        $appointmentId, $newDate, $newTime, $endTimeStr
+                    );
+                    if ($result) {
+                        $details = json_encode([
+                            'previous_date' => $appointment['appointment_date'],
+                            'previous_time' => $appointment['start_time'],
+                            'new_date' => $newDate,
+                            'new_time' => $newTime,
+                            'rescheduled_by' => $_SESSION['user_id'],
+                            'rescheduled_by_role' => $_SESSION['role']
+                        ]);
+                        $this->activityLogModel->logAppointment(
+                            $_SESSION['user_id'], 'rescheduled', $appointmentId, $details
+                        );
+                        set_flash_message('success', "Appointment rescheduled successfully");
+                        header('Location: ' . base_url('index.php/appointments/view?id=' . $appointmentId));
+                        exit;
+                    } else {
+                        set_flash_message('error', "Failed to reschedule appointment");
+                    }
                 }
             }
         }
-    }
 
-    $providerId = $appointment['provider_id'];
-    $availableDates = [];
-    $startDate = date('Y-m-d');
-    $endDate = date('Y-m-d', strtotime('+14 days'));
-    $availableSlots = $this->appointmentModel->getAppointmentsByDateRange($startDate, $endDate, $providerId);
-    if (!empty($availableSlots)) {
-        foreach ($availableSlots as $slot) {
-            if (!in_array($slot['appointment_date'], $availableDates)) {
-                $availableDates[] = $slot['appointment_date'];
+        $providerId = $appointment['provider_id'];
+        $availableDates = [];
+        $startDate = date('Y-m-d');
+        $endDate = date('Y-m-d', strtotime('+14 days'));
+        $availableSlots = $this->appointmentModel->getAppointmentsByDateRange($startDate, $endDate, $providerId);
+        if (!empty($availableSlots)) {
+            foreach ($availableSlots as $slot) {
+                if (!in_array($slot['appointment_date'], $availableDates)) {
+                    $availableDates[] = $slot['appointment_date'];
+                }
             }
         }
+        include VIEW_PATH . '/appointments/reschedule.php';
     }
-    include VIEW_PATH . '/appointments/reschedule.php';
-}
-
 
     public function getTimeSlots() {
         if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || $_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest') {
@@ -468,28 +469,29 @@ public function reschedule() {
     }
 
     public function view() {
-    $appointmentId = $_GET['id'] ?? null;
-    if (!$appointmentId) {
-        set_flash_message('error', "Appointment ID is required");
-        header('Location: ' . base_url('/index.php/appointments/view?id=123'));
-        exit;
+        $appointmentId = $_GET['id'] ?? null;
+        if (!$appointmentId) {
+            set_flash_message('error', "Appointment ID is required");
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        $appointment = $this->appointmentModel->getById($appointmentId);
+        if (!$appointment) {
+            set_flash_message('error', "Appointment not found");
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        if ($_SESSION['user_id'] != $appointment['patient_id'] &&
+            $_SESSION['user_id'] != $appointment['provider_id'] &&
+            $_SESSION['role'] !== 'admin') {
+            set_flash_message('error', "You don't have permission to view this appointment");
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        $logs = $this->activityLogModel->getAppointmentLogs($appointmentId);
+        include VIEW_PATH . '/appointments/view.php';
     }
-    $appointment = $this->appointmentModel->getById($appointmentId);
-    if (!$appointment) {
-        set_flash_message('error', "Appointment not found");
-        header('Location: ' . base_url('index.php/appointments'));
-        exit;
-    }
-    if ($_SESSION['user_id'] != $appointment['patient_id'] &&
-        $_SESSION['user_id'] != $appointment['provider_id'] &&
-        $_SESSION['role'] !== 'admin') {
-        set_flash_message('error', "You don't have permission to view this appointment");
-        header('Location: ' . base_url('index.php/appointments'));
-        exit;
-    }
-    $logs = $this->activityLogModel->getAppointmentLogs($appointmentId);
-    include VIEW_PATH . '/appointments/view.php';
-}
+
     public function statistics() {
         if ($_SESSION['role'] !== 'provider' && $_SESSION['role'] !== 'admin') {
             set_flash_message('error', 'You do not have permission to view statistics');
@@ -544,5 +546,62 @@ public function reschedule() {
         fclose($output);
         exit;
     }
+
+    public function submitRating() {
+        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+        
+        $appointment_id = $_POST['appointment_id'] ?? null;
+        $provider_id = $_POST['provider_id'] ?? null;
+        $rating = $_POST['rating'] ?? null;
+        $comment = $_POST['comment'] ?? '';
+        
+        if (!$appointment_id || !$provider_id || !$rating) {
+            set_flash_message('error', 'Missing required information');
+            header('Location: ' . base_url('index.php/appointments?error=missing_data'));
+            exit;
+        }
+        
+        if (!isset($this->appointmentModel)) {
+            require_once MODEL_PATH . '/Appointment.php';
+            $this->appointmentModel = new Appointment($this->db);
+        }
+        
+        $success = $this->appointmentModel->rateAppointment(
+            $appointment_id,
+            $_SESSION['user_id'],
+            $provider_id,
+            $rating,
+            $comment
+        );
+        
+        if ($success) {
+            set_flash_message('success', 'Thank you for your feedback!');
+            header('Location: ' . base_url('index.php/appointments?success=rated'));
+            exit;
+        } else {
+            set_flash_message('error', 'Failed to submit your rating');
+            header('Location: ' . base_url('index.php/appointments?error=rating_failed'));
+            exit;
+        }
+    }
+
+    private function isAppointmentRated($appointmentId, $patientId) {
+        $query = "SELECT rating_id 
+                FROM appointment_ratings 
+                WHERE appointment_id = ? AND patient_id = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->bind_param("ii", $appointmentId, $patientId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->num_rows > 0;
+    }    
 }
 ?>
