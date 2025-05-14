@@ -768,14 +768,34 @@ class AdminController {
         // Get provider_id from query if present
         $provider_id = $_GET['provider_id'] ?? null;
         $provider = null;
-
+        
+        // Debug: Check all providers in the users table with role 'provider'
+        $allProvidersQuery = $this->db->prepare("
+            SELECT user_id, email, first_name, last_name, is_active 
+            FROM users 
+            WHERE role = 'provider'
+        ");
+        $allProvidersQuery->execute();
+        $allProviders = $allProvidersQuery->get_result()->fetch_all(MYSQLI_ASSOC);
+        error_log("All providers in users table: " . json_encode($allProviders));
+        
         // Always fetch all providers for the list
         $providers = $this->providerModel->getAll();
-
+        error_log("Providers returned by getAll(): " . json_encode($providers));
+        
+        // Check if Tammy Lee is in the providers array
+        $foundTammy = false;
+        foreach ($providers as $p) {
+            if ($p['email'] === 'provider5@example.com') {
+                $foundTammy = true;
+                break;
+            }
+        }
+        error_log("Tammy Lee found in providers array: " . ($foundTammy ? "Yes" : "No"));
+        
         // If a specific provider is requested, fetch it
         if ($provider_id) {
             $provider = $this->providerModel->getById($provider_id);
-
         }
         
         // Enhance provider data with service and appointment counts
@@ -792,11 +812,9 @@ class AdminController {
             });
             $provider['appointment_count'] = count($upcomingAppointments);
         }
-
+        
         include VIEW_PATH . '/admin/providers.php';
     }
-
-
     
     /**
      * Run a test from the tests directory
@@ -962,7 +980,7 @@ class AdminController {
         return $this->serviceModel->getAllServices();
     }
     
-    /**
+   /**
      * Add a new provider
      */
     public function addProvider() {
@@ -981,7 +999,8 @@ class AdminController {
                 'last_name' => $_POST['last_name'] ?? '',
                 'email' => $_POST['email'] ?? '',
                 'phone' => $_POST['phone'] ?? '',
-                'role' => 'provider' // Force role to be provider
+                'role' => 'provider', // Force role to be provider
+                'is_verified' => true  // Set is_verified to true for providers
             ];
             
             // Generate a secure random password if none provided
@@ -1017,16 +1036,17 @@ class AdminController {
                 // Begin transaction
                 $this->db->begin_transaction();
                 
-                // Register the user first
+                // Register the user first with is_verified set to true
                 $result = $this->userModel->register(
                     $userData['email'],
                     password_hash($userData['password'], PASSWORD_DEFAULT),
                     $userData['first_name'],
                     $userData['last_name'],
                     $userData['phone'],
-                    'provider'
+                    'provider',
+                    true  // Set is_verified to true
                 );
-
+                
                 // Handle the result array properly
                 if (isset($result['user_id'])) {
                     $userId = $result['user_id'];
@@ -1047,10 +1067,8 @@ class AdminController {
                 if (!$profileCreated) {
                     throw new Exception("Failed to create provider profile");
                 }
-
                 // Add debug logging
                 error_log("Provider profile created successfully");
-
                 
                 // Log the activity
                 $this->activityLogModel->logActivity(

@@ -75,8 +75,8 @@ class Provider {
             
             // Insert into provider_services table
             $stmt = $this->db->prepare(
-                "INSERT INTO provider_services
-                (provider_id, service_id, custom_duration, custom_notes)
+                "INSERT INTO provider_services 
+                (provider_id, service_id, custom_duration, custom_notes) 
                 VALUES (?, ?, ?, ?)"
             );
             
@@ -98,36 +98,16 @@ class Provider {
             return false;
         }
     }
+
+
     /**
-     * Get provider's availability schedule
-     *
-     * @param int $providerId Provider ID
-     * @return array Availability schedule
-     */
-    public function getProviderAvailability($providerId) {
-        $stmt = $this->db->prepare(
-            "SELECT *
-            FROM provider_availability
-            WHERE provider_id = ?"
-        );
-        
-        $stmt->bind_param("i", $providerId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            return $result->fetch_all(MYSQLI_ASSOC);
-        }
-        
-        return [];
-    }
-     /**
      * Update provider profile
-     *
+     * 
      * @param int $provider_id Provider ID
      * @param array $data Profile data to update
      * @return bool True on success, false on failure
      */
+
 public function updateProfile($provider_id, $data) {
     try {
         // --- SPECIALIZATION VALIDATION ---
@@ -399,20 +379,13 @@ public function updateProfile($provider_id, $data) {
         return $this->addService($serviceData);
     }
 
+    // Legacy method for backward compatibility
     public function getSchedulesByProvider($provider_id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT 
-                    availability_id AS id, 
-                    provider_id,
-                    availability_date AS date,
-                    DAYOFWEEK(availability_date) as day_of_week,
-                    start_time, 
-                    end_time, 
-                    max_appointments,
-                    is_recurring,
-                    weekdays,
-                    (CASE WHEN max_appointments = 0 THEN 1 ELSE 0 END) AS is_booked
+                SELECT availability_id AS id, availability_date AS date, 
+                       start_time, end_time, max_appointments, 
+                       (CASE WHEN max_appointments = 0 THEN 1 ELSE 0 END) AS is_booked
                 FROM provider_availability
                 WHERE provider_id = ?
             ");
@@ -603,65 +576,26 @@ public function updateProfile($provider_id, $data) {
 
     /**
      * Clear all availability for a specific day
-     * @param int $provider_id The provider's ID
-     * @param string $date The date to clear (YYYY-MM-DD)
-     * @return int The number of deleted rows
+     * 
+     * @param int $provider_id The provider ID
+     * @param string $date The date (YYYY-MM-DD)
+     * @return int|bool Number of deleted slots or false on failure
      */
     public function clearDayAvailability($provider_id, $date) {
         try {
-            $this->db->begin_transaction();
-
-            // Delete one-time availability slots
             $stmt = $this->db->prepare("
                 DELETE FROM provider_availability 
                 WHERE provider_id = ? 
                 AND availability_date = ?
             ");
+            
             $stmt->bind_param("is", $provider_id, $date);
             $stmt->execute();
-            $affected_rows = $stmt->affected_rows;
-            $stmt->close();
-
-            // Check for recurring schedules that apply to this day
-            $day_of_week = date('w', strtotime($date)); // 0=Sunday, 1=Monday, etc.
-            $stmt = $this->db->prepare("
-                SELECT schedule_id 
-                FROM recurring_schedules 
-                WHERE provider_id = ? 
-                AND day_of_week = ? 
-                AND is_active = 1
-            ");
-            $stmt->bind_param("ii", $provider_id, $day_of_week);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $recurring_schedules = $result->fetch_all(MYSQLI_ASSOC);
-            $stmt->close();
-
-            // If there are recurring schedules, create a one-time unavailability slot
-            if (!empty($recurring_schedules)) {
-                foreach ($recurring_schedules as $schedule) {
-                    // Add a slot with is_available = 0 to block the recurring schedule for this day
-                    $stmt = $this->db->prepare("
-                        INSERT INTO provider_availability 
-                        (provider_id, availability_date, start_time, end_time, is_available, max_appointments)
-                        SELECT provider_id, ?, start_time, end_time, 0, 0
-                        FROM recurring_schedules
-                        WHERE schedule_id = ?
-                    ");
-                    $stmt->bind_param("si", $date, $schedule['schedule_id']);
-                    $stmt->execute();
-                    $affected_rows += $stmt->affected_rows;
-                    $stmt->close();
-                }
-            }
-
-            $this->db->commit();
-            error_log("Cleared $affected_rows availability slots (including recurring overrides) for provider $provider_id on $date");
-            return $affected_rows;
+            
+            return $stmt->affected_rows;
         } catch (Exception $e) {
-            $this->db->rollback();
-            error_log("Error clearing availability for provider $provider_id on $date: " . $e->getMessage());
-            return 0;
+            error_log("Error clearing day availability: " . $e->getMessage());
+            return false;
         }
     }
     public function addRecurringSchedule($provider_id, $day_of_week, $start_time, $end_time, $is_active) {
@@ -1408,25 +1342,26 @@ public function updateProfile($provider_id, $data) {
 
 
     // Get all providers (needed for listing providers)
-
-  public function getAll() {
-      try {
-          $stmt = $this->db->prepare("
-              SELECT u.user_id, u.first_name, u.last_name, u.email, u.phone, u.is_active,
-                     pp.specialization, pp.title, pp.bio, pp.accepting_new_patients
-              FROM users u
-              JOIN provider_profiles pp ON u.user_id = pp.provider_id
-              WHERE u.role = 'provider' AND u.is_active = 1
-          ");
-          $stmt->execute();
-          $result = $stmt->get_result();
-          return $result->fetch_all(MYSQLI_ASSOC) ?: [];
-      } catch (Exception $e) {
-          error_log("Error fetching all providers: " . $e->getMessage());
-          return [];
-      }
-  }
-
+    public function getAll() {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT u.user_id, u.first_name, u.last_name, u.email, u.is_active, 
+                       pp.specialization, pp.title, pp.bio, pp.accepting_new_patients
+                FROM users u
+                JOIN provider_profiles pp ON u.user_id = pp.provider_id
+                WHERE u.role = 'provider' AND u.is_active = 1
+            ");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            return $result->fetch_all(MYSQLI_ASSOC) ?: [];
+        } catch (Exception $e) {
+            error_log("Error fetching all providers: " . $e->getMessage());
+            return [];
+        }
+    }
+    /**
+     * Get provider availability filtered by service
+     */
     public function getServiceAvailability($provider_id, $service_id = null, $date = null) {
         // Base query
         $sql = "
@@ -1703,47 +1638,42 @@ public function createProviderProfile($providerId, $profileData) {
         }
     }
 
-       /**
+    /**
      * Search for providers based on various criteria
-     *
+     * 
      * @param array $params Search parameters (specialty, location, date, gender, language, insurance)
      * @return array List of providers matching the criteria
      */
     public function searchProviders($params) {
         // Modified query to match actual database structure
         $query = "
-            SELECT
+            SELECT 
                 u.user_id AS provider_id,
                 CONCAT(u.first_name, ' ', u.last_name) AS name,
                 pp.specialization AS specialty,
-                u.phone,
+                u.phone, 
                 pp.title,
                 pp.bio,
                 pp.profile_image,
                 pp.accepting_new_patients,
                 (
-                    SELECT MIN(availability_date)
-                    FROM provider_availability
-                    WHERE provider_id = u.user_id
-                    AND is_available = 1
+                    SELECT MIN(availability_date) 
+                    FROM provider_availability 
+                    WHERE provider_id = u.user_id 
+                    AND is_available = 1 
                     AND availability_date >= CURDATE()
                 ) AS next_availability_date
-            FROM
+            FROM 
                 users u
-            JOIN
+            JOIN 
                 provider_profiles pp ON u.user_id = pp.provider_id
-            WHERE
+            WHERE 
                 u.role = 'provider'
         ";
         
         $conditions = [];
         $params_array = [];
         $types = "";
-        
-        // Add condition for only showing providers who are accepting new patients
-        if (isset($params['only_accepting']) && $params['only_accepting']) {
-            $conditions[] = "pp.accepting_new_patients = 1";
-        }
         
         // Add search conditions based on provided parameters
         if (!empty($params['specialty'])) {
@@ -1784,9 +1714,9 @@ public function createProviderProfile($providerId, $profileData) {
         
         if (!empty($params['date'])) {
             $conditions[] = "EXISTS (
-                SELECT 1 FROM provider_availability
-                WHERE provider_id = u.user_id
-                AND availability_date = ?
+                SELECT 1 FROM provider_availability 
+                WHERE provider_id = u.user_id 
+                AND availability_date = ? 
                 AND is_available = 1
             )";
             $params_array[] = $params['date'];
@@ -1823,11 +1753,12 @@ public function createProviderProfile($providerId, $profileData) {
         return $providers;
     }
 
-   /**
+    /**
      * Get suggested providers when no search results are found
-     *
+     * 
      * @return array List of suggested providers
      */
+
 public function getSuggestedProviders() {
     // Only suggest providers with a non-empty, non-null specialty
     $query = "
@@ -1859,6 +1790,7 @@ public function getSuggestedProviders() {
             $suggested_providers[] = $row;
         }
     }
+
     
     return $suggested_providers;
 }

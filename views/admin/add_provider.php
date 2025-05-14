@@ -1,5 +1,4 @@
 <?php include VIEW_PATH . '/partials/header.php'; ?>
-<?php include VIEW_PATH . '/partials/navigation.php'; ?>
 
 <div class="container my-4">
     <div class="row">
@@ -41,7 +40,8 @@
                         
                         <div class="mb-3">
                             <label for="phone" class="form-label">Phone Number</label>
-                            <input type="tel" class="form-control" id="phone" name="phone">
+                            <input type="tel" class="form-control" id="phone" name="phone" placeholder="(123) 456-7890">
+                            <div class="form-text">Enter a 10-digit phone number</div>
                         </div>
                         
                         <div class="mb-3">
@@ -53,7 +53,7 @@
                         
                         <!-- Provider-specific fields -->
                         <hr>
-                        <h5 class="mb-3">Provider Details</h5>
+                        <!-- <h5 class="mb-3">Provider Details</h5>
                         
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -74,7 +74,7 @@
                         <div class="mb-3">
                             <label for="max_patients_per_day" class="form-label">Maximum Patients Per Day</label>
                             <input type="number" class="form-control" id="max_patients_per_day" name="max_patients_per_day" min="1" value="10">
-                        </div>
+                        </div> -->
                         
                         <?php if (!empty($services)): ?>
                         <div class="mb-3">
@@ -104,5 +104,55 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Phone number formatting
+    const phoneInput = document.getElementById('phone');
+    
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            // Get input value and remove non-numeric characters
+            let input = e.target.value.replace(/\D/g, '');
+            
+            // Limit to 10 digits
+            input = input.substring(0, 10);
+            
+            // Format the number as (XXX) XXX-XXXX
+            if (input.length > 0) {
+                if (input.length <= 3) {
+                    input = '(' + input;
+                } else if (input.length <= 6) {
+                    input = '(' + input.substring(0, 3) + ') ' + input.substring(3);
+                } else {
+                    input = '(' + input.substring(0, 3) + ') ' + input.substring(3, 6) + '-' + input.substring(6);
+                }
+            }
+            
+            // Update the input value
+            e.target.value = input;
+        });
+        
+        // Handle special cases like backspace and delete
+        phoneInput.addEventListener('keydown', function(e) {
+            // Allow backspace, delete, tab, escape, enter and navigation keys
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                let value = e.target.value;
+                let caretPos = e.target.selectionStart;
+                
+                // If cursor is after a formatting character, move it past the character
+                if (
+                    (caretPos === 1 && value.charAt(0) === '(') ||
+                    (caretPos === 6 && value.charAt(5) === ')') ||
+                    (caretPos === 11 && value.charAt(10) === '-')
+                ) {
+                    e.preventDefault();
+                    e.target.setSelectionRange(caretPos - 1, caretPos - 1);
+                }
+            }
+        });
+    }
+});
+</script>
 
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
