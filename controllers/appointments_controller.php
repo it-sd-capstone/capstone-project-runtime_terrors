@@ -41,7 +41,25 @@ class AppointmentsController {
         } elseif ($userRole === 'admin') {
             $userAppointments = $this->appointmentModel->getAllAppointments();
         }
-        include VIEW_PATH . '/appointments/index.php';
+        
+        // Get past appointments
+        $pastAppointments = $this->appointmentModel->getPastAppointments($userId);
+        
+        // Filter to only include completed appointments that haven't been rated
+        if ($userRole === 'patient') {
+            // Create a separate variable for unrated appointments
+            $completedUnratedAppointments = [];
+            foreach ($pastAppointments as $appointment) {
+                if ($appointment['status'] === 'completed' && 
+                    !$this->isAppointmentRated($appointment['appointment_id'], $userId)) {
+                    $completedUnratedAppointments[] = $appointment;
+                }
+            }
+            // Pass the filtered list to the view
+            include VIEW_PATH . '/appointments/index.php';
+        } else {
+            include VIEW_PATH . '/appointments/index.php';
+        }
     }
 
     public function book() {
@@ -544,5 +562,69 @@ public function reschedule() {
         fclose($output);
         exit;
     }
+
+    public function submitRating() {
+        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+            header('Location: ' . base_url('index.php/appointments'));
+            exit;
+        }
+        
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+        
+        $appointment_id = $_POST['appointment_id'] ?? null;
+        $provider_id = $_POST['provider_id'] ?? null;
+        $rating = $_POST['rating'] ?? null;
+        $comment = $_POST['comment'] ?? '';
+        
+        if (!$appointment_id || !$provider_id || !$rating) {
+            set_flash_message('error', 'Missing required information');
+            header('Location: ' . base_url('index.php/appointments?error=missing_data'));
+            exit;
+        }
+        
+        // Create rating model instance if not already loaded
+        if (!isset($this->appointmentModel)) {
+            require_once MODEL_PATH . '/Appointment.php';
+            $this->appointmentModel = new Appointment($this->db);
+        }
+        
+        $success = $this->appointmentModel->rateAppointment(
+            $appointment_id,
+            $_SESSION['user_id'],
+            $provider_id,
+            $rating,
+            $comment
+        );
+        
+        if ($success) {
+            set_flash_message('success', 'Thank you for your feedback!');
+            header('Location: ' . base_url('index.php/appointments?success=rated'));
+            exit;
+        } else {
+            set_flash_message('error', 'Failed to submit your rating');
+            header('Location: ' . base_url('index.php/appointments?error=rating_failed'));
+            exit;
+        }
+    }
+
+    /**
+     * Check if an appointment has been rated by the patient
+     * @param int $appointmentId The appointment ID to check
+     * @param int $patientId The patient ID
+     * @return bool True if rated, false otherwise
+     */
+    private function isAppointmentRated($appointmentId, $patientId) {
+        $query = "SELECT rating_id 
+                FROM appointment_ratings 
+                WHERE appointment_id = ? AND patient_id = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->bind_param("ii", $appointmentId, $patientId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->num_rows > 0;
+    }    
 }
 ?>

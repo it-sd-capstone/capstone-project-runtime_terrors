@@ -1103,5 +1103,20 @@ class Appointment {
             return [];
         }
     }
+    public function rateAppointment($appointment_id, $patient_id, $provider_id, $rating, $comment = '') {
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO appointment_ratings 
+                (appointment_id, patient_id, provider_id, rating, comment, created_at) 
+                VALUES (?, ?, ?, ?, ?, NOW())
+            ");
+            $stmt->bind_param("iiiis", $appointment_id, $patient_id, $provider_id, $rating, $comment);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Error submitting rating: " . $e->getMessage());
+            return false;
+        }
+    }
+
 }
 ?>
