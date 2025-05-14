@@ -4,6 +4,8 @@ require_once MODEL_PATH . '/Appointment.php';
 require_once MODEL_PATH . '/Services.php';
 require_once MODEL_PATH . '/Provider.php';
 require_once MODEL_PATH . '/ActivityLog.php';
+require_once __DIR__ . '/../helpers/validation_helpers.php';
+
 // Add at top of patient_controller.php, before any redirects
 error_log('SESSION DATA: ' . print_r($_SESSION, true));
 
@@ -429,10 +431,11 @@ class PatientController {
     }
 
     public function updateProfile() {
+        // Initialize errors array
+        $errors = [];
+
         // Get all form data using $_POST
         $data = [
-            'first_name' => $_POST['first_name'] ?? '',
-            'last_name' => $_POST['last_name'] ?? '',
             'phone' => $_POST['phone'] ?? '',
             'date_of_birth' => !empty($_POST['date_of_birth']) ? $_POST['date_of_birth'] : null,
             'address' => $_POST['address'] ?? '',
@@ -442,21 +445,47 @@ class PatientController {
             'insurance_provider' => $_POST['insurance_provider'] ?? '',
             'insurance_policy_number' => $_POST['insurance_policy_number'] ?? ''
         ];
-        
-        // Remove empty fields (except medical_conditions which can be blank)
-        foreach ($data as $key => $value) {
-            if ($value === '' && $key != 'medical_conditions') {
-                unset($data[$key]);
+
+        // Validate first name if provided
+        if (isset($_POST['first_name'])) {
+            $firstNameValidation = validateName($_POST['first_name']);
+            if (!$firstNameValidation['valid']) {
+                $errors[] = $firstNameValidation['error'];
+            } else {
+                $data['first_name'] = $firstNameValidation['sanitized'];
             }
         }
-        
-        // Update patient profile
-        $success = $this->userModel->updatePatientProfile($_SESSION['user_id'], $data);
-        
-        if ($success) {
-            $_SESSION['success'] = 'Profile updated successfully';
+
+        // Validate last name if provided
+        if (isset($_POST['last_name'])) {
+            $lastNameValidation = validateName($_POST['last_name']);
+            if (!$lastNameValidation['valid']) {
+                $errors[] = $lastNameValidation['error'];
+            } else {
+                $data['last_name'] = $lastNameValidation['sanitized'];
+            }
+        }
+
+        // Only proceed with update if no validation errors
+        if (empty($errors)) {
+            // Remove empty fields (except medical_conditions which can be blank)
+            foreach ($data as $key => $value) {
+                if ($value === '' && $key != 'medical_conditions') {
+                    unset($data[$key]);
+                }
+            }
+            
+            // Update patient profile
+            $success = $this->userModel->updatePatientProfile($_SESSION['user_id'], $data);
+            
+            if ($success) {
+                $_SESSION['success'] = 'Profile updated successfully';
+            } else {
+                $_SESSION['error'] = 'Failed to update profile. Please try again.';
+            }
         } else {
-            $_SESSION['error'] = 'Failed to update profile. Please try again.';
+            // Set error message with all validation errors
+            $_SESSION['error'] = implode('<br>', $errors);
         }
         
         // Use the SAME variable structure as your profile() method
