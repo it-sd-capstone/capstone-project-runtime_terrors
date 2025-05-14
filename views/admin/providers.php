@@ -1,6 +1,6 @@
 <?php include VIEW_PATH . '/partials/header.php'; ?>
 
-<div class="container-fluid my-4" style="min-height: 80vh; padding-bottom: 40px;">
+<div class="container-fluid my-4">
     <!-- Success messages section -->
     <?php if (isset($_SESSION['success']) && isset($_SESSION['show_password'])): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -19,18 +19,6 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         <?php unset($_SESSION['success']); ?>
-    <?php endif; ?>
-
-    <!-- Simple Debug Output -->
-    <?php if (isset($_GET['debug'])): ?>
-        <div class="card mb-4">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Debug: Providers Array</h5>
-            </div>
-            <div class="card-body">
-                <pre><?php print_r($providers); ?></pre>
-            </div>
-        </div>
     <?php endif; ?>
     
     <!-- Page header -->
@@ -76,6 +64,7 @@
                 <table class="table table-striped table-hover">
                     <thead class="table-light">
                         <tr>
+                            <th>ID</th>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Specialization</th>
@@ -89,128 +78,51 @@
                     <tbody>
                         <?php if (empty($providers)): ?>
                             <tr>
-                                <td colspan="8" class="text-center py-5">
-                                    <p class="text-muted">No providers found.</p>
-                                    <a href="<?= base_url('index.php/admin/addProvider') ?>" class="btn btn-primary mt-2">
-                                        Add Your First Provider
-                                    </a>
-                                </td>
+                                <td colspan="9" class="text-center">No providers found.</td>
                             </tr>
                         <?php else: ?>
-                            <?php 
-                            $seen = [];
-                            foreach ($providers as $provider): 
-                                // Skip duplicates
-                                if (isset($seen[$provider['user_id']])) continue;
-                                $seen[$provider['user_id']] = true;
+                            <?php
+                            // Using strict indexing to avoid any rendering issues
+                            $providerCount = count($providers);
+                            for ($i = 0; $i < $providerCount; $i++):
                             ?>
                                 <tr>
-                                    <td class="py-3"><?= htmlspecialchars($provider['first_name'] . ' ' . $provider['last_name']) ?></td>
-                                    <td class="py-3"><?= htmlspecialchars($provider['email']) ?></td>
-                                    <td class="py-3"><?= htmlspecialchars($provider['specialization'] ?? 'N/A') ?></td>
-                                    <td class="py-3"><?= htmlspecialchars($provider['title'] ?? 'N/A') ?></td>
-                                    <td class="py-3">
+                                    <td><?= $providers[$i]['user_id'] ?></td>
+                                    <td><?= htmlspecialchars($providers[$i]['first_name'] . ' ' . $providers[$i]['last_name']) ?></td>
+                                    <td><?= htmlspecialchars($providers[$i]['email']) ?></td>
+                                    <td><?= htmlspecialchars($providers[$i]['specialization'] ?? 'N/A') ?></td>
+                                    <td><?= htmlspecialchars($providers[$i]['title'] ?? 'N/A') ?></td>
+                                    <td>
                                         <span class="badge bg-info">
-                                            <?= $provider['service_count'] ?? 0 ?> services
+                                            <?= $providers[$i]['service_count'] ?? 0 ?> services
                                         </span>
                                     </td>
-                                    <td class="py-3">
+                                    <td>
                                         <span class="badge bg-primary">
-                                            <?= $provider['appointment_count'] ?? 0 ?> appointments
+                                            <?= $providers[$i]['appointment_count'] ?? 0 ?> appointments
                                         </span>
                                     </td>
-                                    <td class="py-3">
-                                        <?php if ($provider['is_active']): ?>
+                                    <td>
+                                        <?php if ($providers[$i]['is_active']): ?>
                                             <span class="badge bg-success">Active</span>
                                         <?php else: ?>
                                             <span class="badge bg-danger">Inactive</span>
                                         <?php endif; ?>
                                         
-                                        <?php if (isset($provider['accepting_new_patients']) && $provider['accepting_new_patients']): ?>
+                                        <?php if (isset($providers[$i]['accepting_new_patients']) && $providers[$i]['accepting_new_patients']): ?>
                                             <span class="badge bg-info">Accepting Patients</span>
                                         <?php else: ?>
                                             <span class="badge bg-warning text-dark">Not Accepting</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="py-3">
-                                        <!-- Button to trigger modal -->
-                                        <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                data-bs-toggle="modal" data-bs-target="#actionModal<?= $provider['user_id'] ?>">
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                data-bs-toggle="modal" data-bs-target="#actionModal<?= $providers[$i]['user_id'] ?>">
                                             Actions <i class="bi bi-three-dots-vertical"></i>
                                         </button>
-                                        
-                                        <!-- Modal for actions -->
-                                        <div class="modal fade" id="actionModal<?= $provider['user_id'] ?>" tabindex="-1"
-                                             aria-labelledby="actionModalLabel<?= $provider['user_id'] ?>" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="actionModalLabel<?= $provider['user_id'] ?>">
-                                                            Actions for <?= htmlspecialchars($provider['first_name'] . ' ' . $provider['last_name']) ?>
-                                                        </h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <div class="list-group">
-                                                            <a href="<?= base_url('index.php/admin/manageProviderServices?id=' . $provider['user_id']) ?>"
-                                                                class="list-group-item list-group-item-action">
-                                                                <div class="d-flex w-100 justify-content-between">
-                                                                    <h6 class="mb-1">Manage Services</h6>
-                                                                    <i class="bi bi-gear"></i>
-                                                                </div>
-                                                                <small class="text-muted">Configure services offered by this provider</small>
-                                                            </a>
-                                                            
-                                                            <a href="<?= base_url('index.php/admin/viewAvailability?id=' . $provider['user_id']) ?>"
-                                                               class="list-group-item list-group-item-action">
-                                                                <div class="d-flex w-100 justify-content-between">
-                                                                    <h6 class="mb-1">View Availability</h6>
-                                                                    <i class="bi bi-calendar"></i>
-                                                                </div>
-                                                                <small class="text-muted">See provider's schedule and available time slots</small>
-                                                            </a>
-                                                            
-                                                            <button type="button" class="list-group-item list-group-item-action"
-                                                                    onclick="submitForm('status-form-<?= $provider['user_id'] ?>')">
-                                                                <div class="d-flex w-100 justify-content-between">
-                                                                    <h6 class="mb-1"><?= $provider['is_active'] ? 'Deactivate' : 'Activate' ?> Account</h6>
-                                                                    <i class="bi bi-<?= $provider['is_active'] ? 'slash-circle' : 'check-circle' ?>"></i>
-                                                                </div>
-                                                                <small class="text-muted">
-                                                                    <?= $provider['is_active'] ? 'Prevent' : 'Allow' ?> provider from logging in and being shown to patients
-                                                                </small>
-                                                            </button>
-                                                            
-                                                            <button type="button" class="list-group-item list-group-item-action"
-                                                                    onclick="submitForm('patients-form-<?= $provider['user_id'] ?>')">
-                                                                <div class="d-flex w-100 justify-content-between">
-                                                                    <h6 class="mb-1"><?= isset($provider['accepting_new_patients']) && $provider['accepting_new_patients'] ? 'Stop' : 'Start' ?> Accepting Patients</h6>
-                                                                    <i class="bi bi-person-<?= isset($provider['accepting_new_patients']) && $provider['accepting_new_patients'] ? 'slash' : 'plus' ?>"></i>
-                                                                </div>
-                                                                <small class="text-muted">
-                                                                    <?= isset($provider['accepting_new_patients']) && $provider['accepting_new_patients'] ? 'Prevent' : 'Allow' ?> provider from being shown for new appointment bookings
-                                                                </small>
-                                                            </button>
-                                                        </div>
-                                                        
-                                                        <!-- Hidden forms for actions -->
-                                                        <form id="status-form-<?= $provider['user_id'] ?>" method="post" action="<?= base_url('index.php/admin/toggleUserStatus') ?>" style="display: none;">
-                                                            <input type="hidden" name="user_id" value="<?= $provider['user_id'] ?>">
-                                                        </form>
-                                                        
-                                                        <form id="patients-form-<?= $provider['user_id'] ?>" method="post" action="<?= base_url('index.php/admin/toggleAcceptingPatients') ?>" style="display: none;">
-                                                            <input type="hidden" name="provider_id" value="<?= $provider['user_id'] ?>">
-                                                        </form>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php endfor; ?>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -218,18 +130,87 @@
         </div>
         <div class="card-footer text-muted py-3">
             <div class="d-flex justify-content-between align-items-center">
-                <span>Total Providers: <?= isset($providers) && is_array($providers) ? count($providers) : 0 ?></span>
-                <!-- <a href="#" class="btn btn-sm btn-outline-secondary">Export List</a> -->
+                <span>Total Providers: <?= count($providers) ?></span>
             </div>
         </div>
     </div>
+    
+    <!-- Action Modals - Separate from table for clean HTML -->
+    <?php if (!empty($providers)): ?>
+        <?php 
+        $providerCount = count($providers);
+        for ($i = 0; $i < $providerCount; $i++): 
+        ?>
+            <div class="modal fade" id="actionModal<?= $providers[$i]['user_id'] ?>" tabindex="-1" 
+                 aria-labelledby="actionModalLabel<?= $providers[$i]['user_id'] ?>" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="actionModalLabel<?= $providers[$i]['user_id'] ?>">
+                                Actions for <?= htmlspecialchars($providers[$i]['first_name'] . ' ' . $providers[$i]['last_name']) ?>
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="list-group">
+                                <a href="<?= base_url('index.php/admin/manageProviderServices?id=' . $providers[$i]['user_id']) ?>"
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">Manage Services</h6>
+                                        <i class="bi bi-gear"></i>
+                                    </div>
+                                    <small class="text-muted">Configure services offered by this provider</small>
+                                </a>
+                                
+                                <a href="<?= base_url('index.php/admin/viewAvailability?id=' . $providers[$i]['user_id']) ?>"
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">View Availability</h6>
+                                        <i class="bi bi-calendar"></i>
+                                    </div>
+                                    <small class="text-muted">See provider's schedule and available time slots</small>
+                                </a>
+                                
+                                <button type="button" class="list-group-item list-group-item-action"
+                                        onclick="document.getElementById('status-form-<?= $providers[$i]['user_id'] ?>').submit()">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1"><?= $providers[$i]['is_active'] ? 'Deactivate' : 'Activate' ?> Account</h6>
+                                        <i class="bi bi-<?= $providers[$i]['is_active'] ? 'slash-circle' : 'check-circle' ?>"></i>
+                                    </div>
+                                    <small class="text-muted">
+                                        <?= $providers[$i]['is_active'] ? 'Prevent' : 'Allow' ?> provider from logging in and being shown to patients
+                                    </small>
+                                </button>
+                                
+                                <button type="button" class="list-group-item list-group-item-action"
+                                        onclick="document.getElementById('patients-form-<?= $providers[$i]['user_id'] ?>').submit()">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1"><?= isset($providers[$i]['accepting_new_patients']) && $providers[$i]['accepting_new_patients'] ? 'Stop' : 'Start' ?> Accepting Patients</h6>
+                                        <i class="bi bi-person-<?= isset($providers[$i]['accepting_new_patients']) && $providers[$i]['accepting_new_patients'] ? 'slash' : 'plus' ?>"></i>
+                                    </div>
+                                    <small class="text-muted">
+                                        <?= isset($providers[$i]['accepting_new_patients']) && $providers[$i]['accepting_new_patients'] ? 'Prevent' : 'Allow' ?> provider from being shown for new appointment bookings
+                                    </small>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Hidden forms for actions -->
+            <form id="status-form-<?= $providers[$i]['user_id'] ?>" method="post" action="<?= base_url('index.php/admin/toggleUserStatus') ?>" style="display: none;">
+                <input type="hidden" name="user_id" value="<?= $providers[$i]['user_id'] ?>">
+            </form>
+            
+            <form id="patients-form-<?= $providers[$i]['user_id'] ?>" method="post" action="<?= base_url('index.php/admin/toggleAcceptingPatients') ?>" style="display: none;">
+                <input type="hidden" name="provider_id" value="<?= $providers[$i]['user_id'] ?>">
+            </form>
+        <?php endfor; ?>
+    <?php endif; ?>
 </div>
-
-<script>
-// Function to submit forms for provider actions
-function submitForm(formId) {
-    document.getElementById(formId).submit();
-}
-</script>
 
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
