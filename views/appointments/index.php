@@ -151,6 +151,68 @@ if (!defined('BASE_PATH') && !isset($availableSlots)) {
     </div>
 </div>
 
+<?php if (isset($pastAppointments) && !empty($pastAppointments)): ?>
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5>Your Appointment History</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <?php if ($_SESSION['role'] === 'patient'): ?>
+                                <th>Provider</th>
+                            <?php elseif ($_SESSION['role'] === 'provider'): ?>
+                                <th>Patient</th>
+                            <?php else: ?>
+                                <th>Provider</th>
+                                <th>Patient</th>
+                            <?php endif; ?>
+                            <th>Service</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($pastAppointments as $appointment): ?>
+                        <tr>
+                            <td><?= htmlspecialchars(date('F j, Y', strtotime($appointment['appointment_date']))) ?></td>
+                            <td><?= htmlspecialchars(date('g:i A', strtotime($appointment['start_time']))) ?> - 
+                                <?= htmlspecialchars(date('g:i A', strtotime($appointment['end_time']))) ?></td>
+                            
+                            <?php if ($_SESSION['role'] === 'patient'): ?>
+                                <td><?= htmlspecialchars($appointment['provider_first_name'] . ' ' . $appointment['provider_last_name']) ?></td>
+                            <?php elseif ($_SESSION['role'] === 'provider'): ?>
+                                <td><?= htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']) ?></td>
+                            <?php else: ?>
+                                <td><?= htmlspecialchars($appointment['provider_first_name'] . ' ' . $appointment['provider_last_name']) ?></td>
+                                <td><?= htmlspecialchars($appointment['patient_first_name'] . ' ' . $appointment['patient_last_name']) ?></td>
+                            <?php endif; ?>
+                            
+                            <td><?= htmlspecialchars($appointment['service_name']) ?></td>
+                            <td>
+                                <span class="badge bg-<?= getStatusBadgeClass($appointment['status']) ?>">
+                                    <?= htmlspecialchars(ucfirst($appointment['status'])) ?>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex">
+                                    <a href="<?= base_url('index.php/appointments/history?id=' . $appointment['appointment_id']) ?>" 
+                                       class="btn btn-info btn-sm">History</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
 <!-- Status Update Modal -->
 <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
     <div class="modal-dialog">
