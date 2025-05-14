@@ -182,7 +182,13 @@ if (!defined('RECAPTCHA_SITE_KEY')) {
                     
                     <!-- Add reCAPTCHA -->
                     <div class="mb-3 d-flex justify-content-center">
-                        <div class="g-recaptcha" data-sitekey="<?= RECAPTCHA_SITE_KEY ?>"></div>
+                        <div class="g-recaptcha" 
+                            data-sitekey="6Leh-TgrAAAAAL6uiA8JcjGfuz75m6ra-V4kIy8f" 
+                            data-callback="enableSubmitButton" 
+                            data-expired-callback="disableSubmitButton"></div>
+                    </div>
+                    <div id="recaptcha-error" class="text-danger mt-2" style="display: none;">
+                        Please complete the reCAPTCHA verification
                     </div>
                     
                     <button type="submit" class="btn btn-primary w-100 py-2">Register</button>
