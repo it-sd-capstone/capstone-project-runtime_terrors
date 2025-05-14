@@ -107,34 +107,74 @@ class Provider {
      * @param array $data Profile data to update
      * @return bool True on success, false on failure
      */
-    public function updateProfile($provider_id, $data) {
-        try {
-            $sql = "UPDATE provider_profiles SET 
-                    specialization = ?,
-                    title = ?,
-                    bio = ?,
-                    accepting_new_patients = ?,
-                    max_patients_per_day = ?,
-                    updated_at = NOW()
-                    WHERE provider_id = ?";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->bind_param(
-                'sssiii',
+
+public function updateProfile($provider_id, $data) {
+    try {
+        // --- SPECIALIZATION VALIDATION ---
+        if (empty($data['specialization'])) {
+            error_log("Provider specialization is required.");
+            return false;
+        }
+        // First check if a record exists for this provider
+        $checkSql = "SELECT provider_id FROM provider_profiles WHERE provider_id = ?";
+        $checkStmt = $this->db->prepare($checkSql);
+        $checkStmt->bind_param('i', $provider_id);
+        $checkStmt->execute();
+        $checkStmt->store_result();
+
+        // If no record exists, insert one instead of updating
+        if ($checkStmt->num_rows == 0) {
+            $insertSql = "INSERT INTO provider_profiles (provider_id, specialization, title, bio, 
+                        accepting_new_patients, max_patients_per_day, created_at, updated_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
+
+            $insertStmt = $this->db->prepare($insertSql);
+            $insertStmt->bind_param(
+                'issiii',
+                $provider_id,
                 $data['specialization'],
                 $data['title'],
                 $data['bio'],
                 $data['accepting_new_patients'],
-                $data['max_patients_per_day'],
-                $provider_id
+                $data['max_patients_per_day']
             );
-            
-            return $stmt->execute();
-        } catch (Exception $e) {
-            error_log("Error updating provider profile: " . $e->getMessage());
+
+            return $insertStmt->execute();
+        }
+
+        // Record exists, proceed with update
+        $sql = "UPDATE provider_profiles SET
+                specialization = ?,
+                title = ?,
+                bio = ?,
+                accepting_new_patients = ?,
+                max_patients_per_day = ?,
+                updated_at = NOW()
+                WHERE provider_id = ?";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param(
+            'sssiii',
+            $data['specialization'],
+            $data['title'],
+            $data['bio'],
+            $data['accepting_new_patients'],
+            $data['max_patients_per_day'],
+            $provider_id
+        );
+
+        // Execute and ALWAYS return true if no DB error
+        if ($stmt->execute()) {
+            return true; // Success if query executed without errors, regardless of affected rows
+        } else {
+            error_log("Database error in updateProfile: " . $stmt->error);
             return false;
         }
+    } catch (Exception $e) {
+        error_log("Exception in updateProfile: " . $e->getMessage());
+        return false;
     }
+}
 
     // Legacy method for backward compatibility
     public function updateProfile_old($provider_id, $first_name, $last_name, $specialization, $phone, $bio) {
@@ -1474,30 +1514,36 @@ class Provider {
      * @param array $profileData Provider profile data
      * @return bool Success status
      */
-    public function createProfile($profileData) {
-        try {
-            $stmt = $this->db->prepare("
-                INSERT INTO provider_profiles
-                (provider_id, specialization, title, bio, accepting_new_patients)
-                VALUES (?, ?, ?, ?, ?)
-            ");
-            
-            $acceptingPatients = $profileData['accepting_new_patients'] ?? 1;
-            
-            $stmt->bind_param("isssi",
-                $profileData['provider_id'],
-                $profileData['specialization'],
-                $profileData['title'],
-                $profileData['bio'],
-                $acceptingPatients
-            );
-            
-            return $stmt->execute();
-        } catch (Exception $e) {
-            error_log("Error creating provider profile: " . $e->getMessage());
+ public function createProfile($profileData) {
+    try {
+        // --- SPECIALIZATION VALIDATION ---
+        if (empty($profileData['specialization'])) {
+            error_log("Provider specialization is required.");
             return false;
         }
+        $stmt = $this->db->prepare("
+            INSERT INTO provider_profiles
+            (provider_id, specialization, title, bio, accepting_new_patients)
+            VALUES (?, ?, ?, ?, ?)
+        ");
+
+        $acceptingPatients = $profileData['accepting_new_patients'] ?? 1;
+
+        $stmt->bind_param("isssi",
+            $profileData['provider_id'],
+            $profileData['specialization'],
+            $profileData['title'],
+            $profileData['bio'],
+            $acceptingPatients
+        );
+
+        return $stmt->execute();
+    } catch (Exception $e) {
+        error_log("Error creating provider profile: " . $e->getMessage());
+        return false;
     }
+}
+
     /**
      * Create a provider profile
      * 
@@ -1505,48 +1551,52 @@ class Provider {
      * @param array $profileData Profile data (specialization, title, bio, etc.)
      * @return bool True on success, false on failure
      */
-    public function createProviderProfile($providerId, $profileData) {
-        try {
-            // Prepare default values
-            $specialization = $profileData['specialization'] ?? '';
-            $title = $profileData['title'] ?? '';
-            $bio = $profileData['bio'] ?? '';
-            $acceptingNewPatients = isset($profileData['accepting_new_patients']) ? 1 : 0;
-            $maxPatientsPerDay = $profileData['max_patients_per_day'] ?? 20;
-
-            // Create the SQL query - note we're not including user_id column
-            $query = "INSERT INTO provider_profiles 
-                    (provider_id, specialization, title, bio, accepting_new_patients, max_patients_per_day) 
-                    VALUES (?, ?, ?, ?, ?, ?)";
-            
-            $stmt = $this->db->prepare($query);
-            if (!$stmt) {
-                error_log("Provider profile prepare error: " . $this->db->error);
-                return false;
-            }
-            
-            $stmt->bind_param("isssii", 
-                $providerId, 
-                $specialization, 
-                $title, 
-                $bio, 
-                $acceptingNewPatients,
-                $maxPatientsPerDay
-            );
-            
-            $result = $stmt->execute();
-            if (!$result) {
-                error_log("Provider profile execute error: " . $stmt->error);
-                return false;
-            }
-            
-            return true;
-        } catch (Exception $e) {
-            error_log("Provider profile creation error: " . $e->getMessage());
+public function createProviderProfile($providerId, $profileData) {
+    try {
+        // --- SPECIALIZATION VALIDATION ---
+        if (empty($profileData['specialization'])) {
+            error_log("Provider specialization is required.");
             return false;
         }
-    }
+        // Prepare default values
+        $specialization = $profileData['specialization'] ?? '';
+        $title = $profileData['title'] ?? '';
+        $bio = $profileData['bio'] ?? '';
+        $acceptingNewPatients = isset($profileData['accepting_new_patients']) ? 1 : 0;
+        $maxPatientsPerDay = $profileData['max_patients_per_day'] ?? 20;
 
+        // Create the SQL query - note we're not including user_id column
+        $query = "INSERT INTO provider_profiles 
+                (provider_id, specialization, title, bio, accepting_new_patients, max_patients_per_day) 
+                VALUES (?, ?, ?, ?, ?, ?)";
+
+        $stmt = $this->db->prepare($query);
+        if (!$stmt) {
+            error_log("Provider profile prepare error: " . $this->db->error);
+            return false;
+        }
+
+        $stmt->bind_param("isssii", 
+            $providerId, 
+            $specialization, 
+            $title, 
+            $bio, 
+            $acceptingNewPatients,
+            $maxPatientsPerDay
+        );
+
+        $result = $stmt->execute();
+        if (!$result) {
+            error_log("Provider profile execute error: " . $stmt->error);
+            return false;
+        }
+
+        return true;
+    } catch (Exception $e) {
+        error_log("Provider profile creation error: " . $e->getMessage());
+        return false;
+    }
+}
 
     /**
      * Add a new provider with profile
@@ -1708,38 +1758,62 @@ class Provider {
      * 
      * @return array List of suggested providers
      */
-    public function getSuggestedProviders() {
-        $query = "
-            SELECT 
-                u.user_id AS provider_id,
-                CONCAT(u.first_name, ' ', u.last_name) AS name,
-                pp.specialization AS specialty,
-                pp.bio,
-                pp.profile_image
-            FROM 
-                users u
-            JOIN 
-                provider_profiles pp ON u.user_id = pp.provider_id
-            WHERE 
-                u.role = 'provider'
-                AND pp.accepting_new_patients = 1
-            ORDER BY 
-                RAND()
-            LIMIT 3
-        ";
-        
-        $suggested_providers = [];
-        $result = $this->db->query($query);
-        
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $suggested_providers[] = $row;
-            }
+
+public function getSuggestedProviders() {
+    // Only suggest providers with a non-empty, non-null specialty
+    $query = "
+        SELECT
+            u.user_id AS provider_id,
+            CONCAT(u.first_name, ' ', u.last_name) AS name,
+            pp.specialization AS specialty,
+            pp.bio,
+            pp.profile_image
+        FROM
+            users u
+        JOIN
+            provider_profiles pp ON u.user_id = pp.provider_id
+        WHERE
+            u.role = 'provider'
+            AND pp.accepting_new_patients = 1
+            AND pp.specialization IS NOT NULL
+            AND TRIM(pp.specialization) != ''
+        ORDER BY
+            RAND()
+        LIMIT 3
+    ";
+    
+    $suggested_providers = [];
+    $result = $this->db->query($query);
+    
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $suggested_providers[] = $row;
         }
-        
-        return $suggested_providers;
     }
 
+    
+    return $suggested_providers;
+}
+    /**
+     * Remove a service from a provider
+     *
+     * @param int $providerId Provider ID
+     * @param int $serviceId Service ID
+     * @return bool Success or failure
+     */
+    public function removeServiceFromProvider($providerId, $serviceId) {
+        // Prepare the SQL query to delete the provider-service relationship
+        $query = "DELETE FROM provider_services 
+                WHERE provider_id = ? AND service_id = ?";
+        
+        // Prepare and execute the statement
+        $stmt = $this->db->prepare($query);
+        $stmt->bind_param("ii", $providerId, $serviceId);
+        $result = $stmt->execute();
+        
+        // Return true if successful, false otherwise
+        return $result && ($stmt->affected_rows > 0);
+    }
     /**
      * Get all available specializations for the filter dropdown
      * 
@@ -2010,6 +2084,27 @@ class Provider {
         }
     }
 
+    public function setActiveStatus($providerId, $isActive) {
+    try {
+        $stmt = $this->db->prepare("UPDATE users SET is_active = ? WHERE user_id = ? AND role = 'provider'");
+        $stmt->bind_param("ii", $isActive, $providerId);
+        return $stmt->execute();
+    } catch (Exception $e) {
+        error_log("Error updating provider active status: " . $e->getMessage());
+        return false;
+    }
+}
+
+public function setAcceptingNewPatients($providerId, $accepting) {
+    try {
+        $stmt = $this->db->prepare("UPDATE provider_profiles SET accepting_new_patients = ? WHERE provider_id = ?");
+        $stmt->bind_param("ii", $accepting, $providerId);
+        return $stmt->execute();
+    } catch (Exception $e) {
+        error_log("Error updating accepting_new_patients: " . $e->getMessage());
+        return false;
+    }
+}
     /**
      * Get provider comparison metrics for admin analysis
      * 
@@ -2354,7 +2449,8 @@ class Provider {
                     u.email, 
                     u.first_name, 
                     u.last_name, 
-                    u.phone 
+                    u.phone,
+                    u.is_active
                 FROM provider_profiles pp
                 JOIN users u ON pp.provider_id = u.user_id
                 WHERE pp.provider_id = ?";

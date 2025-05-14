@@ -1939,6 +1939,57 @@ class ProviderController {
         header('Location: ' . base_url('index.php/provider/profile'));
         exit;
     }
+    /**
+ * Deactivate the provider account (set is_active = 0)
+ */
+public function deactivateAccount() {
+    if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+        $_SESSION['error'] = "Unauthorized access";
+        header('Location: ' . base_url('index.php/auth'));
+        exit;
+    }
+
+    $provider_id = $_SESSION['user_id'];
+    $success = $this->providerModel->setActiveStatus($provider_id, 0);
+
+    if ($success) {
+        $_SESSION['success'] = "Your account has been deactivated.";
+        // Optionally, log the user out after deactivation
+        session_destroy();
+        header('Location: ' . base_url('index.php/auth/login?success=Account deactivated'));
+    } else {
+        $_SESSION['error'] = "Failed to deactivate account. Please try again.";
+        header('Location: ' . base_url('index.php/provider/profile'));
+    }
+    exit;
+}
+
+/**
+ * Set accepting new patients status (1 = accepting, 0 = not accepting)
+ * Usage: Call with $accepting = 0 to stop accepting new patients
+ */
+public function setAcceptingNewPatients($accepting = 0) {
+    if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+        $_SESSION['error'] = "Unauthorized access";
+        header('Location: ' . base_url('index.php/auth'));
+        exit;
+    }
+
+    $provider_id = $_SESSION['user_id'];
+    $accepting = $accepting ? 1 : 0; // Ensure it's 0 or 1
+
+    $success = $this->providerModel->setAcceptingNewPatients($provider_id, $accepting);
+
+    if ($success) {
+        $_SESSION['success'] = $accepting
+            ? "You are now accepting new patients."
+            : "You have stopped accepting new patients.";
+    } else {
+        $_SESSION['error'] = "Failed to update accepting new patients status.";
+    }
+    header('Location: ' . base_url('index.php/provider/profile'));
+    exit;
+}
 
     /**
      * Check if current request is AJAX

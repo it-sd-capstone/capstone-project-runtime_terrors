@@ -1,5 +1,4 @@
 <?php
-// reCAPTCHA configuration
-define('RECAPTCHA_SITE_KEY', '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI');  // Test key
-define('RECAPTCHA_SECRET_KEY', '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe');  // Test key
+define('RECAPTCHA_SITE_KEY', '6Leh-TgrAAAAAL6uiA8JcjGfuz75m6ra-V4kIy8f');  // Real site key
+define('RECAPTCHA_SECRET_KEY', '6Leh-TgrAAAAAMD206944aiuG070tCcaK1ir0ThS');  // Real secret key
 ?>

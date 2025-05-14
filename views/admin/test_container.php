@@ -95,10 +95,9 @@ foreach ($testFiles as $testName => $fileName) {
                                                         <?= $category['title'] ?> (<?= count($category['tests']) ?>)
                                                     </button>
                                                 </h2>
-                                                <div id="collapse<?= ucfirst($categoryKey) ?>"
-                                                     class="accordion-collapse collapse"
-                                                     aria-labelledby="heading<?= ucfirst($categoryKey) ?>"
-                                                     data-bs-parent="#testAccordion">
+                                                    <div id="collapse<?= ucfirst($categoryKey) ?>"
+                                                        class="accordion-collapse collapse"
+                                                        aria-labelledby="heading<?= ucfirst($categoryKey) ?>">
                                                     <div class="accordion-body">
                                                         <p class="text-muted"><?= $category['description'] ?></p>
                                                         <div class="list-group mb-3">
@@ -194,6 +193,25 @@ foreach ($testFiles as $testName => $fileName) {
         </div>
     </div>
 </div>
+
+<!-- All JS in One Place -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Accordion Toggle Fix: allow closing by clicking again
+    document.querySelectorAll('.accordion-button').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            var targetId = btn.getAttribute('data-bs-target');
+            var target = document.querySelector(targetId);
+            if (target && target.classList.contains('show')) {
+                // If already open, close it and prevent Bootstrap's default open
+                e.stopPropagation();
+                e.preventDefault();
+                var collapse = bootstrap.Collapse.getOrCreateInstance(target);
+                collapse.hide();
+            }
+            // Otherwise, let Bootstrap handle opening
+        });
+    });
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -513,13 +531,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             <h2 class="accordion-header" id="heading${index}">
                                 <button class="accordion-button collapsed" type="button"
                                         data-bs-toggle="collapse"
-                                        data-bs-target="#collapse${index}"
+                                        data-bs-target="#collapseTests"
                                         aria-expanded="false"
                                         aria-controls="collapse${index}">
                                     ${testName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                 </button>
                             </h2>
-                            <div id="collapse${index}"
+                            <div id="collapseTests"
                                 class="accordion-collapse collapse"
                                 aria-labelledby="heading${index}"
                                 data-bs-parent="#passedTestsAccordion">
