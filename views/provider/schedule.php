@@ -73,39 +73,7 @@
     text-transform: uppercase;
     font-size: 0.8rem;
     font-weight: 600;
-    CONV: 0.5rem 1rem;
-}
-
-.fc .fc-prev-button,
-.fc .fc-next-button {
-    position: relative;
-    padding: 0.5rem 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-}
-
-.fc .fc-prev-button .fc-icon,
-.fc .fc-next-button .fc-icon {
-    display: none; 
-}
-
-.fc .fc-prev-button::before {
-    content: '\f053'; 
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 900;
-    font-size: 1.2rem;
-    color: white;
-}
-
-.fc .fc-next-button::before {
-    content: '\f054'; 
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 900;
-    font-size: 1.2rem;
-    color: white;
+    padding: 0.5rem 1rem;
 }
 
 .fc .fc-button-primary:hover {
@@ -120,7 +88,14 @@
     border-color: var(--secondary);
 }
 
+/* Add navigation arrows to prev/next buttons */
+.fc .fc-prev-button .fc-icon,
+.fc .fc-next-button .fc-icon {
+    font-size: 1.2em;
+    font-weight: bold;
+}
 
+/* Premium Event Styling */
 .fc-event {
     cursor: pointer;
     border-radius: 0.5rem;
@@ -143,6 +118,7 @@
     text-overflow: ellipsis;
 }
 
+/* Calendar Day Styling */
 .fc-daygrid-day {
     transition: var(--transition);
 }
@@ -161,6 +137,7 @@
     padding: 0.5rem !important;
 }
 
+/* Event Types */
 .available-event, .regular-availability {
     background-color: #4cc9f0 !important;
     border-left: 4px solid #3a86ff !important;
@@ -176,6 +153,7 @@
     border-left: 4px solid #3a86ff !important;
 }
 
+/* Action Panel Styling */
 .action-panel {
     background-color: #fff;
     border-radius: var(--border-radius);
@@ -227,11 +205,13 @@
     margin-bottom: 1.5rem;
 }
 
+/* Modified padding-y class to provide more vertical space */
 .py-2 {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
 }
 
+/* Form Controls */
 .form-control, .form-select {
     border-radius: 0.5rem;
     padding: 0.75rem 1rem;
@@ -260,13 +240,14 @@
     margin-bottom: 0.5rem;
 }
 
+/* Button styling - make them smaller */
 .btn {
     border-radius: 0.5rem;
-    padding: 0.5rem 1rem; 
+    padding: 0.5rem 1rem; /* Smaller padding */
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-size: 0.8rem; 
+    font-size: 0.8rem; /* Smaller font */
     transition: var(--transition);
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
@@ -302,11 +283,13 @@
     color: white;
 }
 
+/* Special styling for clear day button */
 #clearDayBtn {
     padding: 0.3rem 0.6rem;
     font-size: 0.75rem;
 }
 
+/* Card styling for management actions */
 .action-card {
     background-color: white;
     border-radius: 0.75rem;
@@ -495,8 +478,8 @@
                     <h5 class="text-primary mb-2">Schedule Management</h5>
                     <p class="text-muted mb-0">
                         <i class="fas fa-info-circle me-1"></i>
-                        Manage your availability in three simple steps:<br> 
-                        1. Set your recurring schedule for regular working hours,<br> 
+                        Manage your availability in three simple steps:<br>
+                        1. Set your recurring schedule for regular working hours,<br>
                         2. Generate availability slots based on your schedule<br>
                         3. Fine-tune individual slots as needed by clicking on dates in the calendar.<br>
                         <i class="fas fa-info-circle me-1"></i>
@@ -566,12 +549,6 @@
                             <button class="nav-link" id="manage-tab" data-bs-toggle="tab" data-bs-target="#manage-panel"
                                     type="button" role="tab" aria-selected="false">
                                 <i class="fas fa-cog"></i> Manage
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="edit-tab" data-bs-toggle="tab" data-bs-target="#edit-panel"
-                                    type="button" role="tab" aria-selected="false">
-                                <i class="fas fa-edit"></i> Edit
                             </button>
                         </li>
                     </ul>
@@ -741,145 +718,6 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Edit Availability Panel (formerly Add Availability) -->
-                        <div class="tab-pane fade" id="edit-panel" role="tabpanel" aria-labelledby="edit-tab">
-                            <h6 class="card-title"><i class="fas fa-edit me-1"></i> Edit Availability</h6>
-                            
-                            <!-- Selected slot information display -->
-                            <div class="card bg-light mb-3">
-                                <div class="card-body py-2">
-                                    <h6 class="card-subtitle mb-2 text-muted">Selected Slot</h6>
-                                    <div id="selectedSlotInfo" class="text-muted small">
-                                        No slot selected. Click on a slot in the calendar to edit.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Edit form -->
-                            <form method="POST" action="<?= base_url('index.php/provider/processUpdateAvailability') ?>" class="row g-2" id="editAvailabilityForm">
-                                                                <input type="hidden" name="availability_id" id="edit_availability_id">
-                                <div class="col-md-12 mb-2">
-                                    <label class="form-label small fw-bold">Date:</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                        <input type="date" class="form-control" name="availability_date" id="edit_availability_date" required min="<?= date('Y-m-d') ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <label class="form-label small fw-bold">Start Time:</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="fas fa-hourglass-start"></i></span>
-                                        <input type="time" class="form-control" name="start_time" id="edit_start_time" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <label class="form-label small fw-bold">End Time:</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="fas fa-hourglass-end"></i></span>
-                                        <input type="time" class="form-control" name="end_time" id="edit_end_time" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-12 mb-2">
-                                    <label class="form-label small fw-bold">Status:</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="fas fa-toggle-on"></i></span>
-                                        <select class="form-select" name="is_available" id="edit_is_available">
-                                            <option value="1">Available</option>
-                                            <option value="0">Unavailable</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-12 mb-2">
-                                    <label class="form-label small fw-bold">Service (Optional):</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="fas fa-briefcase-medical"></i></span>
-                                        <select class="form-select" id="edit_service_id" name="service_id">
-                                            <option value="">Available for all services</option>
-                                            <?php foreach ($provider_services as $service): ?>
-                                                <option value="<?= $service['service_id'] ?>"><?= htmlspecialchars($service['name']) ?>
-                                                    (<?= $service['duration'] ?> min)
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="form-text small">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Leave blank to make this time available for all services.
-                                    </div>
-                                </div>
-                                <div class="col-md-12 d-flex justify-content-between">
-                                    <button type="submit" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-save me-1"></i>Update Slot
-                                    </button>
-                                    <button type="button" id="deleteSlotBtn" class="btn btn-danger btn-sm">
-                                        <i class="fas fa-trash-alt me-1"></i>Delete Slot
-                                    </button>
-                                </div>
-                            </form>
-                            
-                            <!-- Add new slot section
-                            <hr class="my-3">
-                            <h6 class="card-subtitle mb-2"><i class="fas fa-plus-circle me-1"></i> Add New Slot</h6>
-                            <form method="POST" action="<?= base_url('index.php/provider/processUpdateAvailability') ?>" class="row g-2">
-                                <div class="col-md-12 mb-2">
-                                    <label class="form-label small fw-bold">Date:</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                        <input type="date" class="form-control" name="availability_date" required min="<?= date('Y-m-d') ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <label class="form-label small fw-bold">Start Time:</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="fas fa-hourglass-start"></i></span>
-                                        <input type="time" class="form-control" name="start_time" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <label class="form-label small fw-bold">End Time:</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="fas fa-hourglass-end"></i></span>
-                                        <input type="time" class="form-control" name="end_time" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-12 mb-2">
-                                    <label class="form-label small fw-bold">Status:</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="fas fa-toggle-on"></i></span>
-                                        <select class="form-select" name="is_available">
-                                            <option value="1">Available</option>
-                                            <option value="0">Unavailable</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-12 mb-2">
-                                    <label class="form-label small fw-bold">Service (Optional):</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="fas fa-briefcase-medical"></i></span>
-                                        <select class="form-select" id="service_id" name="service_id">
-                                            <option value="">Available for all services</option>
-                                            <?php foreach ($provider_services as $service): ?>
-                                                <option value="<?= $service['service_id'] ?>"><?= htmlspecialchars($service['name']) ?>
-                                                    (<?= $service['duration'] ?> min)
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="form-text small">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Leave blank to make this time available for all services.
-                                    </div>
-                                </div>
-                                <div class="col-md-12">
-                                    <div class="d-grid">
-                                        <button type="submit" class="btn btn-success btn-sm">
-                                            <i class="fas fa-plus-circle me-1"></i>Add New Slot
-                                        </button>
-                                    </div>
-                                </div> -->
-                            </form>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -887,900 +725,403 @@
     </div>
 </div>
 
-    <!-- Required Libraries: Bootstrap, FullCalendar -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-    <script>
-        // Define base URL for AJAX calls
-        var base_url = '<?= isset($base_url) ? $base_url : rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/' ?>';
-        // Required Libraries: Bootstrap, FullCalendar
-        var calendar;
-        document.addEventListener('DOMContentLoaded', function() {
-            // Show loading indicator
-            document.getElementById('calendar-loading')?.classList.remove('d-none');
+
+<!-- Required Libraries: Bootstrap, FullCalendar -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script>
+    // Define base URL for AJAX calls
+    var base_url = '<?= isset($base_url) ? $base_url : rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/' ?>';
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show loading indicator
+        document.getElementById('calendar-loading')?.classList.remove('d-none');
+        
+        var calendarEl = document.getElementById('calendar');
+        var selectedDate = null; // Store the selected date
+        
+        // First create the calendar with basic configuration
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            height: 700,
+            dayMaxEventRows: 3,
+            moreLinkClick: 'day',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            themeSystem: 'bootstrap5',
+            aspectRatio: 1.35,
+            contentHeight: "auto",
+            editable: true,
+            selectable: true,
+            nowIndicator: true,
+            dayMaxEvents: true,
             
-            var calendarEl = document.getElementById('calendar');
-            var selectedDate = null; // Store the selected date
+            // Add these settings to improve week view
+            slotMinWidth: 100, // Make columns wider in week view
+            slotDuration: '00:30:00', // 30-minute slots for better granularity
+            slotLabelFormat: {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            },
             
-            // Define the selectSlotForEdit function in the global scope
-            window.selectSlotForEdit = function(slotData) {
-                // Check if the necessary elements exist before trying to update them
-                const slotInfo = document.getElementById('selectedSlotInfo');
-                if (slotInfo) {
-                    slotInfo.innerHTML = `
-                        <strong>Date:</strong> ${slotData.date}<br>
-                        <strong>Time:</strong> ${slotData.startTime} - ${slotData.endTime}<br>
-                        <strong>Status:</strong> ${slotData.isAvailable ? 'Available' : 'Unavailable'}<br>
-                        <strong>Service:</strong> ${slotData.serviceName || 'All Services'}
-                    `;
-                }
-                
-                // Populate the edit form if elements exist
-                if (document.getElementById('edit_availability_id')) {
-                    document.getElementById('edit_availability_id').value = slotData.id;
-                }
-                if (document.getElementById('edit_availability_date')) {
-                    document.getElementById('edit_availability_date').value = slotData.date;
-                }
-                if (document.getElementById('edit_start_time')) {
-                    document.getElementById('edit_start_time').value = slotData.startTime;
-                }
-                if (document.getElementById('edit_end_time')) {
-                    document.getElementById('edit_end_time').value = slotData.endTime;
-                }
-                if (document.getElementById('edit_is_available')) {
-                    document.getElementById('edit_is_available').value = slotData.isAvailable ? '1' : '0';
-                }
-                if (document.getElementById('edit_service_id')) {
-                    document.getElementById('edit_service_id').value = slotData.serviceId || '';
-                }
-                
-                // Switch to the edit tab if it exists
-                const editTab = document.getElementById('edit-tab');
-                if (editTab) {
-                    const tab = bootstrap.Tab.getOrCreateInstance(editTab);
-                    tab.show();
-                }
-            };
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            },
+            eventDisplay: 'auto',
             
-            // First create the calendar with basic configuration
-             calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                height: 700,
-                dayMaxEventRows: 3,
-                moreLinkClick: 'day',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                },
-                themeSystem: 'bootstrap5',
-                aspectRatio: 1.35,
-                contentHeight: "auto",
-                editable: true,
-                selectable: true,
-                nowIndicator: true,
-                dayMaxEvents: true,
+            // Add this viewDidMount callback to refresh events when view changes
+            viewDidMount: function(viewInfo) {
+                // This will trigger a refetch with the current view type
+                calendar.refetchEvents();
                 
-                // Add these settings to improve week view
-                slotMinWidth: 100, // Make columns wider in week view
-                slotDuration: '00:30:00', // 30-minute slots for better granularity
-                slotLabelFormat: {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                },
+                // Log the current view - helpful for debugging
+                console.log("Current view:", viewInfo.view.type);
                 
-                eventTimeFormat: {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
-                },
-                eventDisplay: 'auto',
-                
-                // Add this viewDidMount callback to refresh events when view changes
-                viewDidMount: function(viewInfo) {
-                    // This will trigger a refetch with the current view type
-                    calendar.refetchEvents();
+                // Apply special styling to week view
+                if (viewInfo.view.type === 'timeGridWeek') {
+                    // Add some custom styling to make week view more readable
+                    document.querySelectorAll('.fc-timegrid-col').forEach(col => {
+                        col.style.minWidth = '120px'; // Force wider columns
+                    });
+                }
+            },
+            
+            // Add eventDidMount to apply custom formatting if needed
+            eventDidMount: function(info) {
+                // For consolidated events in month view, add a tooltip
+                if (info.event.extendedProps && 
+                    (info.event.extendedProps.type === 'consolidated' || 
+                     info.event.extendedProps.type === 'consolidated_recurring')) {
                     
-                    // Log the current view - helpful for debugging
-                    console.log("Current view:", viewInfo.view.type);
+                    $(info.el).tooltip({
+                        title: 'Click for detailed view',
+                        placement: 'top'
+                    });
+                }
+                
+                // Always show time in the title for recurring work hours (both in month and week views)
+                if (info.event.extendedProps && 
+                    (info.event.extendedProps.type === 'recurring' || 
+                     info.event.extendedProps.title === 'Working Hours' ||
+                     info.event.title === 'Working Hours')) {
+                
+                    const start = info.event.start;
+                    const end = info.event.end;
+                
+                    if (start && end) {
+                        const formattedStart = start.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
+                        const formattedEnd = end.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
                     
-                    // Apply special styling to week view
-                    if (viewInfo.view.type === 'timeGridWeek') {
-                        // Add some custom styling to make week view more readable
-                        document.querySelectorAll('.fc-timegrid-col').forEach(col => {
-                            col.style.minWidth = '120px'; // Force wider columns
-                        });
+                        // Always update title to include times for working hours
+                        info.event.setProp('title', `Working Hours ${formattedStart}-${formattedEnd}`);
                     }
-                },
+                }
+            
+                // If in day/week view and event doesn't have times in title, add them for other events too
+                if (calendar.view.type !== 'dayGridMonth') {
+                    const title = info.event.title;
                 
-                // Add eventDidMount to apply custom formatting if needed
-                eventDidMount: function(info) {
-                    // For consolidated events in month view, add a tooltip
-                    if (info.event.extendedProps &&
-                        (info.event.extendedProps.type === 'consolidated' || 
-                        info.event.extendedProps.type === 'consolidated_recurring')) {
-                        
-                        $(info.el).tooltip({
-                            title: 'Click for detailed view',
-                            placement: 'top'
-                        });
-                    }
+                    // Only update if it doesn't already have time info
+                    if (!title.includes('-') && info.event.start && info.event.end && 
+                        !title.includes('Working Hours')) { // Skip working hours as we handled them above
                     
-                    // Always show time in the title for recurring work hours (both in month and week views)
-                    if (info.event.extendedProps &&
-                        (info.event.extendedProps.type === 'recurring' || 
-                        info.event.extendedProps.title === 'Working Hours' || 
-                        info.event.title === 'Working Hours')) {
-                        
                         const start = info.event.start;
                         const end = info.event.end;
-                        
+                    
                         if (start && end) {
                             const formattedStart = start.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
                             const formattedEnd = end.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
-                            
-                            // Always update title to include times for working hours
-                            info.event.setProp('title', `Working Hours ${formattedStart}-${formattedEnd}`);
-                        }
-                    }
-                    
-                    // If in day/week view and event doesn't have times in title, add them for other events too
-                    if (calendar.view.type !== 'dayGridMonth') {
-                        const title = info.event.title;
                         
-                        // Only update if it doesn't already have time info
-                        if (!title.includes('-') && info.event.start && info.event.end &&
-                            !title.includes('Working Hours')) { // Skip working hours as we handled them above
-                            
-                            const start = info.event.start;
-                            const end = info.event.end;
-                            
-                            if (start && end) {
-                                const formattedStart = start.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
-                                const formattedEnd = end.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
-                                
-                                if (title === 'Available') {
-                                    info.event.setProp('title', `Available ${formattedStart}-${formattedEnd}`);
-                                }
+                            if (title === 'Available') {
+                                info.event.setProp('title', `Available ${formattedStart}-${formattedEnd}`);
                             }
                         }
                     }
-                },
-                
-                // Modified eventClick handler with error handling
-                eventClick: function(info) {
-                    try {
-                        // For consolidated events in month view, switch to day view
-                        if (info.event.extendedProps &&
-                            (info.event.extendedProps.type === 'consolidated' || 
-                            info.event.extendedProps.type === 'consolidated_recurring')) {
-                            
-                            // Navigate to day view for this date
-                            calendar.gotoDate(info.event.start);
-                            calendar.changeView('timeGridDay');
-                            
-                            // Prevent the default action
-                            info.jsEvent.preventDefault();
-                        } else {
-                            // For regular availability slots, prepare data for the edit form
-                            const eventData = {
-                                id: info.event.id,
-                                date: info.event.start.toISOString().split('T')[0],
-                                startTime: info.event.start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false}),
-                                endTime: info.event.end ? info.event.end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false}) : '',
-                                isAvailable: info.event.extendedProps.is_available !== false, // Default to true if not specified
-                                serviceId: info.event.extendedProps.service_id || '',
-                                serviceName: info.event.extendedProps.service_name || 'All Services'
-                            };
-                            
-                            // Check if the function exists before calling it
-                            if (typeof window.selectSlotForEdit === 'function') {
-                                window.selectSlotForEdit(eventData);
-                            } else {
-                                console.error('selectSlotForEdit function is not defined');
-                                // Fallback behavior - just show an alert with the event details
-                                alert(`Event: ${info.event.title}\nDate: ${eventData.date}\nTime: ${eventData.startTime} - ${eventData.endTime}`);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error in eventClick handler:', error);
-                        // Show a user-friendly error message
-                        showNotification('An error occurred while processing this event. Please try again.', 'danger');
-                    }
-                },
-                
-                // Add this event handler inside your calendar initialization
-                dateClick: function(info) {
-                    // Update the selectedDate variable when a day is clicked
-                    selectedDate = info.dateStr;
-                    
-                    // Update the display text in the clear day section if element exists
-                    const selectedDayDisplay = document.getElementById('selectedDayDisplay');
-                    if (selectedDayDisplay) {
-                        selectedDayDisplay.textContent = 'Selected: ' + new Date(selectedDate).toLocaleDateString();
-                    }
-                    
-                    // Update date inputs in both forms
-                    document.querySelectorAll('input[name="availability_date"]').forEach(input => {
-                        input.value = selectedDate;
-                    });
-                    
-                    // Also update the edit form date if it exists
-                    if (document.getElementById('edit_availability_date')) {
-                        document.getElementById('edit_availability_date').value = selectedDate;
-                    }
                 }
-            });
+            },
             
-            // AFTER calendar is initialized, add the event source
-            calendar.addEventSource({
-                url: base_url + "index.php/provider/getProviderSchedules",
-                method: "GET",
-                extraParams: function() {
-                    return {
-                        view: calendar.view.type, // Now this will work because calendar is initialized
-                        consolidated: document.getElementById('consolidatedView')?.checked ? 1 : 0
-                    };
-                },
-                color: '#17a2b8',
-                textColor: 'white',
-                failure: function() {
-                    showNotification("Failed to load provider schedules", "danger");
-                }
-            });
-            
-            // Then render the calendar
-            calendar.render();
-            
-            // Function to update availability
-            function updateAvailability(event) {
-                const eventId = event.id;
-                const eventType = event.extendedProps?.type || 'regular';
-                const startStr = event.start.toISOString();
-                const endStr = event.end ? event.end.toISOString() :
-                            new Date(event.start.getTime() + 30*60000).toISOString();
+            // Add event click handler
+            eventClick: function(info) {
+                // For consolidated events in month view, switch to day view
+                if (info.event.extendedProps && 
+                    (info.event.extendedProps.type === 'consolidated' || 
+                     info.event.extendedProps.type === 'consolidated_recurring')) {
                 
-                const updatedData = {
-                    id: eventId,
-                    type: eventType,
-                    date: startStr.split('T')[0],
-                    start_time: startStr.split('T')[1].substring(0, 5),
-                    end_time: endStr.split('T')[1].substring(0, 5)
+                    // Navigate to day view for this date
+                    calendar.gotoDate(info.event.start);
+                    calendar.changeView('timeGridDay');
+                
+                    // Prevent the default action
+                    info.jsEvent.preventDefault();
+                }
+            },
+            
+            // Add this event handler inside your calendar initialization
+            dateClick: function(info) {
+                // Update the selectedDate variable when a day is clicked
+                selectedDate = info.dateStr;
+            
+                // Update the display text in the clear day section
+                document.getElementById('selectedDayDisplay').textContent = 
+                    'Selected: ' + new Date(selectedDate).toLocaleDateString();
+            
+                // Optionally, also update the date input in the Add Availability panel
+                document.querySelector('input[name="availability_date"]').value = selectedDate;
+            }
+        });
+
+        // AFTER calendar is initialized, add the event source
+        calendar.addEventSource({
+            url: "<?= base_url('index.php/provider/getProviderSchedules') ?>",
+            method: "GET",
+            extraParams: function() {
+                return {
+                    view: calendar.view.type, // Now this will work because calendar is initialized
+                    consolidated: document.getElementById('consolidatedView').checked ? 1 : 0
                 };
-                
-                fetch(base_url + "index.php/provider/updateSchedule", {
-                    method: "POST",
-                    body: JSON.stringify(updatedData),
-                    headers: {
-                        "Content-Type": "application/json",
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification("Updated successfully", "success");
-                    } else {
-                        showNotification("Update failed: " + (data.message || "Unknown error"), "danger");
-                        calendar.refetchEvents();
-                    }
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    showNotification("Update error", "danger");
-                    calendar.refetchEvents();
-                });
+            },
+            color: '#17a2b8',
+            textColor: 'white',
+            failure: function() {
+                showNotification("Failed to load provider schedules", "danger");
             }
-            
-            // Function to clear all availability for a specific day
-            function clearDayAvailability(date) {
-                fetch(base_url + 'index.php/provider/clearDayAvailability', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        date: date
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification(data.message || 'All availability cleared for this date', 'success');
-                        calendar.refetchEvents();
-                    } else {
-                        showNotification(data.message || 'Failed to clear availability', 'danger');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error clearing day availability:', error);
-                    showNotification('Error clearing day availability: ' + error.message, 'danger');
-                });
-            }
-            
-            // Function to show notification
-            function showNotification(message, type = 'info') {
-                // Create notification element
-                const notificationHtml = `
-                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                        ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-                
-                // Check if notification container exists, create if not
-                let notificationContainer = document.getElementById('notification-container');
-                if (!notificationContainer) {
-                    notificationContainer = document.createElement('div');
-                    notificationContainer.id = 'notification-container';
-                    notificationContainer.style.position = 'fixed';
-                    notificationContainer.style.top = '20px';
-                    notificationContainer.style.right = '20px';
-                    notificationContainer.style.zIndex = '9999';
-                    notificationContainer.style.maxWidth = '350px';
-                    document.body.appendChild(notificationContainer);
-                }
-                
-                // Add notification to container
-                const notificationElement = document.createElement('div');
-                notificationElement.innerHTML = notificationHtml;
-                notificationContainer.appendChild(notificationElement);
-                
-                // Auto dismiss after 5 seconds
-                setTimeout(() => {
-                    notificationElement.querySelector('.alert').classList.remove('show');
-                    setTimeout(() => {
-                        if (notificationElement.parentNode) {
-                            notificationElement.parentNode.removeChild(notificationElement);
-                        }
-                    }, 500);
-                }, 5000);
-            }
-            
-            // Toggle consolidated view
-            const consolidatedViewCheckbox = document.getElementById('consolidatedView');
-            if (consolidatedViewCheckbox) {
-                consolidatedViewCheckbox.addEventListener('change', function() {
-                    // Refresh the calendar to apply the new view mode
-                    calendar.refetchEvents();
-                    
-                    // Store preference in localStorage
-                    localStorage.setItem('consolidatedView', this.checked ? '1' : '0');
-                });
-                
-                // Load preference on page load
-                const savedPreference = localStorage.getItem('consolidatedView');
-                if (savedPreference !== null) {
-                    consolidatedViewCheckbox.checked = (savedPreference === '1');
-                }
-            }
-            
-            // Clear Day button handler
-            const clearDayBtn = document.getElementById('clearDayBtn');
-            if (clearDayBtn) {
-                clearDayBtn.addEventListener('click', function() {
-                    if (!selectedDate) {
-                        showNotification('Please select a date first', 'warning');
-                        return;
-                    }
-                    
-                    // Confirm before clearing
-                    if (confirm(`Are you sure you want to clear all availability for ${new Date(selectedDate).toLocaleDateString()}?`)) {
-                        clearDayAvailability(selectedDate);
-                    }
-                });
-            }
-            
-            // Add event listeners for form submissions
-            const addAvailabilityForm = document.getElementById('addAvailabilityForm');
-            if (addAvailabilityForm) {
-                addAvailabilityForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    const formData = new FormData(this);
-                    const jsonData = {};
-                    
-                    formData.forEach((value, key) => {
-                        jsonData[key] = value;
-                    });
-                    
-                    fetch(base_url + 'index.php/provider/addAvailability', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify(jsonData)
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showNotification(data.message || 'Availability added successfully', 'success');
-                            this.reset();
-                            
-                            // Reset form but keep the selected date
-                            if (selectedDate) {
-                                document.querySelector('input[name="availability_date"]').value = selectedDate;
-                            }
-                            
-                            // Refresh calendar
-                            calendar.refetchEvents();
-                            
-                            // Switch back to calendar tab if it exists
-                            const calendarTab = document.getElementById('calendar-tab');
-                            if (calendarTab) {
-                                const tab = bootstrap.Tab.getOrCreateInstance(calendarTab);
-                                tab.show();
-                            }
-                        } else {
-                            showNotification(data.message || 'Failed to add availability', 'danger');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error adding availability:', error);
-                        showNotification('Error adding availability: ' + error.message, 'danger');
-                    });
-                });
-            }
-            
-            // Edit availability form
-            const editAvailabilityForm = document.getElementById('editAvailabilityForm');
-            if (editAvailabilityForm) {
-                editAvailabilityForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    const formData = new FormData(this);
-                    const jsonData = {};
-                    
-                    formData.forEach((value, key) => {
-                        jsonData[key] = value;
-                    });
-                    
-                    fetch(base_url + 'index.php/provider/updateAvailability', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify(jsonData)
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showNotification(data.message || 'Availability updated successfully', 'success');
-                            
-                            // Refresh calendar
-                            calendar.refetchEvents();
-                            
-                            // Switch back to calendar tab
-                            const calendarTab = document.getElementById('calendar-tab');
-                            if (calendarTab) {
-                                const tab = bootstrap.Tab.getOrCreateInstance(calendarTab);
-                                tab.show();
-                            }
-                        } else {
-                            showNotification(data.message || 'Failed to update availability', 'danger');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error updating availability:', error);
-                        showNotification('Error updating availability: ' + error.message, 'danger');
-                    });
-                });
-            }
-            
-            // Delete availability button
-            const deleteAvailabilityBtn = document.getElementById('deleteAvailabilityBtn');
-            if (deleteAvailabilityBtn) {
-                deleteAvailabilityBtn.addEventListener('click', function() {
-                    const availabilityId = document.getElementById('edit_availability_id').value;
-                    
-                    if (!availabilityId) {
-                        showNotification('No availability selected', 'warning');
-                        return;
-                    }
-                    
-                    if (confirm('Are you sure you want to delete this availability?')) {
-                        fetch(base_url + 'index.php/provider/deleteAvailability', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify({
-                                availability_id: availabilityId
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                showNotification(data.message || 'Availability deleted successfully', 'success');
-                                
-                                // Refresh calendar
-                                calendar.refetchEvents();
-                                
-                                // Switch back to calendar tab
-                                const calendarTab = document.getElementById('calendar-tab');
-                                if (calendarTab) {
-                                    const tab = bootstrap.Tab.getOrCreateInstance(calendarTab);
-                                    tab.show();
-                                }
-                            } else {
-                                showNotification(data.message || 'Failed to delete availability', 'danger');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error deleting availability:', error);
-                            showNotification('Error deleting availability: ' + error.message, 'danger');
-                        });
-                    }
-                });
-            }
-            
-            // Add recurring availability form
-            const addRecurringForm = document.getElementById('addRecurringForm');
-            if (addRecurringForm) {
-                addRecurringForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    const formData = new FormData(this);
-                    const jsonData = {};
-                    
-                    // Get all selected days
-                    const selectedDays = [];
-                    document.querySelectorAll('input[name="days[]"]:checked').forEach(checkbox => {
-                        selectedDays.push(checkbox.value);
-                    });
-                    
-                    if (selectedDays.length === 0) {
-                        showNotification('Please select at least one day of the week', 'warning');
-                        return;
-                    }
-                    
-                    formData.forEach((value, key) => {
-                        if (key !== 'days[]') {
-                            jsonData[key] = value;
-                        }
-                    });
-                    
-                    jsonData.days = selectedDays;
-                    
-                    fetch(base_url + 'index.php/provider/addRecurringAvailability', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify(jsonData)
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showNotification(data.message || 'Recurring availability added successfully', 'success');
-                            this.reset();
-                            
-                            // Refresh calendar
-                            calendar.refetchEvents();
-                            
-                            // Switch back to calendar tab
-                            const calendarTab = document.getElementById('calendar-tab');
-                            if (calendarTab) {
-                                const tab = bootstrap.Tab.getOrCreateInstance(calendarTab);
-                                tab.show();
-                            }
-                        } else {
-                            showNotification(data.message || 'Failed to add recurring availability', 'danger');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error adding recurring availability:', error);
-                        showNotification('Error adding recurring availability: ' + error.message, 'danger');
-                    });
-                });
-            }
-            
-            // Hide loading indicator when calendar is fully loaded
-            calendar.on('loading', function(isLoading) {
-                if (!isLoading) {
-                    document.getElementById('calendar-loading')?.classList.add('d-none');
-                }
-            });
-            
-            // Initialize any tooltips
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-            
-            // Handle time input validation and formatting
-            const timeInputs = document.querySelectorAll('input[type="time"]');
-            timeInputs.forEach(input => {
-                input.addEventListener('change', function() {
-                    // Ensure the time is in 24-hour format
-                    const timeValue = this.value;
-                    if (timeValue && !timeValue.match(/^\d{2}:\d{2}$/)) {
-                        // Try to parse and format the time
-                        try {
-                            const [hours, minutes] = timeValue.split(':');
-                            const formattedHours = hours.padStart(2, '0');
-                            const formattedMinutes = minutes.padStart(2, '0');
-                            this.value = `${formattedHours}:${formattedMinutes}`;
-                        } catch (e) {
-                            console.error('Error formatting time:', e);
-                            // Reset to default if parsing fails
-                            this.value = '';
-                        }
-                    }
-                });
-            });
         });
 
-// Function to show notification (needs to be available globally)
-function showNotification(message, type = 'info') {
-    // Create notification element
-    const notificationHtml = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    `;
-    
-    // Check if notification container exists, create if not
-    let notificationContainer = document.getElementById('notification-container');
-    if (!notificationContainer) {
-        notificationContainer = document.createElement('div');
-        notificationContainer.id = 'notification-container';
-        notificationContainer.style.position = 'fixed';
-        notificationContainer.style.top = '20px';
-        notificationContainer.style.right = '20px';
-        notificationContainer.style.zIndex = '9999';
-        notificationContainer.style.maxWidth = '350px';
-        document.body.appendChild(notificationContainer);
-    }
-    
-    // Add notification to container
-    const notificationElement = document.createElement('div');
-    notificationElement.innerHTML = notificationHtml;
-    notificationContainer.appendChild(notificationElement);
-    
-    // Auto dismiss after 5 seconds
-    setTimeout(() => {
-        notificationElement.querySelector('.alert').classList.remove('show');
-        setTimeout(() => {
-            if (notificationElement.parentNode) {
-                notificationElement.parentNode.removeChild(notificationElement);
-            }
-        }, 500);
-    }, 5000);
-}
-
-// Make sure tabs are properly initialized
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Bootstrap tabs
-    const triggerTabList = [].slice.call(document.querySelectorAll('#actionTabs button'));
-    triggerTabList.forEach(function(triggerEl) {
-        const tabTrigger = new bootstrap.Tab(triggerEl);
+        // Then render the calendar
+        calendar.render();
         
-        triggerEl.addEventListener('click', function(event) {
-            event.preventDefault();
-            tabTrigger.show();
-        });
-    });
-    
-    // Modify the recurring form submission handler
-    const recurringForm = document.querySelector('form[action*="processRecurringSchedule"]');
-    if (recurringForm) {
-        recurringForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Create form data object
-            const formData = new FormData(this);
-            
-            // Add a type parameter to indicate this is for work hours
-            formData.append('schedule_type', 'work_hours');
-            
-            // Submit via AJAX
-            fetch(this.action, {
-                method: 'POST',
+        // Function to update availability
+        function updateAvailability(event) {
+            const eventId = event.id;
+            const eventType = event.extendedProps?.type || 'regular';
+            const startStr = event.start.toISOString();
+            const endStr = event.end ? event.end.toISOString() :
+                        new Date(event.start.getTime() + 30*60000).toISOString();
+        
+            const updatedData = {
+                id: eventId,
+                type: eventType,
+                date: startStr.split('T')[0],
+                start_time: startStr.split('T')[1].substring(0, 5),
+                end_time: endStr.split('T')[1].substring(0, 5)
+            };
+        
+            fetch("<?= base_url('index.php/provider/updateSchedule') ?>", {
+                method: "POST",
+                body: JSON.stringify(updatedData),
                 headers: {
+                    "Content-Type": "application/json",
                     'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData
+                }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showNotification(data.message || 'Work hours added successfully!', 'success');
-                    
-                    // Refresh calendar if it exists
-                    if (typeof calendar !== 'undefined' && calendar !== null) {
-                        calendar.refetchEvents();
-                    }
-                    
-                    // Optionally reset the form
-                    this.reset();
+                    showNotification("Updated successfully", "success");
                 } else {
-                    showNotification(data.message || 'Failed to add work hours', 'danger');
+                    showNotification("Update failed: " + (data.message || "Unknown error"), "danger");
+                    calendar.refetchEvents();
                 }
             })
             .catch(error => {
-                console.error('Error adding work hours:', error);
-                showNotification('Error adding work hours: ' + error.message, 'danger');
+                console.error("Error:", error);
+                showNotification("Update error", "danger");
+                calendar.refetchEvents();
             });
-        });
-    }
-
-    
-    // Handle delete slot button
-    const deleteSlotBtn = document.getElementById('deleteSlotBtn');
-    if (deleteSlotBtn) {
-        deleteSlotBtn.addEventListener('click', function() {
-            const availabilityId = document.getElementById('edit_availability_id').value;
-            
-            if (!availabilityId) {
-                showNotification('No availability selected', 'warning');
-                return;
-            }
-            
-            if (confirm('Are you sure you want to delete this availability?')) {
-                fetch(base_url + 'index.php/provider/deleteAvailability', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        availability_id: availabilityId
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification(data.message || 'Availability deleted successfully', 'success');
-                        
-                        // Refresh calendar
-                        if (typeof calendar !== 'undefined') {
-                            calendar.refetchEvents();
-                        }
-                    } else {
-                        showNotification(data.message || 'Failed to delete availability', 'danger');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error deleting availability:', error);
-                    showNotification('Error deleting availability: ' + error.message, 'danger');
-                });
-            }
-        });
-    }
-    
-    // Handle edit availability form
-    const editAvailabilityForm = document.getElementById('editAvailabilityForm');
-    if (editAvailabilityForm) {
-        editAvailabilityForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const jsonData = {};
-            
-            formData.forEach((value, key) => {
-                jsonData[key] = value;
-            });
-            
-            fetch(base_url + 'index.php/provider/updateAvailability', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify(jsonData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification(data.message || 'Availability updated successfully', 'success');
-                    
-                    // Refresh calendar
-                    if (typeof calendar !== 'undefined') {
-                        calendar.refetchEvents();
-                    }
-                } else {
-                    showNotification(data.message || 'Failed to update availability', 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Error updating availability:', error);
-                showNotification('Error updating availability: ' + error.message, 'danger');
-            });
-        });
-    }
-    
-    // Generate slots button
-    const generateSlotsBtn = document.getElementById('generateSlotsBtn');
-    if (generateSlotsBtn) {
-        generateSlotsBtn.addEventListener('click', function() {
-            // Get all selected services
-            const selectedServices = [];
-            document.querySelectorAll('.service-checkbox:checked').forEach(checkbox => {
-                selectedServices.push({
-                    service_id: checkbox.value,
-                    duration: checkbox.dataset.duration
-                });
-            });
-            
-            if (selectedServices.length === 0) {
-                showNotification('Please select at least one service', 'warning');
-                return;
-            }
-            
-            // Get distribution mode and period
-            const distribution = document.getElementById('slotDistribution').value;
-            const period = document.getElementById('generatePeriod').value;
-            
-            // Show loading indicator
-            generateSlotsBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
-            generateSlotsBtn.disabled = true;
-            
-            // Submit request
-            fetch(base_url + 'index.php/provider/generateAvailability', {
+        }
+        
+        // Function to clear all availability for a specific day
+        function clearDayAvailability(date) {
+            fetch('<?= base_url('index.php/provider/clearDayAvailability') ?>', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify({
-                    services: selectedServices,
-                    distribution: distribution,
-                    period: period
+                    date: date
                 })
             })
             .then(response => response.json())
             .then(data => {
-                // Reset button state
-                generateSlotsBtn.innerHTML = '<i class="fas fa-magic me-1"></i>Generate Slots';
-                generateSlotsBtn.disabled = false;
-                
                 if (data.success) {
-                    showNotification(data.message || 'Slots generated successfully', 'success');
-                    
-                    // Refresh calendar
-                    if (typeof calendar !== 'undefined') {
-                        calendar.refetchEvents();
-                    }
+                    showNotification(data.message || 'All availability cleared for this date', 'success');
+                    calendar.refetchEvents();
                 } else {
-                    showNotification(data.message || 'Failed to generate slots', 'danger');
+                    showNotification(data.message || 'Failed to clear availability', 'danger');
                 }
             })
             .catch(error => {
-                // Reset button state
-                generateSlotsBtn.innerHTML = '<i class="fas fa-magic me-1"></i>Generate Slots';
-                generateSlotsBtn.disabled = false;
-                
-                console.error('Error generating slots:', error);
-                showNotification('Error generating slots: ' + error.message, 'danger');
+                console.error('Error:', error);
+                showNotification('Error clearing day availability', 'danger');
             });
+        }
+        
+        // Function to show notification
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notificationHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+        
+            // Check if notification container exists, create if not
+            let notificationContainer = document.getElementById('notification-container');
+            if (!notificationContainer) {
+                notificationContainer = document.createElement('div');
+                notificationContainer.id = 'notification-container';
+                notificationContainer.style.position = 'fixed';
+                notificationContainer.style.top = '20px';
+                notificationContainer.style.right = '20px';
+                notificationContainer.style.zIndex = '9999';
+                notificationContainer.style.maxWidth = '350px';
+                document.body.appendChild(notificationContainer);
+            }
+        
+            // Add notification to container
+            const notificationElement = document.createElement('div');
+            notificationElement.innerHTML = notificationHtml;
+            notificationContainer.appendChild(notificationElement);
+        
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                notificationElement.querySelector('.alert').classList.remove('show');
+                setTimeout(() => {
+                    if (notificationElement.parentNode) {
+                        notificationElement.parentNode.removeChild(notificationElement);
+                    }
+                }, 500);
+            }, 5000);
+        }
+        
+        // Toggle consolidated view
+        document.getElementById('consolidatedView').addEventListener('change', function() {
+            // Refresh the calendar to apply the new view mode
+            calendar.refetchEvents();
+        
+            // Store preference in localStorage
+            localStorage.setItem('consolidatedView', this.checked ? '1' : '0');
         });
-    }
-    
-    // Delete range form
-    const deleteRangeForm = document.getElementById('deleteRangeForm');
-    if (deleteRangeForm) {
-        deleteRangeForm.addEventListener('submit', function(e) {
+        
+        // Load preference on page load
+        const savedPreference = localStorage.getItem('consolidatedView');
+        if (savedPreference !== null) {
+            document.getElementById('consolidatedView').checked = (savedPreference === '1');
+        }
+        
+        // Clear Day button handler - This now gets the currently selected date from our tracking variable
+        document.getElementById('clearDayBtn').addEventListener('click', function() {
+            // Use the selected date or fall back to current displayed date
+            const dateToUse = selectedDate || calendar.getDate().toISOString().split('T')[0];
+        
+            if (!dateToUse) {
+                showNotification('Please select a day first by clicking on the calendar', 'warning');
+                return;
+            }
+        
+            if (confirm(`Are you sure you want to delete ALL availability for ${dateToUse}?`)) {
+                clearDayAvailability(dateToUse);
+            }
+        });
+        
+        // Form submission handlers
+        document.querySelectorAll('form').forEach(form => {
+            const formAction = form.getAttribute('action') || '';
+            if (formAction.includes('processUpdateAvailability') || formAction.includes('processRecurringSchedule')) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const loadingBtn = this.querySelector('button[type="submit"]');
+                    let originalBtnText = "";
+                
+                    if (loadingBtn) {
+                        originalBtnText = loadingBtn.innerHTML;
+                        loadingBtn.disabled = true;
+                        loadingBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+                    }
+                
+                    const formData = new FormData(this);
+                
+                    // Add recurring schedule options if relevant
+                    if (formAction.includes('processRecurringSchedule')) {
+                        const repeatWeekly = this.querySelector('#repeat_weekly')?.checked ? '1' : '0';
+                        const repeatUntil = this.querySelector('#repeat_until')?.value || '';
+                        formData.append('repeat_weekly', repeatWeekly);
+                        formData.append('repeat_until', repeatUntil);
+                    }
+                
+                    fetch(formAction, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification(data.message || 'Schedule updated successfully', 'success');
+                        
+                            // Reset form if desired
+                            if (formAction.includes('processUpdateAvailability')) {
+                                this.reset();
+                            }
+                        
+                            // Refresh the calendar with new data
+                            calendar.refetchEvents();
+                        } else {
+                            showNotification(data.message || 'Failed to update schedule', 'danger');
+                        }
+                    
+                        // Restore button state
+                        if (loadingBtn) {
+                            loadingBtn.disabled = false;
+                            loadingBtn.innerHTML = originalBtnText;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Error updating schedule', 'danger');
+                    
+                        // Restore button state
+                        if (loadingBtn) {
+                            loadingBtn.disabled = false;
+                            loadingBtn.innerHTML = originalBtnText;
+                        }
+                    });
+                });
+            }
+        });
+        
+        // Delete Range form handler
+        document.getElementById('deleteRangeForm')?.addEventListener('submit', function(e) {
             e.preventDefault();
-            
+        
             const startDate = document.getElementById('delete_start_date').value;
             const endDate = document.getElementById('delete_end_date').value;
-            
+        
             if (!startDate || !endDate) {
                 showNotification('Please select both start and end dates', 'warning');
                 return;
             }
+        
+            // Validate date range
+            if (new Date(startDate) > new Date(endDate)) {
+                showNotification('Start date must be before end date', 'warning');
+                return;
+            }
+        
+            if (confirm(`Are you sure you want to delete ALL availability between ${startDate} and ${endDate}? This cannot be undone.`)) {
+                const loadingBtn = this.querySelector('button[type="submit"]');
+                const originalBtnText = loadingBtn.innerHTML;
+                loadingBtn.disabled = true;
+                loadingBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
             
-            if (confirm(`Are you sure you want to delete all availability from ${startDate} to ${endDate}?`)) {
-                fetch(base_url + 'index.php/provider/deleteRangeAvailability', {
+                fetch('<?= base_url('index.php/provider/deleteAvailabilityRange') ?>', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1794,28 +1135,148 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        showNotification(data.message || 'Availability range deleted successfully', 'success');
-                        
-                        // Refresh calendar
-                        if (typeof calendar !== 'undefined') {
-                            calendar.refetchEvents();
-                        }
-                        
-                        // Reset form
+                        showNotification(data.message || `Successfully deleted availability between ${startDate} and ${endDate}`, 'success');
+                        calendar.refetchEvents();
                         this.reset();
                     } else {
                         showNotification(data.message || 'Failed to delete availability range', 'danger');
                     }
+                
+                    loadingBtn.disabled = false;
+                    loadingBtn.innerHTML = originalBtnText;
                 })
                 .catch(error => {
-                    console.error('Error deleting availability range:', error);
-                    showNotification('Error deleting availability range: ' + error.message, 'danger');
+                    console.error('Error:', error);
+                    showNotification('Error deleting availability range', 'danger');
+                
+                    loadingBtn.disabled = false;
+                    loadingBtn.innerHTML = originalBtnText;
                 });
             }
         });
-    }
+        
+        // Generate Slots button handler
+        $('#generateSlotsBtn').on('click', function() {
+            // Get selected services
+            const selectedServices = [];
+            $('.service-checkbox:checked').each(function() {
+                selectedServices.push({
+                    id: $(this).val(),
+                    duration: $(this).data('duration')
+                });
+            });
+        
+            if (selectedServices.length === 0) {
+                alert('Please select at least one service to generate slots for.');
+                return;
+            }
+        
+            const distribution = $('#slotDistribution').val();
+            const period = $('#generatePeriod').val();
+        
+            // Show loading indicator
+            $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...');
+            $(this).prop('disabled', true);
+        
+            console.log('Sending request with:', {
+                services: selectedServices,
+                distribution: distribution,
+                period: period
+            });
+        
+            // Build a proper URL - get the base part of the current URL
+            let baseUrl = window.location.href.split('/provider/')[0];
+        
+            // Call backend to generate slots
+            $.ajax({
+                url: baseUrl + '/provider/generateServiceSlots',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    services: JSON.stringify(selectedServices),
+                    distribution: distribution,
+                    period: period
+                },
+                success: function(response) {
+                    console.log('Response received:', response);
+            
+                    if (response && response.success === true) {
+                        alert('Successfully generated ' + response.count + ' availability slots.');
+                        // Refresh calendar
+                        if (typeof calendar !== 'undefined') {
+                            calendar.refetchEvents();
+                        }
+                    } else {
+                        const errorMsg = response && response.message ? response.message : 'Server returned an invalid response';
+                        alert('Error: ' + errorMsg);
+                        console.error('Error response:', response);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', status, error);
+                    console.error('Response text:', xhr.responseText.substring(0, 500) + '...'); // Show just the start
+            
+                    alert('Error: Could not connect to server. Check console for details.');
+                },
+                complete: function() {
+                    // Restore button
+                    $('#generateSlotsBtn').html('<i class="fas fa-magic me-1"></i>Generate Slots');
+                    $('#generateSlotsBtn').prop('disabled', false);
+                }
+            });
+        });
+        
+        // Initialize with today's date in forms
+        const today = new Date().toISOString().split('T')[0];
+        document.querySelector('input[name="availability_date"]').value = today;
+        document.getElementById('delete_start_date').value = today;
+        
+        // Set end date to 2 weeks from now by default
+        const twoWeeksFromNow = new Date();
+        twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+        document.getElementById('delete_end_date').value = twoWeeksFromNow.toISOString().split('T')[0];
+        
+        // Tab switching handler to update form data based on selected tab
+        document.querySelectorAll('#actionTabs button[data-bs-toggle="tab"]').forEach(function(button) {
+            button.addEventListener('show.bs.tab', function(event) {
+                // If switching to "Add" tab and a date is selected, set the date field
+                if (event.target.id === 'add-tab' && selectedDate) {
+                    document.querySelector('input[name="availability_date"]').value = selectedDate;
+                }
+            });
+        });
+        
+        // Hide loading indicator when complete
+        document.getElementById('calendar-loading')?.classList.add('d-none');
+    });
+</script>
+
+<script>
+// Optional: Add real-time validation for time fields
+document.querySelectorAll('input[type="time"]').forEach(function(input) {
+    input.addEventListener('change', function() {
+        // If this is start time and we also have an end time input as next sibling
+        if (this.name === 'start_time' && this.form.querySelector('input[name="end_time"]')) {
+            const startTime = this.value;
+            const endTimeInput = this.form.querySelector('input[name="end_time"]');
+            const endTime = endTimeInput.value;
+            
+            // If end time is set and is before start time
+            if (endTime && endTime <= startTime) {
+                // Calculate a default end time (1 hour later)
+                const startParts = startTime.split(':');
+                let endHour = parseInt(startParts[0]) + 1;
+                if (endHour > 23) endHour = 23;
+                
+                const newEndTime = endHour.toString().padStart(2, '0') + ':' + startParts[1];
+                endTimeInput.value = newEndTime;
+                
+                showNotification('End time automatically adjusted to be after start time', 'info');
+            }
+        }
+    });
 });
 </script>
 
-
-    <?php include VIEW_PATH . '/partials/footer.php'; ?>
+<?php include VIEW_PATH . '/partials/footer.php'; ?>
+     
