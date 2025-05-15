@@ -42,6 +42,15 @@ class Appointment {
 
     public function isSlotAvailable($provider_id, $appointment_date, $start_time, $end_time, $exclude_appointment_id = null) {
         try {
+            // NEW CODE: Check if appointment time is in the past
+            $now = new DateTime();
+            $appointmentDateTime = new DateTime($appointment_date . ' ' . $start_time);
+            if ($appointmentDateTime <= $now) {
+                error_log("Attempted to check availability for past time: {$appointment_date} {$start_time}");
+                return false;
+            }
+            
+            // Rest of the existing method remains unchanged
             $query = "
                 SELECT COUNT(*) as count FROM appointments
                 WHERE provider_id = ? AND appointment_date = ?
