@@ -258,9 +258,66 @@ class ApiController {
                 ];
             }
 
-            // Return JSON response
+            // Replace in your getAvailableSlots() method
+            // Add this BEFORE returning the events array
+            $finalEvents = [];
+
+            // Get all existing appointments for this provider in this date range
+            $bookedQuery = "
+                SELECT appointment_date, start_time, end_time, status 
+                FROM appointments
+                WHERE provider_id = ? 
+                AND appointment_date BETWEEN ? AND ?
+                AND status IN ('scheduled', 'confirmed') 
+            ";
+            $stmt = $this->db->prepare($bookedQuery);
+            $stmt->bind_param("iss", $provider_id, $start_date, $end_date);
+            $stmt->execute();
+            $bookedResult = $stmt->get_result();
+
+            // Build an array of booked slots
+            $bookedSlots = [];
+            while ($booked = $bookedResult->fetch_assoc()) {
+                $date = $booked['appointment_date'];
+                if (!isset($bookedSlots[$date])) {
+                    $bookedSlots[$date] = [];
+                }
+                $bookedSlots[$date][] = [
+                    'start' => $booked['start_time'],
+                    'end' => $booked['end_time']
+                ];
+            }
+
+            // Filter out slots that overlap with existing appointments
+            foreach ($events as $event) {
+                $eventDate = substr($event['start'], 0, 10);
+                $eventStart = substr($event['start'], 11, 8);
+                $eventEnd = substr($event['end'], 11, 8);
+                
+                $isAvailable = true;
+                
+                // Check if slot conflicts with any appointment
+                if (isset($bookedSlots[$eventDate])) {
+                    foreach ($bookedSlots[$eventDate] as $booked) {
+                        // If there's any overlap, the slot is not available
+                        if (!(
+                            $eventEnd <= $booked['start'] || 
+                            $eventStart >= $booked['end']
+                        )) {
+                            $isAvailable = false;
+                            break;
+                        }
+                    }
+                }
+                
+                if ($isAvailable) {
+                    $finalEvents[] = $event;
+                }
+            }
+
+            // Return filtered events instead of all events
             header('Content-Type: application/json');
-            echo json_encode($slots);
+            echo json_encode($finalEvents);
             
         } catch (Exception $e) {
             error_log("Error getting available slots: " . $e->getMessage());
@@ -503,17 +560,37 @@ class ApiController {
      * Helper method to check if a slot is already booked
      */
     private function isSlotBooked($provider_id, $date, $start_time) {
+        // Get service duration (or use default 30 minutes)
+        $duration = 30; // Default
+        
+        // Calculate end time
+        $start_datetime = new DateTime("$date $start_time");
+        $end_datetime = clone $start_datetime;
+        $end_datetime->modify("+{$duration} minutes");
+        $end_time = $end_datetime->format('H:i:s');
+        
+        // Query for any appointments that overlap with this time slot
         $query = "
             SELECT COUNT(*) as count
             FROM appointments
             WHERE provider_id = ?
             AND appointment_date = ?
-            AND start_time = ?
             AND status != 'canceled'
+            AND (
+                (start_time <= ? AND end_time > ?) OR  /* Appointment starts before and ends after our start */
+                (start_time < ? AND end_time >= ?) OR  /* Appointment starts before and ends after our end */
+                (start_time >= ? AND start_time < ?)    /* Appointment starts during our slot */
+            )
         ";
         
         $stmt = $this->db->prepare($query);
-        $stmt->bind_param("iss", $provider_id, $date, $start_time);
+        $stmt->bind_param("isssssss", 
+            $provider_id, 
+            $date, 
+            $start_time, $start_time,  // For first condition
+            $end_time, $end_time,      // For second condition
+            $start_time, $end_time     // For third condition
+        );
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
         

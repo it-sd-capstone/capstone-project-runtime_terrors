@@ -41,7 +41,14 @@ class ProviderController {
     public function index() {
         // Make sure we have a valid session with a provider ID
         if (!isset($_SESSION['user_id'])) {
-            redirect('auth/login');
+            
+        // Added by notification fixer
+        $recentAppointments = $this->appointmentModel->getRecentAppointmentsByProvider($_SESSION['user_id']);
+        // Notify about new appointments if any were created recently
+        if (!empty($recentAppointments)) {
+            set_flash_message('info', "You have new appointment bookings", 'provider_dashboard');
+        }
+redirect('auth/login');
             return;
         }
         
@@ -420,14 +427,14 @@ class ProviderController {
     public function editProviderService() {
         // Check if user is logged in and is a provider
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
-            $_SESSION['error'] = "Unauthorized access";
+set_flash_message('error', "Unauthorized access", 'auth_login');
             redirect('auth');
             return;
         }
         
         // Verify CSRF token if implemented
         if (function_exists('verify_csrf_token') && !verify_csrf_token()) {
-            $_SESSION['error'] = "Invalid form submission";
+set_flash_message('error', "Invalid form submission", 'provider_services');
             redirect('provider/services');
             return;
         }
@@ -460,12 +467,12 @@ class ProviderController {
             );
             
             if ($success) {
-                $_SESSION['success'] = "Service updated successfully";
+set_flash_message('success', "Service updated successfully", 'provider_services');
             } else {
-                $_SESSION['error'] = "Failed to update service";
+set_flash_message('error', "Failed to update service", 'provider_services');
             }
         } else {
-            $_SESSION['error'] = "Invalid request";
+set_flash_message('error', "Invalid request", 'provider_services');
         }
         
         // Redirect back to the services page
@@ -477,14 +484,14 @@ class ProviderController {
     public function deleteProviderService() {
         // Check if user is logged in and is a provider
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
-            $_SESSION['error'] = "Unauthorized access";
+set_flash_message('error', "Unauthorized access", 'auth_login');
             redirect('auth');
             return;
         }
         
         // Verify CSRF token if implemented
         if (function_exists('verify_csrf_token') && !verify_csrf_token()) {
-            $_SESSION['error'] = "Invalid form submission";
+set_flash_message('error', "Invalid form submission", 'provider_services');
             redirect('provider/services');
             return;
         }
@@ -506,12 +513,12 @@ class ProviderController {
             $success = $this->providerModel->deleteProviderService($provider_service_id, $provider_id);
             
             if ($success) {
-                $_SESSION['success'] = "Service removed from your offerings";
+set_flash_message('success', "Service removed from your offerings", 'provider_services');
             } else {
-                $_SESSION['error'] = "Failed to remove service";
+set_flash_message('error', "Failed to remove service", 'provider_services');
             }
         } else {
-            $_SESSION['error'] = "Invalid request";
+set_flash_message('error', "Invalid request", 'provider_services');
         }
         
         // Redirect back to the services page
@@ -544,7 +551,7 @@ class ProviderController {
         // Validate required fields
         if (empty($service_name)) {
             error_log("Service name is empty, aborting");
-            $_SESSION['error'] = "Service name is required";
+set_flash_message('error', "Service name is required", 'provider_services');
             header('Location: ' . base_url('index.php/provider/services'));
             exit;
         }
@@ -601,9 +608,9 @@ class ProviderController {
         
         // Set response message
         if ($success) {
-            $_SESSION['success'] = $service_id ? "Service created successfully!" : "Service updated successfully!";
+set_flash_message('success', $service_id ? "Service created successfully!" : "Service updated successfully!", 'provider_services');
         } else {
-            $_SESSION['error'] = "Failed to " . ($service_id ? "update" : "create") . " service. Please try again.";
+set_flash_message('error', "Failed to " . ($service_id ? "update" : "create") . " service. Please try again.", 'provider_services');
         }
         
         // Redirect back to the services page
@@ -971,7 +978,7 @@ class ProviderController {
             $end_date = $repeat_until ?: date('Y-m-d', strtotime('+1 month'));
 
             if (!$provider_id || $day_of_week === null || !$start_time || !$end_time) {
-                $_SESSION['error'] = "All required fields must be filled.";
+set_flash_message('error', "All required fields must be filled.", 'provider_schedule');
                 header("Location: " . base_url("index.php/provider/schedule"));
                 exit;
             }
@@ -1156,7 +1163,7 @@ class ProviderController {
     public function services() {
         // Check if user is logged in
         if (!isset($_SESSION['user_id'])) {
-            $_SESSION['error'] = "You must be logged in to access this page";
+set_flash_message('error', "You must be logged in to access this page", 'auth_login');
             header('Location: ' . base_url('index.php/auth'));
             exit;
         }
@@ -1168,7 +1175,7 @@ class ProviderController {
         // If admin is managing, verify they are actually an admin
         if ($isAdminManaging && (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin')) {
             unset($_SESSION['admin_managing_provider_id']);
-            $_SESSION['error'] = "You don't have permission to manage provider services";
+set_flash_message('error', "You don't have permission to manage provider services", 'provider_services');
             header('Location: ' . base_url('index.php/admin'));
             exit;
         }
@@ -1177,7 +1184,7 @@ class ProviderController {
         $provider = $this->userModel->getUserById($providerId);
 
         if (!$provider || $provider['role'] !== 'provider') {
-            $_SESSION['error'] = "Provider not found";
+set_flash_message('error', "Provider not found", 'admin_providers');
             if ($isAdminManaging) {
                 unset($_SESSION['admin_managing_provider_id']);
                 header('Location: ' . base_url('index.php/admin/providers'));
@@ -1225,14 +1232,14 @@ class ProviderController {
 {
     // Ensure user is logged in and is a provider
     if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
-        $_SESSION['error'] = "Unauthorized access";
+set_flash_message('error', "Unauthorized access", 'auth_login');
         header('Location: ' . base_url('index.php/auth'));
         exit;
     }
 
     // Only allow POST
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        $_SESSION['error'] = "Invalid request method";
+set_flash_message('error', "Invalid request method", 'global');
         header('Location: ' . base_url('index.php/provider/notifications'));
         exit;
     }
@@ -1260,13 +1267,13 @@ class ProviderController {
         $stmt->close();
 
         if ($success) {
-            $_SESSION['success'] = "Notification settings updated successfully.";
+set_flash_message('success', "Notification settings updated successfully.", 'global');
         } else {
-            $_SESSION['error'] = "Failed to update notification settings.";
+set_flash_message('error', "Failed to update notification settings.", 'global');
         }
     } catch (Exception $e) {
         error_log("Error updating notification settings: " . $e->getMessage());
-        $_SESSION['error'] = "Database error: " . $e->getMessage();
+set_flash_message('error', "Database error: " . $e->getMessage(), 'global');
     }
 
     header('Location: ' . base_url('index.php/provider/notifications'));
@@ -1278,7 +1285,7 @@ class ProviderController {
     public function notifications() {
         // Check if user is logged in and is a provider
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
-            $_SESSION['error'] = "You must be logged in as a provider to view notifications";
+set_flash_message('error', "You must be logged in as a provider to view notifications", 'auth_login');
             header('Location: ' . base_url('index.php/auth'));
             exit;
         }
@@ -1621,7 +1628,7 @@ class ProviderController {
         
         if (!$provider) {
             // Handle case where provider data couldn't be found
-            $_SESSION['error'] = "Could not retrieve your profile information. Please contact support.";
+set_flash_message('error', "Could not retrieve your profile information. Please contact support.", 'provider_profile');
             base_url('provider/index');
         }
         
@@ -1836,7 +1843,14 @@ class ProviderController {
     public function updateAppointmentStatus($appointment_id, $status) {
         // Check if provider is logged in
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
-            // Instead of redirect('auth/login')
+            // Instead of 
+        // Added by notification fixer
+        $success = true;
+        if ($success) {
+            set_flash_message('success', "Appointment status updated successfully", 'provider_appointments');
+        } else {
+            set_flash_message('error', "Failed to update appointment status", 'provider_appointments');
+        }
             header('Location: ' . base_url('index.php/auth/login'));
             exit;
         }
@@ -1932,7 +1946,7 @@ class ProviderController {
                 echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
                 exit;
             }
-            $_SESSION['error'] = 'Unauthorized access';
+set_flash_message('error', 'Unauthorized access', 'auth_login');
             redirect('auth/login');
         }
         
@@ -1972,7 +1986,7 @@ class ProviderController {
                 echo json_encode(['success' => false, 'message' => implode('<br>', $errors)]);
                 exit;
             }
-            $_SESSION['error'] = implode('<br>', $errors);
+set_flash_message('error', implode('<br>', $errors), 'provider_profile');
             redirect('provider/profile');
             return;
         }
@@ -1991,7 +2005,7 @@ class ProviderController {
                 echo json_encode(['success' => false, 'message' => 'Required fields cannot be empty']);
                 exit;
             }
-            $_SESSION['error'] = 'Required fields cannot be empty';
+set_flash_message('error', 'Required fields cannot be empty', 'provider_profile');
             redirect('provider/profile');
         }
         
@@ -2004,7 +2018,7 @@ class ProviderController {
                 echo json_encode(['success' => false, 'message' => $userResult['error']]);
                 exit;
             }
-            $_SESSION['error'] = $userResult['error'];
+set_flash_message('error', $userResult['error'], 'provider_profile');
             redirect('provider/profile');
         }
         
@@ -2019,13 +2033,13 @@ class ProviderController {
                 echo json_encode(['success' => true]);
                 exit;
             }
-            $_SESSION['success'] = 'Profile updated successfully';
+set_flash_message('success', 'Profile updated successfully', 'provider_profile');
         } else {
             if ($this->isAjaxRequest()) {
                 echo json_encode(['success' => false, 'message' => 'Failed to update profile']);
                 exit;
             }
-            $_SESSION['error'] = 'Failed to update profile';
+set_flash_message('error', 'Failed to update profile', 'provider_profile');
         }
         
         header('Location: ' . base_url('index.php/provider/profile'));
@@ -2036,7 +2050,7 @@ class ProviderController {
  */
 public function deactivateAccount() {
     if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
-        $_SESSION['error'] = "Unauthorized access";
+set_flash_message('error', "Unauthorized access", 'auth_login');
         header('Location: ' . base_url('index.php/auth'));
         exit;
     }
@@ -2045,12 +2059,12 @@ public function deactivateAccount() {
     $success = $this->providerModel->setActiveStatus($provider_id, 0);
 
     if ($success) {
-        $_SESSION['success'] = "Your account has been deactivated.";
+set_flash_message('success', "Your account has been deactivated.", 'auth_login');
         // Optionally, log the user out after deactivation
         session_destroy();
         header('Location: ' . base_url('index.php/auth/login?success=Account deactivated'));
     } else {
-        $_SESSION['error'] = "Failed to deactivate account. Please try again.";
+set_flash_message('error', "Failed to deactivate account. Please try again.", 'provider_profile');
         header('Location: ' . base_url('index.php/provider/profile'));
     }
     exit;
@@ -2062,7 +2076,7 @@ public function deactivateAccount() {
  */
 public function setAcceptingNewPatients($accepting = 0) {
     if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
-        $_SESSION['error'] = "Unauthorized access";
+set_flash_message('error', "Unauthorized access", 'auth_login');
         header('Location: ' . base_url('index.php/auth'));
         exit;
     }
@@ -2077,7 +2091,7 @@ public function setAcceptingNewPatients($accepting = 0) {
             ? "You are now accepting new patients."
             : "You have stopped accepting new patients.";
     } else {
-        $_SESSION['error'] = "Failed to update accepting new patients status.";
+set_flash_message('error', "Failed to update accepting new patients status.", 'provider_profile');
     }
     header('Location: ' . base_url('index.php/provider/profile'));
     exit;
@@ -2090,5 +2104,66 @@ public function setAcceptingNewPatients($accepting = 0) {
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
     }
+
+    /**
+     * Cancel Appointment
+     */
+    public function cancelAppointment($appointment_id) {
+        // Get appointment ID from request
+        $appointment_id = $_POST['appointment_id'] ?? $appointment_id;
+        $success = $this->appointmentModel->cancelAppointment($appointment_id, $_SESSION['user_id']);
+    
+        if ($success) {
+            set_flash_message('success', "Appointment cancelled successfully", 'provider_appointments');
+        } else {
+            set_flash_message('error', "Failed to cancel appointment", 'provider_appointments');
+        }
+}
+
+    /**
+     * Reschedule Appointment
+     */
+    public function rescheduleAppointment($appointment_id, $new_datetime = null) {
+        // Get appointment ID and new time from request
+        $appointment_id = $_POST['appointment_id'] ?? $appointment_id;
+        $new_datetime = $_POST['new_datetime'] ?? $new_datetime;
+        $success = $this->appointmentModel->rescheduleAppointment($appointment_id, $new_datetime);
+    
+        if ($success) {
+            set_flash_message('success', "Appointment rescheduled successfully", 'provider_appointments');
+        } else {
+            set_flash_message('error', "Failed to reschedule appointment", 'provider_appointments');
+        }
+}
+
+    /**
+     * Update Availability
+     */
+    public function updateAvailability() {
+        // Update provider availability
+        $provider_id = $_SESSION['user_id'];
+        $availability_data = $_POST['availability'] ?? [];
+        $result = $this->providerModel->updateAvailability($provider_id, $availability_data);
+    
+        if ($result) {
+            set_flash_message('success', "Your availability has been updated", 'provider_schedule');
+        } else {
+            set_flash_message('error', "Failed to update your availability", 'provider_schedule');
+        }
+}
+
+    /**
+     * Book Time Slot
+     */
+    public function bookTimeSlot($provider_id, $date, $start_time, $end_time) {
+        // Book a new time slot
+        $provider_id = $_SESSION['user_id'];
+        $date = $_POST['date'] ?? $date;
+        $start_time = $_POST['start_time'] ?? $start_time;
+        $end_time = $_POST['end_time'] ?? $end_time;
+        $success = $this->providerModel->addTimeSlot($provider_id, $date, $start_time, $end_time);
+    
+        set_flash_message('success', "Time slot booked successfully", 'provider_schedule');
+}
 }
 ?>

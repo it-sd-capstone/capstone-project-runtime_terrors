@@ -299,27 +299,36 @@ class User {
     
     /**
      * Update last login timestamp
-     * 
+     *
      * @param int $userId User ID
-     * @return bool Success flag
+     * @return array|bool Array with success status and timestamp, or false on failure
      */
-    private function updateLastLogin($userId) {
+    public function updateLastLogin($userId) {
         try {
+            // Get current timestamp in MySQL format
+            $currentTime = date('Y-m-d H:i:s');
+            
             if ($this->db instanceof mysqli) {
-                $stmt = $this->db->prepare("UPDATE users SET last_login = NOW() WHERE user_id = ?");
-                $stmt->bind_param("i", $userId);
-                return $stmt->execute();
+                $stmt = $this->db->prepare("UPDATE users SET last_login = ? WHERE user_id = ?");
+                $stmt->bind_param("si", $currentTime, $userId);
+                $success = $stmt->execute();
             } elseif ($this->db instanceof PDO) {
-                $stmt = $this->db->prepare("UPDATE users SET last_login = NOW() WHERE user_id = :id");
+                $stmt = $this->db->prepare("UPDATE users SET last_login = :time WHERE user_id = :id");
+                $stmt->bindParam(':time', $currentTime, PDO::PARAM_STR);
                 $stmt->bindParam(':id', $userId, PDO::PARAM_INT);
-                return $stmt->execute();
+                $success = $stmt->execute();
+            } else {
+                return false;
             }
-            return false;
+            
+            // Return both success status and the timestamp
+            return $success ? ['success' => true, 'timestamp' => $currentTime] : false;
         } catch (Exception $e) {
             error_log("Failed to update last login: " . $e->getMessage());
             return false;
         }
     }
+
     
     /**
      * Register a new user with secure password hashing and validation
@@ -651,7 +660,18 @@ class User {
             throw $e;
         }
     }
+    /**
+     * Get the last login timestamp for a user
+     */
+    public function getLastLoginTime($userId) {
+        $sql = "SELECT last_login FROM users WHERE id = ?";
+        $result = $this->db->query($sql, [$userId]);
+        $user = $result->getRowArray();
+        
+        return $user ? $user['last_login'] : null;
+    }
     
+
     /**
      * Check if email is taken by another user
      * 

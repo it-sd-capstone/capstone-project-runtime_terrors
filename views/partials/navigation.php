@@ -62,7 +62,32 @@ $is_home_page = !empty($current_url) && (strpos($current_url, 'index.php/home') 
             
             <ul class="navbar-nav ms-auto">
                 <?php if ($isLoggedIn): ?>
-                    <li class="nav-item dropdown">
+                    <?php if ($isLoggedIn): ?>
+    <li class="nav-item dropdown me-2">
+        <a class="nav-link position-relative" href="<?= base_url('index.php/' . $userRole . '/notifications') ?>">
+            <i class="bi bi-bell fs-5"></i>
+            <?php
+            // Get unread notification count
+            $unreadCount = 0;
+            $query = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
+            $stmt = $db->prepare($query);
+            $stmt->bind_param("i", $_SESSION['user_id']);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                $unreadCount = $row['count'];
+            }
+            ?>
+            <?php if ($unreadCount > 0): ?>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    <?= $unreadCount ?>
+                    <span class="visually-hidden">unread notifications</span>
+                </span>
+            <?php endif; ?>
+        </a>
+    </li>
+<?php endif; ?>
+<li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="badge bg-<?php 
                                 echo $userRole === 'admin' ? 'danger' : 

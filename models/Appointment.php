@@ -817,23 +817,22 @@ public function getByProvider($provider_id) {
         }
     }
 
-    public function getBookedSlotsCount() {
+   public function getBookedSlotsCount() {
         try {
             $stmt = $this->db->prepare("
-                SELECT COUNT(DISTINCT a.appointment_id) as count 
-                FROM appointments a
-                JOIN provider_availability pa ON 
-                    a.provider_id = pa.provider_id AND
-                    a.appointment_date = pa.available_date AND
-                    a.start_time >= pa.start_time AND
-                    a.end_time <= pa.end_time
-                WHERE a.status NOT IN ('canceled', 'no_show')
+                SELECT COUNT(DISTINCT appointment_id) as count
+                FROM appointments
+                WHERE status NOT IN ('canceled', 'no_show')
+                AND appointment_date >= CURRENT_DATE()
             ");
+            
             $stmt->execute();
             $result = $stmt->get_result();
+            
             if ($row = $result->fetch_assoc()) {
-                return $row['count'];
+                return (int)$row['count'];
             }
+            
             return 0;
         } catch (Exception $e) {
             error_log("Database error in getBookedSlotsCount: " . $e->getMessage());

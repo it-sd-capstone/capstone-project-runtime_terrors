@@ -53,7 +53,12 @@ class PatientController {
         // This only affects this page and doesn't modify the original function
         $currentDate = date('Y-m-d');
         $upcomingAppointments = array_filter($upcomingAppointments, function($appointment) use ($currentDate) {
-            return $appointment['appointment_date'] >= $currentDate;
+            
+        // Add appointment reminder notification if there's an upcoming appointment
+        if (!empty($upcomingAppointments)) {
+            set_flash_message('info', "Reminder: You have an upcoming appointment", 'patient_dashboard');
+        }
+return $appointment['appointment_date'] >= $currentDate;
         });
         
         include VIEW_PATH . '/patient/index.php';
@@ -83,7 +88,7 @@ class PatientController {
                     if ($provider_id && $appointment_date && $appointment_time) {
                         error_log("Attempting to book appointment: provider=$provider_id, date=$appointment_date, time=$appointment_time");
                         if (!$this->appointmentModel->isSlotAvailable($provider_id, $appointment_date, $appointment_time)) {
-                            $_SESSION['error'] = "This time slot is unavailable.";
+set_flash_message('error', "This time slot is unavailable.", 'global');
                             header("Location: " . base_url("index.php/patient_services?action=book"));
                             exit;
                         }
@@ -111,7 +116,7 @@ class PatientController {
                 case 'reschedule':
                     if ($appointment_id && $new_date && $new_time) {
                         if (!$this->appointmentModel->isSlotAvailable($provider_id, $new_date, $new_time)) {
-                            $_SESSION['error'] = "Selected time slot is unavailable. Please choose another time.";
+set_flash_message('error', "Selected time slot is unavailable. Please choose another time.", 'global');
                             header("Location: " . base_url("index.php/patient_services?action=reschedule&appointment_id=$appointment_id"));
                             exit;
                         }
@@ -134,7 +139,7 @@ class PatientController {
     public function view_provider($id = null) {
         // Check if ID is provided
         if (!$id) {
-            $_SESSION['error'] = 'Provider ID is required';
+set_flash_message('error', 'Provider ID is required', 'global');
             header("Location: " . base_url("index.php/patient/search"));
             exit;
         }
@@ -151,7 +156,7 @@ class PatientController {
         $provider = $providerModel->getById($id);
         
         if (!$provider) {
-            $_SESSION['error'] = 'Provider not found';
+set_flash_message('error', 'Provider not found', 'global');
             header("Location: " . base_url("index.php/patient/search"));
             exit;
         }
@@ -272,7 +277,7 @@ class PatientController {
                 error_log("Missing required parameters for scheduling appointment");
                 error_log("patient_id: $patient_id, provider_id: $provider_id, service_id: $service_id");
                 error_log("appointment_date: $appointment_date, appointment_time: $appointment_time");
-                $_SESSION['error'] = "Missing required information for booking.";
+set_flash_message('error', "Missing required information for booking.", 'patient_book');
                 header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
                 exit;
             }
@@ -303,7 +308,7 @@ class PatientController {
                 $slot = $this->providerModel->getSlotByDateTime($provider_id, $appointment_date, $appointment_time);
                 
                 if (!$slot) {
-                    $_SESSION['error'] = "The selected time slot is not available.";
+set_flash_message('error', "The selected time slot is not available.", 'patient_book');
                     header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
                     exit;
                 }
@@ -311,7 +316,7 @@ class PatientController {
                 // Now we can safely access end_time
                 $slot_end = strtotime($appointment_date . ' ' . $slot['end_time']);
                 if ($end_timestamp > $slot_end) {
-                    $_SESSION['error'] = "This time slot is too short for the selected service.";
+set_flash_message('error', "This time slot is too short for the selected service.", 'patient_book');
                     header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
                     exit;
                 }
@@ -326,7 +331,7 @@ class PatientController {
                 error_log("Slot availability check result: " . ($isAvailable ? "Available" : "Not available"));
                 
                 if (!$isAvailable) {
-                    $_SESSION['error'] = "This time slot is no longer available. Please try another.";
+set_flash_message('error', "This time slot is no longer available. Please try another.", 'patient_book');
                     header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
                     exit;
                 }
@@ -350,7 +355,7 @@ class PatientController {
                     error_log("Appointment creation result: " . ($result ? "Success" : "Failed"));
                 } catch (Exception $e) {
                     error_log("Exception during appointment creation: " . $e->getMessage());
-                    $_SESSION['error'] = "An error occurred while booking: " . $e->getMessage();
+set_flash_message('error', "An error occurred while booking: " . $e->getMessage(), 'patient_book');
                     header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
                     exit;
                 }
@@ -364,21 +369,21 @@ class PatientController {
                     }
                     
                     // Redirect to appointments page with success message
-                    $_SESSION['success'] = "Your appointment has been booked successfully!";
+set_flash_message('success', "Your appointment has been booked successfully!", 'patient_book');
                     // Use the correct path format for cross-controller redirection
                     $redirectUrl = base_url("index.php/appointments?success=booked");
                     error_log("Redirecting to: " . $redirectUrl);
                     header("Location: " . $redirectUrl);
                     exit;
                 } else {
-                    $_SESSION['error'] = "Failed to book appointment. Please try again.";
+set_flash_message('error', "Failed to book appointment. Please try again.", 'patient_book');
                     header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
                     exit;
                 }
                 
                 exit;
             } else {
-                $_SESSION['error'] = "Missing required fields for booking.";
+set_flash_message('error', "Missing required fields for booking.", 'patient_book');
                 header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
                 exit;
             }
@@ -479,13 +484,13 @@ class PatientController {
             $success = $this->userModel->updatePatientProfile($_SESSION['user_id'], $data);
             
             if ($success) {
-                $_SESSION['success'] = 'Profile updated successfully';
+set_flash_message('success', 'Profile updated successfully', 'patient_profile');
             } else {
-                $_SESSION['error'] = 'Failed to update profile. Please try again.';
+set_flash_message('error', 'Failed to update profile. Please try again.', 'patient_profile');
             }
         } else {
             // Set error message with all validation errors
-            $_SESSION['error'] = implode('<br>', $errors);
+set_flash_message('error', implode('<br>', $errors), 'patient_profile');
         }
         
         // Use the SAME variable structure as your profile() method
@@ -501,8 +506,8 @@ class PatientController {
         $error = $_SESSION['error'] ?? null;
         
         // Clear session messages after using them
-        if (isset($_SESSION['success'])) unset($_SESSION['success']);
-        if (isset($_SESSION['error'])) unset($_SESSION['error']);
+//         if (isset($_SESSION['success'])) unset($_SESSION['success']); // Modified by transformer - isset check not needed with context-aware flash messages
+//         if (isset($_SESSION['error'])) unset($_SESSION['error']); // Modified by transformer - isset check not needed with context-aware flash messages
         
         include VIEW_PATH . '/patient/profile.php';
     }
@@ -571,7 +576,7 @@ class PatientController {
     public function selectService() {
         // Ensure user is logged in
         if (!isset($_SESSION['user_id'])) {
-            $_SESSION['error'] = "Please log in to book an appointment";
+set_flash_message('error', "Please log in to book an appointment", 'auth_login');
             redirect('auth/login');
             return;
         }
@@ -596,7 +601,7 @@ class PatientController {
     public function findProviders() {
         // Ensure user is logged in
         if (!isset($_SESSION['user_id'])) {
-            $_SESSION['error'] = "Please log in to book an appointment";
+set_flash_message('error', "Please log in to book an appointment", 'auth_login');
             redirect('auth/login');
             return;
         }
@@ -605,7 +610,7 @@ class PatientController {
         $service_id = $_GET['service_id'] ?? null;
         
         if (!$service_id) {
-            $_SESSION['error'] = "Please select a service first";
+set_flash_message('error', "Please select a service first", 'patient_book');
             redirect('patient/selectService');
             return;
         }
@@ -625,7 +630,7 @@ class PatientController {
         $service = $this->serviceModel->getById($service_id);
         
         if (!$service) {
-            $_SESSION['error'] = "Service not found";
+set_flash_message('error', "Service not found", 'patient_book');
             redirect('patient/selectService');
             return;
         }
@@ -636,5 +641,53 @@ class PatientController {
         // Load the provider selection view
         include VIEW_PATH . '/patient/select_provider.php';
     }
+
+    /**
+     * View Appointment
+     */
+    public function viewAppointment($appointment_id) {
+        // Get appointment ID from request
+        $appointment_id = $_GET['id'] ?? $appointment_id;
+        $appointment = $this->appointmentModel->getAppointmentById($appointment_id);
+        if (!$appointment) {
+            set_flash_message('error', 'Appointment not found');
+            
+        set_flash_message('info', "Viewing appointment details", 'patient_view_appointment');
+redirect('patient/appointments');
+            return;
+        }
+        $success = true;
+    }
+
+    /**
+     * Cancel Appointment
+     */
+    public function cancelAppointment($appointment_id) {
+        // Get appointment ID from request
+        $appointment_id = $_POST['appointment_id'] ?? $appointment_id;
+        $success = $this->appointmentModel->cancelAppointment($appointment_id, $_SESSION['user_id']);
+    
+        if ($success) {
+            set_flash_message('success', "Your appointment has been successfully cancelled", 'patient_appointments');
+        } else {
+            set_flash_message('error', "Failed to cancel your appointment", 'patient_appointments');
+        }
+}
+
+    /**
+     * Reschedule Appointment
+     */
+    public function rescheduleAppointment($appointment_id, $new_datetime = null) {
+        // Get appointment ID and new time from request
+        $appointment_id = $_POST['appointment_id'] ?? $appointment_id;
+        $new_datetime = $_POST['new_datetime'] ?? $new_datetime;
+        $success = $this->appointmentModel->rescheduleAppointment($appointment_id, $new_datetime);
+    
+        if ($success) {
+            set_flash_message('success', "Your appointment has been successfully rescheduled", 'patient_appointments');
+        } else {
+            set_flash_message('error', "Failed to reschedule your appointment", 'patient_appointments');
+        }
+}
 }
 ?>

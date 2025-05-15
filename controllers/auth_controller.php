@@ -35,21 +35,21 @@ class AuthController {
     }
     
     // private function setError($message) {
-        // $_SESSION['error'] = $message;
+        // set_flash_message('error', $message, 'global');
     // }
     
     /**
      * Set error message in session
      */
     private function setErrorMessage($message) {
-        $_SESSION['error'] = $message;
+set_flash_message('error', $message, 'global');
     }
 
     /**
      * Set success message in session
      */
     private function setSuccessMessage($message) {
-        $_SESSION['success'] = $message;
+set_flash_message('success', $message, 'global');
     }
 
     /**
@@ -142,6 +142,14 @@ class AuthController {
                             exit;
                         }
                         
+                        // After authentication succeeds but before redirect:
+                        $loginUpdate = $this->updateLastLogin($user['user_id']);
+
+                        if ($loginUpdate && isset($loginUpdate['timestamp'])) {
+                            // Store the login timestamp in the session for validation
+                            $_SESSION['login_timestamp'] = strtotime($loginUpdate['timestamp']);
+                        }
+
                         // Set session variables
                         $_SESSION['user_id'] = $user['user_id'];
                         $_SESSION['email'] = $user['email'];
@@ -505,9 +513,9 @@ class AuthController {
                 $this->activityLogModel->logUserActivity($user['user_id'], 'verified_email', $user['user_id']);
             }
             
-            $success = 'Your email has been verified successfully! You can now <a href="' . base_url('index.php/auth/login') . '">log in</a> to your account.';
+            $success = 'Your email has been successfully verified. Thank you for being a valued customer. You can now log in to your account and start using all features of our system.';
         } else {
-            $error = 'There was a problem verifying your email. Please try again or contact support.';
+            $error = 'The verification link may have expired or is invalid. Please contact support or try resending the verification email.';
         }
         
         include VIEW_PATH . '/auth/verify.php';
@@ -784,12 +792,17 @@ class AuthController {
         include VIEW_PATH . '/auth/change_password.php';
     }
     
-    /**
+   /**
      * Handle user logout
      */
     public function logout() {
         // Add this at the beginning:
         if (isset($_SESSION['user_id'])) {
+            // Update the last_login timestamp to invalidate other sessions
+            $userModel = new User($this->db);
+            $currentTime = date('Y-m-d H:i:s');
+            $userModel->updateLastLogin($_SESSION['user_id'], $currentTime);
+            
             // Log the logout
             $this->activityLogModel->logAuth($_SESSION['user_id'], 'logout');
         }
@@ -808,14 +821,15 @@ class AuthController {
         
         session_destroy();
         
+        // Add a flash message to show on home page
+        set_flash_message('success', 'You have been logged out successfully.', 'global');
+        
         // Redirect to home page instead of login page
-        header('Location: ' . base_url('index.php/home'));        
-
-        // Redirect to login page
-        //header('Location: ' . base_url('index.php/auth'));
+        header('Location: ' . base_url('index.php/home'));
         
         exit;
     }
+
     
     /**
      * Demo function to allow easy role switching for testing

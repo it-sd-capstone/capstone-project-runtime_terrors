@@ -741,5 +741,80 @@ class Notification {
               return false;
           }
       }
+    
+    /**
+     * Get notifications for a specific user
+     *
+     * @param int $userId User ID
+     * @param int $limit Maximum number of notifications to return
+     * @return array Array of notifications
+     */
+    public function getNotificationsForUser($userId, $limit = 20) {
+        $sql = "SELECT * FROM notifications 
+                WHERE user_id = ? 
+                ORDER BY created_at DESC 
+                LIMIT ?";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("ii", $userId, $limit);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $notifications = [];
+        while ($row = $result->fetch_assoc()) {
+            $notifications[] = $row;
+        }
+        
+        return $notifications;
+    }    
+    /**
+     * Get a specific notification by ID
+     *
+     * @param int $notificationId Notification ID
+     * @return array|null Notification data or null if not found
+     */
+    public function getNotificationById($notificationId) {
+        $sql = "SELECT * FROM notifications WHERE notification_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $notificationId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            return null;
+        }
+        
+        return $result->fetch_assoc();
+    }    
+    /**
+     * Mark all notifications as read for a user
+     *
+     * @param int $userId User ID
+     * @return bool True if successful, false otherwise
+     */
+    public function markAllAsReadForUser($userId) {
+        $sql = "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        return $stmt->execute();
+    }    
+    /**
+     * Get count of unread notifications for a user
+     *
+     * @param int $userId User ID
+     * @return int Count of unread notifications
+     */
+    public function getUnreadCountByUserId($userId) {
+        $sql = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($row = $result->fetch_assoc()) {
+            return (int)$row['count'];
+        }
+        
+        return 0;
+    }
 }
-?>

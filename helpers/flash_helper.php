@@ -1,27 +1,64 @@
 <?php
 /**
- * Set a flash message to be displayed on the next page load
+ * Set a flash message with context
  * 
- * @param string $type The type of message (success, error, info, warning)
- * @param string $message The message to display
+ * @param string $type Message type (success, error, warning, info)
+ * @param string $message Message content
+ * @param string $context The specific page context this message belongs to (optional)
  */
-function set_flash_message($type, $message) {
-    if (!isset($_SESSION)) {
-        session_start();
+function set_flash_message($type, $message, $context = 'global') {
+    // Initialize the flash messages array if it doesn't exist
+    if (!isset($_SESSION['flash_messages'])) {
+        $_SESSION['flash_messages'] = [];
     }
     
-    $_SESSION['flash_messages'][$type] = $message;
+    // Add the message to the specific context
+    $_SESSION['flash_messages'][$context][] = [
+        'type' => $type,
+        'message' => $message,
+        'created' => time()
+    ];
 }
 
 /**
- * Get and clear flash messages
+ * Get and clear flash messages for a specific context
  * 
- * @return array Flash messages
+ * @param string $context The context to retrieve messages for (default: global)
+ * @return array Array of flash messages
  */
-function get_flash_messages() {
-    $messages = $_SESSION['flash_messages'] ?? [];
-    unset($_SESSION['flash_messages']);
+function get_flash_messages($context = 'global') {
+    $messages = [];
+    
+    if (isset($_SESSION['flash_messages'][$context])) {
+        $messages = $_SESSION['flash_messages'][$context];
+        // Clear only this context's messages
+        $_SESSION['flash_messages'][$context] = [];
+    }
+    
     return $messages;
+}
+
+/**
+ * Check if there are flash messages for a context
+ * 
+ * @param string $context The context to check
+ * @return boolean True if messages exist
+ */
+function has_flash_messages($context = 'global') {
+    return isset($_SESSION['flash_messages'][$context]) && !empty($_SESSION['flash_messages'][$context]);
+}
+
+/**
+ * Clear all flash messages or for a specific context
+ * 
+ * @param string $context Optional context to clear (null clears all)
+ */
+function clear_flash_messages($context = null) {
+    if ($context === null) {
+        $_SESSION['flash_messages'] = [];
+    } elseif (isset($_SESSION['flash_messages'][$context])) {
+        $_SESSION['flash_messages'][$context] = [];
+    }
 }
 
 /**

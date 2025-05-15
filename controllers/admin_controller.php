@@ -98,7 +98,7 @@ class AdminController {
 
         // Check if user is admin for all actions except view/list
         if ($action != 'list' && !$this->isUserAdmin()) {
-            $_SESSION['error'] = "You don't have permission to access this page";
+set_flash_message('error', "You don't have permission to access this page", 'auth_login');
             header('Location: ' . base_url('index.php/auth'));
             exit;
         }
@@ -107,7 +107,7 @@ class AdminController {
         switch($action) {
             case 'delete':
                 if (!$userId) {
-                    $_SESSION['error'] = "User ID is required";
+set_flash_message('error', "User ID is required", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -116,14 +116,14 @@ class AdminController {
                 try {
                     $user = $this->userModel->getUserById($userId);
                     if (!$user) {
-                        $_SESSION['error'] = "User not found";
+set_flash_message('error', "User not found", 'admin_users');
                         header('Location: ' . base_url('index.php/admin/users'));
                         exit;
                     }
                     
                     // Make sure admin can't delete themselves
                     if ($userId == $_SESSION['user_id']) {
-                        $_SESSION['error'] = "You cannot delete your own account";
+set_flash_message('error', "You cannot delete your own account", 'admin_users');
                         header('Location: ' . base_url('index.php/admin/users'));
                         exit;
                     }
@@ -134,9 +134,9 @@ class AdminController {
                     if ($success) {
                         // Log the activity
                         $this->activityLogModel->logUserDeletion($userId, $_SESSION['user_id']);
-                        $_SESSION['success'] = "User has been permanently deleted";
+set_flash_message('success', "User has been permanently deleted", 'admin_users');
                     } else {
-                        $_SESSION['error'] = "Failed to delete user. Check server logs for details.";
+set_flash_message('error', "Failed to delete user. Check server logs for details.", 'admin_users');
                     }
                     
                     // Redirect back to user list
@@ -145,7 +145,7 @@ class AdminController {
                     
                 } catch (Exception $e) {
                     error_log("Error in users/delete: " . $e->getMessage());
-                    $_SESSION['error'] = "Error deleting user: " . $e->getMessage();
+set_flash_message('error', "Error deleting user: " . $e->getMessage(), 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -153,7 +153,7 @@ class AdminController {
                 
             case 'edit':
                 if (!$userId) {
-                    $_SESSION['error'] = "User ID is required";
+set_flash_message('error', "User ID is required", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -161,14 +161,14 @@ class AdminController {
                 try {
                     $user = $this->userModel->getUserById($userId);
                     if (!$user) {
-                        $_SESSION['error'] = "User not found";
+set_flash_message('error', "User not found", 'admin_users');
                         header('Location: ' . base_url('index.php/admin/users'));
                         exit;
                     }
                     include VIEW_PATH . '/admin/user_edit.php';
                 } catch (Exception $e) {
                     error_log("Error in users/edit: " . $e->getMessage());
-                    $_SESSION['error'] = "Error loading user: " . $e->getMessage();
+set_flash_message('error', "Error loading user: " . $e->getMessage(), 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -176,7 +176,7 @@ class AdminController {
                 
             case 'view':
                 if (!$userId) {
-                    $_SESSION['error'] = "User ID is required";
+set_flash_message('error', "User ID is required", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -185,7 +185,7 @@ class AdminController {
                     $user = $this->userModel->getUserById($userId);
                     error_log("User data for ID $userId: " . print_r($user, true));
                     if (!$user) {
-                        $_SESSION['error'] = "User not found";
+set_flash_message('error', "User not found", 'admin_users');
                         header('Location: ' . base_url('index.php/admin/users'));
                         exit;
                     }
@@ -201,7 +201,7 @@ class AdminController {
                     include VIEW_PATH . '/admin/user_view.php';
                 } catch (Exception $e) {
                     error_log("Error in users/view: " . $e->getMessage() . "\nStack trace: " . $e->getTraceAsString());
-                    $_SESSION['error'] = "Error loading user: " . $e->getMessage();
+set_flash_message('error', "Error loading user: " . $e->getMessage(), 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -209,7 +209,7 @@ class AdminController {
                 
             case 'update':
                 if (!$userId || $_SERVER['REQUEST_METHOD'] !== 'POST') {
-                    $_SESSION['error'] = "Invalid request";
+set_flash_message('error', "Invalid request", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -227,7 +227,7 @@ class AdminController {
                 try {
                     // Check if email already exists but belongs to a different user
                     if ($this->userModel->isEmailTakenByOther($userData['email'], $userId)) {
-                        $_SESSION['error'] = "Email is already in use by another user";
+set_flash_message('error', "Email is already in use by another user", 'admin_users');
                         header('Location: ' . base_url('index.php/admin/users/edit/' . $userId));
                         exit;
                     }
@@ -240,12 +240,12 @@ class AdminController {
                         $this->userModel->updatePassword($userId, $_POST['password'], $passwordChangeRequired);
                     }
                     
-                    $_SESSION['success'] = "User updated successfully";
+set_flash_message('success', "User updated successfully", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users/edit/' . $userId));
                     exit;
                 } catch (Exception $e) {
                     error_log("Error in users/update: " . $e->getMessage());
-                    $_SESSION['error'] = "Error updating user: " . $e->getMessage();
+set_flash_message('error', "Error updating user: " . $e->getMessage(), 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users/edit/' . $userId));
                     exit;
                 }
@@ -253,7 +253,7 @@ class AdminController {
                 
             case 'add':
                 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                    $_SESSION['error'] = "Invalid request";
+set_flash_message('error', "Invalid request", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -275,7 +275,7 @@ class AdminController {
                 if (empty($userData['password'])) $errors[] = "Password is required";
                 
                 if (!empty($errors)) {
-                    $_SESSION['error'] = implode("<br>", $errors);
+set_flash_message('error', implode("<br>", $errors), 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -290,12 +290,12 @@ class AdminController {
                         $userData['role']
                     );
                     
-                    $_SESSION['success'] = "User created successfully";
+set_flash_message('success', "User created successfully", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 } catch (Exception $e) {
                     error_log("Error in users/add: " . $e->getMessage());
-                    $_SESSION['error'] = "Error creating user: " . $e->getMessage();
+set_flash_message('error', "Error creating user: " . $e->getMessage(), 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -303,26 +303,26 @@ class AdminController {
                 
             case 'deactivate':
                 if (!$userId) {
-                    $_SESSION['error'] = "User ID is required";
+set_flash_message('error', "User ID is required", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
                 
                 // Make sure admin can't deactivate themselves
                 if ($userId == $_SESSION['user_id']) {
-                    $_SESSION['error'] = "You cannot deactivate your own account";
+set_flash_message('error', "You cannot deactivate your own account", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
                 
                 try {
                     $result = $this->userModel->updateUser($userId, ['is_active' => 0]);
-                    $_SESSION['success'] = "User deactivated successfully";
+set_flash_message('success', "User deactivated successfully", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 } catch (Exception $e) {
                     error_log("Error in users/deactivate: " . $e->getMessage());
-                    $_SESSION['error'] = "Error deactivating user: " . $e->getMessage();
+set_flash_message('error', "Error deactivating user: " . $e->getMessage(), 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -330,19 +330,19 @@ class AdminController {
                 
             case 'activate':
                 if (!$userId) {
-                    $_SESSION['error'] = "User ID is required";
+set_flash_message('error', "User ID is required", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
                 
                 try {
                     $result = $this->userModel->updateUser($userId, ['is_active' => 1]);
-                    $_SESSION['success'] = "User activated successfully";
+set_flash_message('success', "User activated successfully", 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 } catch (Exception $e) {
                     error_log("Error in users/activate: " . $e->getMessage());
-                    $_SESSION['error'] = "Error activating user: " . $e->getMessage();
+set_flash_message('error', "Error activating user: " . $e->getMessage(), 'admin_users');
                     header('Location: ' . base_url('index.php/admin/users'));
                     exit;
                 }
@@ -407,7 +407,7 @@ class AdminController {
                 // Verify CSRF token
                 if (!verify_csrf_token()) {
                     error_log("CSRF token verification failed");
-                    $_SESSION['error'] = "Security validation failed. Please try again.";
+set_flash_message('error', "Security validation failed. Please try again.", 'admin_services');
                     header('Location: ' . base_url('index.php/admin/services'));
                     exit;
                 }
@@ -450,13 +450,13 @@ class AdminController {
                     error_log("Create service result: " . ($result ? "success ($result)" : "failure"));
                     
                     if ($result) {
-                        $_SESSION['success'] = "Service added successfully";
+set_flash_message('success', "Service added successfully", 'admin_services');
                     } else {
-                        $_SESSION['error'] = "Failed to add service";
+set_flash_message('error', "Failed to add service", 'admin_services');
                     }
                 } else {
                     error_log("Validation errors: " . implode(", ", $errors));
-                    $_SESSION['error'] = implode("<br>", $errors);
+set_flash_message('error', implode("<br>", $errors), 'admin_services');
                 }
                 
                 // Redirect back to services page
@@ -498,12 +498,12 @@ class AdminController {
                     $result = $this->serviceModel->updateService($id, $serviceData);
                         
                     if ($result) {
-                        $_SESSION['success'] = "Service updated successfully";
+set_flash_message('success', "Service updated successfully", 'admin_services');
                     } else {
-                        $_SESSION['error'] = "Failed to update service";
+set_flash_message('error', "Failed to update service", 'admin_services');
                     }
                 } else {
-                    $_SESSION['error'] = implode("<br>", $errors);
+set_flash_message('error', implode("<br>", $errors), 'admin_services');
                 }
                     
                 // Redirect back to services page
@@ -519,7 +519,7 @@ class AdminController {
                 include VIEW_PATH . '/admin/edit_service.php';
                 return;
             } else {
-                $_SESSION['error'] = "Service not found";
+set_flash_message('error', "Service not found", 'admin_services');
                 header('Location: ' . base_url('index.php/admin/services'));
                 exit;
             }
@@ -529,7 +529,7 @@ class AdminController {
                 // Verify CSRF token
                 // if (!verify_csrf_token()) {
                 //     error_log("CSRF token verification failed for delete");
-                //     $_SESSION['error'] = "Security validation failed. Please try again.";
+                //     set_flash_message('error', "Security validation failed. Please try again.", 'admin_services');
                 //     header('Location: ' . base_url('index.php/admin/services'));
                 //     exit;
                 // }
@@ -538,9 +538,9 @@ class AdminController {
                 $result = $this->serviceModel->deleteService($id);
                 
                 if ($result) {
-                    $_SESSION['success'] = "Service deleted successfully";
+set_flash_message('success', "Service deleted successfully", 'admin_services');
                 } else {
-                    $_SESSION['error'] = "Failed to delete service or service not found";
+set_flash_message('error', "Failed to delete service or service not found", 'admin_services');
                 }
                 
                 // Redirect back to services page
@@ -548,7 +548,7 @@ class AdminController {
                 exit;
             } else {
                 // If accessed with GET, just redirect to services page
-                $_SESSION['error'] = "Invalid request method for delete";
+set_flash_message('error', "Invalid request method for delete", 'admin_services');
                 header('Location: ' . base_url('index.php/admin/services'));
                 exit;
             }
@@ -615,12 +615,12 @@ class AdminController {
                         );
                         
                         if ($result) {
-                            $_SESSION['success'] = "Appointment added successfully";
+set_flash_message('success', "Appointment added successfully", 'admin_appointments');
                         } else {
-                            $_SESSION['error'] = "Failed to add appointment";
+set_flash_message('error', "Failed to add appointment", 'admin_appointments');
                         }
                     } else {
-                        $_SESSION['error'] = implode("<br>", $errors);
+set_flash_message('error', implode("<br>", $errors), 'admin_appointments');
                     }
                     
                     // Redirect back to appointments page
@@ -665,7 +665,7 @@ class AdminController {
                         $appointment = $this->appointmentModel->getById($id);
                         
                         if (!$appointment) {
-                            $_SESSION['error'] = "Appointment not found";
+set_flash_message('error', "Appointment not found", 'admin_appointments');
                             header('Location: ' . base_url('index.php/admin/appointments'));
                             exit;
                         }
@@ -687,12 +687,12 @@ class AdminController {
                         $result = $this->appointmentModel->updateAppointment($id, $appointmentData);
 
                         if ($result) {
-                            $_SESSION['success'] = "Appointment updated successfully";
+set_flash_message('success', "Appointment updated successfully", 'admin_appointments');
                         } else {
-                            $_SESSION['error'] = "Failed to update appointment";
+set_flash_message('error', "Failed to update appointment", 'admin_appointments');
                         }
                     } else {
-                        $_SESSION['error'] = implode("<br>", $errors);
+set_flash_message('error', implode("<br>", $errors), 'admin_appointments');
                     }
                     
                     // Redirect back to appointments page
@@ -705,7 +705,7 @@ class AdminController {
                     $appointment = $this->appointmentModel->getById($id);
                     
                     if (!$appointment) {
-                        $_SESSION['error'] = "Appointment not found";
+set_flash_message('error', "Appointment not found", 'admin_appointments');
                         header('Location: ' . base_url('index.php/admin/appointments'));
                         exit;
                     }
@@ -725,7 +725,7 @@ class AdminController {
                     return;
                 } catch (Exception $e) {
                     error_log("Error in appointments edit: " . $e->getMessage());
-                    $_SESSION['error'] = "Error loading appointment form: " . $e->getMessage();
+set_flash_message('error', "Error loading appointment form: " . $e->getMessage(), 'admin_appointments');
                     header('Location: ' . base_url('index.php/admin/appointments'));
                     exit;
                 }
@@ -734,9 +734,9 @@ class AdminController {
                 $result = $this->appointmentModel->cancelAppointment($id, "Canceled by administrator");
                 
                 if ($result) {
-                    $_SESSION['success'] = "Appointment canceled successfully";
+set_flash_message('success', "Appointment canceled successfully", 'admin_appointments');
                 } else {
-                    $_SESSION['error'] = "Failed to cancel appointment or appointment not found";
+set_flash_message('error', "Failed to cancel appointment or appointment not found", 'admin_appointments');
                 }
                 
                 // Redirect back to appointments page
@@ -986,7 +986,7 @@ class AdminController {
     public function addProvider() {
         // Check if user is admin
         if (!$this->isUserAdmin()) {
-            $_SESSION['error'] = "You don't have permission to access this page";
+set_flash_message('error', "You don't have permission to access this page", 'auth_login');
             header('Location: ' . base_url('index.php/auth'));
             exit;
         }
@@ -1033,7 +1033,7 @@ class AdminController {
             }
             
             if (!empty($errors)) {
-                $_SESSION['error'] = implode("<br>", $errors);
+set_flash_message('error', implode("<br>", $errors), 'admin_add_provider');
                 // Store form data in session for refilling the form
                 $_SESSION['form_data'] = $userData + $providerData;
                 header('Location: ' . base_url('index.php/admin/addProvider'));
@@ -1089,7 +1089,7 @@ class AdminController {
                 $this->db->commit();
                 
                 // Store the password in the session specifically for display
-                $_SESSION['success'] = "Provider created successfully! Temporary password: <strong>" . $userData['password'] . "</strong>";
+set_flash_message('success', "Provider created successfully! Temporary password: <strong>" . $userData['password'] . "</strong>", 'admin_providers');
                 $_SESSION['show_password'] = true; // Add a flag to indicate password should be shown
                 
                 header('Location: ' . base_url('index.php/admin/providers'));
@@ -1099,7 +1099,7 @@ class AdminController {
                 // Rollback transaction on error
                 $this->db->rollback();
                 error_log("Error creating provider: " . $e->getMessage());
-                $_SESSION['error'] = "Error creating provider: " . $e->getMessage();
+set_flash_message('error', "Error creating provider: " . $e->getMessage(), 'admin_add_provider');
                 // Store form data in session for refilling the form
                 $_SESSION['form_data'] = $userData + $providerData;
                 header('Location: ' . base_url('index.php/admin/addProvider'));
@@ -1114,7 +1114,7 @@ class AdminController {
         
     public function toggleAcceptingPatients() {
         if (!$this->isUserAdmin()) {
-            $_SESSION['error'] = "Unauthorized access";
+set_flash_message('error', "Unauthorized access", 'admin_providers');
             header('Location: ' . base_url('index.php/admin/providers'));
             exit;
         }
@@ -1123,7 +1123,7 @@ class AdminController {
         $accepting = $_GET['accepting'] ?? $_POST['accepting'] ?? null;
 
         if (!$providerId || $accepting === null) {
-            $_SESSION['error'] = "Provider ID and accepting status are required";
+set_flash_message('error', "Provider ID and accepting status are required", 'admin_providers');
             header('Location: ' . base_url('index.php/admin/providers'));
             exit;
         }
@@ -1137,7 +1137,7 @@ class AdminController {
                 ? "Provider is now accepting new patients."
                 : "Provider is no longer accepting new patients.";
         } else {
-            $_SESSION['error'] = "Failed to update accepting new patients status.";
+set_flash_message('error', "Failed to update accepting new patients status.", 'admin_providers');
         }
 
         header('Location: ' . base_url('index.php/admin/providers'));
@@ -1146,7 +1146,7 @@ class AdminController {
 
     public function toggleUserStatus() {
         if (!$this->isUserAdmin()) {
-            $_SESSION['error'] = "Unauthorized access";
+set_flash_message('error', "Unauthorized access", 'admin_users');
             header('Location: ' . base_url('index.php/admin/users'));
             exit;
         }
@@ -1155,7 +1155,7 @@ class AdminController {
         $isActive = $_GET['is_active'] ?? $_POST['is_active'] ?? null;
 
         if (!$userId || $isActive === null) {
-            $_SESSION['error'] = "User ID and status are required";
+set_flash_message('error', "User ID and status are required", 'admin_users');
             header('Location: ' . base_url('index.php/admin/users'));
             exit;
         }
@@ -1169,7 +1169,7 @@ class AdminController {
                 ? "User activated successfully."
                 : "User deactivated successfully.";
         } else {
-            $_SESSION['error'] = "Failed to update user status.";
+set_flash_message('error', "Failed to update user status.", 'admin_users');
         }
 
         header('Location: ' . base_url('index.php/admin/users'));
@@ -1185,7 +1185,7 @@ class AdminController {
     public function viewAvailability() {
         // Check if user is admin
         if (!$this->isUserAdmin()) {
-            $_SESSION['error'] = "You don't have permission to access this page";
+set_flash_message('error', "You don't have permission to access this page", 'auth_login');
             header('Location: ' . base_url('index.php/auth'));
             exit;
         }
@@ -1211,7 +1211,7 @@ class AdminController {
         }
         
         if (!$providerId) {
-            $_SESSION['error'] = "Provider ID is required";
+set_flash_message('error', "Provider ID is required", 'admin_providers');
             header('Location: ' . base_url('index.php/admin/providers'));
             exit;
         }
@@ -1220,7 +1220,7 @@ class AdminController {
         $provider = $this->userModel->getUserById($providerId);
         
         if (!$provider || $provider['role'] !== 'provider') {
-            $_SESSION['error'] = "Provider not found or user is not a provider";
+set_flash_message('error', "Provider not found or user is not a provider", 'admin_providers');
             header('Location: ' . base_url('index.php/admin/providers'));
             exit;
         }
@@ -1245,7 +1245,7 @@ class AdminController {
     public function manageProviderServices() {
         // Check if user is admin
         if (!$this->isUserAdmin()) {
-            $_SESSION['error'] = "You don't have permission to access this page";
+set_flash_message('error', "You don't have permission to access this page", 'auth_login');
             header('Location: ' . base_url('index.php/auth'));
             exit;
         }
@@ -1278,7 +1278,7 @@ class AdminController {
         
         // If provider ID still not found, redirect with error
         if (!$providerId) {
-            $_SESSION['error'] = "Provider ID is required";
+set_flash_message('error', "Provider ID is required", 'admin_providers');
             header('Location: ' . base_url('index.php/admin/providers'));
             exit;
         }
@@ -1287,7 +1287,7 @@ class AdminController {
         $provider = $this->userModel->getUserById($providerId);
         
         if (!$provider || $provider['role'] !== 'provider') {
-            $_SESSION['error'] = "Provider not found or user is not a provider";
+set_flash_message('error', "Provider not found or user is not a provider", 'admin_providers');
             header('Location: ' . base_url('index.php/admin/providers'));
             exit;
         }
@@ -1364,6 +1364,4 @@ class AdminController {
         
         include VIEW_PATH . '/admin/provider_services.php';
     }
-
-
 }
