@@ -1925,112 +1925,83 @@ class ProviderController {
     /**
      * Process provider profile update
      */
-    public function processUpdateProfile() {
-        // Check if user is logged in as a provider
-        if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'provider') {
-            if ($this->isAjaxRequest()) {
-                echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
-                exit;
-            }
-            $_SESSION['error'] = 'Unauthorized access';
-            redirect('auth/login');
-        }
-        
-        $provider_id = $_SESSION['user_id'];
-        
-        // Initialize errors array
-        $errors = [];
-        
-        // Get form data for user table
-        $userData = [
-            'phone' => trim($_POST['phone'] ?? '')
-        ];
-        
-        // Validate first name
-        if (isset($_POST['first_name'])) {
-            $firstNameValidation = validateName(trim($_POST['first_name']));
-            if (!$firstNameValidation['valid']) {
-                $errors[] = $firstNameValidation['error'];
-            } else {
-                $userData['first_name'] = $firstNameValidation['sanitized'];
-            }
-        }
-        
-        // Validate last name
-        if (isset($_POST['last_name'])) {
-            $lastNameValidation = validateName(trim($_POST['last_name']));
-            if (!$lastNameValidation['valid']) {
-                $errors[] = $lastNameValidation['error'];
-            } else {
-                $userData['last_name'] = $lastNameValidation['sanitized'];
-            }
-        }
-        
-        // Continue with update only if no errors
-        if (!empty($errors)) {
-            if ($this->isAjaxRequest()) {
-                echo json_encode(['success' => false, 'message' => implode('<br>', $errors)]);
-                exit;
-            }
-            $_SESSION['error'] = implode('<br>', $errors);
-            redirect('provider/profile');
-            return;
-        }
-        
-        // Get form data for provider_profiles table
-        $profileData = [
-            'specialization' => trim($_POST['specialization'] ?? ''),
-            'bio' => trim($_POST['bio'] ?? ''),
-            'accepting_new_patients' => isset($_POST['accepting_new_patients']) ? 1 : 0,
-            'max_patients_per_day' => (int)($_POST['max_patients_per_day'] ?? 0)
-        ];
-        
-        // Validate required data
-        if (empty($userData['first_name']) || empty($userData['last_name']) || empty($profileData['specialization'])) {
-            if ($this->isAjaxRequest()) {
-                echo json_encode(['success' => false, 'message' => 'Required fields cannot be empty']);
-                exit;
-            }
-            $_SESSION['error'] = 'Required fields cannot be empty';
-            redirect('provider/profile');
-        }
-        
-        // Update user data first - using your existing method
-        $userResult = $this->userModel->updateUser($provider_id, $userData);
-        
-        // Handle possible error array return
-        if (is_array($userResult) && isset($userResult['error'])) {
-            if ($this->isAjaxRequest()) {
-                echo json_encode(['success' => false, 'message' => $userResult['error']]);
-                exit;
-            }
-            $_SESSION['error'] = $userResult['error'];
-            redirect('provider/profile');
-        }
-        
-        // Update provider profile data
-        $profileUpdateSuccess = $this->providerModel->updateProfile($provider_id, $profileData);
-        
-        // Determine overall success
-        $success = $userResult && $profileUpdateSuccess;
-        
-        if ($success) {
-            if ($this->isAjaxRequest()) {
-                echo json_encode(['success' => true]);
-                exit;
-            }
-            $_SESSION['success'] = 'Profile updated successfully';
-        } else {
-            if ($this->isAjaxRequest()) {
-                echo json_encode(['success' => false, 'message' => 'Failed to update profile']);
-                exit;
-            }
-            $_SESSION['error'] = 'Failed to update profile';
-        }
-        
+    
+public function processUpdateProfile() {
+    // Check if user is logged in as a provider
+    if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'provider') {
+        $_SESSION['error'] = 'Unauthorized access';
+        header('Location: ' . base_url('index.php/auth/login'));
+        exit;
+    }
+
+    $provider_id = $_SESSION['user_id'];
+    $errors = [];
+
+    // Get and sanitize form data
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name = trim($_POST['last_name'] ?? '');
+    $specialization = trim($_POST['specialization'] ?? '');
+    $phone = preg_replace('/\D/', '', trim($_POST['phone'] ?? ''));
+    $bio = trim($_POST['bio'] ?? '');
+    $accepting_new_patients = isset($_POST['accepting_new_patients']) ? 1 : 0;
+    $max_patients_per_day = (int)($_POST['max_patients_per_day'] ?? 10);
+
+    // Validate required fields
+    if (!$first_name || !$last_name || !$specialization || !$phone) {
+        $_SESSION['error'] = "All required fields must be filled.";
         header('Location: ' . base_url('index.php/provider/profile'));
         exit;
     }
+
+    // Validate name fields (no titles, only letters, spaces, hyphens, apostrophes)
+    if (!preg_match('/^[a-zA-Z\s\-\'"]+$/', $first_name) || !preg_match('/^[a-zA-Z\s\-\'"]+$/', $last_name)) {
+        $_SESSION['error'] = "Names should only contain letters, spaces, hyphens, and apostrophes.";
+        header('Location: ' . base_url('index.php/provider/profile'));
+        exit;
+    }
+
+    // Validate phone number (should be 10 digits)
+    if (strlen($phone) !== 10) {
+        $_SESSION['error'] = "Please enter a valid 10-digit phone number.";
+        header('Location: ' . base_url('index.php/provider/profile'));
+        exit;
+    }
+
+    // Prepare data for update
+    $userData = [
+        'first_name' => $first_name,
+        'last_name' => $last_name,
+        'phone' => $phone
+    ];
+    $profileData = [
+        'specialization' => $specialization,
+        'bio' => $bio,
+        'accepting_new_patients' => $accepting_new_patients,
+        'max_patients_per_day' => $max_patients_per_day
+    ];
+
+    // Update user data
+    $userResult = $this->userModel->updateUser($provider_id, $userData);
+
+    if (is_array($userResult) && isset($userResult['error'])) {
+        $_SESSION['error'] = $userResult['error'];
+        header('Location: ' . base_url('index.php/provider/profile'));
+        exit;
+    }
+
+    // Update provider profile data
+    $profileUpdateSuccess = $this->providerModel->updateProfile($provider_id, $profileData);
+
+    if ($userResult && $profileUpdateSuccess) {
+        $_SESSION['success'] = 'Profile updated successfully';
+    } else {
+        $_SESSION['error'] = 'Failed to update profile';
+    }
+
+    header('Location: ' . base_url('index.php/provider/profile'));
+    exit;
+}
+
     /**
  * Deactivate the provider account (set is_active = 0)
  */
