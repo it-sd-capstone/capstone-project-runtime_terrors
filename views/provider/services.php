@@ -101,54 +101,6 @@
           </div>
       </div>
 
-      <!-- Add a Service You Offer Form -->
-      <div class="row mb-4">
-          <div class="col-lg-8 col-md-10 mx-auto">
-              <div class="card shadow-sm">
-                  <div class="card-header bg-primary text-white">
-                      <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add a Service You Offer</h5>
-                  </div>
-                  <div class="card-body p-4">
-                      <?php if (empty($available_services)): ?>
-                          <div class="alert alert-warning">
-                              No services available. Please <a href="#" data-bs-toggle="modal" data-bs-target="#addServiceModal">create a new service</a> first.
-                          </div>
-                      <?php else: ?>
-                          <form method="POST" action="<?= base_url('index.php/service/addProviderService') ?>" class="needs-validation" novalidate>
-                              <?= csrf_field() ?>
-                              <div class="mb-3">
-                                  <label for="service_id" class="form-label fw-bold">Select Service:</label>
-                                  <select id="service_id" name="service_id" class="form-select" required>
-                                      <option value="">-- Choose a service --</option>
-                                      <?php foreach ($available_services as $service): ?>
-                                          <option value="<?= $service['service_id'] ?>">
-                                              <?= htmlspecialchars($service['name']) ?> (<?= htmlspecialchars($service['description']) ?>, $<?= htmlspecialchars($service['price']) ?>, <?= htmlspecialchars($service['duration']) ?> mins)
-                                          </option>
-                                      <?php endforeach; ?>
-                                  </select>
-                                  <div class="invalid-feedback">Please select a service.</div>
-                              </div>
-                              <div class="mb-3">
-                                  <label for="custom_duration" class="form-label fw-bold">Custom Duration (mins):</label>
-                                  <input type="number" id="custom_duration" name="custom_duration" class="form-control" min="5" max="480" placeholder="Leave blank to use default">
-                                  <div class="form-text">Leave blank to use the default duration for this service.</div>
-                              </div>
-                              <div class="mb-3">
-                                  <label for="custom_notes" class="form-label fw-bold">Custom Notes:</label>
-                                  <textarea id="custom_notes" name="custom_notes" class="form-control" rows="2" placeholder="Any notes for patients or staff"></textarea>
-                              </div>
-                              <div class="d-flex mt-4">
-                                  <button type="submit" class="btn btn-success">
-                                      <i class="fas fa-check me-2"></i>Add Service
-                                  </button>
-                              </div>
-                          </form>
-                      <?php endif; ?>
-                  </div>
-              </div>
-          </div>
-      </div>
-
       <!-- List of Provider's Services -->
       <div class="card shadow-sm rounded">
           <div class="card-header d-flex justify-content-between align-items-center bg-white py-3 rounded-top">
@@ -198,7 +150,7 @@
                                       </td>
                                       <td class="px-4 py-3 text-center">
                                           <!-- Edit Form -->
-                                          <form method="POST" action="<?= base_url('index.php/service/`edit`ProviderService') ?>" class="d-inline-block" style="width: 120px;">
+                                          <form method="POST" action="<?= base_url('index.php/service/editProviderService') ?>" class="d-inline-block" style="width: 120px;">
                                               <input type="hidden" name="provider_service_id" value="<?= $service['provider_service_id'] ?>">
                                               <?= csrf_field() ?>
                                               <input type="number" name="custom_duration" class="form-control form-control-sm mb-1" 

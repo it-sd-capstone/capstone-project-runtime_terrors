@@ -208,28 +208,31 @@ class Appointment {
         return $appointment;
     }
 
-    public function getByProvider($provider_id) {
-        try {
-            $stmt = $this->db->prepare("
-                SELECT a.*, 
-                       u.first_name AS patient_first_name,
-                       u.last_name AS patient_last_name,
-                       s.name AS service_name
-                FROM appointments a
-                JOIN users u ON a.patient_id = u.user_id
-                JOIN services s ON a.service_id = s.service_id
-                WHERE a.provider_id = ?
-                ORDER BY a.appointment_date, a.start_time
-            ");
-            $stmt->bind_param("i", $provider_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            return $result->fetch_all(MYSQLI_ASSOC) ?: [];
-        } catch (Exception $e) {
-            error_log("Error fetching provider appointments: " . $e->getMessage());
-            return [];
-        }
+public function getByProvider($provider_id) {
+    try {
+        $stmt = $this->db->prepare("
+            SELECT a.*, 
+                   u.first_name AS patient_first_name,
+                   u.last_name AS patient_last_name,
+                   s.name AS service_name,
+                   provider.first_name AS provider_first_name,
+                   provider.last_name AS provider_last_name
+            FROM appointments a
+            JOIN users u ON a.patient_id = u.user_id
+            JOIN services s ON a.service_id = s.service_id
+            JOIN users provider ON a.provider_id = provider.user_id
+            WHERE a.provider_id = ?
+            ORDER BY a.appointment_date, a.start_time
+        ");
+        $stmt->bind_param("i", $provider_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_all(MYSQLI_ASSOC) ?: [];
+    } catch (Exception $e) {
+        error_log("Error fetching provider appointments: " . $e->getMessage());
+        return [];
     }
+}
 
     public function rescheduleAppointment($appointment_id, $new_date, $new_start_time, $new_end_time) {
         try {

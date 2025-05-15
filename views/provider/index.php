@@ -20,7 +20,7 @@
             <div class="card shadow">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h3 class="h5 mb-0">Upcoming Appointments</h3>
-                    <a href="<?= base_url('index.php/provider/appointments/' . htmlspecialchars($provider_id)) ?>" class="btn btn-light btn-sm">View All</a>
+                    <a href="<?= base_url('index.php/provider/appointments') ?>" class="btn btn-light btn-sm">View All</a>
                 </div>
                 <div class="card-body">
                     <?php if (!empty($appointments)) : ?>
