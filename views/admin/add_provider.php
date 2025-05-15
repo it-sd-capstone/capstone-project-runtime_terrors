@@ -8,9 +8,10 @@
                     <h4>Add New Provider</h4>
                 </div>
                 <div class="card-body">
-                    <?php if (!empty($error)): ?>
-                        <div class="alert alert-danger" role="alert">
-                            <?= $error ?>
+                    <?php if (isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger">
+                            <?= $_SESSION['error'] ?>
+                            <?php unset($_SESSION['error']); ?>
                         </div>
                     <?php endif; ?>
                     
@@ -35,7 +36,7 @@
                         
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address *</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            <input type="email" class="form-control" id="email" name="email" required value="<?= htmlspecialchars($_SESSION['form_data']['email'] ?? '') ?>">
                         </div>
                         
                         <div class="mb-3">
@@ -156,3 +157,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
+<?php unset($_SESSION['form_data']); ?>

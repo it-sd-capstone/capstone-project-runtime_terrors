@@ -1,22 +1,26 @@
 <?php
+require_once MODEL_PATH . '/ActivityLog.php';
+require_once MODEL_PATH . '/Appointment.php';
+require_once MODEL_PATH . '/Services.php';
+require_once MODEL_PATH . '/Notification.php';
 class AppointmentsController {
     private $db;
     private $appointmentModel;
     private $activityLogModel;
     private $serviceModel;
     private $providerModel;
+    private $notificationModel;
 
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         $this->db = get_db();
-        require_once MODEL_PATH . '/ActivityLog.php';
-        require_once MODEL_PATH . '/Appointment.php';
-        require_once MODEL_PATH . '/Services.php';
         $this->activityLogModel = new ActivityLog($this->db);
         $this->appointmentModel = new Appointment($this->db);
         $this->serviceModel = new Services($this->db);
+        $this->providerModel = new Provider($this->db);
+        $this->notificationModel = new Notification($this->db);
         $this->requireLogin();
     }
 
@@ -351,25 +355,29 @@ class AppointmentsController {
     }
 
     public function reschedule() {
+        // Set consistent timezone
+        date_default_timezone_set('America/New_York'); // Update to your timezone
+        
         if (!in_array($_SESSION['role'], ['patient', 'provider', 'admin'])) {
             set_flash_message('error', 'You do not have permission to reschedule');
             header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
-
+        
         $appointmentId = $_GET['id'] ?? $_POST['appointment_id'] ?? null;
         if (!$appointmentId) {
             set_flash_message('error', "Appointment ID is required to reschedule.");
             header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
-
+        
         $appointment = $this->appointmentModel->getById($appointmentId);
         if (!$appointment) {
             set_flash_message('error', "Appointment not found");
             header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
+        
         if (
             $_SESSION['user_id'] != $appointment['patient_id'] &&
             $_SESSION['user_id'] != $appointment['provider_id'] &&
@@ -379,39 +387,96 @@ class AppointmentsController {
             header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
-
+        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!verify_csrf_token()) {
                 set_flash_message('error', 'Invalid security token.');
                 header('Location: ' . base_url('index.php/appointments/reschedule?id=' . urlencode($appointmentId)));
                 exit;
             }
-            $newDate = $_POST['appointment_date'] ?? '';
-            $newTime = $_POST['appointment_time'] ?? '';
+            
+            // Debug the incoming data
+            error_log("Reschedule POST data: " . print_r($_POST, true));
+            
+            // Get the appointment ID
+            $appointment_id = $_POST['appointment_id'] ?? null;
+            $new_date = $_POST['new_date'] ?? null;
+            $time_slot = $_POST['time_slot'] ?? null;
+            $reschedule_reason = $_POST['reschedule_reason'] ?? '';
+            
+            error_log("Processing reschedule: ID=$appointment_id, Date=$new_date, Time=$time_slot");
+            
+            // Validate the data
+            if (!$appointment_id || !$new_date || !$time_slot) {
+                $error = "Missing required information. Please try again.";
+                error_log("Reschedule failed: Missing data - ID=$appointment_id, Date=$new_date, Time=$time_slot");
+                
+                // Re-display the form with the error
+                $appointment = $this->appointmentModel->getById($appointment_id);
+                $availableSlotsPerDay = [];
+                // Re-fetch slots
+                // [your existing slot fetching code]
+                $availableSlotsJson = json_encode($availableSlotsPerDay);
+                include VIEW_PATH . '/appointments/reschedule.php';
+                return;
+            }
+            
+            // Support both naming conventions (original and new API-based)
+            $newDate = $_POST['new_date'] ?? $_POST['appointment_date'] ?? '';
+            $newTime = $_POST['time_slot'] ?? $_POST['appointment_time'] ?? '';
+            
+            error_log("Reschedule request - New date: $newDate, Time slot: $newTime");
+            
             if (empty($newDate) || empty($newTime)) {
                 set_flash_message('error', "New date and time are required");
             } else {
                 $serviceId = $appointment['service_id'];
+                
+                // Process time_slot format from API if needed
+                if (strpos($newTime, 'slot_') === 0) {
+                    // Extract the actual time from the slot ID format (e.g., slot_123_0900)
+                    $timeParts = explode('_', $newTime);
+                    if (count($timeParts) >= 3) {
+                        $timeValue = $timeParts[2];
+                        // Format time from 0900 to 09:00
+                        $formattedTime = substr($timeValue, 0, 2) . ':' . substr($timeValue, 2);
+                        $newTime = $formattedTime;
+                        error_log("Converted time slot '$newTime' from API format");
+                    }
+                }
+                
                 $availableSlots = $this->appointmentModel->findAvailableSlots(
                     $appointment['provider_id'],
                     $newDate,
                     $serviceId
                 );
+                
+                error_log("Found " . count($availableSlots) . " available slots for date $newDate");
+                
                 $matchingSlot = null;
                 foreach ($availableSlots as $slot) {
+                    error_log("Checking slot: " . $slot['start_time'] . " against requested time: " . $newTime);
                     if ($slot['start_time'] == $newTime) {
                         $matchingSlot = $slot;
                         break;
                     }
                 }
+                
                 if (!$matchingSlot) {
+                    error_log("No matching slot found for time: $newTime");
                     set_flash_message('error', "Selected time slot is not available");
                 } else {
                     $endTimeStr = $matchingSlot['end_time'];
+                    
+                    error_log("Rescheduling appointment $appointmentId to $newDate at $newTime-$endTimeStr");
+                    
                     $result = $this->appointmentModel->rescheduleAppointment(
                         $appointmentId, $newDate, $newTime, $endTimeStr
                     );
+                    
                     if ($result) {
+                        error_log("Reschedule SUCCESS for appointment $appointmentId");
+                        
                         $details = json_encode([
                             'previous_date' => $appointment['appointment_date'],
                             'previous_time' => $appointment['start_time'],
@@ -420,33 +485,84 @@ class AppointmentsController {
                             'rescheduled_by' => $_SESSION['user_id'],
                             'rescheduled_by_role' => $_SESSION['role']
                         ]);
+                        
                         $this->activityLogModel->logAppointment(
                             $_SESSION['user_id'], 'rescheduled', $appointmentId, $details
                         );
+                        
+                        // Create notifications for both patient and provider
+                        $formattedDate = date('F j, Y', strtotime($newDate));
+                        $formattedTime = date('g:i A', strtotime($newTime));
+                        
+                        $this->notificationModel->addNotification([
+                            'user_id' => $appointment['patient_id'],
+                            'subject' => 'Appointment Rescheduled',
+                            'message' => "Your appointment has been rescheduled to $formattedDate at $formattedTime",
+                            'type' => 'appointment',
+                            'appointment_id' => $appointmentId
+                        ]);
+
+                        $this->notificationModel->addNotification([
+                            'user_id' => $appointment['provider_id'],
+                            'subject' => 'Appointment Rescheduled',
+                            'message' => "An appointment has been rescheduled to $formattedDate at $formattedTime",
+                            'type' => 'appointment',
+                            'appointment_id' => $appointmentId
+                        ]);
+                        
                         set_flash_message('success', "Appointment rescheduled successfully");
                         header('Location: ' . base_url('index.php/appointments/view?id=' . $appointmentId));
                         exit;
                     } else {
+                        error_log("Reschedule FAILED for appointment $appointmentId");
                         set_flash_message('error', "Failed to reschedule appointment");
                     }
                 }
             }
         }
-
+        
+        // When loading the page, get AVAILABLE dates and times, not existing appointments
         $providerId = $appointment['provider_id'];
+        $serviceId = $appointment['service_id'];
         $availableDates = [];
+        
+        // Define the date range
         $startDate = date('Y-m-d');
         $endDate = date('Y-m-d', strtotime('+14 days'));
-        $availableSlots = $this->appointmentModel->getAppointmentsByDateRange($startDate, $endDate, $providerId);
-        if (!empty($availableSlots)) {
-            foreach ($availableSlots as $slot) {
-                if (!in_array($slot['appointment_date'], $availableDates)) {
-                    $availableDates[] = $slot['appointment_date'];
-                }
+        
+        // Log what we're looking for
+        error_log("Looking for available slots for Provider: $providerId, Service: $serviceId, Dates: $startDate to $endDate");
+        
+        // Get available slots for this provider and service combination
+        // This should use the same method that your API endpoint uses
+        $availableSlotsPerDay = [];
+        for ($date = strtotime($startDate); $date <= strtotime($endDate); $date = strtotime('+1 day', $date)) {
+            $currentDate = date('Y-m-d', $date);
+            
+            // Use the same method your API uses to find slots
+            $slotsForDate = $this->appointmentModel->findAvailableSlots(
+                $providerId,
+                $currentDate,
+                $serviceId
+            );
+            
+            if (!empty($slotsForDate)) {
+                $availableDates[] = $currentDate;
+                $availableSlotsPerDay[$currentDate] = $slotsForDate;
+                error_log("Found " . count($slotsForDate) . " slots for $currentDate");
             }
         }
+        
+        // If you need the data in the view
+        $providerData = $this->providerModel->getById($providerId);
+        $serviceData = $this->serviceModel->getServiceById($serviceId);
+        
+        // Include the available slots data for the JavaScript
+        $availableSlotsJson = json_encode($availableSlotsPerDay);
+        
         include VIEW_PATH . '/appointments/reschedule.php';
     }
+
 
     public function getTimeSlots() {
         if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || $_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest') {

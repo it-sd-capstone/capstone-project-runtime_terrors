@@ -321,7 +321,7 @@ class User {
         }
     }
     
-   /**
+    /**
      * Register a new user with secure password hashing and validation
      *
      * @param string $email User email
@@ -331,9 +331,10 @@ class User {
      * @param string $phone User phone number
      * @param string $role User role (default: 'patient')
      * @param bool $isVerified Whether the user is already verified (default: false)
+     * @param bool $skipProfileCreation Whether to skip profile creation (default: false)
      * @return array Result with user_id or error message
      */
-    public function register($email, $password, $firstName, $lastName, $phone, $role = 'patient', $isVerified = false) {
+    public function register($email, $password, $firstName, $lastName, $phone, $role = 'patient', $isVerified = false, $skipProfileCreation = false) {
         try {
             // Validate email format
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -402,44 +403,46 @@ class User {
                     }
                 }
                 
-                // Create appropriate profile based on role
-                if ($role === 'patient') {
-                    // Check if a profile with this ID already exists
-                    $checkStmt = $this->db->prepare("SELECT COUNT(*) as count FROM patient_profiles WHERE patient_id = ?");
-                    $checkStmt->bind_param("i", $userId);
-                    $checkStmt->execute();
-                    $result = $checkStmt->get_result();
-                    $row = $result->fetch_assoc();
-                    
-                    if ($row['count'] == 0) {
-                        // Modified to include user_id field
-                        $profileStmt = $this->db->prepare("INSERT INTO patient_profiles (patient_id, user_id) VALUES (?, ?)");
-                        $profileStmt->bind_param("ii", $userId, $userId);
-                        if (!$profileStmt->execute()) {
-                            error_log("Failed to create patient profile: " . $profileStmt->error);
-                            throw new Exception("Failed to create patient profile");
+                // Create appropriate profile based on role (only if not skipping profile creation)
+                if (!$skipProfileCreation) {
+                    if ($role === 'patient') {
+                        // Check if a profile with this ID already exists
+                        $checkStmt = $this->db->prepare("SELECT COUNT(*) as count FROM patient_profiles WHERE patient_id = ?");
+                        $checkStmt->bind_param("i", $userId);
+                        $checkStmt->execute();
+                        $result = $checkStmt->get_result();
+                        $row = $result->fetch_assoc();
+                        
+                        if ($row['count'] == 0) {
+                            // Modified to include user_id field
+                            $profileStmt = $this->db->prepare("INSERT INTO patient_profiles (patient_id, user_id) VALUES (?, ?)");
+                            $profileStmt->bind_param("ii", $userId, $userId);
+                            if (!$profileStmt->execute()) {
+                                error_log("Failed to create patient profile: " . $profileStmt->error);
+                                throw new Exception("Failed to create patient profile");
+                            }
+                        } else {
+                            error_log("Patient profile already exists with ID: " . $userId);
                         }
-                    } else {
-                        error_log("Patient profile already exists with ID: " . $userId);
-                    }
-                } elseif ($role === 'provider') {
-                    // Check if a profile with this ID already exists
-                    $checkStmt = $this->db->prepare("SELECT COUNT(*) as count FROM provider_profiles WHERE provider_id = ?");
-                    $checkStmt->bind_param("i", $userId);
-                    $checkStmt->execute();
-                    $result = $checkStmt->get_result();
-                    $row = $result->fetch_assoc();
-                    
-                    if ($row['count'] == 0) {
-                        // Modified to include user_id field
-                        $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id) VALUES (?)");
-                        $profileStmt->bind_param("i", $userId);
-                        if (!$profileStmt->execute()) {
-                            error_log("Failed to create provider profile: " . $profileStmt->error);
-                            throw new Exception("Failed to create provider profile");
+                    } elseif ($role === 'provider') {
+                        // Check if a profile with this ID already exists
+                        $checkStmt = $this->db->prepare("SELECT COUNT(*) as count FROM provider_profiles WHERE provider_id = ?");
+                        $checkStmt->bind_param("i", $userId);
+                        $checkStmt->execute();
+                        $result = $checkStmt->get_result();
+                        $row = $result->fetch_assoc();
+                        
+                        if ($row['count'] == 0) {
+                            // Modified to include user_id field
+                            $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id) VALUES (?)");
+                            $profileStmt->bind_param("i", $userId);
+                            if (!$profileStmt->execute()) {
+                                error_log("Failed to create provider profile: " . $profileStmt->error);
+                                throw new Exception("Failed to create provider profile");
+                            }
+                        } else {
+                            error_log("Provider profile already exists with ID: " . $userId);
                         }
-                    } else {
-                        error_log("Provider profile already exists with ID: " . $userId);
                     }
                 }
                 
@@ -495,47 +498,49 @@ class User {
                     }
                 }
                 
-                // Create appropriate profile based on role
-                if ($role === 'patient') {
-                    // Check if a profile with this ID already exists
-                    $checkStmt = $this->db->prepare("SELECT COUNT(*) as count FROM patient_profiles WHERE patient_id = :id");
-                    $checkStmt->bindParam(':id', $userId, PDO::PARAM_INT);
-                    $checkStmt->execute();
-                    $count = $checkStmt->fetchColumn();
-                    
-                    if ($count == 0) {
-                        // Modified to include user_id field
-                        $profileStmt = $this->db->prepare("INSERT INTO patient_profiles (patient_id, user_id) VALUES (:pid, :uid)");
-                        $profileStmt->bindParam(':pid', $userId, PDO::PARAM_INT);
-                        $profileStmt->bindParam(':uid', $userId, PDO::PARAM_INT);
+                // Create appropriate profile based on role (only if not skipping profile creation)
+                if (!$skipProfileCreation) {
+                    if ($role === 'patient') {
+                        // Check if a profile with this ID already exists
+                        $checkStmt = $this->db->prepare("SELECT COUNT(*) as count FROM patient_profiles WHERE patient_id = :id");
+                        $checkStmt->bindParam(':id', $userId, PDO::PARAM_INT);
+                        $checkStmt->execute();
+                        $count = $checkStmt->fetchColumn();
                         
-                        if (!$profileStmt->execute()) {
-                            $errorInfo = $profileStmt->errorInfo();
-                            error_log("Failed to create patient profile with PDO: " . implode(", ", $errorInfo));
-                            throw new Exception("Failed to create patient profile");
+                        if ($count == 0) {
+                            // Modified to include user_id field
+                            $profileStmt = $this->db->prepare("INSERT INTO patient_profiles (patient_id, user_id) VALUES (:pid, :uid)");
+                            $profileStmt->bindParam(':pid', $userId, PDO::PARAM_INT);
+                            $profileStmt->bindParam(':uid', $userId, PDO::PARAM_INT);
+                            
+                            if (!$profileStmt->execute()) {
+                                $errorInfo = $profileStmt->errorInfo();
+                                error_log("Failed to create patient profile with PDO: " . implode(", ", $errorInfo));
+                                throw new Exception("Failed to create patient profile");
+                            }
+                        } else {
+                            error_log("Patient profile already exists with ID: " . $userId);
                         }
-                    } else {
-                        error_log("Patient profile already exists with ID: " . $userId);
-                    }
-                } elseif ($role === 'provider') {
-                    // Check if a profile with this ID already exists
-                    $checkStmt = $this->db->prepare("SELECT COUNT(*) as count FROM provider_profiles WHERE provider_id = :id");
-                    $checkStmt->bindParam(':id', $userId, PDO::PARAM_INT);
-                    $checkStmt->execute();
-                    $count = $checkStmt->fetchColumn();
-                    
-                    if ($count == 0) {
-                        // Modified to include user_id field
-                        $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id) VALUES (:pid)");
-                        $profileStmt->bindParam(':pid', $userId, PDO::PARAM_INT);
+                    } elseif ($role === 'provider') {
+                        // Check if a profile with this ID already exists
+                        $checkStmt = $this->db->prepare("SELECT COUNT(*) as count FROM provider_profiles WHERE provider_id = :id");
+                        $checkStmt->bindParam(':id', $userId, PDO::PARAM_INT);
+                        $checkStmt->execute();
+                        $count = $checkStmt->fetchColumn();
                         
-                        if (!$profileStmt->execute()) {
-                            $errorInfo = $profileStmt->errorInfo();
-                            error_log("Failed to create provider profile with PDO: " . implode(", ", $errorInfo));
-                            throw new Exception("Failed to create provider profile");
+                        if ($count == 0) {
+                            // Modified to include user_id field
+                            $profileStmt = $this->db->prepare("INSERT INTO provider_profiles (provider_id) VALUES (:pid)");
+                            $profileStmt->bindParam(':pid', $userId, PDO::PARAM_INT);
+                            
+                            if (!$profileStmt->execute()) {
+                                $errorInfo = $profileStmt->errorInfo();
+                                error_log("Failed to create provider profile with PDO: " . implode(", ", $errorInfo));
+                                throw new Exception("Failed to create provider profile");
+                            }
+                        } else {
+                            error_log("Provider profile already exists with ID: " . $userId);
                         }
-                    } else {
-                        error_log("Provider profile already exists with ID: " . $userId);
                     }
                 }
                 
@@ -557,6 +562,7 @@ class User {
             return ['error' => 'Registration failed: ' . $e->getMessage()];
         }
     }
+
 
     
     /**

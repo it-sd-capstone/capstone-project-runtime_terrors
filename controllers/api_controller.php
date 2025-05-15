@@ -11,6 +11,7 @@ class ApiController {
         $this->db = get_db();
         $this->providerModel = new Provider($this->db);
         $this->appointmentModel = new Appointment($this->db);
+        date_default_timezone_set('America/Chicago');
     }
     
    public function getAvailableSlots() {
@@ -246,9 +247,20 @@ class ApiController {
             // Debug the result
             error_log("Returning " . count($events) . " total availability slots");
             
+            // Convert the events format to what the JavaScript expects
+            $slots = [];
+            foreach ($events as $event) {
+                $slots[] = [
+                    'id' => $event['id'],
+                    'start' => $event['start'],
+                    'end' => $event['end'],
+                    'title' => $event['title']
+                ];
+            }
+
             // Return JSON response
             header('Content-Type: application/json');
-            echo json_encode($events);
+            echo json_encode($slots);
             
         } catch (Exception $e) {
             error_log("Error getting available slots: " . $e->getMessage());
@@ -257,6 +269,175 @@ class ApiController {
         }
     }
 
+    /**
+     * Get next available dates for a provider and service
+     */
+    public function getNextAvailableDates() {
+        // Get parameters
+        $provider_id = isset($_GET['provider_id']) ? (int)$_GET['provider_id'] : null;
+        $service_id = isset($_GET['service_id']) ? (int)$_GET['service_id'] : null;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
+        $appointment_id = isset($_GET['appointment_id']) ? (int)$_GET['appointment_id'] : null;
+        
+        if (!$provider_id || !$service_id) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Provider ID and Service ID are required']);
+            return;
+        }
+        
+        try {
+            // Find next 30 days with availability
+            $start_date = date('Y-m-d');
+            $end_date = date('Y-m-d', strtotime('+30 days'));
+            
+            // Get all available slots for the next 30 days
+            $query = "
+                SELECT 
+                    a.availability_date, 
+                    a.start_time,
+                    a.end_time
+                FROM 
+                    provider_availability a
+                WHERE 
+                    a.provider_id = ?
+                    AND a.is_available = 1
+                    AND (
+                        (a.is_recurring = 0 AND a.availability_date BETWEEN ? AND ?)
+                        OR (a.is_recurring = 1)
+                    )
+                    AND (a.service_id IS NULL OR a.service_id = ?)
+                ORDER BY 
+                    a.availability_date, a.start_time
+            ";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param("issi", $provider_id, $start_date, $end_date, $service_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            // Get all existing appointments to check for conflicts
+            $apptQuery = "
+                SELECT 
+                    appointment_date, 
+                    start_time, 
+                    end_time
+                FROM 
+                    appointments
+                WHERE 
+                    provider_id = ?
+                    AND appointment_date BETWEEN ? AND ?
+                    AND status != 'canceled'
+            ";
+            
+            if ($appointment_id) {
+                $apptQuery .= " AND appointment_id != ?";
+                $stmt = $this->db->prepare($apptQuery);
+                $stmt->bind_param("issi", $provider_id, $start_date, $end_date, $appointment_id);
+            } else {
+                $stmt = $this->db->prepare($apptQuery);
+                $stmt->bind_param("iss", $provider_id, $start_date, $end_date);
+            }
+            
+            $stmt->execute();
+            $apptResult = $stmt->get_result();
+            
+            // Build array of booked time slots
+            $bookedSlots = [];
+            while ($appt = $apptResult->fetch_assoc()) {
+                $date = $appt['appointment_date'];
+                if (!isset($bookedSlots[$date])) {
+                    $bookedSlots[$date] = [];
+                }
+                $bookedSlots[$date][] = [
+                    'start' => $appt['start_time'],
+                    'end' => $appt['end_time']
+                ];
+            }
+            
+            // Build array of dates with available slots
+            $availableDates = [];
+            $dateSlotCounts = [];
+            
+            // Process each availability slot
+            while ($slot = $result->fetch_assoc()) {
+                // If this is a recurring slot, expand it to actual dates
+                if (isset($slot['is_recurring']) && $slot['is_recurring'] == 1) {
+                    // Handle recurring slots by expanding to actual dates
+                    $weekdays = explode(',', $slot['weekdays'] ?? '0,1,2,3,4,5,6');
+                    $current = new DateTime($start_date);
+                    $end = new DateTime($end_date);
+                    
+                    while ($current <= $end) {
+                        $dayOfWeek = $current->format('w'); // 0 (Sunday) to 6 (Saturday)
+                        if (in_array($dayOfWeek, $weekdays)) {
+                            $dateStr = $current->format('Y-m-d');
+                            $this->checkAndAddAvailableDate($dateStr, $slot, $bookedSlots, $dateSlotCounts);
+                        }
+                        $current->modify('+1 day');
+                    }
+                } else {
+                    // Handle one-time availability
+                    $this->checkAndAddAvailableDate($slot['availability_date'], $slot, $bookedSlots, $dateSlotCounts);
+                }
+            }
+            
+            // Sort dates by slots count (most slots first)
+            arsort($dateSlotCounts);
+            
+            // Format the response with the top dates
+            $response = [];
+            $count = 0;
+            foreach ($dateSlotCounts as $date => $slots) {
+                if ($count >= $limit) break;
+                
+                $response[] = [
+                    'date' => $date,
+                    'slots' => $slots,
+                    'formatted_date' => date('D, M j', strtotime($date))
+                ];
+                $count++;
+            }
+            
+            header('Content-Type: application/json');
+            echo json_encode($response);
+            
+        } catch (Exception $e) {
+            error_log("Error getting next available dates: " . $e->getMessage());
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Failed to retrieve availability data']);
+        }
+    }
+
+    /**
+     * Helper method to check and add available dates
+     */
+    private function checkAndAddAvailableDate($date, $slot, $bookedSlots, &$dateSlotCounts) {
+        // Skip dates in the past
+        if (strtotime($date) < strtotime(date('Y-m-d'))) {
+            return;
+        }
+        
+        // Check if the slot conflicts with any booked appointments
+        $hasConflict = false;
+        if (isset($bookedSlots[$date])) {
+            foreach ($bookedSlots[$date] as $booked) {
+                // Check for overlap
+                if (!(strtotime($slot['end_time']) <= strtotime($booked['start']) || 
+                    strtotime($slot['start_time']) >= strtotime($booked['end']))) {
+                    $hasConflict = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!$hasConflict) {
+            // Increment slot count for this date
+            if (!isset($dateSlotCounts[$date])) {
+                $dateSlotCounts[$date] = 0;
+            }
+            $dateSlotCounts[$date]++;
+        }
+    }
 
     /**
      * Helper method to add time slots to events array

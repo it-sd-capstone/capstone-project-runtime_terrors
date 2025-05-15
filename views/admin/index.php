@@ -271,7 +271,7 @@
     </div>
 
     <!-- Real-time Notifications System -->
-    <div class="row mt-4">
+    <!-- <div class="row mt-4">
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -291,7 +291,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Customizable Widgets -->
     <div class="row mt-4">
@@ -302,30 +302,30 @@
                 </div>
                 <div class="card-body">
                     <form id="widget-preferences-form" class="row g-3">
-                        <div class="col-md-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="widget-appointments" checked>
-                                <label class="form-check-label" for="widget-appointments">Appointment Analytics</label>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="widget-notifications" checked>
-                                <label class="form-check-label" for="widget-notifications">System Notifications</label>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="widget-providers" checked>
-                                <label class="form-check-label" for="widget-providers">Provider Stats</label>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="widget-services" checked>
-                                <label class="form-check-label" for="widget-services">Service Stats</label>
-                            </div>
-                        </div>
+                <div class="col-md-3" style="display: flex; justify-content: center; align-items: center;">
+                    <div class="form-check form-switch" style="margin: 0 auto; text-align: center;">
+                        <input class="form-check-input" type="checkbox" id="widget-appointments" checked>
+                        <label class="form-check-label" for="widget-appointments">Appointment Analytics</label>
+                    </div>
+                </div>
+                <!-- <div class="col-md-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="widget-notifications" checked>
+                        <label class="form-check-label" for="widget-notifications">System Notifications</label>
+                    </div>
+                </div> -->
+                <div class="col-md-3" style="display: flex; justify-content: center; align-items: center;">
+                    <div class="form-check form-switch" style="margin: 0 auto; text-align: center;">
+                        <input class="form-check-input" type="checkbox" id="widget-providers" checked>
+                        <label class="form-check-label" for="widget-providers">Provider Stats</label>
+                    </div>
+                </div>
+                <div class="col-md-3" style="display: flex; justify-content: center; align-items: center;">
+                    <div class="form-check form-switch" style="margin: 0 auto; text-align: center;">
+                        <input class="form-check-input" type="checkbox" id="widget-services" checked>
+                        <label class="form-check-label" for="widget-services">Service Stats</label>
+                    </div>
+                </div>
                         <div class="col-12">
                             <button type="submit" class="btn btn-primary">Save Preferences</button>
                         </div>

@@ -127,7 +127,7 @@ error_reporting(E_ALL);
                         <label for="role" class="form-label">Role</label>
                         <select class="form-select" id="role" name="role" required>
                             <option value="patient">Patient</option>
-                            <option value="provider">Provider</option>
+                            <!-- <option value="provider">Provider</option> -->
                             <option value="admin">Admin</option>
                         </select>
                     </div>

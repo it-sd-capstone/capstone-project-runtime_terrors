@@ -22,7 +22,7 @@ if (!defined('APP_ROOT')) {
                     </div>
                     <div class="card-body">
                         <?php if(isset($error)): ?>
-                            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+                            <div class="alert alert alert"><?= htmlspecialchars($error) ?></div>
                         <?php endif; ?>
                         
                         <?php if(isset($success)): ?>
@@ -45,15 +45,26 @@ if (!defined('APP_ROOT')) {
                                     </div>
                                 </div>
                             </div>
-
+                            <!-- Next Available Dates Section -->
+                            <div class="mb-3">
+                                <h6>Quick Options: Next Available Dates</h6>
+                                <div id="next-available-dates" class="d-flex flex-wrap gap-2 mb-3">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <span>Loading next available dates...</span>
+                                </div>
+                            </div>
                             <form action="<?= base_url('index.php/appointments/reschedule') ?>" method="post">
                                 <input type="hidden" name="appointment_id" value="<?= $appointment['appointment_id'] ?? '' ?>">
+                                <!-- Add this hidden field to ensure the form includes all necessary data -->
+                                <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
                                 
                                 <h5 class="mb-3">Select New Date and Time</h5>
                                 
                                 <div class="row">
                                     <div class="col-md-12 mb-3">
-                                        <label for="new_date" class="form-label">New Date:</label>
+                                        <label for="new_date" class="form-label">New Date </label>
                                         <input type="date" class="form-control" id="new_date" name="new_date" required 
                                             min="<?= date('Y-m-d') ?>">
                                     </div>
@@ -88,67 +99,115 @@ if (!defined('APP_ROOT')) {
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Add jQuery here -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // Add this JavaScript to fetch available time slots when a date is selected
-        document.getElementById('new_date').addEventListener('change', function() {
-            const selectedDate = this.value;
-            const appointmentId = <?= json_encode($appointment['appointment_id'] ?? '') ?>;
-            const providerId = <?= json_encode($appointment['provider_id'] ?? '') ?>;
-            const serviceId = <?= json_encode($appointment['service_id'] ?? '') ?>;
-            
-            if (selectedDate) {
-                // Clear previous time slots
-                document.getElementById('time-slots').innerHTML = '<div class="col-12"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div> Loading available time slots...</div>';
-                
-                // Use controller API endpoint
-                fetch(`<?= base_url('index.php/api/getAvailableSlots') ?>?date=${selectedDate}&provider_id=${providerId}&service_id=${serviceId}&appointment_id=${appointmentId}`)
-                    .then(response => {
-                        // Get a copy of the response to inspect
-                        response.clone().text().then(rawText => {
-                            console.log('Raw API response:', rawText);
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Available slots:', data);
-                        const timeSlotsContainer = document.getElementById('time-slots');
-                        timeSlotsContainer.innerHTML = '';
-                        
-                        if (!data || data.length === 0) {
-                            timeSlotsContainer.innerHTML = '<div class="col-12"><div class="alert alert-warning">No available time slots for this date. Please select another date.</div></div>';
-                            return;
-                        }
-                        
-                        data.forEach(slot => {
-                            // Format the datetime strings from API to readable time format
-                            const startTime = new Date(slot.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                            const endTime = new Date(slot.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                            
-                            const timeSlot = document.createElement('div');
-                            timeSlot.className = 'col-md-4 mb-2';
-                            timeSlot.innerHTML = `
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="time_slot" 
-                                        id="slot_${slot.id}" value="${slot.id}" required>
-                                    <label class="form-check-label" for="slot_${slot.id}">
-                                        ${startTime} - ${endTime}
-                                    </label>
-                                </div>
-                            `;
-                            timeSlotsContainer.appendChild(timeSlot);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error fetching time slots:', error);
-                        document.getElementById('time-slots').innerHTML = 
-                            '<div class="col-12"><div class="alert alert-danger">Error loading time slots. Please try again.</div></div>';
-                    });
+        $(document).ready(function() {
+            // Parse the PHP-provided available slots data with error handling
+            let availableSlots = {};
+            try {
+                availableSlots = <?= isset($availableSlotsJson) ? $availableSlotsJson : '{}' ?>;
+                console.log("Available slots loaded:", Object.keys(availableSlots).length, "dates found");
+            } catch (e) {
+                console.error("Error parsing available slots data:", e);
+                availableSlots = {};
             }
+            
+            // Load the next available dates
+            function loadNextAvailableDates() {
+                const $nextDatesContainer = $('#next-available-dates');
+                $nextDatesContainer.empty();
+                
+                if (Object.keys(availableSlots).length > 0) {
+                    // Only show up to 5 dates
+                    Object.keys(availableSlots).slice(0, 5).forEach(date => {
+                        // Fix: Create date with timezone handling
+                        // Add 'T00:00:00' to ensure it's interpreted as midnight in local time
+                        const dateObj = new Date(`${date}T00:00:00`);
+                        
+                        const formattedDate = dateObj.toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short', 
+                            day: 'numeric'
+                        });
+                        
+                        const $btn = $('<button>', {
+                            type: 'button',
+                            class: 'btn btn-outline-primary m-1',
+                            text: formattedDate,
+                            click: function() {
+                                $('#new_date').val(date).trigger('change');
+                            }
+                        });
+                        
+                        $nextDatesContainer.append($btn);
+                    });
+                } else {
+                    $nextDatesContainer.html('<div class="alert alert-info">No available dates found.</div>');
+                }
+            }
+            
+            // Load time slots for a specific date
+            function loadTimeSlotsForDate(date) {
+                const $timeSlotsContainer = $('#time-slots');
+                $timeSlotsContainer.empty();
+                
+                if (availableSlots[date] && availableSlots[date].length > 0) {
+                    const $row = $('<div>', { class: 'row' });
+                    
+                    availableSlots[date].forEach(slot => {
+                        const startTime = formatTimeForDisplay(slot.start_time);
+                        
+                        const $col = $('<div>', { class: 'col-md-3 col-6 mb-2' });
+                        const $radioDiv = $('<div>', { class: 'form-check' });
+                        
+                        const $input = $('<input>', {
+                            class: 'form-check-input',
+                            type: 'radio',
+                            name: 'time_slot',
+                            id: `slot_${date}_${slot.start_time.replace(':', '')}`,
+                            value: slot.start_time,
+                            required: true
+                        });
+                        
+                        const $label = $('<label>', {
+                            class: 'form-check-label',
+                            for: `slot_${date}_${slot.start_time.replace(':', '')}`,
+                            text: startTime
+                        });
+                        
+                        $radioDiv.append($input, $label);
+                        $col.append($radioDiv);
+                        $row.append($col);
+                    });
+                    
+                    $timeSlotsContainer.append($row);
+                } else {
+                    $timeSlotsContainer.html('<div class="alert alert-warning">No available time slots for the selected date.</div>');
+                }
+            }
+            
+            // Format time to 12-hour format
+            function formatTimeForDisplay(timeString) {
+                if (!timeString) return '';
+                const [hours, minutes] = timeString.split(':');
+                let hour = parseInt(hours, 10);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                hour = hour % 12;
+                hour = hour ? hour : 12; // Convert 0 to 12
+                return `${hour}:${minutes} ${ampm}`;
+            }
+            
+            // Event handler for date selection
+            $('#new_date').on('change', function() {
+                const selectedDate = $(this).val();
+                loadTimeSlotsForDate(selectedDate);
+            });
+            
+            // Initialize the UI
+            loadNextAvailableDates();
         });
     </script>
+
 </body>
 </html>
