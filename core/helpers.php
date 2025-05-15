@@ -73,6 +73,10 @@ function generate_csrf_token() {
     
     return $_SESSION['csrf_token'];
 }
+function csrf_token_field() {
+    $token = $_SESSION['csrf_token'] ?? '';
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token) . '">';
+}
 
 /**
  * Validate a CSRF token against the one stored in session

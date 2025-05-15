@@ -1221,6 +1221,57 @@ class ProviderController {
             exit;
         }
     }
+    public function updateNotificationSettings()
+{
+    // Ensure user is logged in and is a provider
+    if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+        $_SESSION['error'] = "Unauthorized access";
+        header('Location: ' . base_url('index.php/auth'));
+        exit;
+    }
+
+    // Only allow POST
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        $_SESSION['error'] = "Invalid request method";
+        header('Location: ' . base_url('index.php/provider/notifications'));
+        exit;
+    }
+
+    $provider_id = $_SESSION['user_id'];
+
+    // Get settings from POST (checkboxes: checked = 'on', unchecked = not set)
+    $email_notifications = isset($_POST['email_notifications']) ? 1 : 0;
+    $appointment_reminders = isset($_POST['appointment_reminders']) ? 1 : 0;
+    $system_updates = isset($_POST['system_updates']) ? 1 : 0;
+
+    // Save settings - you can use a dedicated table or a JSON/settings field in provider profile
+    // Here, we'll assume a provider_notification_settings table with provider_id as PK
+    try {
+        $stmt = $this->db->prepare("
+            INSERT INTO provider_notification_settings (provider_id, email_notifications, appointment_reminders, system_updates)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                email_notifications = VALUES(email_notifications),
+                appointment_reminders = VALUES(appointment_reminders),
+                system_updates = VALUES(system_updates)
+        ");
+        $stmt->bind_param("iiii", $provider_id, $email_notifications, $appointment_reminders, $system_updates);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        if ($success) {
+            $_SESSION['success'] = "Notification settings updated successfully.";
+        } else {
+            $_SESSION['error'] = "Failed to update notification settings.";
+        }
+    } catch (Exception $e) {
+        error_log("Error updating notification settings: " . $e->getMessage());
+        $_SESSION['error'] = "Database error: " . $e->getMessage();
+    }
+
+    header('Location: ' . base_url('index.php/provider/notifications'));
+    exit;
+}
     /**
      * Display provider notifications
      */
@@ -1239,6 +1290,15 @@ class ProviderController {
         
         // Get unread count
         $unreadCount = $this->notificationModel->getUnreadCount($provider_id);
+        $stmt = $this->db->prepare("SELECT email_notifications, appointment_reminders, system_updates FROM provider_notification_settings WHERE provider_id = ?");
+        $stmt->bind_param("i", $provider_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $notificationSettings = $result->fetch_assoc() ?: [
+            'email_notifications' => 1,
+            'appointment_reminders' => 1,
+            'system_updates' => 1
+        ];
         
         // Include the notifications view
         include VIEW_PATH . '/provider/notifications.php';
