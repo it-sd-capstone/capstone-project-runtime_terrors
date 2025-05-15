@@ -1245,10 +1245,10 @@ class ProviderController {
     $system_updates = isset($_POST['system_updates']) ? 1 : 0;
 
     // Save settings - you can use a dedicated table or a JSON/settings field in provider profile
-    // Here, we'll assume a provider_notification_settings table with provider_id as PK
+    // Here, we'll assume a notification_preferences table with provider_id as PK
     try {
         $stmt = $this->db->prepare("
-            INSERT INTO provider_notification_settings (provider_id, email_notifications, appointment_reminders, system_updates)
+            INSERT INTO notification_preferences (user_id, email_notifications, appointment_reminders, system_updates)
             VALUES (?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 email_notifications = VALUES(email_notifications),
@@ -1290,7 +1290,7 @@ class ProviderController {
         
         // Get unread count
         $unreadCount = $this->notificationModel->getUnreadCount($provider_id);
-        $stmt = $this->db->prepare("SELECT email_notifications, appointment_reminders, system_updates FROM provider_notification_settings WHERE provider_id = ?");
+        $stmt = $this->db->prepare("SELECT email_notifications, appointment_reminders, system_updates FROM notification_preferences WHERE user_id = ?");
         $stmt->bind_param("i", $provider_id);
         $stmt->execute();
         $result = $stmt->get_result();

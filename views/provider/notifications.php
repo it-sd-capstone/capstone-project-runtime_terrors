@@ -93,21 +93,24 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="<?= base_url('index.php/provider/updateNotificationSettings') ?>">
+                        <?= csrf_field() ?>
                         <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="emailNotifications" name="email_notifications" checked>
+                            <input class="form-check-input" type="checkbox" id="emailNotifications" name="email_notifications"
+                                <?= !empty($notificationSettings['email_notifications']) ? 'checked' : '' ?>>
                             <label class="form-check-label" for="emailNotifications">
                                 Receive email notifications
                             </label>
                         </div>
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" id="appointmentReminders" name="appointment_reminders"
-                            <?= !empty($notificationSettings['appointment_reminders']) ? 'checked' : '' ?>>
+                                <?= !empty($notificationSettings['appointment_reminders']) ? 'checked' : '' ?>>
                             <label class="form-check-label" for="appointmentReminders">
                                 Appointment reminders
                             </label>
-
+                        </div>
+                        <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" id="systemUpdates" name="system_updates"
-                            <?= !empty($notificationSettings['system_updates']) ? 'checked' : '' ?>>
+                                <?= !empty($notificationSettings['system_updates']) ? 'checked' : '' ?>>
                             <label class="form-check-label" for="systemUpdates">
                                 System updates and announcements
                             </label>
