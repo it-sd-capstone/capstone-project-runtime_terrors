@@ -387,6 +387,10 @@
 .notification.warning {
     border-left-color: var(--warning);
 }
+.fc-day-selected {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+    border: 2px solid #007bff !important;
+}
 
 @keyframes slide-in {
     0% {
@@ -604,6 +608,81 @@
                                         <button type="submit" class="btn btn-success btn-sm">
                                             <i class="fas fa-save me-1"></i>Save Schedule
                                         </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <!-- Add this right after the existing form in the recurring-panel div -->
+                            <hr class="my-3">
+                            <h6 class="card-title mt-3"><i class="fas fa-trash-alt me-1 text-danger"></i> Delete Work Schedule</h6>
+                            <form id="deleteWorkScheduleForm" class="row g-2">
+                                <div class="col-md-12 mb-2">
+                                    <label class="form-label small fw-bold">Delete Type:</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="fas fa-calendar-times"></i></span>
+                                        <select class="form-select" id="delete_type" name="delete_type" required>
+                                            <option value="" selected disabled>Select what to delete...</option>
+                                            <option value="day">Single Day</option>
+                                            <!-- <option value="month">Entire Month</option> -->
+                                            <!-- <option value="custom">Custom Range</option> -->
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Single Day Selection (shows when day is selected) -->
+                                <div class="col-md-12 mb-2 delete-option" id="day_option" style="display:none">
+                                    <label class="form-label small fw-bold">Select Day:</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="fas fa-calendar-day"></i></span>
+                                        <input type="date" class="form-control" id="delete_day" name="delete_day">
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-12 mb-2 delete-option" id="month_option" style="display:none">
+                                    <label class="form-label small fw-bold">Select Month:</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                        <input type="text" class="form-control" id="delete_month" name="delete_month" placeholder="Select month" readonly>
+                                    </div>
+                                </div>
+                                
+                                <!-- Custom Range (shows when custom is selected) -->
+                                <div class="col-12 delete-option" id="custom_option" style="display:none">
+                                    <div class="row g-2">
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label small fw-bold">From:</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="fas fa-calendar-minus"></i></span>
+                                                <input type="date" class="form-control" id="delete_start" name="delete_start">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label small fw-bold">To:</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="fas fa-calendar-plus"></i></span>
+                                                <input type="date" class="form-control" id="delete_end" name="delete_end">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-12 mt-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="delete_confirm" name="delete_confirm" required>
+                                        <label class="form-check-label small text-danger" for="delete_confirm">
+                                            I understand this action cannot be undone
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-12 mt-2">
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-danger btn-sm" id="deleteWorkScheduleBtn" disabled>
+                                            <i class="fas fa-trash-alt me-1"></i>Delete Schedule
+                                        </button>
+                                    </div>
+                                    <div class="form-text text-muted small mt-1">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        This will permanently delete selected work schedule slots.
                                     </div>
                                 </div>
                             </form>
@@ -877,19 +956,30 @@
             
             // Add this event handler inside your calendar initialization
             dateClick: function(info) {
-                // Hide any active tooltips (from Kdebug branch)
+                // Hide any active tooltips
                 $('.tooltip-event').tooltip('hide');
                 $('.tooltip').tooltip('dispose');
                 $('.tooltip').remove();
-
-                // Use the formatDateLocal function from main branch
-                selectedDate = formatDateLocal(info.date);
-
-                // Update the display text using direct date object (from main)
+                
+                // Always use an ISO string format YYYY-MM-DD for consistency
+                selectedDate = info.dateStr || formatDateLocal(info.date);
+                
+                // Log for debugging
+                console.log('Date selected:', selectedDate);
+                
+                // Update the display text
                 document.getElementById('selectedDayDisplay').textContent =
                     'Selected: ' + info.date.toLocaleDateString();
-
-                // Check if element exists before updating (safer approach from main)
+                
+                // Add visual feedback in month view
+                if (calendar.view.type === 'dayGridMonth') {
+                    // Remove previous highlighting
+                    $('.fc-day-selected').removeClass('fc-day-selected');
+                    // Add highlighting to the clicked day
+                    $(info.dayEl).addClass('fc-day-selected');
+                }
+                
+                // Check if element exists before updating
                 const availInput = document.querySelector('input[name="availability_date"]');
                 if (availInput) availInput.value = selectedDate;
             }
@@ -1041,17 +1131,19 @@
         document.getElementById('clearDayBtn').addEventListener('click', function() {
             // Use the selected date or fall back to current displayed date
             const dateToUse = selectedDate || calendar.getDate().toISOString().split('T')[0];
-        
+            
+            console.log('Attempting to clear date:', dateToUse, 'Selected date was:', selectedDate);
+            
             if (!dateToUse) {
                 showNotification('Please select a day first by clicking on the calendar', 'warning');
                 return;
             }
-        
+            
             if (confirm(`Are you sure you want to delete ALL availability for ${dateToUse}?`)) {
                 clearDayAvailability(dateToUse);
             }
         });
-        
+
         // Form submission handlers
         document.querySelectorAll('form').forEach(form => {
             const formAction = form.getAttribute('action') || '';
@@ -1325,6 +1417,275 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
-
+<script>
+// Handle showing/hiding the appropriate date inputs based on selection
+document.addEventListener('DOMContentLoaded', function() {
+    // Get references to form elements
+    const deleteTypeSelect = document.getElementById('delete_type');
+    const deleteOptions = document.querySelectorAll('.delete-option');
+    const deleteConfirm = document.getElementById('delete_confirm');
+    const deleteButton = document.getElementById('deleteWorkScheduleBtn');
+    const deleteForm = document.getElementById('deleteWorkScheduleForm');
+    
+    // Initialize month picker with dropdown selectors
+    setupMonthPicker();
+    
+    // Show/hide appropriate fields based on delete type selection
+    deleteTypeSelect.addEventListener('change', function() {
+        // Hide all options first
+        deleteOptions.forEach(option => {
+            option.style.display = 'none';
+        });
+        
+        // Show the selected option
+        const selectedOption = this.value;
+        if (selectedOption) {
+            document.getElementById(selectedOption + '_option').style.display = 'block';
+        }
+        
+        // Set today's date as default for single day
+        if (selectedOption === 'day') {
+            document.getElementById('delete_day').valueAsDate = new Date();
+        }
+        
+        // Set current month for month selection
+        if (selectedOption === 'month') {
+            // The month will be set by the setupMonthPicker function
+            updateMonthSelectorsToCurrentMonth();
+        }
+        
+        // Set reasonable defaults for custom range
+        if (selectedOption === 'custom') {
+            const today = new Date();
+            document.getElementById('delete_start').valueAsDate = today;
+            
+            const nextWeek = new Date();
+            nextWeek.setDate(today.getDate() + 7);
+            document.getElementById('delete_end').valueAsDate = nextWeek;
+        }
+    });
+    
+    // Enable/disable delete button based on confirmation checkbox
+    deleteConfirm.addEventListener('change', function() {
+        deleteButton.disabled = !this.checked;
+    });
+    
+    // Handle form submission
+    deleteForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Get the selected delete type
+        const deleteType = deleteTypeSelect.value;
+        let startDate, endDate;
+        
+        // Calculate the appropriate date range based on selection
+        if (deleteType === 'day') {
+            startDate = document.getElementById('delete_day').value;
+            endDate = startDate; // Same day for single day deletion
+        } else if (deleteType === 'month') {
+            // Get values from month and year selectors
+            const monthSelect = document.querySelector('.month-select');
+            const yearSelect = document.querySelector('.year-select');
+            
+            if (monthSelect && yearSelect) {
+                const year = yearSelect.value;
+                const month = parseInt(monthSelect.value) + 1; // JavaScript months are 0-indexed
+                
+                // Calculate the last day of the selected month
+                const lastDay = new Date(year, month, 0).getDate();
+                
+                // Format dates
+                const monthStr = month < 10 ? '0' + month : month;
+                startDate = `${year}-${monthStr}-01`; // First day of month
+                endDate = `${year}-${monthStr}-${lastDay}`; // Last day of month
+            } else {
+                // Fallback to the hidden input if selectors aren't found
+                const monthValue = document.getElementById('delete_month').value; // Format: YYYY-MM
+                if (monthValue) {
+                    const year = monthValue.split('-')[0];
+                    const month = monthValue.split('-')[1];
+                    const lastDay = new Date(year, month, 0).getDate();
+                    
+                    startDate = `${monthValue}-01`; // First day of month
+                    endDate = `${monthValue}-${lastDay}`; // Last day of month
+                }
+            }
+        } else if (deleteType === 'custom') {
+            startDate = document.getElementById('delete_start').value;
+            endDate = document.getElementById('delete_end').value;
+        }
+        
+        // Validate dates
+        if (!startDate || !endDate) {
+            showAlert('danger', 'Please select valid dates');
+            return;
+        }
+        
+        // Send to backend
+        deleteWorkSchedule(startDate, endDate);
+    });
+    
+    // Function to send delete request to backend
+    function deleteWorkSchedule(startDate, endDate) {
+        // Show loading indicator
+        deleteButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
+        deleteButton.disabled = true;
+        
+        // Make AJAX request to delete the schedule
+        fetch(base_url + 'index.php/provider/deleteWorkSchedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                start_date: startDate,
+                end_date: endDate
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showAlert('success', 'Successfully deleted work schedule slots in the selected range');
+                
+                // Refresh the calendar to show changes
+                calendar.refetchEvents();
+                
+                // Reset form
+                deleteForm.reset();
+                deleteOptions.forEach(option => {
+                    option.style.display = 'none';
+                });
+            } else {
+                // Show error message
+                showAlert('danger', data.message || 'Failed to delete work schedule slots');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('danger', 'An error occurred while deleting work schedule slots');
+        })
+        .finally(() => {
+            // Reset button state
+            deleteButton.innerHTML = '<i class="fas fa-trash-alt me-1"></i>Delete Schedule';
+            deleteButton.disabled = false;
+            deleteConfirm.checked = false;
+        });
+    }
+    
+    // Helper function to show alerts
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Insert alert before the form
+        deleteForm.parentNode.insertBefore(alertDiv, deleteForm);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 150);
+        }, 5000);
+    }
+    
+    // Function to set up the month picker with dropdowns
+    function setupMonthPicker() {
+        const monthInput = document.getElementById('delete_month');
+        const monthContainer = document.getElementById('month_option');
+        
+        if (monthInput && monthContainer) {
+            // Create month and year selectors
+            const monthSelect = document.createElement('select');
+            monthSelect.className = 'form-select form-select-sm month-select me-2';
+            monthSelect.style.width = '140px';
+            
+            const yearSelect = document.createElement('select');
+            yearSelect.className = 'form-select form-select-sm year-select';
+            yearSelect.style.width = '100px';
+            
+            // Create wrapper with proper styling
+            const selectWrapper = document.createElement('div');
+            selectWrapper.className = 'd-flex align-items-center mt-1';
+            
+            // Add icon for better UI
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'me-2 text-primary';
+            iconSpan.innerHTML = '<i class="fas fa-calendar-alt fa-lg"></i>';
+            
+            selectWrapper.appendChild(iconSpan);
+            selectWrapper.appendChild(monthSelect);
+            selectWrapper.appendChild(yearSelect);
+            
+            // Replace the input with our selectors
+            monthInput.style.display = 'none';
+            monthContainer.querySelector('.input-group').style.display = 'none';
+            monthContainer.appendChild(selectWrapper);
+            
+            // Populate months
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+            months.forEach((month, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = month;
+                monthSelect.appendChild(option);
+            });
+            
+            // Populate years (current year - 2 to current year + 3)
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear - 2; year <= currentYear + 3; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+            
+            // Set defaults to current month/year
+            const now = new Date();
+            monthSelect.value = now.getMonth();
+            yearSelect.value = now.getFullYear();
+            
+            // Update hidden input when selections change
+            function updateMonthInput() {
+                const year = yearSelect.value;
+                const month = parseInt(monthSelect.value) + 1;
+                const formattedMonth = month < 10 ? '0' + month : month;
+                monthInput.value = `${year}-${formattedMonth}`;
+            }
+            
+            monthSelect.addEventListener('change', updateMonthInput);
+            yearSelect.addEventListener('change', updateMonthInput);
+            
+            // Initialize
+            updateMonthInput();
+        }
+    }
+    
+    // Function to update the month selectors to the current month
+    function updateMonthSelectorsToCurrentMonth() {
+        const monthSelect = document.querySelector('.month-select');
+        const yearSelect = document.querySelector('.year-select');
+        
+        if (monthSelect && yearSelect) {
+            const now = new Date();
+            monthSelect.value = now.getMonth();
+            yearSelect.value = now.getFullYear();
+            
+            // Also update the hidden input
+            const monthInput = document.getElementById('delete_month');
+            if (monthInput) {
+                const month = now.getMonth() + 1;
+                const formattedMonth = month < 10 ? '0' + month : month;
+                monthInput.value = `${now.getFullYear()}-${formattedMonth}`;
+            }
+        }
+    }
+});
+</script>
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
      

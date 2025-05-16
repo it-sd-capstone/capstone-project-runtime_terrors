@@ -144,7 +144,7 @@ set_flash_message('success', $message, 'global');
                         }
                         
                         // After authentication succeeds but before redirect:
-                        $loginUpdate = $this->updateLastLogin($user['user_id']);
+                        $loginUpdate = $this->userModel->updateLastLogin($user['user_id']);
 
                         if ($loginUpdate && isset($loginUpdate['timestamp'])) {
                             // Store the login timestamp in the session for validation

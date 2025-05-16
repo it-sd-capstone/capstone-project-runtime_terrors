@@ -652,7 +652,8 @@ set_flash_message('error', "Failed to " . ($service_id ? "update" : "create") . 
                     'day_of_week' => $day,
                     'start_time' => '09:00:00',
                     'end_time' => '17:00:00',
-                    'status' => 'active'
+                    'status' => 'active',
+                    'excluded_dates' => [] // Add empty excluded dates array
                 ];
             }
         }
@@ -669,8 +670,8 @@ set_flash_message('error', "Failed to " . ($service_id ? "update" : "create") . 
             // Process regular availability for month view (grouped by date)
             foreach ($schedules as $schedule) {
                 $date = $schedule['availability_date'] ?? $schedule['date'] ??
-                       $schedule['schedule_date'] ?? date('Y-m-d');
-                
+                    $schedule['schedule_date'] ?? date('Y-m-d');
+                    
                 // If we haven't added this date yet, add a consolidated event
                 if (!isset($availableDates[$date])) {
                     $availableDates[$date] = true;
@@ -696,18 +697,23 @@ set_flash_message('error', "Failed to " . ($service_id ? "update" : "create") . 
             foreach ($recurringSchedules as $recurring) {
                 $dayIndex = $recurring['day_of_week'];
                 if ($dayIndex < 0 || $dayIndex > 6) continue;
-                
+                    
                 $dayName = $dayOfWeekMap[$dayIndex];
                 $startTime = $recurring['start_time'];
                 $endTime = $recurring['end_time'];
-                
+                    
                 // Format times for display (12-hour with am/pm)
                 $formattedStart = date('g:ia', strtotime($startTime));
                 $formattedEnd = date('g:ia', strtotime($endTime));
-                
+                    
                 // Generate events for the next 4 weeks
                 for ($i = 0; $i < 4; $i++) {
                     $date = date('Y-m-d', strtotime("+$i week $dayName"));
+                    
+                    // Skip if this date is in the excluded dates array
+                    if (isset($recurring['excluded_dates']) && in_array($date, $recurring['excluded_dates'])) {
+                        continue;
+                    }
                     
                     // Skip if we already have a recurring event for this date
                     if (isset($recurringDates[$date])) continue;
@@ -735,14 +741,14 @@ set_flash_message('error', "Failed to " . ($service_id ? "update" : "create") . 
             // Format regular availability slots with time in title
             foreach ($schedules as $schedule) {
                 $date = $schedule['availability_date'] ?? $schedule['date'] ??
-                       $schedule['schedule_date'] ?? date('Y-m-d');
+                    $schedule['schedule_date'] ?? date('Y-m-d');
                 $startTime = $schedule['start_time'] ?? '09:00:00';
                 $endTime = $schedule['end_time'] ?? '17:00:00';
-                
+                    
                 // Format times for display (12-hour with am/pm)
                 $formattedStart = date('g:ia', strtotime($startTime));
                 $formattedEnd = date('g:ia', strtotime($endTime));
-                
+                    
                 $event = [
                     'id' => $schedule['availability_id'] ?? $schedule['id'] ?? $schedule['schedule_id'] ?? ('reg_' . uniqid()),
                     'title' => 'Available ' . $formattedStart . '-' . $formattedEnd,
@@ -754,7 +760,7 @@ set_flash_message('error', "Failed to " . ($service_id ? "update" : "create") . 
                         'original_id' => $schedule['availability_id'] ?? $schedule['id'] ?? null
                     ]
                 ];
-                
+                    
                 $events[] = $event;
             }
             
@@ -764,18 +770,23 @@ set_flash_message('error', "Failed to " . ($service_id ? "update" : "create") . 
             foreach ($recurringSchedules as $recurring) {
                 $dayIndex = $recurring['day_of_week'];
                 if ($dayIndex < 0 || $dayIndex > 6) continue;
-                
+                    
                 $dayName = $dayOfWeekMap[$dayIndex];
                 $startTime = $recurring['start_time'];
                 $endTime = $recurring['end_time'];
-                
+                    
                 // Format times for display (12-hour with am/pm)
                 $formattedStart = date('g:ia', strtotime($startTime));
                 $formattedEnd = date('g:ia', strtotime($endTime));
-                
+                    
                 // Generate events for the next 4 weeks
                 for ($i = 0; $i < 4; $i++) {
                     $date = date('Y-m-d', strtotime("+$i week $dayName"));
+                    
+                    // Skip if this date is in the excluded dates array
+                    if (isset($recurring['excluded_dates']) && in_array($date, $recurring['excluded_dates'])) {
+                        continue;
+                    }
                     
                     $events[] = [
                         'id' => 'recurring_' . $recurring['schedule_id'] . '_' . $i,
@@ -795,7 +806,8 @@ set_flash_message('error', "Failed to " . ($service_id ? "update" : "create") . 
         header('Content-Type: application/json');
         echo json_encode($events);
         exit;
-    }    
+    }
+
        
     /**
      * Generate availability slots from recurring schedule
@@ -1035,6 +1047,117 @@ set_flash_message('error', "All required fields must be filled.", 'provider_sche
         header('Location: ' . base_url('index.php/provider/schedule'));
         exit;
     }
+
+    /**
+     * Delete work schedule (recurring schedules) in a specified date range
+     */
+    public function deleteWorkSchedule() {
+        // Verify that the user is logged in and is a provider
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ]);
+            exit;
+        }
+        
+        // Check if the request is AJAX and POST
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+                
+        if (!$isAjax || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid request method'
+            ]);
+            exit;
+        }
+        
+        // Get the JSON data from the request body
+        $json_data = file_get_contents('php://input');
+        $data = json_decode($json_data, true);
+        
+        // Validate the data
+        if (!isset($data['start_date']) || !isset($data['end_date'])) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Missing required parameters'
+            ]);
+            exit;
+        }
+        
+        $provider_id = $_SESSION['user_id'];
+        $start_date = $data['start_date'];
+        $end_date = $data['end_date'];
+        
+        // Validate dates
+        if (!$this->isValidDate($start_date) || !$this->isValidDate($end_date)) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid date format'
+            ]);
+            exit;
+        }
+        
+        // If start date is after end date, swap them
+        if (strtotime($start_date) > strtotime($end_date)) {
+            $temp = $start_date;
+            $start_date = $end_date;
+            $end_date = $temp;
+        }
+        
+        $result = false;
+        $deleted_count = 0;
+        
+        // Determine which action to take based on date range
+        if ($start_date === $end_date) {
+            // Single day: Create a deletion marker for this specific date
+            $day_of_week = date('w', strtotime($start_date));
+            $result = $this->providerModel->deleteRecurringSchedulesByDay($provider_id, $day_of_week, $start_date);
+            $deleted_count = $result;
+        }
+        elseif (date('Y-m', strtotime($start_date)) === date('Y-m', strtotime($end_date)) && 
+                $start_date === date('Y-m-01', strtotime($start_date)) && 
+                $end_date === date('Y-m-t', strtotime($end_date))) {
+            // Entire month: Delete all recurring schedules for this provider
+            // This is a special case where we delete all schedules since they're recurring
+            // and will affect all future months as well
+            $result = $this->providerModel->deleteAllRecurringSchedules($provider_id);
+            $deleted_count = $result;
+        }
+        else {
+            // Custom date range: Delete recurring schedules for days in this range
+            $result = $this->providerModel->deleteRecurringSchedulesInRange($provider_id, $start_date, $end_date);
+            $deleted_count = $result;
+        }
+        
+        // Send the response
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => $result,
+            'count' => $deleted_count,
+            'message' => $result 
+                ? "Successfully deleted $deleted_count recurring work schedule(s)" 
+                : 'No work schedules were found to delete'
+        ]);
+        exit;
+    }
+
+    /**
+     * Helper method to validate date format (YYYY-MM-DD)
+     */
+    private function isValidDate($date) {
+        $format = 'Y-m-d';
+        $d = DateTime::createFromFormat($format, $date);
+        return $d && $d->format($format) === $date;
+    }
+
+
+
     public function viewProfile() {
     // Check if user is logged in as a provider
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'provider') {
