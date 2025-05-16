@@ -480,15 +480,15 @@ public function profile() {
             // Update patient profile
             $success = $this->userModel->updatePatientProfile($_SESSION['user_id'], $data);
             
-            if ($success) {
-set_flash_message('success', 'Profile updated successfully', 'patient_profile');
-            } else {
-set_flash_message('error', 'Failed to update profile. Please try again.', 'patient_profile');
-            }
+        // ... validation and update logic ...
+        if ($success) {
+            $_SESSION['success'] = 'Profile updated successfully';
         } else {
-            // Set error message with all validation errors
-set_flash_message('error', implode('<br>', $errors), 'patient_profile');
+            $_SESSION['error'] = 'Failed to update profile. Please try again.';
         }
+        header('Location: ' . base_url('index.php/patient/profile'));
+        exit;
+    }
         
         // Use the SAME variable structure as your profile() method
         $user_id = $_SESSION['user_id'];

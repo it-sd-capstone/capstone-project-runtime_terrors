@@ -281,7 +281,7 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                         <?php if ($userRole === 'patient'): ?>
                                             <li>
-                                                <a class="dropdown-item" href="<?= base_url('index.php/patient/profile') ?>">
+                                                <a class="dropdown-item" href="<?= base_url('index.php/patient/viewProfile') ?>">
                                                     <i class="fas fa-user"></i> My Profile
                                                 </a>
                                             </li>
@@ -292,7 +292,7 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                                             </li>
                                         <?php elseif ($userRole === 'provider'): ?>
                                             <li>
-                                                <a class="dropdown-item" href="<?= base_url('index.php/provider/profile') ?>">
+                                                <a class="dropdown-item" href="<?= base_url('index.php/provider/viewProfile') ?>">
                                                     <i class="fas fa-user"></i> My Profile
                                                 </a>
                                             </li>
