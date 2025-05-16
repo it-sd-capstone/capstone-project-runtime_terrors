@@ -100,7 +100,7 @@ $is_home_page = !empty($current_url) && (strpos($current_url, 'index.php/home') 
                                 <li><a class="dropdown-item" href="<?= base_url('index.php/patient/viewProfile') ?>">My Profile</a></li>
                             <?php endif; ?>
                             <?php if ($userRole === 'provider'): ?>
-                                <li><a class="dropdown-item" href="<?= base_url('index.phpProvider/profile') ?>">My Profile</a></li>
+                                <li><a class="dropdown-item" href="<?= base_url('index.phpProvider/viewProfile') ?>">My Profile</a></li>
                             <?php endif; ?>
                             <!-- <li><a class="dropdown-item" href="<?= base_url('index.php/home') ?>">Home</a></li> -->
                             <li><a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>">Logout</a></li>
