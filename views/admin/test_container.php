@@ -249,10 +249,17 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedTest = this.dataset.test;
             
             // Update selected test info
-            selectedTestInfo.innerHTML = `
-                <h5>${selectedTest.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h5>
-                <p class="text-muted">Click the button below to run this test.</p>
-            `;
+            selectedTestInfo.innerHTML = '';
+            
+            const heading = document.createElement('h5');
+            heading.textContent = selectedTest.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            const paragraph = document.createElement('p');
+            paragraph.className = 'text-muted';
+            paragraph.textContent = 'Click the button below to run this test.';
+            
+            selectedTestInfo.appendChild(heading);
+            selectedTestInfo.appendChild(paragraph);
             
             // Enable run button
             runButton.disabled = false;
@@ -330,21 +337,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Handle run button click
+        // Handle run button click
     runButton.addEventListener('click', function() {
         if (!selectedTest) return;
         
-        // Show modal and reset
-        testResultsContainer.innerHTML = `
-            <div class="d-flex justify-content-center">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Running test...</span>
-                </div>
-            </div>
-        `;
+        // Show modal and reset container
+        testResultsContainer.innerHTML = '';
+        
+        // Create loading spinner
+        const spinnerContainer = document.createElement('div');
+        spinnerContainer.className = 'd-flex justify-content-center';
+        
+        const spinner = document.createElement('div');
+        spinner.className = 'spinner-border text-primary';
+        spinner.setAttribute('role', 'status');
+        
+        const spinnerText = document.createElement('span');
+        spinnerText.className = 'visually-hidden';
+        spinnerText.textContent = 'Running test...';
+        
+        spinner.appendChild(spinnerText);
+        spinnerContainer.appendChild(spinner);
+        testResultsContainer.appendChild(spinnerContainer);
         
         // Update modal title
-        document.getElementById('testResultsModalLabel').textContent =
+        document.getElementById('testResultsModalLabel').textContent = 
             'Running Test: ' + selectedTest.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         
         testModal.show();
@@ -372,12 +389,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Test Results: ' + selectedTest.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             })
             .catch(error => {
-                testResultsContainer.innerHTML = `
-                    <div class="alert alert-danger">
-                        <h4>Error Running Test</h4>
-                        <p>${error.message || 'Unknown error occurred'}</p>
-                    </div>
-                `;
+                // Create error alert
+                testResultsContainer.innerHTML = '';
+                
+                const errorAlert = document.createElement('div');
+                errorAlert.className = 'alert alert-danger';
+                
+                const errorHeading = document.createElement('h4');
+                errorHeading.textContent = 'Error Running Test';
+                
+                const errorMessage = document.createElement('p');
+                errorMessage.textContent = error.message || 'Unknown error occurred';
+                
+                errorAlert.appendChild(errorHeading);
+                errorAlert.appendChild(errorMessage);
+                testResultsContainer.appendChild(errorAlert);
             });
     });
     
@@ -390,18 +416,34 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCounters();
         
         // Reset results container
-        testResultsContainer.innerHTML = `
-            <div class="progress mb-4">
-                <div class="progress-bar progress-bar-striped progress-bar-animated"
-                    role="progressbar" style="width: 0%"
-                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="testProgressBar">
-                    0%
-                </div>
-            </div>
-            <div id="allTestResults">
-                <h4>Running all tests...</h4>
-            </div>
-        `;
+        testResultsContainer.innerHTML = '';
+        
+        // Create progress bar
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'progress mb-4';
+        
+        const progressBar = document.createElement('div');
+        progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated';
+        progressBar.setAttribute('role', 'progressbar');
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', '0');
+        progressBar.setAttribute('aria-valuemin', '0');
+        progressBar.setAttribute('aria-valuemax', '100');
+        progressBar.id = 'testProgressBar';
+        progressBar.textContent = '0%';
+        
+        progressContainer.appendChild(progressBar);
+        testResultsContainer.appendChild(progressContainer);
+        
+        // Create results area
+        const allTestResultsDiv = document.createElement('div');
+        allTestResultsDiv.id = 'allTestResults';
+        
+        const runningHeading = document.createElement('h4');
+        runningHeading.textContent = 'Running all tests...';
+        
+        allTestResultsDiv.appendChild(runningHeading);
+        testResultsContainer.appendChild(allTestResultsDiv);
         
         // Update modal title
         document.getElementById('testResultsModalLabel').textContent = 'Running All Tests';
@@ -412,8 +454,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get all test names
         const allTestNames = Array.from(testItems).map(item => item.dataset.test);
         let completedTests = 0;
-        const progressBar = document.getElementById('testProgressBar');
-        const allTestResultsDiv = document.getElementById('allTestResults');
         
         // Run tests sequentially
         const runAllTestsSequentially = async () => {
@@ -444,13 +484,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     completedTests++;
                 } catch (error) {
                     console.error(`Error running test ${testName}:`, error);
+                    
+                    // Create error HTML using DOM
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger';
+                    
+                    const errorHeading = document.createElement('h4');
+                    errorHeading.textContent = `Error Running Test: ${testName}`;
+                    
+                    const errorParagraph = document.createElement('p');
+                    errorParagraph.textContent = error.message || 'Unknown error occurred';
+                    
+                    errorDiv.appendChild(errorHeading);
+                    errorDiv.appendChild(errorParagraph);
+                    
+                    // Create a dummy DOM parser to extract HTML as string
+                    const tempDiv = document.createElement('div');
+                    tempDiv.appendChild(errorDiv);
+                    
                     results.failed.push({
                         testName,
-                        html: `<div class="alert alert-danger">
-                                <h4>Error Running Test: ${testName}</h4>
-                                <p>${error.message || 'Unknown error occurred'}</p>
-                            </div>`
+                        html: tempDiv.innerHTML
                     });
+                    
                     completedTests++;
                 }
             }
@@ -461,83 +517,143 @@ document.addEventListener('DOMContentLoaded', function() {
             progressBar.textContent = '100%';
             progressBar.className = 'progress-bar bg-success';
             
-            // Display results summary
-            let resultsHtml = `
-                <h4>Test Results Summary</h4>
-                <div class="alert ${results.failed.length === 0 ? 'alert-success' : 'alert-warning'}">
-                    <p><strong>Total Tests:</strong> ${allTestNames.length}</p>
-                    <p><strong>Passed:</strong> ${results.passed.length}</p>
-                    <p><strong>Failed:</strong> ${results.failed.length}</p>
-                </div>
-            `;
+            // Clear results div
+            allTestResultsDiv.innerHTML = '';
+            
+            // Create summary heading
+            const summaryHeading = document.createElement('h4');
+            summaryHeading.textContent = 'Test Results Summary';
+            allTestResultsDiv.appendChild(summaryHeading);
+            
+            // Create summary alert
+            const summaryAlert = document.createElement('div');
+            summaryAlert.className = 'alert ' + (results.failed.length === 0 ? 'alert-success' : 'alert-warning');
+            
+            const totalPara = document.createElement('p');
+            const totalStrong = document.createElement('strong');
+            totalStrong.textContent = 'Total Tests:';
+            totalPara.appendChild(totalStrong);
+            totalPara.append(' ' + allTestNames.length);
+            
+            const passedPara = document.createElement('p');
+            const passedStrong = document.createElement('strong');
+            passedStrong.textContent = 'Passed:';
+            passedPara.appendChild(passedStrong);
+            passedPara.append(' ' + results.passed.length);
+            
+            const failedPara = document.createElement('p');
+            const failedStrong = document.createElement('strong');
+            failedStrong.textContent = 'Failed:';
+            failedPara.appendChild(failedStrong);
+            failedPara.append(' ' + results.failed.length);
+            
+            summaryAlert.appendChild(totalPara);
+            summaryAlert.appendChild(passedPara);
+            summaryAlert.appendChild(failedPara);
+            
+            allTestResultsDiv.appendChild(summaryAlert);
             
             // Add failed tests first (if any)
             if (results.failed.length > 0) {
-                resultsHtml += `
-                    <div class="card mb-4">
-                        <div class="card-header bg-danger text-white">
-                            <h5 class="mb-0">Failed Tests (${results.failed.length})</h5>
-                        </div>
-                        <div class="card-body">
-                `;
+                const failedCard = document.createElement('div');
+                failedCard.className = 'card mb-4';
+                
+                const failedCardHeader = document.createElement('div');
+                failedCardHeader.className = 'card-header bg-danger text-white';
+                
+                const failedCardTitle = document.createElement('h5');
+                failedCardTitle.className = 'mb-0';
+                failedCardTitle.textContent = `Failed Tests (${results.failed.length})`;
+                
+                failedCardHeader.appendChild(failedCardTitle);
+                failedCard.appendChild(failedCardHeader);
+                
+                const failedCardBody = document.createElement('div');
+                failedCardBody.className = 'card-body';
                 
                 results.failed.forEach(({ testName, html }, index) => {
-                    resultsHtml += `
-                        <div class="mb-4">
-                            <h5>${testName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h5>
-                            <div class="test-result border rounded p-3" id="failed-test-${index}"></div>
-                        </div>
-                    `;
+                    const testContainer = document.createElement('div');
+                    testContainer.className = 'mb-4';
+                    
+                    const testTitle = document.createElement('h5');
+                    testTitle.textContent = testName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    
+                    const testResultDiv = document.createElement('div');
+                    testResultDiv.className = 'test-result border rounded p-3';
+                    testResultDiv.id = `failed-test-${index}`;
+                    
+                    testContainer.appendChild(testTitle);
+                    testContainer.appendChild(testResultDiv);
+                    failedCardBody.appendChild(testContainer);
                 });
                 
-                resultsHtml += `
-                        </div>
-                    </div>
-                `;
+                failedCard.appendChild(failedCardBody);
+                allTestResultsDiv.appendChild(failedCard);
             }
             
             // Add passed tests
             if (results.passed.length > 0) {
-                resultsHtml += `
-                    <div class="card">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="mb-0">Passed Tests (${results.passed.length})</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="accordion" id="passedTestsAccordion">
-                `;
+                const passedCard = document.createElement('div');
+                passedCard.className = 'card';
+                
+                const passedCardHeader = document.createElement('div');
+                passedCardHeader.className = 'card-header bg-success text-white';
+                
+                const passedCardTitle = document.createElement('h5');
+                passedCardTitle.className = 'mb-0';
+                passedCardTitle.textContent = `Passed Tests (${results.passed.length})`;
+                
+                passedCardHeader.appendChild(passedCardTitle);
+                passedCard.appendChild(passedCardHeader);
+                
+                const passedCardBody = document.createElement('div');
+                passedCardBody.className = 'card-body';
+                
+                const accordion = document.createElement('div');
+                accordion.className = 'accordion';
+                accordion.id = 'passedTestsAccordion';
                 
                 results.passed.forEach(({ testName, html }, index) => {
-                    resultsHtml += `
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="heading${index}">
-                                <button class="accordion-button collapsed" type="button"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#collapseTests"
-                                        aria-expanded="false"
-                                        aria-controls="collapse${index}">
-                                    ${testName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                </button>
-                            </h2>
-                            <div id="collapseTests"
-                                class="accordion-collapse collapse"
-                                aria-labelledby="heading${index}"
-                                data-bs-parent="#passedTestsAccordion">
-                                <div class="accordion-body" id="passed-test-${index}"></div>
-                            </div>
-                        </div>
-                    `;
+                    const accordionItem = document.createElement('div');
+                    accordionItem.className = 'accordion-item';
+                    
+                    const accordionHeader = document.createElement('h2');
+                    accordionHeader.className = 'accordion-header';
+                    accordionHeader.id = `heading${index}`;
+                    
+                    const accordionButton = document.createElement('button');
+                    accordionButton.className = 'accordion-button collapsed';
+                    accordionButton.type = 'button';
+                    accordionButton.setAttribute('data-bs-toggle', 'collapse');
+                    accordionButton.setAttribute('data-bs-target', `#collapse${index}`);
+                    accordionButton.setAttribute('aria-expanded', 'false');
+                    accordionButton.setAttribute('aria-controls', `collapse${index}`);
+                    accordionButton.textContent = testName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    
+                    accordionHeader.appendChild(accordionButton);
+                    
+                    const accordionCollapse = document.createElement('div');
+                    accordionCollapse.id = `collapse${index}`;
+                    accordionCollapse.className = 'accordion-collapse collapse';
+                    accordionCollapse.setAttribute('aria-labelledby', `heading${index}`);
+                    accordionCollapse.setAttribute('data-bs-parent', '#passedTestsAccordion');
+                    
+                    const accordionBody = document.createElement('div');
+                    accordionBody.className = 'accordion-body';
+                    accordionBody.id = `passed-test-${index}`;
+                    
+                    accordionCollapse.appendChild(accordionBody);
+                    
+                    accordionItem.appendChild(accordionHeader);
+                    accordionItem.appendChild(accordionCollapse);
+                    
+                    accordion.appendChild(accordionItem);
                 });
                 
-                resultsHtml += `
-                            </div>
-                        </div>
-                    </div>
-                `;
+                passedCardBody.appendChild(accordion);
+                passedCard.appendChild(passedCardBody);
+                allTestResultsDiv.appendChild(passedCard);
             }
-            
-            // Update results container
-            allTestResultsDiv.innerHTML = resultsHtml;
             
             // Inject HTML content safely
             results.failed.forEach(({ html }, index) => {
@@ -571,27 +687,71 @@ document.addEventListener('DOMContentLoaded', function() {
         const resultsHtml = testResultsContainer.innerHTML;
         const testName = selectedTest || 'all_tests';
         
+        // Create document structure with DOM methods
+        const docType = document.implementation.createDocumentType('html', '', '');
+        const doc = document.implementation.createDocument('', 'html', docType);
+        
+        // Create head
+        const head = doc.createElement('head');
+        
+        const title = doc.createElement('title');
+        title.textContent = 'Test Results';
+        
+        const meta1 = doc.createElement('meta');
+        meta1.setAttribute('charset', 'UTF-8');
+        
+        const meta2 = doc.createElement('meta');
+        meta2.setAttribute('name', 'viewport');
+        meta2.setAttribute('content', 'width=device-width, initial-scale=1.0');
+        
+        const link = doc.createElement('link');
+        link.setAttribute('href', 'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css');
+        link.setAttribute('rel', 'stylesheet');
+        
+        const style = doc.createElement('style');
+        style.textContent = `
+            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+            h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+            h2 { color: #444; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+            .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+            .alert-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+            .alert-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+            .test-result { margin-bottom: 20px; }
+        `;
+        
+        head.appendChild(title);
+        head.appendChild(meta1);
+        head.appendChild(meta2);
+        head.appendChild(link);
+        head.appendChild(style);
+        
+        // Create body
+        const body = doc.createElement('body');
+        
+        // Create main heading
+        const heading = doc.createElement('h1');
+        heading.textContent = 'Test Results: ' + (selectedTest ? selectedTest.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'All Tests');
+        
+        // Create container
+        const container = doc.createElement('div');
+        container.className = 'container';
+        
+        // Add content to container
+        container.innerHTML = resultsHtml;
+        
+        // Build document structure
+        body.appendChild(heading);
+        body.appendChild(container);
+        
+        doc.documentElement.appendChild(head);
+        doc.documentElement.appendChild(body);
+        
+        // Serialize the document to string
+        const serializer = new XMLSerializer();
+        const htmlString = '<!DOCTYPE html>\n' + serializer.serializeToString(doc);
+        
         // Create a blob with the HTML content
-        const blob = new Blob([
-            '<!DOCTYPE html><html><head><title>Test Results</title>' +
-            '<meta charset="UTF-8">' +
-            '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-            '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">' +
-            '<style>' +
-            'body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }' +
-            'h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }' +
-            'h2 { color: #444; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 5px; }' +
-            '.alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 10px; margin-bottom: 10px; border-radius: 4px; }' +
-            '.alert-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; margin-bottom: 10px; border-radius: 4px; }' +
-            '.alert-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 10px; margin-bottom: 10px; border-radius: 4px; }' +
-            '.test-result { margin-bottom: 20px; }' +
-            '</style></head><body>' +
-            '<h1>Test Results: ' + (selectedTest ? selectedTest.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'All Tests') + '</h1>' +
-            '<div class="container">' +
-            resultsHtml +
-            '</div>' +
-            '</body></html>'
-        ], { type: 'text/html' });
+        const blob = new Blob([htmlString], { type: 'text/html' });
         
         // Create a download link
         const url = URL.createObjectURL(blob);

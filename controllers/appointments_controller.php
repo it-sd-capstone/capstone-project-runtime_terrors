@@ -1,4 +1,5 @@
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 require_once MODEL_PATH . '/ActivityLog.php';
 require_once MODEL_PATH . '/Appointment.php';
 require_once MODEL_PATH . '/Services.php';
@@ -169,6 +170,18 @@ class AppointmentsController {
     }
 
     public function cancel() {
+        // Log appointment cancellation as system notification
+        if ($success) {
+            $notification = new Notification($this->db);
+            $notification->create([
+                'subject' => 'Appointment Cancelled',
+                'message' => "Appointment ID: " . $appointment_id . " has been cancelled",
+                'type' => 'appointment_cancelled',
+                'is_system' => 1,
+                'audience' => 'admin'
+            ]);
+        }
+
         $appointmentId = $_GET['id'] ?? null;
         $reason = $_GET['reason'] ?? 'No reason provided';
         if (!$appointmentId) {
@@ -355,6 +368,18 @@ class AppointmentsController {
     }
 
     public function reschedule() {
+        // Log appointment rescheduling as system notification
+        if ($success) {
+            $notification = new Notification($this->db);
+            $notification->create([
+                'subject' => 'Appointment Rescheduled',
+                'message' => "Appointment ID: " . $appointment_id . " has been rescheduled",
+                'type' => 'appointment_rescheduled',
+                'is_system' => 1,
+                'audience' => 'admin'
+            ]);
+        }
+
         // Set consistent timezone
         date_default_timezone_set('America/New_York'); // Update to your timezone
         

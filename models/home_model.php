@@ -1,5 +1,6 @@
 <?php
 
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 class HomeModel {
     private $db;
     
@@ -40,6 +41,9 @@ class HomeModel {
                 }
             }
         } catch (Exception $e) {
+    // Log system event
+logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
+
             // Error handling
         }
         

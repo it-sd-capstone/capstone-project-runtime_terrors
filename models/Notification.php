@@ -1,4 +1,5 @@
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 /**
  * Notification Model
  * Handles data operations for notifications
@@ -66,6 +67,13 @@ class Notification {
                 $notifications[] = $row;
             }
             return $notifications;
+
+        } catch (Exception $e) {
+    // Log system event
+logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
+
+            error_log("Error getting user notifications: " . $e->getMessage());
+            return [];
         } else {
             // PDO
             $stmt = $this->db->prepare("
@@ -786,5 +794,278 @@ public function updateNotificationPreferences($userId, $emailNotifications, $sms
               return false;
           }
       }
+      
+    /**
+     * Create a new notification
+     * 
+     * @param array $data Notification data
+     * @return int|bool The ID of the inserted notification or false on failure
+     */
+    public function create($data) {
+        // Ensure required fields are present
+        $required = ['subject', 'message', 'type', 'user_id']; // user_id is now required
+        foreach ($required as $field) {
+            if (!isset($data[$field])) {
+                return false;
+            }
+        }
+        
+        // Set default values for optional fields
+        $data['is_system'] = isset($data['is_system']) ? $data['is_system'] : 0;
+        $data['audience'] = isset($data['audience']) ? $data['audience'] : null;
+        $data['appointment_id'] = isset($data['appointment_id']) ? $data['appointment_id'] : null;
+        $data['status'] = isset($data['status']) ? $data['status'] : 'unread';
+        $data['scheduled_for'] = isset($data['scheduled_for']) ? $data['scheduled_for'] : null;
+        $data['sent_at'] = isset($data['sent_at']) ? $data['sent_at'] : null;
+        $data['created_at'] = isset($data['created_at']) ? $data['created_at'] : date('Y-m-d H:i:s');
+        $data['is_read'] = isset($data['is_read']) ? $data['is_read'] : 0;
+        
+        // Note the exact column names from your DB schema
+        $sql = "INSERT INTO notifications (
+                    user_id, 
+                    appointment_id, 
+                    subject, 
+                    message, 
+                    type, 
+                    status, 
+                    scheduled_for, 
+                    sent_at, 
+                    created_at, 
+                    is_system, 
+                    is_read, 
+                    audience
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        try {
+            $stmt = $this->db->prepare($sql);
+            
+            if (!$stmt) {
+                return false; // Prepare failed
+            }
+            
+            // Bind parameters in the correct order
+            $stmt->bind_param(
+                'iisssssssiis', 
+                $data['user_id'],
+                $data['appointment_id'],
+                $data['subject'],
+                $data['message'],
+                $data['type'],
+                $data['status'],
+                $data['scheduled_for'],
+                $data['sent_at'],
+                $data['created_at'],
+                $data['is_system'],
+                $data['is_read'],
+                $data['audience']
+            );
+            
+            $success = $stmt->execute();
+            
+            if ($success) {
+                return $this->db->insert_id;
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            // Log the error if needed
+            return false;
+        }
+    }
+
+
+    /**
+     * Get notifications for admin dashboard
+     *
+     * @param int $limit Maximum number of notifications to retrieve
+     * @return array Array of notification records
+     */
+    public function getAdminNotifications($limit = 10) {
+        try {
+            // Make sure the notifications table exists
+            $this->ensureNotificationsTable();
+            
+            // Build a query that gets notifications relevant for admins
+            // This includes system notifications and important alerts
+            $query = "
+                SELECT * FROM notifications 
+                WHERE (is_system = 1 OR type IN ('system_error', 'system_warning', 'security_alert'))
+                ORDER BY 
+                    CASE 
+                        WHEN type = 'system_error' THEN 1
+                        WHEN type = 'security_alert' THEN 2
+                        WHEN type = 'system_warning' THEN 3
+                        ELSE 4
+                    END,
+                    created_at DESC
+                LIMIT ?
+            ";
+            
+            if ($this->db instanceof mysqli) {
+                $stmt = $this->db->prepare($query);
+                if (!$stmt) {
+                    error_log("Admin notifications prepare statement error: " . $this->db->error);
+                    return $this->getSampleNotifications();
+                }
+                
+                $stmt->bind_param("i", $limit);
+                $execResult = $stmt->execute();
+                
+                if (!$execResult) {
+                    error_log("Admin notifications execute error: " . $stmt->error);
+                    return $this->getSampleNotifications();
+                }
+                
+                $result = $stmt->get_result();
+                $notifications = $result->fetch_all(MYSQLI_ASSOC);
+            } else {
+                // Handle PDO connection
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([$limit]);
+                $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            // If no notifications found, return sample admin notifications
+            if (empty($notifications)) {
+                return $this->getSampleAdminNotifications();
+            }
+            
+            return $notifications;
+        } catch (Exception $e) {
+            error_log("Error in getAdminNotifications: " . $e->getMessage());
+            return $this->getSampleAdminNotifications();
+        }
+    }
+
+    /**
+     * Get sample admin notifications for fallback
+     *
+     * @return array Sample admin notifications
+     */
+    private function getSampleAdminNotifications() {
+        // Create timestamps for different times
+        $now = new DateTime();
+        $fiveMinAgo = (new DateTime())->modify('-5 minutes')->format('Y-m-d H:i:s');
+        $oneHourAgo = (new DateTime())->modify('-1 hour')->format('Y-m-d H:i:s');
+        $oneDayAgo = (new DateTime())->modify('-1 day')->format('Y-m-d H:i:s');
+        
+        return [
+            [
+                'notification_id' => 101,
+                'user_id' => null,
+                'subject' => 'System Security Alert',
+                'message' => 'Multiple failed login attempts detected from IP 192.168.1.25',
+                'type' => 'security_alert',
+                'created_at' => $fiveMinAgo,
+                'is_read' => 0,
+                'is_system' => 1
+            ],
+            [
+                'notification_id' => 102,
+                'user_id' => null,
+                'subject' => 'New Provider Registration',
+                'message' => '3 new healthcare providers registered today pending approval',
+                'type' => 'admin_review',
+                'created_at' => $oneHourAgo,
+                'is_read' => 0,
+                'is_system' => 1
+            ],
+            [
+                'notification_id' => 103,
+                'user_id' => null,
+                'subject' => 'Appointment Cancellations',
+                'message' => 'Unusual number of cancellations today (15+)',
+                'type' => 'system_warning',
+                'created_at' => $oneHourAgo,
+                'is_read' => 0,
+                'is_system' => 1
+            ],
+            [
+                'notification_id' => 104,
+                'user_id' => null,
+                'subject' => 'Database Maintenance',
+                'message' => 'Scheduled database backup completed successfully',
+                'type' => 'system_info',
+                'created_at' => $oneDayAgo,
+                'is_read' => 0,
+                'is_system' => 1
+            ]
+        ];
+    }
+
+    /**
+     * Get notifications for a specific user
+     *
+     * @param int $userId User ID
+     * @param int $limit Maximum number of notifications to return
+     * @return array Array of notifications
+     */
+    public function getNotificationsForUser($userId, $limit = 20) {
+        $sql = "SELECT * FROM notifications 
+                WHERE user_id = ? 
+                ORDER BY created_at DESC 
+                LIMIT ?";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("ii", $userId, $limit);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $notifications = [];
+        while ($row = $result->fetch_assoc()) {
+            $notifications[] = $row;
+        }
+        
+        return $notifications;
+    }    
+    /**
+     * Get a specific notification by ID
+     *
+     * @param int $notificationId Notification ID
+     * @return array|null Notification data or null if not found
+     */
+    public function getNotificationById($notificationId) {
+        $sql = "SELECT * FROM notifications WHERE notification_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $notificationId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            return null;
+        }
+        
+        return $result->fetch_assoc();
+    }    
+    /**
+     * Mark all notifications as read for a user
+     *
+     * @param int $userId User ID
+     * @return bool True if successful, false otherwise
+     */
+    public function markAllAsReadForUser($userId) {
+        $sql = "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        return $stmt->execute();
+    }    
+    /**
+     * Get count of unread notifications for a user
+     *
+     * @param int $userId User ID
+     * @return int Count of unread notifications
+     */
+    public function getUnreadCountByUserId($userId) {
+        $sql = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($row = $result->fetch_assoc()) {
+            return (int)$row['count'];
+        }
+        
+        return 0;
+    }
 }
-?>

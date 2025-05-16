@@ -1,4 +1,5 @@
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 /**
  * ActivityLog Model
  * Handles system activity logging for audit purposes
@@ -40,6 +41,9 @@ class ActivityLog {
                 return $stmt->execute([$userId, $description, $category, $ipAddress]);
             }
         } catch (Exception $e) {
+    // Log system event
+logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
+
             error_log("Error logging activity: " . $e->getMessage());
             return false;
         }

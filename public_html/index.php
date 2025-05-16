@@ -3,6 +3,8 @@
  * Front Controller
  * All requests are routed through this file
  */
+// Set timezone to your local timezone
+date_default_timezone_set('America/Chicago'); // Change to your timezone
  
 // Load the bootstrap
 require_once 'bootstrap.php';

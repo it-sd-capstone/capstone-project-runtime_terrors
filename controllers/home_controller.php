@@ -1,5 +1,6 @@
 
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 require_once __DIR__ . '/../models/home_model.php';
 
 class HomeController {
@@ -133,6 +134,9 @@ class HomeController {
             $result = $this->db->query("SELECT 1");
             return $result ? true : false;
         } catch (Exception $e) {
+    // Log system event
+logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
+
             return false;
         }
     }

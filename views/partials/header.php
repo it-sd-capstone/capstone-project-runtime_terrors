@@ -7,6 +7,34 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Session validation using last_login timestamp
+if (isset($_SESSION['user_id']) && isset($_SESSION['logged_in']) && isset($_SESSION['login_timestamp'])) {
+    // Get the login timestamp stored in session
+    $session_login_time = $_SESSION['login_timestamp'];
+    
+    // Load user model
+    require_once APP_ROOT . '/models/user_model.php';
+    $userModel = new UserModel();
+    
+    // Get the last login time from database
+    $latest_login = $userModel->getLastLoginTime($_SESSION['user_id']);
+    
+    // If database login time is different from session login time,
+    // it means the user logged in elsewhere more recently
+    if ($latest_login && $session_login_time != strtotime($latest_login)) {
+        // Clear session and redirect to login
+        $_SESSION = array();
+        session_destroy();
+        
+        // Only redirect if not already on login page
+        if (strpos($_SERVER['REQUEST_URI'], 'index.php/auth') === false) {
+            set_flash_message('error', 'Your session has expired. Please log in again.', 'auth_login');
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
+        }
+    }
+}
+
 $isLoggedIn = isset($_SESSION['user_id']) && ($_SESSION['logged_in'] ?? false) === true;
 $userRole = $isLoggedIn ? ($_SESSION['role'] ?? 'guest') : 'guest';
 $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . $_SESSION['last_name'] ?? $_SESSION['email'] ?? 'User') : '';
@@ -65,7 +93,31 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
             box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
             transition: none !important;
         }
-        
+        /* Add this to your existing CSS */
+        .dashboard-cards .card-body .d-grid {
+        margin-top: auto; /* Push button to the bottom of available space */
+        margin-bottom: 15px; /* Add some space between button and footer */
+        }
+
+        .dashboard-cards .card-body {
+        display: flex;
+        flex-direction: column;
+        height: calc(100% - 1px); /* Subtract footer height */
+        }
+        /* Card fix using position absolute */
+        .dashboard-cards .card {
+        position: relative;
+        padding-bottom: 50px; /* Space for the footer */
+        min-height: 250px; /* Ensure all cards have enough height */
+        }
+
+        .dashboard-cards .card-footer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        }
+
         .card:hover {
             transform: none !important;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
@@ -275,6 +327,80 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                 </div>
             </nav>
         </header>
+    </div>
+    
+    <div class="container mt-3">
+        <?php 
+        // Get the current page context based on the URL
+        $currentUri = $_SERVER['REQUEST_URI'];
+        $contextMap = [
+            // Admin routes
+            'admin/appointments' => 'admin_appointments',
+            'admin/appointments/edit' => 'admin_appointment_edit',
+            'admin/providers' => 'admin_providers',
+            'admin/services' => 'admin_services',
+            'admin/users' => 'admin_users',
+            'admin/user_view' => 'admin_user_view',
+            'admin/user_edit' => 'admin_user_edit',
+            'admin/provider_services' => 'admin_provider_services',
+            'admin/provider_avaliability' => 'admin_provider_availability',
+            
+            // Provider routes
+            'provider/profile' => 'provider_profile',
+            'provider/appointments' => 'provider_appointments',
+            'provider/schedule' => 'provider_schedule',
+            'provider/services' => 'provider_services',
+            'provider/view_appointment' => 'provider_view_appointment',
+            'provider/updateProfile' => 'provider_update_profile',
+            'provider/notifications' => 'provider_notifications',
+            
+            // Patient routes
+            'patient/book' => 'patient_book',
+            'patient/profile' => 'patient_profile',
+            'patient/notifications' => 'patient_notifications',
+            'patient/view_provider' => 'patient_view_provider',
+            'patient/search' => 'patient_search',
+            
+            // Auth routes
+            'auth' => 'auth_login',
+            'auth/register' => 'auth_register',
+            'auth/forgot_password' => 'auth_forgot_password',
+            'auth/reset_password' => 'auth_reset_password',
+            'auth/verify' => 'auth_verify',
+            'auth/change_password' => 'auth_change_password',
+            
+            // Appointment routes
+            'appointments/create' => 'appointments_create',
+            'appointments/view' => 'appointments_view',
+            'appointments/reschedule' => 'appointments_reschedule',
+            'appointments/history' => 'appointments_history',
+            
+            // Home
+            'home' => 'home'
+        ];
+                
+        // Determine the context from the URL
+        $messageContext = 'global';
+        foreach ($contextMap as $urlPart => $context) {
+            if (strpos($currentUri, $urlPart) !== false) {
+                $messageContext = $context;
+                break;
+            }
+        }
+        
+        // Display messages for this specific context
+        $contextMessages = get_flash_messages($messageContext);
+        // Also display global messages
+        $globalMessages = get_flash_messages('global');
+        $allMessages = array_merge($contextMessages, $globalMessages);
+        
+        foreach ($allMessages as $flashMessage): 
+        ?>
+            <div class="alert alert-<?= $flashMessage['type'] ?> alert-dismissible fade show" role="alert">
+                <?= $flashMessage['message'] ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endforeach; ?>
     </div>
     
     <div class="container">

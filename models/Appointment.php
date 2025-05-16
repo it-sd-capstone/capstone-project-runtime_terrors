@@ -1,5 +1,6 @@
 <?php
 
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 class Appointment {
     private $db;
 
@@ -263,6 +264,11 @@ public function getByProvider($provider_id) {
     }
 
     public function cancelAppointment($appointment_id, $reason) {
+    // Log system event
+    if ($success) {
+        logSystemEvent('appointment_cancelled', 'An appointment was cancelled in the system', 'Appointment Cancelled');
+    }
+
         try {
             $stmt = $this->db->prepare("
                 UPDATE appointments
@@ -826,28 +832,196 @@ public function getByProvider($provider_id) {
         }
     }
 
-    public function getBookedSlotsCount() {
+   public function getBookedSlotsCount() {
         try {
             $stmt = $this->db->prepare("
-                SELECT COUNT(DISTINCT a.appointment_id) as count 
-                FROM appointments a
-                JOIN provider_availability pa ON 
-                    a.provider_id = pa.provider_id AND
-                    a.appointment_date = pa.available_date AND
-                    a.start_time >= pa.start_time AND
-                    a.end_time <= pa.end_time
-                WHERE a.status NOT IN ('canceled', 'no_show')
+                SELECT COUNT(DISTINCT appointment_id) as count
+                FROM appointments
+                WHERE status NOT IN ('canceled', 'no_show')
+                AND appointment_date >= CURRENT_DATE()
             ");
+            
             $stmt->execute();
             $result = $stmt->get_result();
+            
             if ($row = $result->fetch_assoc()) {
-                return $row['count'];
+                return (int)$row['count'];
             }
+            
             return 0;
         } catch (Exception $e) {
             error_log("Database error in getBookedSlotsCount: " . $e->getMessage());
             return 0;
         }
+    }
+    /**
+     * Get appointment data grouped by period for analytics
+     *
+     * @param string $period 'weekly', 'monthly', or 'yearly'
+     * @param int $limit Number of periods to return
+     * @return array Appointment data grouped by time period
+     */
+    public function getAppointmentsByPeriod($period = 'monthly', $limit = 12) {
+        $result = [];
+        
+        switch ($period) {
+            case 'weekly':
+                // Get appointments for the last 7 days grouped by day
+                $query = $this->db->query("
+                    SELECT
+                        DATE(appointment_date) as period_date,
+                        DAYNAME(appointment_date) as period_name,
+                        COUNT(*) as appointment_count
+                    FROM
+                        appointments
+                    WHERE
+                        appointment_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND CURDATE()
+                    GROUP BY
+                        DATE(appointment_date), DAYNAME(appointment_date)
+                    ORDER BY
+                        DATE(appointment_date) ASC
+                ");
+                
+                // Convert mysqli result to array
+                $data = [];
+                if ($query && $query instanceof mysqli_result) {
+                    while ($row = $query->fetch_assoc()) {
+                        $data[] = $row;
+                    }
+                }
+                $result = $data;
+                
+                // Fill in any missing days with zero counts
+                $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                $filledData = [];
+                foreach ($days as $day) {
+                    $found = false;
+                    foreach ($result as $row) {
+                        if ($row['period_name'] == $day) {
+                            $filledData[] = $row;
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        $filledData[] = [
+                            'period_date' => null,
+                            'period_name' => $day,
+                            'appointment_count' => 0
+                        ];
+                    }
+                }
+                $result = $filledData;
+                break;
+                
+            case 'yearly':
+                // Get appointments for the last few years grouped by year
+                $query = $this->db->query("
+                    SELECT
+                        YEAR(appointment_date) as period_name,
+                        COUNT(*) as appointment_count
+                    FROM
+                        appointments
+                    WHERE
+                        appointment_date >= DATE_SUB(CURDATE(), INTERVAL {$limit} YEAR)
+                    GROUP BY
+                        YEAR(appointment_date)
+                    ORDER BY
+                        YEAR(appointment_date) ASC
+                    LIMIT {$limit}
+                ");
+                
+                // Convert mysqli result to array
+                $data = [];
+                if ($query && $query instanceof mysqli_result) {
+                    while ($row = $query->fetch_assoc()) {
+                        $data[] = $row;
+                    }
+                }
+                $result = $data;
+                break;
+                
+            case 'monthly':
+            default:
+                // Get appointments for the last 12 months grouped by month
+                $query = $this->db->query("
+                    SELECT
+                        DATE_FORMAT(appointment_date, '%Y-%m') as period_date,
+                        DATE_FORMAT(appointment_date, '%b') as period_name,
+                        COUNT(*) as appointment_count
+                    FROM
+                        appointments
+                    WHERE
+                        appointment_date >= DATE_SUB(CURDATE(), INTERVAL {$limit} MONTH)
+                    GROUP BY
+                        DATE_FORMAT(appointment_date, '%Y-%m'),
+                        DATE_FORMAT(appointment_date, '%b')
+                    ORDER BY
+                        DATE_FORMAT(appointment_date, '%Y-%m') ASC
+                    LIMIT {$limit}
+                ");
+                
+                // Convert mysqli result to array
+                $data = [];
+                if ($query && $query instanceof mysqli_result) {
+                    while ($row = $query->fetch_assoc()) {
+                        $data[] = $row;
+                    }
+                }
+                $result = $data;
+                
+                // Fill in any missing months with zero counts
+                $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                $filledData = [];
+                foreach ($months as $month) {
+                    $found = false;
+                    foreach ($result as $row) {
+                        if ($row['period_name'] == $month) {
+                            $filledData[] = $row;
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        $filledData[] = [
+                            'period_date' => null,
+                            'period_name' => $month,
+                            'appointment_count' => 0
+                        ];
+                    }
+                }
+                $result = $filledData;
+                break;
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Get counts of appointments by status
+     *
+     * @return array Status counts
+     */
+    public function getAppointmentStatusCounts() {
+        $statuses = ['scheduled', 'confirmed', 'completed', 'canceled', 'no-show'];
+        $result = [];
+        
+        foreach ($statuses as $status) {
+            $query = $this->db->query("
+                SELECT COUNT(*) as count 
+                FROM appointments 
+                WHERE status = '{$status}'
+            ");
+            
+            if ($query && $query instanceof mysqli_result) {
+                $row = $query->fetch_assoc();
+                $result[$status] = (int)$row['count'];
+            } else {
+                $result[$status] = 0;
+            }
+        }
+        
+        return $result;
     }
 
     public function getPatientAppointmentAtTime($patient_id, $date, $time) {

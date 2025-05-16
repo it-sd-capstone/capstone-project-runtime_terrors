@@ -1,4 +1,5 @@
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 require_once MODEL_PATH . '/Services.php';
 require_once MODEL_PATH . '/Provider.php';
 
@@ -68,7 +69,7 @@ public function processService() {
 
     if (empty($service_name)) {
         error_log("Service name is empty, aborting");
-        $_SESSION['error'] = "Service name is required";
+set_flash_message('error', "Service name is required", 'provider_services');
         header('Location: ' . base_url('index.php/provider/services'));
         exit;
     }
@@ -131,9 +132,9 @@ public function processService() {
     }
 
     if ($success) {
-        $_SESSION['success'] = $service_id ? "Service created and added to your offerings!" : "Service updated successfully!";
+set_flash_message('success', $service_id ? "Service created and added to your offerings!" : "Service updated successfully!", 'provider_services');
     } else {
-        $_SESSION['error'] = "Failed to create or update service. Please try again.";
+set_flash_message('error', "Failed to create or update service. Please try again.", 'provider_services');
     }
 
     header('Location: ' . base_url('index.php/provider/services'));
@@ -186,7 +187,7 @@ public function processService() {
             error_log("Deleting service: provider_service_id=$provider_service_id, provider_id=$provider_id");
             
             if (!$provider_service_id || !$provider_id) {
-                $_SESSION['error'] = "Missing required information";
+set_flash_message('error', "Missing required information", 'provider_services');
                 header('Location: ' . base_url('index.php/provider/services'));
                 exit;
             }
@@ -199,9 +200,9 @@ public function processService() {
             $result = $providerModel->deleteService($provider_service_id, $provider_id);
             
             if ($result) {
-                $_SESSION['success'] = "Service deleted";
+set_flash_message('success', "Service deleted", 'provider_services');
             } else {
-                $_SESSION['error'] = "Failed to delete service";
+set_flash_message('error', "Failed to delete service", 'provider_services');
             }
             
             header('Location: ' . base_url('index.php/provider/services'));
