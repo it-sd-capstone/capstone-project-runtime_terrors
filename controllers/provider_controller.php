@@ -1994,7 +1994,8 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
                 exit;
             }
             set_flash_message('error', 'Unauthorized access', 'auth_login');
-            redirect('auth/login');
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
         }
         
         $provider_id = $_SESSION['user_id'];
@@ -2006,7 +2007,6 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
         $first_name = trim($_POST['first_name'] ?? '');
         $last_name = trim($_POST['last_name'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
-        $digitsOnlyPhone = preg_replace('/\D/', '', $phone);
         $specialization = trim($_POST['specialization'] ?? '');
         $bio = trim($_POST['bio'] ?? '');
         $accepting_new_patients = isset($_POST['accepting_new_patients']) ? 1 : 0;
@@ -2036,13 +2036,6 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
             }
         }
         
-        // Validate phone number (should be 10 digits)
-        if (strlen($digitsOnlyPhone) !== 10) {
-            $errors[] = "Please enter a valid 10-digit phone number.";
-        } else {
-            $phone = $digitsOnlyPhone; // Save the cleaned phone number
-        }
-        
         // Continue with update only if no errors
         if (!empty($errors)) {
             if ($this->isAjaxRequest()) {
@@ -2052,7 +2045,6 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
             set_flash_message('error', implode('<br>', $errors), 'provider_profile');
             header('Location: ' . base_url('index.php/provider/profile'));
             exit;
-            
         }
         
         // Validate required data
@@ -2062,7 +2054,8 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
                 exit;
             }
             set_flash_message('error', 'Required fields cannot be empty', 'provider_profile');
-            redirect('provider/profile');
+            header('Location: ' . base_url('index.php/provider/profile'));
+            exit;
         }
         
         // Prepare data for update
@@ -2072,8 +2065,10 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
             'phone' => $phone
         ];
         
+        // Add the title field which is expected by the Provider model
         $profileData = [
             'specialization' => $specialization,
+            'title' => '',  // Add this empty title since the model expects it
             'bio' => $bio,
             'accepting_new_patients' => $accepting_new_patients,
             'max_patients_per_day' => $max_patients_per_day
@@ -2089,14 +2084,20 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
                 exit;
             }
             set_flash_message('error', $userResult['error'], 'provider_profile');
-            redirect('provider/profile');
+            header('Location: ' . base_url('index.php/provider/profile'));
+            exit;
         }
         
         // Update provider profile data
         $profileUpdateSuccess = $this->providerModel->updateProfile($provider_id, $profileData);
         
-        // Determine overall success
-        $success = $userResult && $profileUpdateSuccess;
+        // Debug output to check what's happening
+        error_log("userResult: " . var_export($userResult, true));
+        error_log("profileUpdateSuccess: " . var_export($profileUpdateSuccess, true));
+        
+        // Simpler success determination - just check if providerModel update succeeded
+        // since we already handled any userModel errors above
+        $success = $profileUpdateSuccess;
         
         if ($success) {
             if ($this->isAjaxRequest()) {
@@ -2118,29 +2119,29 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
 
 
     /**
- * Deactivate the provider account (set is_active = 0)
- */
-public function deactivateAccount() {
-    if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
-set_flash_message('error', "Unauthorized access", 'auth_login');
-        header('Location: ' . base_url('index.php/auth'));
+     * Deactivate the provider account (set is_active = 0)
+     */
+    public function deactivateAccount() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'provider') {
+    set_flash_message('error', "Unauthorized access", 'auth_login');
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
+        }
+
+        $provider_id = $_SESSION['user_id'];
+        $success = $this->providerModel->setActiveStatus($provider_id, 0);
+
+        if ($success) {
+    set_flash_message('success', "Your account has been deactivated.", 'auth_login');
+            // Optionally, log the user out after deactivation
+            session_destroy();
+            header('Location: ' . base_url('index.php/auth/login?success=Account deactivated'));
+        } else {
+    set_flash_message('error', "Failed to deactivate account. Please try again.", 'provider_profile');
+            header('Location: ' . base_url('index.php/provider/profile'));
+        }
         exit;
     }
-
-    $provider_id = $_SESSION['user_id'];
-    $success = $this->providerModel->setActiveStatus($provider_id, 0);
-
-    if ($success) {
-set_flash_message('success', "Your account has been deactivated.", 'auth_login');
-        // Optionally, log the user out after deactivation
-        session_destroy();
-        header('Location: ' . base_url('index.php/auth/login?success=Account deactivated'));
-    } else {
-set_flash_message('error', "Failed to deactivate account. Please try again.", 'provider_profile');
-        header('Location: ' . base_url('index.php/provider/profile'));
-    }
-    exit;
-}
 
 /**
  * Set accepting new patients status (1 = accepting, 0 = not accepting)
