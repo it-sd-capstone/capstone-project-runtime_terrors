@@ -192,123 +192,138 @@ providerSelect.addEventListener('change', function() {
 });
 
 // Step 3: Calendar
-function loadCalendar(providerId, serviceId) {
-    calendarLoading.style.display = "block";
-    calendarError.style.display = "none";
-    calendarEl.innerHTML = "";
-    
-    if (calendar) calendar.destroy();
-    
-    // Build API URL - make sure to use consistent URL format
-    const apiUrl = `<?= base_url('index.php/api/getAvailableSlots') ?>?provider_id=${providerId}&service_id=${serviceId}`;
-    
-    setTimeout(() => { // Simulate loading
-        try {
-            calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek'
-                },
-                timeZone: 'local',
-                events: apiUrl,
-                eventClick: function(info) {
-                    // Check if this is an available slot (check all possible prop locations)
-                    const isAvailable = 
-                        info.event.extendedProps.type === 'availability' || 
-                        info.event.title === 'Available' ||
-                        (info.event.extendedProps && info.event.backgroundColor === '#28a745');
-                    
-                    if (!isAvailable) {
-                        alert("This slot is not available for booking.");
-                        return;
+// Step 3: Calendar
+    function loadCalendar(providerId, serviceId) {
+        calendarLoading.style.display = "block";
+        calendarError.style.display = "none";
+        calendarEl.innerHTML = "";
+        
+        if (calendar) calendar.destroy();
+        
+        // Build API URL - make sure to use consistent URL format
+        const apiUrl = `<?= base_url('index.php/api/getAvailableSlots') ?>?provider_id=${providerId}&service_id=${serviceId}`;
+        
+        setTimeout(() => { // Simulate loading
+            try {
+                calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek'
+                    },
+                    timeZone: 'local',
+                    events: apiUrl,
+                    validRange: {
+                        start: new Date() // This sets the minimum selectable date to now
+                    },
+                    eventClick: function(info) {
+                        // Check if event is in the past
+                        if (info.event.start < new Date()) {
+                            alert("Cannot book appointments in the past. Please select a future time slot.");
+                            return;
+                        }
+                        
+                        // Check if this is an available slot (check all possible prop locations)
+                        const isAvailable = 
+                            info.event.extendedProps.type === 'availability' || 
+                            info.event.title === 'Available' ||
+                            (info.event.extendedProps && info.event.backgroundColor === '#28a745');
+                        
+                        if (!isAvailable) {
+                            alert("This slot is not available for booking.");
+                            return;
+                        }
+                        
+                        const eventDate = info.event.start;
+                        const year = eventDate.getFullYear();
+                        const month = (eventDate.getMonth() + 1).toString().padStart(2, '0');
+                        const day = eventDate.getDate().toString().padStart(2, '0');
+                        const hours = eventDate.getHours().toString().padStart(2, '0');
+                        const minutes = eventDate.getMinutes().toString().padStart(2, '0');
+                        const formattedDate = `${year}-${month}-${day}`;
+                        const formattedTime = `${hours}:${minutes}`;
+                        
+                        // Fill form hidden fields
+                        document.getElementById("form_service_id").value = serviceSelect.value;
+                        document.getElementById("form_provider_id").value = providerSelect.value;
+                        document.getElementById("appointment_date").value = formattedDate;
+                        document.getElementById("start_time").value = formattedTime;
+                        
+                        // Show summary - truncate long text for better display
+                        const serviceText = serviceSelect.options[serviceSelect.selectedIndex].textContent;
+                        const providerText = providerSelect.options[providerSelect.selectedIndex].textContent;
+                        
+                        document.getElementById("summary-service").textContent = 
+                            serviceText.length > 30 ? serviceText.substring(0, 30) + '...' : serviceText;
+                        document.getElementById("summary-provider").textContent = providerText;
+                        document.getElementById("summary-date").textContent = formattedDate;
+                        document.getElementById("summary-time").textContent = 
+                            new Date(eventDate).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
+                        
+                        // Show form
+                        bookForm.style.display = "block";
+                        bookForm.scrollIntoView({behavior: "smooth"});
+                    },
+                    eventDisplay: 'block',
+                    eventTimeFormat: {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        meridiem: 'short'
+                    },
+                    eventDidMount: function(info) {
+                        // Gray out past events
+                        if (info.event.start < new Date()) {
+                            info.el.style.opacity = '0.6';
+                            info.el.style.backgroundColor = '#e9ecef';
+                            info.el.style.borderColor = '#dee2e6';
+                            info.el.style.pointerEvents = 'none'; // Make past events unclickable
+                        }
+                        
+                        // Always add a useful title tooltip
+                        const time = info.event.start ? 
+                            new Date(info.event.start).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'}) : '';
+                        info.el.setAttribute('title', `Available: ${time}`);
+                    },
+                    loading: function(isLoading) {
+                        calendarLoading.style.display = isLoading ? "block" : "none";
+                    },
+                    eventSourceFailure: function(error) {
+                        console.error("Calendar failed to load events:", error);
+                        calendarError.style.display = "block";
                     }
-                    
-                    const eventDate = info.event.start;
-                    const year = eventDate.getFullYear();
-                    const month = (eventDate.getMonth() + 1).toString().padStart(2, '0');
-                    const day = eventDate.getDate().toString().padStart(2, '0');
-                    const hours = eventDate.getHours().toString().padStart(2, '0');
-                    const minutes = eventDate.getMinutes().toString().padStart(2, '0');
-                    const formattedDate = `${year}-${month}-${day}`;
-                    const formattedTime = `${hours}:${minutes}`;
-                    
-                    // Fill form hidden fields
-                    document.getElementById("form_service_id").value = serviceSelect.value;
-                    document.getElementById("form_provider_id").value = providerSelect.value;
-                    document.getElementById("appointment_date").value = formattedDate;
-                    document.getElementById("start_time").value = formattedTime;
-                    
-                    // Show summary - truncate long text for better display
-                    const serviceText = serviceSelect.options[serviceSelect.selectedIndex].textContent;
-                    const providerText = providerSelect.options[providerSelect.selectedIndex].textContent;
-                    
-                    document.getElementById("summary-service").textContent = 
-                        serviceText.length > 30 ? serviceText.substring(0, 30) + '...' : serviceText;
-                    document.getElementById("summary-provider").textContent = providerText;
-                    document.getElementById("summary-date").textContent = formattedDate;
-                    document.getElementById("summary-time").textContent = 
-                        new Date(eventDate).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
-                    
-                    // Show form
-                    bookForm.style.display = "block";
-                    bookForm.scrollIntoView({behavior: "smooth"});
-                },
-                eventDisplay: 'block',
-                eventTimeFormat: {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    meridiem: 'short'
-                },
-                eventDidMount: function(info) {
-                    // Always add a useful title tooltip
-                    const time = info.event.start ? 
-                        new Date(info.event.start).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'}) : '';
-                    info.el.setAttribute('title', `Available: ${time}`);
-                    
-                    
-                },
-                loading: function(isLoading) {
-                    calendarLoading.style.display = isLoading ? "block" : "none";
-                },
-                eventSourceFailure: function(error) {
-                    console.error("Calendar failed to load events:", error);
-                    calendarError.style.display = "block";
-                }
-            });
-            
-            calendar.render();
-            
-            // Additional fetch to handle empty slots case
-            fetch(apiUrl)
-              .then(response => {
-                if (!response.ok) {
-                    throw new Error(`API returned ${response.status}: ${response.statusText}`);
-                }
-                return response.json();
-              })
-              .then(data => {
-                console.log("Available slots data:", data);
+                });
                 
-                if (!data || data.length === 0) {
-                    // Show a message to the user
-                    calendarEl.innerHTML = '<div class="alert alert-info">No available appointments found for this provider and service. Please try another provider or contact us.</div>';
-                }
-              })
-              .catch(error => {
-                console.error("Error fetching slots:", error);
+                calendar.render();
+                
+                // Additional fetch to handle empty slots case
+                fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`API returned ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Available slots data:", data);
+                    
+                    if (!data || data.length === 0) {
+                        // Show a message to the user
+                        calendarEl.innerHTML = '<div class="alert alert-info">No available appointments found for this provider and service. Please try another provider or contact us.</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching slots:", error);
+                    calendarError.style.display = "block";
+                });
+                
+            } catch (err) {
+                console.error("Error setting up calendar:", err);
                 calendarError.style.display = "block";
-              });
-              
-        } catch (err) {
-            console.error("Error setting up calendar:", err);
-            calendarError.style.display = "block";
-            calendarLoading.style.display = "none";
-        }
-    }, 400); // Simulate loading delay
-}
-
+                calendarLoading.style.display = "none";
+            }
+        }, 400); // Simulate loading delay
+    }
 // Step 4: Form Validation
 document.addEventListener('DOMContentLoaded', function() {
     if (bookForm) {

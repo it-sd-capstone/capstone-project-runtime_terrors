@@ -132,20 +132,29 @@ class ApiController {
                 $startDateTime = $row['availability_date'] . 'T' . $row['start_time'];
                 $endDateTime = $row['availability_date'] . 'T' . $row['end_time'];
                 
-                // Add the slot to events
-                $events[] = [
-                    'id' => 'slot_' . $row['availability_id'] . '_' . str_replace(':', '', $row['start_time']),
-                    'title' => 'Available',
-                    'start' => $startDateTime,
-                    'end' => $endDateTime,
-                    'color' => '#28a745',
-                    'extendedProps' => [
-                        'availability_id' => $row['availability_id'],
-                        'duration' => $duration,
-                        'service_id' => $service_id ?: $row['service_id'],
-                        'is_recurring' => $row['is_recurring']
-                    ]
-                ];
+                // Check if time slot is in the past
+                $slotTime = strtotime($row['availability_date'] . ' ' . $row['start_time']);
+                if ($slotTime <= time()) {
+                    continue; // Skip past slots
+                }
+                
+                // *** FIX: Check if the slot is already booked before adding it ***
+                if (!$this->isSlotBooked($provider_id, $row['availability_date'], $row['start_time'])) {
+                    // Add the slot to events only if it's not booked
+                    $events[] = [
+                        'id' => 'slot_' . $row['availability_id'] . '_' . str_replace(':', '', $row['start_time']),
+                        'title' => 'Available',
+                        'start' => $startDateTime,
+                        'end' => $endDateTime,
+                        'color' => '#28a745',
+                        'extendedProps' => [
+                            'availability_id' => $row['availability_id'],
+                            'duration' => $duration,
+                            'service_id' => $service_id ?: $row['service_id'],
+                            'is_recurring' => $row['is_recurring']
+                        ]
+                    ];
+                }
             }
             
             // 2. Get recurring availability and expand based on weekdays
@@ -215,6 +224,13 @@ class ApiController {
                     if (in_array($dayOfWeek, $weekdays)) {
                         $currentDateStr = $currentDate->format('Y-m-d');
                         
+                        // Check if slot is in the past
+                        $slotTime = strtotime($currentDateStr . ' ' . $row['start_time']);
+                        if ($slotTime <= time()) {
+                            $currentDate->modify('+1 day');
+                            continue; // Skip past slots
+                        }
+                        
                         // Check if there's no appointment already booked for this slot
                         if (!$this->isSlotBooked($provider_id, $currentDateStr, $row['start_time'])) {
                             $startDateTime = $currentDateStr . 'T' . $row['start_time'];
@@ -244,6 +260,9 @@ class ApiController {
                     $currentDate->modify('+1 day');
                 }
             }
+            
+            // *** FIX: Apply final filtering to remove any conflicting appointments ***
+            $events = $this->removeConflictingAppointments($events, $provider_id, $start_date, $end_date);
             
             // Debug the result
             error_log("Returning " . count($events) . " total availability slots");
@@ -528,6 +547,12 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
                 break;
             }
             
+            // Skip slots in the past
+            if ($currentStart->getTimestamp() <= time()) {
+                $currentStart->modify("+{$duration} minutes");
+                continue;
+            }
+            
             // Format dates for the slot
             $slotStart = $currentStart->format('Y-m-d\TH:i:s');
             $slotEnd = $currentEnd->format('Y-m-d\TH:i:s');
@@ -656,6 +681,11 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
             $event_start = strtotime(substr($event['start'], 0, 10) . ' ' . substr($event['start'], 11));
             $event_end = strtotime(substr($event['end'], 0, 10) . ' ' . substr($event['end'], 11));
             $has_conflict = false;
+            
+            // Skip events in the past
+            if ($event_start <= time()) {
+                continue;
+            }
             
             foreach ($appointments as $appointment) {
                 $appt_start = strtotime($appointment['appointment_date'] . ' ' . $appointment['start_time']);

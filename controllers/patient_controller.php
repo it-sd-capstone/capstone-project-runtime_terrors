@@ -507,8 +507,10 @@ set_flash_message('error', implode('<br>', $errors), 'patient_profile');
         $error = $_SESSION['error'] ?? null;
         
         // Clear session messages after using them
-//         if (isset($_SESSION['success'])) unset($_SESSION['success']); // Modified by transformer - isset check not needed with context-aware flash messages
-//         if (isset($_SESSION['error'])) unset($_SESSION['error']); // Modified by transformer - isset check not needed with context-aware flash messages
+//         if (isset($_SESSION['success'])) unset($_SESSION['success']);
+ // Modified by transformer - isset check not needed with context-aware flash messages
+//         if (isset($_SESSION['error'])) unset($_SESSION['error']);
+ // Modified by transformer - isset check not needed with context-aware flash messages
         
         include VIEW_PATH . '/patient/profile.php';
     }
@@ -654,11 +656,141 @@ set_flash_message('error', "Service not found", 'patient_book');
             set_flash_message('error', 'Appointment not found');
             
         set_flash_message('info', "Viewing appointment details", 'patient_view_appointment');
-redirect('patient/appointments');
+        redirect('patient/appointments');
             return;
+
+            // NEW CODE: Check if appointment time is in the past
+            $now = new DateTime();
+            $appointmentDateTime = new DateTime($appointment_date . ' ' . $appointment_time);
+            if ($appointmentDateTime <= $now) {
+                error_log("Attempted to book appointment in the past: $appointment_date $appointment_time");
+                $_SESSION['error'] = "Cannot book appointments in the past. Please select a future time.";
+                header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                exit;
+            }
+            
+            if ($provider_id && !empty($appointment_date) && !empty($appointment_time)) {
+                // Log the input parameters
+                error_log("Booking attempt with provider_id: $provider_id, date: $appointment_date, start_time: $appointment_time, service_id: $service_id");
+                
+                // Calculate end time based on service duration
+                if ($service_id) {
+                    // Load service model if not already loaded
+                    if (!isset($this->serviceModel)) {
+                        require_once MODEL_PATH . '/Services.php';
+                        $this->serviceModel = new Services($this->db);
+                    }
+                    $service = $this->serviceModel->getServiceById($service_id);
+                    $duration = $service ? ($service['duration'] ?? 30) : 30; // Default to 30 minutes
+                } else {
+                    $duration = 30; // Default duration if no service selected
+                }
+                
+                // Calculate the end time
+                $start_timestamp = strtotime($appointment_date . ' ' . $appointment_time);
+                $end_timestamp = $start_timestamp + ($duration * 60); // Convert minutes to seconds
+                $end_time = date('H:i:s', $end_timestamp);
+                
+                // Validate that the slot can accommodate this service
+                $slot = $this->providerModel->getSlotByDateTime($provider_id, $appointment_date, $appointment_time);
+                
+                if (!$slot) {
+                    $_SESSION['error'] = "The selected time slot is not available.";
+                    header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                    exit;
+                }
+                
+                // Now we can safely access end_time
+                $slot_end = strtotime($appointment_date . ' ' . $slot['end_time']);
+                if ($end_timestamp > $slot_end) {
+                    $_SESSION['error'] = "This time slot is too short for the selected service.";
+                    header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                    exit;
+                }
+                
+                error_log("Calculated end_time: $end_time based on duration: $duration minutes");
+                
+                // Before checking availability
+                error_log("Checking slot availability...");
+                
+                // When checking slot availability, include detailed logging
+                $isAvailable = $this->appointmentModel->isSlotAvailable($provider_id, $appointment_date, $appointment_time, $end_time);
+                error_log("Slot availability check result: " . ($isAvailable ? "Available" : "Not available"));
+                
+                if (!$isAvailable) {
+                    $_SESSION['error'] = "This time slot is no longer available. Please try another.";
+                    header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                    exit;
+                }
+                
+                // Before creating appointment
+                error_log("Creating appointment...");
+                
+                // Wrap the appointment creation in a try-catch
+                try {
+                    $result = $this->appointmentModel->scheduleAppointment(
+                        $patient_id,
+                        $provider_id,
+                        $service_id,
+                        $appointment_date,
+                        $appointment_time,
+                        $end_time,
+                        $type,
+                        $notes,
+                        $reason
+                    );
+                    error_log("Appointment creation result: " . ($result ? "Success" : "Failed"));
+                } catch (Exception $e) {
+                    error_log("Exception during appointment creation: " . $e->getMessage());
+                    $_SESSION['error'] = "An error occurred while booking: " . $e->getMessage();
+                    header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                    exit;
+                }
+                
+                if ($result) {
+                    // Log the appointment creation
+                    if (isset($this->activityLogModel)) {
+                        $this->activityLogModel->logActivity('appointment_created',
+                            "Patient scheduled appointment with provider #$provider_id",
+                            $patient_id);
+                    }
+                    
+                    // Redirect to appointments page with success message
+                    $_SESSION['success'] = "Your appointment has been booked successfully!";
+                    // Use the correct path format for cross-controller redirection
+                    $redirectUrl = base_url("index.php/appointments?success=booked");
+                    error_log("Redirecting to: " . $redirectUrl);
+                    header("Location: " . $redirectUrl);
+                    exit;
+                } else {
+                    $_SESSION['error'] = "Failed to book appointment. Please try again.";
+                    header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                    exit;
+                }
+                
+                exit;
+            } else {
+                $_SESSION['error'] = "Missing required fields for booking.";
+                header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                exit;
+            }
+        }
+    }
+
+    public function checkAvailability() {
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $input = json_decode(file_get_contents("php://input"), true);
+            $provider_id = intval($input['provider_id'] ?? 0);
+            $appointment_date = htmlspecialchars($input['date'] ?? '');
+            $appointment_time = htmlspecialchars($input['time'] ?? '');
+            $available = $this->appointmentModel->isSlotAvailable($provider_id, $appointment_date, $appointment_time);
+            header("Content-Type: application/json");
+            echo json_encode(["available" => $available]);
+            exit;
         }
         $success = true;
     }
+
 
     /**
      * Cancel Appointment

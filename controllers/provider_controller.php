@@ -1253,10 +1253,10 @@ set_flash_message('error', "Invalid request method", 'global');
     $system_updates = isset($_POST['system_updates']) ? 1 : 0;
 
     // Save settings - you can use a dedicated table or a JSON/settings field in provider profile
-    // Here, we'll assume a provider_notification_settings table with provider_id as PK
+    // Here, we'll assume a notification_preferences table with provider_id as PK
     try {
         $stmt = $this->db->prepare("
-            INSERT INTO provider_notification_settings (provider_id, email_notifications, appointment_reminders, system_updates)
+            INSERT INTO notification_preferences (user_id, email_notifications, appointment_reminders, system_updates)
             VALUES (?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 email_notifications = VALUES(email_notifications),
@@ -1298,7 +1298,7 @@ set_flash_message('error', "You must be logged in as a provider to view notifica
         
         // Get unread count
         $unreadCount = $this->notificationModel->getUnreadCount($provider_id);
-        $stmt = $this->db->prepare("SELECT email_notifications, appointment_reminders, system_updates FROM provider_notification_settings WHERE provider_id = ?");
+        $stmt = $this->db->prepare("SELECT email_notifications, appointment_reminders, system_updates FROM notification_preferences WHERE user_id = ?");
         $stmt->bind_param("i", $provider_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -2046,6 +2046,49 @@ set_flash_message('error', 'Failed to update profile', 'provider_profile');
         header('Location: ' . base_url('index.php/provider/profile'));
         exit;
     }
+
+    // Validate phone number (should be 10 digits)
+    if (strlen($phone) !== 10) {
+        $_SESSION['error'] = "Please enter a valid 10-digit phone number.";
+        header('Location: ' . base_url('index.php/provider/profile'));
+        exit;
+    }
+
+    // Prepare data for update
+    $userData = [
+        'first_name' => $first_name,
+        'last_name' => $last_name,
+        'phone' => $phone
+    ];
+    $profileData = [
+        'specialization' => $specialization,
+        'bio' => $bio,
+        'accepting_new_patients' => $accepting_new_patients,
+        'max_patients_per_day' => $max_patients_per_day
+    ];
+
+    // Update user data
+    $userResult = $this->userModel->updateUser($provider_id, $userData);
+
+    if (is_array($userResult) && isset($userResult['error'])) {
+        $_SESSION['error'] = $userResult['error'];
+        header('Location: ' . base_url('index.php/provider/profile'));
+        exit;
+    }
+
+    // Update provider profile data
+    $profileUpdateSuccess = $this->providerModel->updateProfile($provider_id, $profileData);
+
+    if ($userResult && $profileUpdateSuccess) {
+        $_SESSION['success'] = 'Profile updated successfully';
+    } else {
+        $_SESSION['error'] = 'Failed to update profile';
+    }
+
+    header('Location: ' . base_url('index.php/provider/profile'));
+    exit;
+}
+
     /**
  * Deactivate the provider account (set is_active = 0)
  */

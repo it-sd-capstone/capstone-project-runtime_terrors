@@ -93,13 +93,13 @@
         </div>
         
         <div class="mt-4">
-            <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-secondary">Back to Appointments</a>
+            <a href="<?= base_url('provider/appointments') ?>" class="btn btn-secondary">Back to Appointments</a>
         </div>
     <?php else: ?>
         <div class="alert alert-warning" role="alert">
             Appointment not found or you don't have permission to view it.
         </div>
-        <a href="<?= base_url('index.php/appointments') ?>" class="btn btn-secondary">Back to Appointments</a>
+        <a href="<?= base_url('provider/appointments') ?>" class="btn btn-secondary">Back to Appointments</a>
     <?php endif; ?>
 </div>
 
