@@ -1,5 +1,5 @@
 <?php
-require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
+require_once __DIR__ . '/../helpers/system_notifications.php';
 /**
  * Notification Model
  * Handles data operations for notifications
@@ -50,45 +50,44 @@ class Notification {
         return $stmt->execute([$notification_id]);
     }
     
-    // Retrieve notifications for a user
-  public function getUserNotifications($userId) {
-    try {
-        if ($this->db instanceof mysqli) {
-            $stmt = $this->db->prepare("
-                SELECT * FROM notifications 
-                WHERE user_id = ? OR user_id IS NULL 
-                ORDER BY created_at DESC
-            ");
-            $stmt->bind_param("i", $userId);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $notifications = [];
-            while ($row = $result->fetch_assoc()) {
-                $notifications[] = $row;
+    // Retrieve notifications for a user  
+    public function getUserNotifications($userId) {
+        try {
+            if ($this->db instanceof mysqli) {
+                $stmt = $this->db->prepare("
+                    SELECT * FROM notifications
+                    WHERE user_id = ? OR user_id IS NULL
+                    ORDER BY created_at DESC
+                ");
+                $stmt->bind_param("i", $userId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $notifications = [];
+                while ($row = $result->fetch_assoc()) {
+                    $notifications[] = $row;
+                }
+                return $notifications;
+            } else {
+                // PDO
+                $stmt = $this->db->prepare("
+                    SELECT * FROM notifications
+                    WHERE user_id = ? OR user_id IS NULL
+                    ORDER BY created_at DESC
+                ");
+                $stmt->execute([$userId]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
-            return $notifications;
-
         } catch (Exception $e) {
-    // Log system event
-logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
-
+            // Log system event
+            if (function_exists('logSystemEvent')) {
+                logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage(), 'System Error Detected');
+            }
             error_log("Error getting user notifications: " . $e->getMessage());
             return [];
-        } else {
-            // PDO
-            $stmt = $this->db->prepare("
-                SELECT * FROM notifications 
-                WHERE user_id = ? OR user_id IS NULL 
-                ORDER BY created_at DESC
-            ");
-            $stmt->execute([$userId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
-    } catch (Exception $e) {
-        error_log("Error getting user notifications: " . $e->getMessage());
-        return [];
     }
-}
+
+ 
 
      /**
      * Get latest system notifications for admin dashboard

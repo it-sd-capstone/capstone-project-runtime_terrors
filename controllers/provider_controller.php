@@ -1,5 +1,5 @@
 <?php
-require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
+require_once __DIR__ . '/../helpers/system_notifications.php';
 require_once MODEL_PATH . '/Provider.php';
 require_once MODEL_PATH . '/Appointment.php';
 require_once MODEL_PATH . '/Services.php';
@@ -1947,7 +1947,7 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
                 echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
                 exit;
             }
-set_flash_message('error', 'Unauthorized access', 'auth_login');
+            set_flash_message('error', 'Unauthorized access', 'auth_login');
             redirect('auth/login');
         }
         
@@ -1956,29 +1956,42 @@ set_flash_message('error', 'Unauthorized access', 'auth_login');
         // Initialize errors array
         $errors = [];
         
-        // Get form data for user table
-        $userData = [
-            'phone' => trim($_POST['phone'] ?? '')
-        ];
+        // Get form data from POST
+        $first_name = trim($_POST['first_name'] ?? '');
+        $last_name = trim($_POST['last_name'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
+        $specialization = trim($_POST['specialization'] ?? '');
+        $bio = trim($_POST['bio'] ?? '');
+        $accepting_new_patients = isset($_POST['accepting_new_patients']) ? 1 : 0;
+        $max_patients_per_day = (int)($_POST['max_patients_per_day'] ?? 0);
         
         // Validate first name
-        if (isset($_POST['first_name'])) {
-            $firstNameValidation = validateName(trim($_POST['first_name']));
+        if (empty($first_name)) {
+            $errors[] = "First name is required.";
+        } else {
+            $firstNameValidation = validateName($first_name);
             if (!$firstNameValidation['valid']) {
                 $errors[] = $firstNameValidation['error'];
             } else {
-                $userData['first_name'] = $firstNameValidation['sanitized'];
+                $first_name = $firstNameValidation['sanitized'];
             }
         }
         
         // Validate last name
-        if (isset($_POST['last_name'])) {
-            $lastNameValidation = validateName(trim($_POST['last_name']));
+        if (empty($last_name)) {
+            $errors[] = "Last name is required.";
+        } else {
+            $lastNameValidation = validateName($last_name);
             if (!$lastNameValidation['valid']) {
                 $errors[] = $lastNameValidation['error'];
             } else {
-                $userData['last_name'] = $lastNameValidation['sanitized'];
+                $last_name = $lastNameValidation['sanitized'];
             }
+        }
+        
+        // Validate phone number (should be 10 digits)
+        if (strlen($phone) !== 10) {
+            $errors[] = "Please enter a valid 10-digit phone number.";
         }
         
         // Continue with update only if no errors
@@ -1987,30 +2000,36 @@ set_flash_message('error', 'Unauthorized access', 'auth_login');
                 echo json_encode(['success' => false, 'message' => implode('<br>', $errors)]);
                 exit;
             }
-set_flash_message('error', implode('<br>', $errors), 'provider_profile');
+            set_flash_message('error', implode('<br>', $errors), 'provider_profile');
             redirect('provider/profile');
             return;
         }
         
-        // Get form data for provider_profiles table
-        $profileData = [
-            'specialization' => trim($_POST['specialization'] ?? ''),
-            'bio' => trim($_POST['bio'] ?? ''),
-            'accepting_new_patients' => isset($_POST['accepting_new_patients']) ? 1 : 0,
-            'max_patients_per_day' => (int)($_POST['max_patients_per_day'] ?? 0)
-        ];
-        
         // Validate required data
-        if (empty($userData['first_name']) || empty($userData['last_name']) || empty($profileData['specialization'])) {
+        if (empty($first_name) || empty($last_name) || empty($specialization)) {
             if ($this->isAjaxRequest()) {
                 echo json_encode(['success' => false, 'message' => 'Required fields cannot be empty']);
                 exit;
             }
-set_flash_message('error', 'Required fields cannot be empty', 'provider_profile');
+            set_flash_message('error', 'Required fields cannot be empty', 'provider_profile');
             redirect('provider/profile');
         }
         
-        // Update user data first - using your existing method
+        // Prepare data for update
+        $userData = [
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'phone' => $phone
+        ];
+        
+        $profileData = [
+            'specialization' => $specialization,
+            'bio' => $bio,
+            'accepting_new_patients' => $accepting_new_patients,
+            'max_patients_per_day' => $max_patients_per_day
+        ];
+        
+        // Update user data
         $userResult = $this->userModel->updateUser($provider_id, $userData);
         
         // Handle possible error array return
@@ -2019,7 +2038,7 @@ set_flash_message('error', 'Required fields cannot be empty', 'provider_profile'
                 echo json_encode(['success' => false, 'message' => $userResult['error']]);
                 exit;
             }
-set_flash_message('error', $userResult['error'], 'provider_profile');
+            set_flash_message('error', $userResult['error'], 'provider_profile');
             redirect('provider/profile');
         }
         
@@ -2034,60 +2053,19 @@ set_flash_message('error', $userResult['error'], 'provider_profile');
                 echo json_encode(['success' => true]);
                 exit;
             }
-set_flash_message('success', 'Profile updated successfully', 'provider_profile');
+            set_flash_message('success', 'Profile updated successfully', 'provider_profile');
         } else {
             if ($this->isAjaxRequest()) {
                 echo json_encode(['success' => false, 'message' => 'Failed to update profile']);
                 exit;
             }
-set_flash_message('error', 'Failed to update profile', 'provider_profile');
+            set_flash_message('error', 'Failed to update profile', 'provider_profile');
         }
         
         header('Location: ' . base_url('index.php/provider/profile'));
         exit;
     }
 
-    // Validate phone number (should be 10 digits)
-    if (strlen($phone) !== 10) {
-        $_SESSION['error'] = "Please enter a valid 10-digit phone number.";
-        header('Location: ' . base_url('index.php/provider/profile'));
-        exit;
-    }
-
-    // Prepare data for update
-    $userData = [
-        'first_name' => $first_name,
-        'last_name' => $last_name,
-        'phone' => $phone
-    ];
-    $profileData = [
-        'specialization' => $specialization,
-        'bio' => $bio,
-        'accepting_new_patients' => $accepting_new_patients,
-        'max_patients_per_day' => $max_patients_per_day
-    ];
-
-    // Update user data
-    $userResult = $this->userModel->updateUser($provider_id, $userData);
-
-    if (is_array($userResult) && isset($userResult['error'])) {
-        $_SESSION['error'] = $userResult['error'];
-        header('Location: ' . base_url('index.php/provider/profile'));
-        exit;
-    }
-
-    // Update provider profile data
-    $profileUpdateSuccess = $this->providerModel->updateProfile($provider_id, $profileData);
-
-    if ($userResult && $profileUpdateSuccess) {
-        $_SESSION['success'] = 'Profile updated successfully';
-    } else {
-        $_SESSION['error'] = 'Failed to update profile';
-    }
-
-    header('Location: ' . base_url('index.php/provider/profile'));
-    exit;
-}
 
     /**
  * Deactivate the provider account (set is_active = 0)
