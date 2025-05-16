@@ -383,39 +383,36 @@ include VIEW_PATH . '/partials/header.php';
 
 <!-- Dashboard Enhancement Scripts -->
 <script>
-/**
- * Admin Dashboard JavaScript
- * Handles charts, notifications, and widget preferences
- */
+/** * Admin Dashboard JavaScript * Handles charts, notifications, and widget preferences */
 document.addEventListener('DOMContentLoaded', function() {
   // Chart initialization
   initializeCharts();
-  
+ 
   // Track if notifications are already being loaded to prevent duplicates
   window.isLoadingNotifications = false;
-  
+ 
   // Load notifications
   loadNotifications();
-  
+ 
   // Set up refresh timer for notifications
   setInterval(loadNotifications, 60000); // Refresh every minute
-  
+ 
   // Event listeners for chart time period buttons
   document.getElementById('btn-weekly').addEventListener('click', function() {
     updateChartTimePeriod('weekly');
     this.blur(); // Remove focus after click
   });
-  
+ 
   document.getElementById('btn-monthly').addEventListener('click', function() {
     updateChartTimePeriod('monthly');
     this.blur(); // Remove focus after click
   });
-  
+ 
   document.getElementById('btn-yearly').addEventListener('click', function() {
     updateChartTimePeriod('yearly');
     this.blur(); // Remove focus after click
   });
-  
+ 
   // Event listener for notification refresh button
   const refreshButton = document.querySelector('.refresh-notifications');
   if (refreshButton) {
@@ -424,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
       this.blur(); // Remove focus after click
     });
   }
-  
+ 
   // Widget preferences form submission
   const preferencesForm = document.getElementById('widget-preferences-form');
   if (preferencesForm) {
@@ -433,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
       saveWidgetPreferences();
     });
   }
-  
+ 
   // Reset dashboard button
   const resetButton = document.getElementById('reset-dashboard');
   if (resetButton) {
@@ -444,24 +441,17 @@ document.addEventListener('DOMContentLoaded', function() {
       this.blur(); // Remove focus after click
     });
   }
-  
+ 
   // Apply saved widget preferences on page load
   applySavedWidgetPreferences();
-  
-  // Run section finder after a short delay to ensure DOM is fully loaded
-  setTimeout(findAndTagDashboardSections, 200);
 });
 
-
-
-/**
- * Initialize the dashboard charts
- */
+/** * Initialize the dashboard charts */
 function initializeCharts() {
     // Appointment Status Chart
     const statusCtx = document.getElementById('appointmentStatusChart');
     if (!statusCtx) return;
-    
+   
     const statusChart = new Chart(statusCtx.getContext('2d'), {
         type: 'doughnut',
         data: {
@@ -491,11 +481,11 @@ function initializeCharts() {
             }
         }
     });
-    
+   
     // Appointment Trends Chart
     const trendsCtx = document.getElementById('appointmentTrendsChart');
     if (!trendsCtx) return;
-    
+   
     const trendsChart = new Chart(trendsCtx.getContext('2d'), {
         type: 'line',
         data: {
@@ -523,33 +513,31 @@ function initializeCharts() {
             }
         }
     });
-    
+   
     // Store chart references globally for later updates
     window.adminCharts = {
         statusChart: statusChart,
         trendsChart: trendsChart
     };
-    
+   
     // Load initial data
     updateChartTimePeriod('monthly');
 }
 
-/**
- * Update chart data based on selected time period
- */
+/** * Update chart data based on selected time period */
 function updateChartTimePeriod(period) {
     // Update active button state
     document.querySelectorAll('#btn-weekly, #btn-monthly, #btn-yearly').forEach(btn => {
         btn.classList.remove('active');
     });
     document.getElementById('btn-' + period).classList.add('active');
-    
+   
     // Show loading state
     const trendsCtx = document.getElementById('appointmentTrendsChart');
     if (trendsCtx) {
         trendsCtx.style.opacity = 0.5;
     }
-    
+   
     // Fetch data from API
     fetch('<?= base_url("index.php/admin/getAppointmentAnalytics/") ?>' + period)
         .then(response => response.json())
@@ -558,7 +546,7 @@ function updateChartTimePeriod(period) {
                 console.error('Failed to load appointment analytics data');
                 return;
             }
-            
+               
             // Update chart title based on period
             let titleText = 'Appointment Trends';
             switch(period) {
@@ -571,7 +559,7 @@ function updateChartTimePeriod(period) {
                 default:
                     titleText += ' (Monthly)';
             }
-            
+               
             // Update appointment trends chart
             if (window.adminCharts && window.adminCharts.trendsChart) {
                 window.adminCharts.trendsChart.data.labels = data.trends.labels;
@@ -579,16 +567,16 @@ function updateChartTimePeriod(period) {
                 window.adminCharts.trendsChart.options.plugins.title.text = titleText;
                 window.adminCharts.trendsChart.update();
             }
-            
+               
             // Update appointment status chart
             if (window.adminCharts && window.adminCharts.statusChart) {
-                window.adminCharts.statusChart.data.labels = data.status.labels.map(label => 
+                window.adminCharts.statusChart.data.labels = data.status.labels.map(label =>
                     label.charAt(0).toUpperCase() + label.slice(1) // Capitalize first letter
                 );
                 window.adminCharts.statusChart.data.datasets[0].data = data.status.data;
                 window.adminCharts.statusChart.update();
             }
-            
+               
             // Restore opacity
             if (trendsCtx) {
                 trendsCtx.style.opacity = 1;
@@ -603,25 +591,23 @@ function updateChartTimePeriod(period) {
         });
 }
 
-/**
- * Load system notifications
- */
+/** * Load system notifications */
 function loadNotifications() {
   // Prevent multiple simultaneous calls
   if (window.isLoadingNotifications) {
     console.log('Notifications already being loaded, skipping duplicate call');
     return;
   }
-  
+ 
   window.isLoadingNotifications = true;
-  
+ 
   // Display loading state
   const container = document.getElementById('notifications-container');
   if (!container) {
     window.isLoadingNotifications = false;
     return;
   }
-  
+ 
   container.innerHTML = `
     <div class="d-flex justify-content-center py-3">
       <div class="spinner-border text-primary" role="status">
@@ -629,7 +615,7 @@ function loadNotifications() {
       </div>
     </div>
   `;
-  
+ 
   // Fetch real notifications from the API
   fetch('<?= base_url('index.php/notification/getAdminNotifications') ?>')
     .then(response => response.json())
@@ -643,12 +629,12 @@ function loadNotifications() {
         window.isLoadingNotifications = false;
         return;
       }
-      
+       
       // Filter out duplicate notifications
       let notifications = data.notifications;
       const uniqueNotifications = [];
       const messageSet = new Set();
-      
+       
       // Only keep the first occurrence of each message
       notifications.forEach(notification => {
         if (!messageSet.has(notification.message)) {
@@ -656,9 +642,9 @@ function loadNotifications() {
           uniqueNotifications.push(notification);
         }
       });
-      
+       
       notifications = uniqueNotifications;
-      
+       
       // Render notifications
       if (notifications.length === 0) {
         container.innerHTML = '<p class="text-muted text-center py-3">No notifications at this time.</p>';
@@ -670,14 +656,14 @@ function loadNotifications() {
           </div>
         `).join('');
       }
-      
+       
       // Update unread badge if it exists
       const unreadBadge = document.getElementById('unread-notifications-badge');
       if (unreadBadge && data.total_unread) {
         unreadBadge.textContent = data.total_unread;
         unreadBadge.style.display = data.total_unread > 0 ? 'inline-block' : 'none';
       }
-      
+       
       window.isLoadingNotifications = false;
     })
     .catch(error => {
@@ -691,9 +677,7 @@ function loadNotifications() {
     });
 }
 
-/**
- * Save dashboard widget visibility preferences
- */
+/** * Save dashboard widget visibility preferences */
 function saveWidgetPreferences() {
   // Get widget visibility preferences
   const preferences = {
@@ -702,20 +686,18 @@ function saveWidgetPreferences() {
     providers: document.getElementById('widget-providers').checked,
     services: document.getElementById('widget-services').checked
   };
-  
+ 
   // Save to localStorage
   localStorage.setItem('adminDashboardPreferences', JSON.stringify(preferences));
-  
+ 
   // Apply changes
   applySavedWidgetPreferences();
-  
+ 
   // Create and show toast notification
   showToastMessage('Dashboard preferences saved successfully!', 'success');
 }
 
-/**
- * Reset dashboard widget preferences to defaults
- */
+/** * Reset dashboard widget preferences to defaults */
 function resetWidgetPreferences() {
   // Default is all widgets visible
   const defaultPreferences = {
@@ -724,30 +706,28 @@ function resetWidgetPreferences() {
     providers: true,
     services: true
   };
-  
+ 
   // Update checkboxes to match defaults
   document.getElementById('widget-appointments').checked = true;
   document.getElementById('widget-notifications').checked = true;
   document.getElementById('widget-providers').checked = true;
   document.getElementById('widget-services').checked = true;
-  
+ 
   // Save to localStorage
   localStorage.setItem('adminDashboardPreferences', JSON.stringify(defaultPreferences));
-  
+ 
   // Apply changes
   applySavedWidgetPreferences();
-  
+ 
   // Show success message
   showToastMessage('Dashboard reset to default settings!', 'info');
 }
 
-/**
- * Show a toast message
- */
+/** * Show a toast message */
 function showToastMessage(message, type = 'success') {
   // Create toast container if it doesn't exist
   let toastContainer = document.getElementById('dynamic-toast-container');
-  
+ 
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.id = 'dynamic-toast-container';
@@ -755,13 +735,13 @@ function showToastMessage(message, type = 'success') {
     toastContainer.style.zIndex = '11';
     document.body.appendChild(toastContainer);
   }
-  
+ 
   // Create toast element
   const toastId = 'toast-' + Date.now();
-  const backgroundColor = type === 'success' ? 'bg-success' : 
+  const backgroundColor = type === 'success' ? 'bg-success' :
                          type === 'info' ? 'bg-info' :
                          type === 'warning' ? 'bg-warning' : 'bg-danger';
-  
+ 
   const toastHtml = `
     <div id="${toastId}" class="toast align-items-center ${backgroundColor} text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
@@ -772,15 +752,15 @@ function showToastMessage(message, type = 'success') {
       </div>
     </div>
   `;
-  
+ 
   toastContainer.innerHTML += toastHtml;
-  
-      // Initialize and show the toast
+   
+  // Initialize and show the toast
     const toastElement = document.getElementById(toastId);
     if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
       const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
       toast.show();
-      
+       
       // Remove toast element after it's hidden
       toastElement.addEventListener('hidden.bs.toast', function() {
         toastElement.remove();
@@ -793,9 +773,8 @@ function showToastMessage(message, type = 'success') {
       }, 3000);
     }
 }
-/**
- * Apply saved widget preferences to the dashboard
- */
+
+/** * Apply saved widget preferences to the dashboard */
 function applySavedWidgetPreferences() {
   // Get saved preferences, or use defaults if none saved
   let preferences;
@@ -817,7 +796,7 @@ function applySavedWidgetPreferences() {
       services: true
     };
   }
-  
+ 
   // Set checkbox states to match preferences
   const checkboxes = {
     'appointments': document.getElementById('widget-appointments'),
@@ -825,13 +804,13 @@ function applySavedWidgetPreferences() {
     'providers': document.getElementById('widget-providers'),
     'services': document.getElementById('widget-services')
   };
-  
+ 
   Object.keys(checkboxes).forEach(key => {
     if (checkboxes[key]) {
       checkboxes[key].checked = preferences[key];
     }
   });
-  
+ 
   // Map preference keys to actual dashboard section keywords
   const sectionMappings = {
     'appointments': ['Appointment Analytics', 'Appointment Status', 'appointments'],
@@ -839,10 +818,10 @@ function applySavedWidgetPreferences() {
     'providers': ['Provider Availability', 'Top Providers', 'Provider Stats'],
     'services': ['Service Usage Metrics', 'Top Used Services', 'Service Stats']
   };
-  
+ 
   // Get all cards on the dashboard
   const cards = document.querySelectorAll('.card');
-  
+ 
   // Track if each type of section has been found
   const sectionFound = {
     'appointments': false,
@@ -850,81 +829,81 @@ function applySavedWidgetPreferences() {
     'providers': false,
     'services': false
   };
-  
+ 
   // Process each card to identify its type and apply visibility
   cards.forEach(card => {
     // Always show the welcome/intro card and dashboard customization
-    if (containsText(card, 'Welcome to the Admin Dashboard') || 
+    if (containsText(card, 'Welcome to the Admin Dashboard') ||
         containsText(card, 'Dashboard Customization') ||
         containsText(card, 'Quick Actions')) {
       card.style.display = 'block';
       return; // Skip further processing
     }
-    
+   
     // Check each preference type against this card
     Object.keys(sectionMappings).forEach(prefKey => {
       const keywords = sectionMappings[prefKey];
-      
+       
       // Check if any keyword matches this card
-      const isMatchingSection = keywords.some(keyword => 
+      const isMatchingSection = keywords.some(keyword =>
         containsText(card, keyword)
       );
-      
+       
       if (isMatchingSection) {
         // Mark this type of section as found
         sectionFound[prefKey] = true;
-        
+           
         // Apply visibility based on preferences
         card.style.display = preferences[prefKey] ? 'block' : 'none';
-        
+           
         // Also add appropriate classes for future reference
         card.classList.add('dashboard-section');
         card.classList.add(`${prefKey}-section`);
-        
+           
         // Add ID if missing
         if (!card.id) {
           card.id = `${prefKey}-section`;
         }
       }
     });
-    
+   
     // Special handling for sections that might not be clearly identified
-    
+   
     // Appointment section detection
-    if (!sectionFound['appointments'] && 
+    if (!sectionFound['appointments'] &&
         (card.querySelector('canvas[id*="appointment"]') || 
          containsText(card, 'Appointment'))) {
       card.style.display = preferences.appointments ? 'block' : 'none';
       card.classList.add('dashboard-section', 'appointments-section');
       sectionFound['appointments'] = true;
     }
-    
+   
     // Provider section detection
-    if (!sectionFound['providers'] && 
-        (containsText(card, 'Provider') || 
+    if (!sectionFound['providers'] &&
+        (containsText(card, 'Provider') ||
          containsText(card, 'Providers') ||
          containsText(card, 'Booking Status'))) {
       card.style.display = preferences.providers ? 'block' : 'none';
       card.classList.add('dashboard-section', 'providers-section');
       sectionFound['providers'] = true;
     }
-    
+   
     // Service section detection
-    if (!sectionFound['services'] && 
-        (containsText(card, 'Service') || 
+    if (!sectionFound['services'] &&
+        (containsText(card, 'Service') ||
          containsText(card, 'Services'))) {
       card.style.display = preferences.services ? 'block' : 'none';
       card.classList.add('dashboard-section', 'services-section');
       sectionFound['services'] = true;
     }
   });
-  
+ 
   // If all sections are hidden, show a message
-  const allSectionsHidden = !preferences.appointments && 
-                           !preferences.notifications && 
-                           !preferences.providers && 
+  const allSectionsHidden = !preferences.appointments &&
+                           !preferences.notifications &&
+                           !preferences.providers &&
                            !preferences.services;
-  
+ 
   const noWidgetsMessage = document.getElementById('no-widgets-message');
   if (noWidgetsMessage) {
     noWidgetsMessage.style.display = allSectionsHidden ? 'block' : 'none';
@@ -938,7 +917,7 @@ function applySavedWidgetPreferences() {
       All dashboard widgets are currently hidden.
       Use the Dashboard Customization panel to show widgets.
     `;
-    
+   
     // Find best place to insert the message
     const dashboardContainer = document.querySelector('.dashboard-container, main.content, .content-wrapper');
     if (dashboardContainer) {
@@ -946,7 +925,7 @@ function applySavedWidgetPreferences() {
       const welcomeSection = Array.from(dashboardContainer.querySelectorAll('.card')).find(
         card => containsText(card, 'Welcome')
       );
-      
+       
       if (welcomeSection && welcomeSection.nextElementSibling) {
         dashboardContainer.insertBefore(message, welcomeSection.nextElementSibling);
       } else {
@@ -958,21 +937,18 @@ function applySavedWidgetPreferences() {
       document.body.appendChild(message);
     }
   }
-  
+ 
   console.log('Applied widget preferences:', preferences);
   console.log('Sections found:', sectionFound);
 }
 
-/**
- * Find and tag dashboard sections with appropriate IDs and classes
- * Updated to match actual dashboard structure
- */
+/** * Find and tag dashboard sections with appropriate IDs and classes * Updated to match actual dashboard structure */
 function findAndTagDashboardSections() {
   console.log('Finding and tagging dashboard sections...');
-  
+ 
   // Get all cards on the dashboard
   const cards = document.querySelectorAll('.card');
-  
+ 
   // Section keyword mappings
   const sectionMappings = {
     'appointments': ['Appointment Analytics', 'Appointment Status'],
@@ -980,58 +956,58 @@ function findAndTagDashboardSections() {
     'providers': ['Provider Availability', 'Top Providers'],
     'services': ['Service Usage Metrics', 'Top Used Services']
   };
-  
+ 
   // Tag each card based on content
   cards.forEach(card => {
     // Welcome/intro section
-    if (containsText(card, 'Welcome') || 
+    if (containsText(card, 'Welcome') ||
         containsText(card, 'User Distribution') ||
         containsText(card, 'System Statistics')) {
       if (!card.id) card.id = 'welcome-section';
       card.classList.add('dashboard-section', 'welcome-section');
     }
-    
+   
     // Dashboard customization section
     if (containsText(card, 'Dashboard Customization') ||
         containsText(card, 'Quick Actions')) {
       if (!card.id) card.id = 'dashboard-controls-section';
       card.classList.add('dashboard-section', 'dashboard-controls');
     }
-    
+   
     // Tag each section type
     Object.keys(sectionMappings).forEach(sectionType => {
       const keywords = sectionMappings[sectionType];
-      
+       
       if (keywords.some(keyword => containsText(card, keyword))) {
         if (!card.id) card.id = `${sectionType}-section`;
         card.classList.add('dashboard-section', `${sectionType}-section`);
       }
     });
-    
+   
     // Specific checks for harder-to-identify sections
     if (!card.classList.contains('dashboard-section')) {
       // Check for appointment section
-      if (card.querySelector('canvas[id*="appointment"]') || 
+      if (card.querySelector('canvas[id*="appointment"]') ||
           containsText(card, 'Appointment')) {
         if (!card.id) card.id = 'appointments-section';
         card.classList.add('dashboard-section', 'appointments-section');
       }
-      
+       
       // Check for provider section
-      else if (containsText(card, 'Provider') || 
+      else if (containsText(card, 'Provider') ||
                containsText(card, 'Booking Status')) {
         if (!card.id) card.id = 'providers-section';
         card.classList.add('dashboard-section', 'providers-section');
       }
-      
+       
       // Check for service section
       else if (containsText(card, 'Service')) {
         if (!card.id) card.id = 'services-section';
         card.classList.add('dashboard-section', 'services-section');
       }
-      
+       
       // Check for notifications/activity section
-      else if (containsText(card, 'Notification') || 
+      else if (containsText(card, 'Notification') ||
                containsText(card, 'Activity') ||
                containsText(card, 'Alerts')) {
         if (!card.id) card.id = 'notifications-section';
@@ -1039,49 +1015,45 @@ function findAndTagDashboardSections() {
       }
     }
   });
-  
+ 
   // Apply preferences after tagging
   applySavedWidgetPreferences();
 }
 
-/**
- * Helper function to check if an element contains text
- */
+/** * Helper function to check if an element contains text */
 function containsText(element, text) {
   if (!element || !text) return false;
-  
+ 
   // Case-insensitive search
   const lowerText = text.toLowerCase();
-  
+ 
   // First check the element's text content
   if (element.textContent && element.textContent.toLowerCase().includes(lowerText)) {
     return true;
   }
-  
+ 
   // Check headings (h1-h6)
   const headings = element.querySelectorAll('h1, h2, h3, h4, h5, h6');
   for (let i = 0; i < headings.length; i++) {
-    if (headings[i].textContent && 
+    if (headings[i].textContent &&
         headings[i].textContent.toLowerCase().includes(lowerText)) {
       return true;
     }
   }
-  
+ 
   // Check other important elements
   const keyElements = element.querySelectorAll('.card-title, .card-header, .section-title, .widget-title');
   for (let i = 0; i < keyElements.length; i++) {
-    if (keyElements[i].textContent && 
+    if (keyElements[i].textContent &&
         keyElements[i].textContent.toLowerCase().includes(lowerText)) {
       return true;
     }
   }
-  
+ 
   return false;
 }
 
-/**
- * Update element visibility by ID
- */
+/** * Update element visibility by ID */
 function updateVisibilityById(id, isVisible) {
   const element = document.getElementById(id);
   if (element) {
@@ -1091,9 +1063,7 @@ function updateVisibilityById(id, isVisible) {
   return false;
 }
 
-/**
- * Update elements visibility by class name
- */
+/** * Update elements visibility by class name */
 function updateVisibilityByClass(className, isVisible) {
   const elements = document.getElementsByClassName(className);
   let found = false;
@@ -1106,221 +1076,416 @@ function updateVisibilityByClass(className, isVisible) {
   return found;
 }
 
-/**
- * Find widgets based on content and update visibility
- */
+/** * Find widgets based on content and update visibility */
 function findAndUpdateWidgetVisibility(preferences) {
   // Find cards with specific content
   const cards = document.querySelectorAll('.card');
-  
+ 
   cards.forEach(card => {
     // Check for appointment analytics widgets
-    if (preferences.appointments !== undefined && 
+    if (preferences.appointments !== undefined &&
         (card.querySelector('canvas[id*="appointment"]') || 
          containsText(card, 'Appointment') && containsText(card, 'Analytics'))) {
       card.style.display = preferences.appointments ? 'block' : 'none';
     }
-    
+   
     // Check for notification widgets
-    if (preferences.notifications !== undefined && 
+    if (preferences.notifications !== undefined &&
         (card.querySelector('#notifications-container') || 
          containsText(card, 'Notifications'))) {
       card.style.display = preferences.notifications ? 'block' : 'none';
     }
-    
+   
     // Check for provider widgets
-    if (preferences.providers !== undefined && 
+    if (preferences.providers !== undefined &&
         (card.querySelector('.provider-stats') || 
          card.querySelector('.provider-list') || 
          containsText(card, 'Provider'))) {
-      card.style.display = preferences.providers ? 'block' : 'none';
+           card.style.display = preferences.providers ? 'block' : 'none';
     }
     
     // Check for service widgets
-    if (preferences.services !== undefined && 
+    if (preferences.services !== undefined &&
         (card.querySelector('.service-stats') || 
          card.querySelector('.service-list') || 
          containsText(card, 'Service'))) {
       card.style.display = preferences.services ? 'block' : 'none';
     }
-    
-    // Always show dashboard customization
-    if (containsText(card, 'Dashboard Customization')) {
-      card.style.display = 'block';
-    }
   });
 }
 
-/**
- * Helper function to check if an element contains text
- */
-function containsText(element, text) {
-  if (!element || !text) return false;
+/** * Responsive dashboard layout handler */
+window.addEventListener('resize', function() {
+  // Check if we're on a mobile device (< 768px width)
+  const isMobile = window.innerWidth < 768;
   
-  // First check if the element itself contains the text
-  if (element.textContent && element.textContent.indexOf(text) !== -1) {
-    return true;
-  }
-  
-  // Check headings specifically (h1-h6)
-  const headings = element.querySelectorAll('h1, h2, h3, h4, h5, h6');
-  for (let i = 0; i < headings.length; i++) {
-    if (headings[i].textContent && headings[i].textContent.indexOf(text) !== -1) {
-      return true;
+  // Adjust card layouts and chart sizes for mobile
+  const charts = document.querySelectorAll('canvas');
+  charts.forEach(chart => {
+    if (chart.chart) {
+      chart.chart.resize();
     }
-  }
+  });
   
-  // Check other key elements
-  const keyElements = element.querySelectorAll('.card-title, .card-header, .section-title');
-  for (let i = 0; i < keyElements.length; i++) {
-    if (keyElements[i].textContent && keyElements[i].textContent.indexOf(text) !== -1) {
-      return true;
-    }
-  }
-  
-  return false;
-}
-
-/**
- * Handle notification marking as read
- */
-function markNotificationAsRead(notificationId) {
-  // Send request to mark notification as read
-  fetch(`<?= base_url('index.php/notification/markAsRead/') ?>${notificationId}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest'
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // Refresh notifications
-      loadNotifications();
+  // Adjust notification entries for mobile
+  const notificationContainer = document.getElementById('notifications-container');
+  if (notificationContainer) {
+    if (isMobile) {
+      notificationContainer.classList.add('notifications-mobile');
     } else {
-      console.error('Failed to mark notification as read:', data.error);
+      notificationContainer.classList.remove('notifications-mobile');
     }
-  })
-  .catch(error => {
-    console.error('Error marking notification as read:', error);
-  });
-}
-</script>
+  }
+});
 
-<!-- Admin Dashboard Actions JavaScript -->
-<script>
-/**
- * Additional dashboard functionality for admin actions
- */
+/** * Initialize the responsive layout */
+function initResponsiveLayout() {
+  // Initial responsive adjustments based on viewport size
+  if (window.innerWidth < 768) {
+    document.body.classList.add('mobile-view');
+    
+    // Simplify notifications on mobile
+    const notificationContainer = document.getElementById('notifications-container');
+    if (notificationContainer) {
+      notificationContainer.classList.add('notifications-mobile');
+    }
+  }
+}
+
+// Call responsive layout initialization once DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function() {
-  // Setup quick action buttons with confirmation for critical actions
-  const dangerActions = document.querySelectorAll('.btn-action-danger');
-  dangerActions.forEach(button => {
-    button.addEventListener('click', function(e) {
-      const action = this.dataset.action || 'perform this action';
-      if (!confirm(`Are you sure you want to ${action}? This cannot be undone.`)) {
-        e.preventDefault();
+  initResponsiveLayout();
+});
+// FORCEFUL FIX for toggle tests panel
+(function() {
+  // Execute immediately when script loads
+  function forceFixTestsPanel() {
+    const toggleButton = document.querySelector('[data-bs-target="#collapseTests"]');
+    const testsPanel = document.getElementById('collapseTests');
+    
+    if (!toggleButton || !testsPanel) return;
+    
+    // Remove Bootstrap data attributes to prevent their JS from working
+    toggleButton.removeAttribute('data-bs-toggle');
+    
+    // Override the click handler
+    toggleButton.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Force toggle the panel state
+      if (testsPanel.classList.contains('show')) {
+        // Force close
+        testsPanel.style.display = 'none';
+        setTimeout(() => {
+          testsPanel.classList.remove('show');
+          testsPanel.style.display = '';
+          toggleButton.setAttribute('aria-expanded', 'false');
+          toggleButton.classList.add('collapsed');
+        }, 10);
+      } else {
+        // Force open
+        testsPanel.style.display = 'block';
+        setTimeout(() => {
+          testsPanel.classList.add('show');
+          toggleButton.setAttribute('aria-expanded', 'true');
+          toggleButton.classList.remove('collapsed');
+        }, 10);
+      }
+      
+      return false;
+    };
+    
+    // Add direct event handler to close when clicking outside
+    document.addEventListener('click', function(e) {
+      if (testsPanel.classList.contains('show') && 
+          !testsPanel.contains(e.target) && 
+          e.target !== toggleButton) {
+        testsPanel.classList.remove('show');
+        toggleButton.setAttribute('aria-expanded', 'false');
+        toggleButton.classList.add('collapsed');
       }
     });
-  });
-  
-  // Initialize tooltips if Bootstrap is available
-  if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    tooltips.forEach(tooltip => {
-      new bootstrap.Tooltip(tooltip);
-    });
   }
   
-  // Handle "Mark All as Read" button
-  const markAllReadBtn = document.getElementById('mark-all-notifications-read');
-  if (markAllReadBtn) {
-    markAllReadBtn.addEventListener('click', function() {
-      fetch('<?= base_url('index.php/notification/markAllAsRead') ?>', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          loadNotifications();
-          
-          // Update unread badge
-          const unreadBadge = document.getElementById('unread-notifications-badge');
-          if (unreadBadge) {
-            unreadBadge.textContent = '0';
-            unreadBadge.style.display = 'none';
-          }
-          
-          // Show success message
-          showToastMessage('All notifications marked as read!', 'success');
-        } else {
-          console.error('Failed to mark all notifications as read:', data.error);
-          showToastMessage('Failed to mark notifications as read.', 'danger');
-        }
-      })
-      .catch(error => {
-        console.error('Error marking all notifications as read:', error);
-        showToastMessage('Error processing request. Please try again.', 'danger');
-      });
-    });
+  // Run immediately
+  forceFixTestsPanel();
+  
+  // Also run when DOM is fully loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', forceFixTestsPanel);
   }
   
-  // Fix for accordion and collapse elements that might not be working correctly
-  document.addEventListener('DOMContentLoaded', function() {
-    // Fix for the main Toggle Tests Panel button
-    const toggleButton = document.querySelector('[data-bs-target="#collapseTests"]');
-    const collapseTests = document.getElementById('collapseTests');
-    
-    if (toggleButton && collapseTests) {
-      // Remove the Bootstrap data attributes and handle manually
-      toggleButton.removeAttribute('data-bs-toggle');
-      toggleButton.removeAttribute('data-bs-target');
-      
-      // Add manual click handler
-      toggleButton.addEventListener('click', function() {
-        if (collapseTests.classList.contains('show')) {
-          collapseTests.classList.remove('show');
-        } else {
-          collapseTests.classList.add('show');
-        }
-      });
-    }
-    
-    // Fix for accordion items - making them close when clicking the same header
+  // Also run again after a short delay to override any other scripts
+  setTimeout(forceFixTestsPanel, 500);
+})();
+// FORCEFUL FIX for accordion buttons inside test panel
+(function() {
+  function forceFixAccordionButtons() {
+    // Get all accordion buttons, especially ones in the tests panel
     const accordionButtons = document.querySelectorAll('.accordion-button');
     
     accordionButtons.forEach(button => {
-      // Get the target element
-      const target = button.getAttribute('data-bs-target');
-      if (!target) return;
+      // Remove Bootstrap data attributes to prevent their default behavior
+      button.removeAttribute('data-bs-toggle');
       
-      const collapseElement = document.querySelector(target);
-      
-      if (collapseElement) {
-        button.removeAttribute('data-bs-toggle');
-        button.removeAttribute('data-bs-target');
+      // Override the click handler
+      button.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
         
-        button.addEventListener('click', function(e) {
-          e.preventDefault();
+        // Get the target panel
+        const targetId = button.getAttribute('data-bs-target');
+        if (!targetId) return false;
+        
+        const targetPanel = document.querySelector(targetId);
+        if (!targetPanel) return false;
+        
+        // Get parent accordion to handle closing other items
+        const accordion = button.closest('.accordion');
+        
+        // Toggle the panel state
+        if (targetPanel.classList.contains('show')) {
+          // Force close this panel
+          targetPanel.style.display = 'none';
+          setTimeout(() => {
+            targetPanel.classList.remove('show');
+            targetPanel.style.display = '';
+            button.setAttribute('aria-expanded', 'false');
+            button.classList.add('collapsed');
+          }, 10);
+        } else {
+          // Close all other panels in this accordion
+          if (accordion) {
+            // Get all other panels and buttons
+            const allPanels = accordion.querySelectorAll('.accordion-collapse');
+            const allButtons = accordion.querySelectorAll('.accordion-button');
+            
+            // Close them
+            allPanels.forEach(panel => {
+              if (panel !== targetPanel) {
+                panel.classList.remove('show');
+              }
+            });
+            
+            allButtons.forEach(btn => {
+              if (btn !== button) {
+                btn.setAttribute('aria-expanded', 'false');
+                btn.classList.add('collapsed');
+              }
+            });
+          }
           
-          // Toggle the collapsed class on the button
-          this.classList.toggle('collapsed');
-          
-          // Toggle the aria-expanded attribute
-          const expanded = this.getAttribute('aria-expanded') === 'true';
-          this.setAttribute('aria-expanded', !expanded);
-          
-          // Toggle the show class on the collapse element
-          collapseElement.classList.toggle('show');
-        });
-      }
+          // Force open this panel
+          targetPanel.style.display = 'block';
+          setTimeout(() => {
+            targetPanel.classList.add('show');
+            button.setAttribute('aria-expanded', 'true');
+            button.classList.remove('collapsed');
+          }, 10);
+        }
+        
+        return false;
+      };
     });
-  });
-});
+  }
+  
+  // Run immediately
+  forceFixAccordionButtons();
+  
+  // Also run when DOM is fully loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', forceFixAccordionButtons);
+  }
+  
+  // Also run again after a short delay to override any other scripts
+  setTimeout(forceFixAccordionButtons, 500);
+})();
+
 </script>
+
+<style>
+/* Dashboard styles */
+.dashboard-wrapper {
+  padding: 1rem;
+}
+
+.card {
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  font-weight: 600;
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Chart containers */
+.chart-container {
+  position: relative;
+  height: 300px;
+  margin: 0 auto;
+}
+
+/* Notification styles */
+.notification-item {
+  border-left: 4px solid #007bff;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem;
+  background-color: rgba(0, 123, 255, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+.notification-item:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.notification-item.unread {
+  font-weight: 500;
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.notification-item.success {
+  border-left-color: #28a745;
+  background-color: rgba(40, 167, 69, 0.05);
+}
+
+.notification-item.warning {
+  border-left-color: #ffc107;
+  background-color: rgba(255, 193, 7, 0.05);
+}
+
+.notification-item.danger {
+  border-left-color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* Custom toggle switch for preferences */
+.custom-switch {
+  padding-left: 2.25rem;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+/* Responsive styles for mobile */
+@media (max-width: 767.98px) {
+  .chart-container {
+    height: 220px;
+  }
+  
+  .card-title {
+    font-size: 1.1rem;
+  }
+  
+  .notifications-mobile .notification-item {
+    padding: 0.5rem;
+  }
+  
+  .notifications-mobile .notification-time {
+    display: none;
+  }
+}
+
+/* Toast notification styling */
+.toast {
+  opacity: 1 !important;
+}
+
+/* Quick action buttons */
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 0.25rem;
+  padding: 0.875rem;
+  margin-bottom: 0.5rem;
+  color: #495057;
+  background-color: #f8f9fa;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.quick-action-btn:hover {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  color: #212529;
+  text-decoration: none;
+}
+
+.quick-action-btn i {
+  font-size: 1.25rem;
+  margin-right: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Dashboard section appear animation */
+.dashboard-section {
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Preference toggle switch styling */
+.pref-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.pref-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pref-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.pref-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .pref-slider {
+  background-color: #2196F3;
+}
+
+input:focus + .pref-slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .pref-slider:before {
+  transform: translateX(26px);
+}
+</style>
+ 
 

@@ -203,6 +203,11 @@ if (!defined('APP_ROOT')) {
                         <p class="mb-2">Don't have an account?</p>
                         <a href="<?= base_url('index.php/auth/register') ?>" class="btn btn-outline-primary">Create New Account</a>
                     </div>
+                    <div class="text-center mb-3">
+                        <br><a href="<?= base_url('index.php/home') ?>" class="btn btn-outline-secondary">
+                            <i class="bi bi-house-door me-1"></i> Back to Home
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>

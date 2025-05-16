@@ -733,6 +733,8 @@
     var base_url = '<?= isset($base_url) ? $base_url : rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/' ?>';
     
     document.addEventListener('DOMContentLoaded', function() {
+
+        
         // Show loading indicator
         document.getElementById('calendar-loading')?.classList.remove('d-none');
         
@@ -798,11 +800,21 @@
                     (info.event.extendedProps.type === 'consolidated' || 
                      info.event.extendedProps.type === 'consolidated_recurring')) {
                     
+                    $(info.el).addClass('tooltip-event');
+                    
                     $(info.el).tooltip({
                         title: 'Click for detailed view',
-                        placement: 'top'
+                        placement: 'top',
+                        trigger: 'hover',
+                        container: 'body',
+                        delay: { show: 200, hide: 0 }
                     });
-                }
+                            
+                        // Add manual trigger to hide tooltip when mouse leaves
+                        $(info.el).on('mouseleave', function() {
+                            $(this).tooltip('hide');
+                        });
+                    }
                 
                 // Always show time in the title for recurring work hours (both in month and week views)
                 if (info.event.extendedProps && 
@@ -847,6 +859,8 @@
             
             // Add event click handler
             eventClick: function(info) {
+                   // Hide any active tooltips first
+                    $('.tooltip-event').tooltip('hide');
                 // For consolidated events in month view, switch to day view
                 if (info.event.extendedProps && 
                     (info.event.extendedProps.type === 'consolidated' || 
@@ -863,16 +877,23 @@
             
             // Add this event handler inside your calendar initialization
             dateClick: function(info) {
-                // Update the selectedDate variable when a day is clicked
-                selectedDate = info.dateStr;
-            
-                // Update the display text in the clear day section
-                document.getElementById('selectedDayDisplay').textContent = 
-                    'Selected: ' + new Date(selectedDate).toLocaleDateString();
-            
-                // Optionally, also update the date input in the Add Availability panel
-                document.querySelector('input[name="availability_date"]').value = selectedDate;
+                // Hide any active tooltips (from Kdebug branch)
+                $('.tooltip-event').tooltip('hide');
+                $('.tooltip').tooltip('dispose');
+                $('.tooltip').remove();
+
+                // Use the formatDateLocal function from main branch
+                selectedDate = formatDateLocal(info.date);
+
+                // Update the display text using direct date object (from main)
+                document.getElementById('selectedDayDisplay').textContent =
+                    'Selected: ' + info.date.toLocaleDateString();
+
+                // Check if element exists before updating (safer approach from main)
+                const availInput = document.querySelector('input[name="availability_date"]');
+                if (availInput) availInput.value = selectedDate;
             }
+
         });
 
         // AFTER calendar is initialized, add the event source

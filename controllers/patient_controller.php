@@ -375,9 +375,21 @@ set_flash_message('error', "An error occurred while booking: " . $e->getMessage(
                 if ($result) {
                     // Log the appointment creation
                     if (isset($this->activityLogModel)) {
-                        $this->activityLogModel->logActivity('appointment_created',
-                            "Patient scheduled appointment with provider #$provider_id",
-                            $patient_id);
+                        // Look up provider name first
+                        $providerName = "Unknown Provider";
+                        if (isset($this->providerModel)) {
+                            $provider = $this->providerModel->getProviderById($provider_id);
+                            if ($provider) {
+                                $providerName = $provider['first_name'] . ' ' . $provider['last_name'];
+                            }
+                        }
+                        
+                        // Create a meaningful log message with the actual name
+                        $this->activityLogModel->logActivity(
+                            $patient_id,  // First param should be userId
+                            "Patient scheduled appointment with $providerName",  // Second param is description
+                            'appointment_scheduling'  // Third param is category (using descriptive name)
+                        );
                     }
                     
                     // Redirect to appointments page with success message
