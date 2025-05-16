@@ -67,15 +67,26 @@ $is_home_page = !empty($current_url) && (strpos($current_url, 'index.php/home') 
         <a class="nav-link position-relative" href="<?= base_url('index.php/' . $userRole . '/notifications') ?>">
             <i class="bi bi-bell fs-5"></i>
             <?php
-            // Get unread notification count
+            // Get unread notification count - SAFELY
             $unreadCount = 0;
-            $query = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
-            $stmt = $db->prepare($query);
-            $stmt->bind_param("i", $_SESSION['user_id']);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            if ($row = $result->fetch_assoc()) {
-                $unreadCount = $row['count'];
+            
+            // Only try to query database if $db is available and user is logged in
+            if (isset($db) && $db instanceof mysqli && isset($_SESSION['user_id'])) {
+                try {
+                    $query = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
+                    $stmt = $db->prepare($query);
+                    if ($stmt) {
+                        $stmt->bind_param("i", $_SESSION['user_id']);
+                        $stmt->execute();
+                        $result = $stmt->get_result();
+                        if ($row = $result->fetch_assoc()) {
+                            $unreadCount = $row['count'];
+                        }
+                    }
+                } catch (Exception $e) {
+                    // Silently handle errors to prevent page breaking
+                    error_log("Error getting notification count: " . $e->getMessage());
+                }
             }
             ?>
             <?php if ($unreadCount > 0): ?>

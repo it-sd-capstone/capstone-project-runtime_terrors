@@ -40,7 +40,7 @@
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">Change Password</button>
                             <?php if (!isset($_SESSION['temp_user_id'])): ?>
-                                <a href="<?= base_url('index.php/dashboard') ?>" class="btn btn-secondary">Cancel</a>
+                                <a href="<?= base_url('index.php/patient/profile') ?>" class="btn btn-secondary">Cancel</a>
                             <?php endif; ?>
                         </div>
                     </form>
