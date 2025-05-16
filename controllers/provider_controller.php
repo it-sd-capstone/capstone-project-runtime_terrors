@@ -869,6 +869,24 @@ set_flash_message('error', "Failed to " . ($service_id ? "update" : "create") . 
         ]);
         exit;
     }
+    
+public function getNextAvailableSlot($provider_id, $service_duration = 30, $after_date = null) {
+    $after_date = $after_date ?: date('Y-m-d');
+    $stmt = $this->db->prepare("
+        SELECT * FROM provider_availability
+        WHERE provider_id = ? AND availability_date >= ? AND is_available = 1
+        ORDER BY availability_date ASC, start_time ASC
+        LIMIT 1
+    ");
+    $stmt->bind_param("is", $provider_id, $after_date);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $slots = [];
+    while ($row = $result->fetch_assoc()) {
+        $slots[] = $row;
+    }
+    return $slots;
+}
     /**
      * Clear all availability for a specific day
      */
@@ -1017,6 +1035,34 @@ set_flash_message('error', "All required fields must be filled.", 'provider_sche
         header('Location: ' . base_url('index.php/provider/schedule'));
         exit;
     }
+    public function viewProfile() {
+    // Check if user is logged in as a provider
+    if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'provider') {
+        header('Location: ' . base_url('index.php/auth/login'));
+        exit;
+    }
+
+    // Get provider ID from session
+    $provider_id = $_SESSION['user_id'];
+
+    // Get provider data from database
+    $provider = $this->providerModel->getProviderById($provider_id);
+
+    if (!$provider) {
+        set_flash_message('error', "Could not retrieve your profile information. Please contact support.", 'provider_profile');
+        header('Location: ' . base_url('index.php/provider/index'));
+        exit;
+    }
+
+    // Pass data to view
+    $data = [
+        'provider' => $provider,
+        'title' => 'Provider Profile' // For page title
+    ];
+
+    // Load view with provider data (read-only)
+    include VIEW_PATH . '/provider/view_profile.php';
+}
 
     // Update Provider Profile
     public function updateProfile() {
