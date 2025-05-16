@@ -50,32 +50,37 @@ class Notification {
     }
     
     // Retrieve notifications for a user
-    public function getUserNotifications($userId) {
-        try {
+  public function getUserNotifications($userId) {
+    try {
+        if ($this->db instanceof mysqli) {
             $stmt = $this->db->prepare("
                 SELECT * FROM notifications 
                 WHERE user_id = ? OR user_id IS NULL 
                 ORDER BY created_at DESC
             ");
-            
             $stmt->bind_param("i", $userId);
             $stmt->execute();
-            
-            // Get the result set
             $result = $stmt->get_result();
-            
-            // Fetch all rows as an associative array
             $notifications = [];
             while ($row = $result->fetch_assoc()) {
                 $notifications[] = $row;
             }
-            
             return $notifications;
-        } catch (Exception $e) {
-            error_log("Error getting user notifications: " . $e->getMessage());
-            return [];
+        } else {
+            // PDO
+            $stmt = $this->db->prepare("
+                SELECT * FROM notifications 
+                WHERE user_id = ? OR user_id IS NULL 
+                ORDER BY created_at DESC
+            ");
+            $stmt->execute([$userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
+    } catch (Exception $e) {
+        error_log("Error getting user notifications: " . $e->getMessage());
+        return [];
     }
+}
 
      /**
      * Get latest system notifications for admin dashboard
@@ -541,8 +546,9 @@ class Notification {
      * @param int $userId The user ID
      * @return array The notification preferences
      */
-    public function getNotificationPreferences($userId) {
-        try {
+public function getNotificationPreferences($userId) {
+    try {
+        if ($this->db instanceof mysqli) {
             $stmt = $this->db->prepare("
                 SELECT * FROM notification_preferences 
                 WHERE user_id = ?
@@ -550,30 +556,39 @@ class Notification {
             $stmt->bind_param("i", $userId);
             $stmt->execute();
             $result = $stmt->get_result();
-            
             if ($result->num_rows > 0) {
                 return $result->fetch_assoc();
-            } else {
-                // Return default preferences if none exist
-                return [
-                    'email_notifications' => 1,
-                    'sms_notifications' => 0,
-                    'appointment_reminders' => 1,
-                    'system_updates' => 1,
-                    'reminder_time' => 24
-                ];
             }
-        } catch (Exception $e) {
-            error_log("Error getting notification preferences: " . $e->getMessage());
-            return [
-                'email_notifications' => 1,
-                'sms_notifications' => 0,
-                'appointment_reminders' => 1,
-                'system_updates' => 1,
-                'reminder_time' => 24
-            ];
+        } else {
+            $stmt = $this->db->prepare("
+                SELECT * FROM notification_preferences 
+                WHERE user_id = ?
+            ");
+            $stmt->execute([$userId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                return $row;
+            }
         }
+        // Return default preferences if none exist
+        return [
+            'email_notifications' => 1,
+            'sms_notifications' => 0,
+            'appointment_reminders' => 1,
+            'system_updates' => 1,
+            'reminder_time' => 24
+        ];
+    } catch (Exception $e) {
+        error_log("Error getting notification preferences: " . $e->getMessage());
+        return [
+            'email_notifications' => 1,
+            'sms_notifications' => 0,
+            'appointment_reminders' => 1,
+            'system_updates' => 1,
+            'reminder_time' => 24
+        ];
     }
+}
 
     /**
      * Update notification preferences for a user
@@ -586,8 +601,9 @@ class Notification {
      * @param int $reminderTime Hours before appointment to send reminder (default 24)
      * @return bool Whether the update was successful
      */
-    public function updateNotificationPreferences($userId, $emailNotifications, $smsNotifications, $appointmentReminders, $systemUpdates, $reminderTime = 24) {
-        try {
+public function updateNotificationPreferences($userId, $emailNotifications, $smsNotifications, $appointmentReminders, $systemUpdates, $reminderTime = 24) {
+    try {
+        if ($this->db instanceof mysqli) {
             // Check if preferences already exist for this user
             $stmt = $this->db->prepare("
                 SELECT COUNT(*) as count FROM notification_preferences 
@@ -597,7 +613,6 @@ class Notification {
             $stmt->execute();
             $result = $stmt->get_result();
             $row = $result->fetch_assoc();
-            
             if ($row['count'] > 0) {
                 // Update existing preferences
                 $stmt = $this->db->prepare("
@@ -620,13 +635,43 @@ class Notification {
                 ");
                 $stmt->bind_param("iiiiii", $userId, $emailNotifications, $smsNotifications, $appointmentReminders, $systemUpdates, $reminderTime);
             }
-            
             return $stmt->execute();
-        } catch (Exception $e) {
-            error_log("Error updating notification preferences: " . $e->getMessage());
-            return false;
+        } else {
+            // PDO
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as count FROM notification_preferences 
+                WHERE user_id = ?
+            ");
+            $stmt->execute([$userId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row && $row['count'] > 0) {
+                // Update existing preferences
+                $stmt = $this->db->prepare("
+                    UPDATE notification_preferences 
+                    SET email_notifications = ?, 
+                        sms_notifications = ?, 
+                        appointment_reminders = ?, 
+                        system_updates = ?,
+                        reminder_time = ?,
+                        updated_at = NOW()
+                    WHERE user_id = ?
+                ");
+                return $stmt->execute([$emailNotifications, $smsNotifications, $appointmentReminders, $systemUpdates, $reminderTime, $userId]);
+            } else {
+                // Insert new preferences
+                $stmt = $this->db->prepare("
+                    INSERT INTO notification_preferences 
+                    (user_id, email_notifications, sms_notifications, appointment_reminders, system_updates, reminder_time, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+                ");
+                return $stmt->execute([$userId, $emailNotifications, $smsNotifications, $appointmentReminders, $systemUpdates, $reminderTime]);
+            }
         }
+    } catch (Exception $e) {
+        error_log("Error updating notification preferences: " . $e->getMessage());
+        return false;
     }
+}
 
     /**
      * Mark a notification as read

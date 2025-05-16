@@ -2,192 +2,254 @@
 
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Your Notifications</h2>
-                <?php if (!empty($notifications) && $unreadCount > 0): ?>
-                    <form method="POST" action="<?= base_url('index.php/notification/markAsRead') ?>">
-                        <input type="hidden" name="mark_all" value="1">
-                        <button type="submit" class="btn btn-outline-primary">
-                            Mark All as Read <span class="badge bg-primary"><?= $unreadCount ?></span>
-                        </button>
-                    </form>
-                <?php endif; ?>
-            </div>
-            
-            <?php if (empty($notifications)): ?>
-                <div class="alert alert-info">
-                    <i class="fas fa-bell-slash me-2"></i> You don't have any notifications at this time.
+        <div class="col-md-8 mx-auto">
+            <!-- Flash Messages -->
+            <?php if (isset($_SESSION['success'])): ?>
+                <div class="alert alert-success">
+                    <?= $_SESSION['success'] ?>
+                    <?php unset($_SESSION['success']); ?>
                 </div>
-            <?php else: ?>
-                <div class="card shadow-sm">
-                    <div class="list-group list-group-flush">
-                        <?php foreach ($notifications as $notification): ?>
-                            <div class="list-group-item <?= $notification['is_read'] ? '' : 'list-group-item-light' ?>">
-                                <div class="d-flex w-100 justify-content-between align-items-center">
-                                    <h5 class="mb-1">
-                                        <?php if (!$notification['is_read']): ?>
-                                            <span class="badge bg-primary me-2">New</span>
-                                        <?php endif; ?>
-                                        <?= htmlspecialchars($notification['title'] ?? 'Notification') ?>
-                                    </h5>
-                                    <small class="text-muted">
-                                        <?= date('M d, Y g:i A', strtotime($notification['created_at'])) ?>
-                                    </small>
-                                </div>
-                                <p class="mb-1"><?= htmlspecialchars($notification['message']) ?></p>
-                                
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <?php if (isset($notification['appointment_id'])): ?>
-                                        <a href="<?= base_url('index.php/provider/appointments/view/' . $notification['appointment_id']) ?>" 
-                                           class="btn btn-sm btn-outline-info">
-                                            View Appointment
-                                        </a>
-                                    <?php else: ?>
-                                        <span></span>
-                                    <?php endif; ?>
-                                    
-                                    <?php if (!$notification['is_read']): ?>
-                                        <form method="POST" action="<?= base_url('index.php/notification/markAsRead') ?>">
-                                            <input type="hidden" name="notification_id" value="<?= $notification['notification_id'] ?>">
-                                            <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                                Mark as Read
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                
-                <?php if (count($notifications) > 10): ?>
-                    <div class="d-flex justify-content-center mt-3">
-                        <nav aria-label="Notification pagination">
-                            <ul class="pagination">
-                                <li class="page-item disabled">
-                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-                                </li>
-                                <li class="page-item active" aria-current="page">
-                                    <a class="page-link" href="#">1</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#">2</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#">3</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#">Next</a>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
-                <?php endif; ?>
             <?php endif; ?>
-            
-            <!-- Email Notification Settings -->
-            <div class="card mt-4 shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0">Notification Settings</h5>
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger">
+                    <?= $_SESSION['error'] ?>
+                    <?php unset($_SESSION['error']); ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- Notification Settings -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Notification Settings</h4>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="<?= base_url('index.php/provider/updateNotificationSettings') ?>">
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="emailNotifications" name="email_notifications" checked>
-                            <label class="form-check-label" for="emailNotifications">
-                                Receive email notifications
-                            </label>
+                        <?= csrf_field() ?>
+                        <div class="mb-4">
+                            <h5>Notification Methods</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications"
+                                    <?= isset($notificationSettings['email_notifications']) && $notificationSettings['email_notifications'] ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="email_notifications">
+                                    Email Notifications
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="sms_notifications" name="sms_notifications"
+                                    <?= isset($notificationSettings['sms_notifications']) && $notificationSettings['sms_notifications'] ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="sms_notifications">
+                                    SMS Notifications
+                                </label>
+                            </div>
                         </div>
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="appointmentReminders" name="appointment_reminders"
-                            <?= !empty($notificationSettings['appointment_reminders']) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="appointmentReminders">
-                                Appointment reminders
-                            </label>
-
-                            <input class="form-check-input" type="checkbox" id="systemUpdates" name="system_updates"
-                            <?= !empty($notificationSettings['system_updates']) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="systemUpdates">
-                                System updates and announcements
-                            </label>
+                        <div class="mb-4">
+                            <h5>Notification Types</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="appointment_reminders" name="appointment_reminders"
+                                    <?= isset($notificationSettings['appointment_reminders']) && $notificationSettings['appointment_reminders'] ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="appointment_reminders">
+                                    Appointment Reminders
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="system_updates" name="system_updates"
+                                    <?= isset($notificationSettings['system_updates']) && $notificationSettings['system_updates'] ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="system_updates">
+                                    System Updates
+                                </label>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                        <div class="mb-4">
+                            <h5>Reminder Preferences</h5>
+                            <div class="mb-3">
+                                <label for="reminder_time" class="form-label">Send appointment reminders</label>
+                                <select class="form-select" id="reminder_time" name="reminder_time">
+                                    <option value="24" <?= isset($notificationSettings['reminder_time']) && $notificationSettings['reminder_time'] == 24 ? 'selected' : '' ?>>24 hours before</option>
+                                    <option value="48" <?= isset($notificationSettings['reminder_time']) && $notificationSettings['reminder_time'] == 48 ? 'selected' : '' ?>>48 hours before</option>
+                                    <option value="72" <?= isset($notificationSettings['reminder_time']) && $notificationSettings['reminder_time'] == 72 ? 'selected' : '' ?>>72 hours before</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </div>
                     </form>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- Email Notification Modal -->
-<div class="modal fade" id="sendEmailModal" tabindex="-1" aria-labelledby="sendEmailModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="sendEmailModalLabel">Send Email Notification</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="emailForm">
-                <?= csrf_field() ?>
-                <input type="hidden" id="appointment_id" name="appointment_id">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="email_type" class="form-label">Notification Type</label>
-                        <select class="form-select" id="email_type" name="email_type" required>
-                            <option value="confirmation">Appointment Confirmation</option>
-                            <option value="cancellation">Appointment Cancellation</option>
-                            <option value="reminder">Appointment Reminder</option>
-                        </select>
+            <!-- Notifications List -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Notifications</h4>
+                    <?php if (!empty($notifications)): ?>
+                        <button id="markAllRead" class="btn btn-light btn-sm">Mark All as Read</button>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($notifications)) : ?>
+                        <div class="list-group">
+                            <?php foreach ($notifications as $notification) : ?>
+                                <?php 
+                                    $isRead = $notification['is_read'] ?? false;
+                                    $notificationClass = $isRead ? '' : 'list-group-item-primary';
+                                    $notificationType = $notification['type'] ?? 'info';
+                                    
+                                    // Determine icon based on notification type
+                                    $icon = 'info-circle';
+                                    $iconClass = 'text-info';
+                                    
+                                    switch($notificationType) {
+                                        case 'appointment_reminder':
+                                            $icon = 'calendar-check';
+                                            $iconClass = 'text-primary';
+                                            break;
+                                        case 'appointment_confirmed':
+                                            $icon = 'check-circle';
+                                            $iconClass = 'text-success';
+                                            break;
+                                        case 'appointment_canceled':
+                                            $icon = 'times-circle';
+                                            $iconClass = 'text-danger';
+                                            break;
+                                        case 'system_message':
+                                            $icon = 'exclamation-circle';
+                                            $iconClass = 'text-warning';
+                                            break;
+                                    }
+                                    
+                                    // Format date
+                                    $createdAt = new DateTime($notification['created_at']);
+                                    $formattedDate = $createdAt->format('M d, Y g:i A');
+                                    
+                                    // Calculate time ago
+                                    $now = new DateTime();
+                                    $interval = $createdAt->diff($now);
+                                    
+                                    if ($interval->d > 0) {
+                                        $timeAgo = $interval->d . ' day' . ($interval->d > 1 ? 's' : '') . ' ago';
+                                    } elseif ($interval->h > 0) {
+                                        $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+                                    } elseif ($interval->i > 0) {
+                                        $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+                                    } else {
+                                        $timeAgo = 'just now';
+                                    }
+                                ?>
+                                <div class="list-group-item list-group-item-action <?= $notificationClass ?>" 
+                                     data-notification-id="<?= $notification['notification_id'] ?>">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">
+                                            <i class="fas fa-<?= $icon ?> <?= $iconClass ?> me-2"></i>
+                                            <?= htmlspecialchars($notification['title'] ?? 'Notification') ?>
+                                        </h5>
+                                        <small class="text-muted" title="<?= $formattedDate ?>"><?= $timeAgo ?></small>
+                                    </div>
+                                    <p class="mb-1"><?= htmlspecialchars($notification['message']) ?></p>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <?php if (isset($notification['appointment_id'])): ?>
+                                            <a href="<?= base_url('index.php/provider/appointments/view/' . $notification['appointment_id']) ?>" 
+                                               class="btn btn-sm btn-outline-info">
+                                                View Appointment
+                                            </a>
+                                        <?php else: ?>
+                                            <span></span>
+                                        <?php endif; ?>
+                                        <?php if (!$isRead): ?>
+                                            <button class="btn btn-sm btn-outline-primary mark-read" 
+                                                    data-id="<?= $notification['notification_id'] ?>">
+                                                Mark as Read
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else : ?>
+                        <div class="alert alert-info">
+                            <i class="fas fa-bell-slash me-2"></i>
+                            <span>You have no new notifications.</span>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <?php if (!empty($notifications)): ?>
+                    <div class="card-footer bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Showing <?= count($notifications) ?> notification(s)</small>
+                            <a href="#settings" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-cog me-1"></i> Notification Settings
+                            </a>
+                        </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Send Email</button>
-                </div>
-            </form>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle email form submission
-    const emailForm = document.getElementById('emailForm');
-    if (emailForm) {
-        emailForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(emailForm);
-            
-            fetch('<?= base_url('index.php/provider/sendEmailNotification') ?>', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Email notification sent successfully!');
-                    $('#sendEmailModal').modal('hide');
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while sending the notification.');
-            });
+    // Mark individual notification as read
+    const markReadButtons = document.querySelectorAll('.mark-read');
+    markReadButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const notificationId = this.getAttribute('data-id');
+            markAsRead(notificationId, this);
+        });
+    });
+
+    // Mark all notifications as read
+    const markAllButton = document.getElementById('markAllRead');
+    if (markAllButton) {
+        markAllButton.addEventListener('click', function() {
+            markAllAsRead();
         });
     }
-    
-    // Initialize email modal with appointment data
-    const sendEmailModal = document.getElementById('sendEmailModal');
-    if (sendEmailModal) {
-        sendEmailModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const appointmentId = button.getAttribute('data-appointment-id');
-            document.getElementById('appointment_id').value = appointmentId;
-        });
+
+    // Function to mark a single notification as read
+    function markAsRead(notificationId, buttonElement) {
+        fetch('<?= base_url('index.php/notification/markAsRead') ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'notification_id=' + notificationId
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update UI
+                const notificationItem = buttonElement.closest('.list-group-item');
+                notificationItem.classList.remove('list-group-item-primary');
+                buttonElement.remove();
+            }
+        })
+        .catch(error => console.error('Error marking notification as read:', error));
+    }
+
+    // Function to mark all notifications as read
+    function markAllAsRead() {
+        fetch('<?= base_url('index.php/notification/markAsRead') ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'mark_all=1'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update UI
+                document.querySelectorAll('.list-group-item-primary').forEach(item => {
+                    item.classList.remove('list-group-item-primary');
+                });
+                document.querySelectorAll('.mark-read').forEach(button => {
+                    button.remove();
+                });
+                // Hide the mark all button
+                document.getElementById('markAllRead').style.display = 'none';
+            }
+        })
+        .catch(error => console.error('Error marking all notifications as read:', error));
     }
 });
 </script>
