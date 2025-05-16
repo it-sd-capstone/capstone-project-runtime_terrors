@@ -82,7 +82,8 @@
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
 
-.fc .fc-button-primary:focus:not(:active);not(.fc-button-active) {
+/* FIXED SELECTOR: was ;not( now :not( */
+.fc .fc-button-primary:focus:not(:active):not(.fc-button-active) {
     background-color: var(--primary);
     border-color: var(--primary);
 }
@@ -468,6 +469,7 @@
 }
 </style>
 
+
 <div class="container-fluid mt-3 schedule-bottom-spacing">
     <!-- Introduction Card with Instructions -->
     <div class="row mb-3">
@@ -731,14 +733,20 @@
 <script>
     // Define base URL for AJAX calls
     var base_url = '<?= isset($base_url) ? $base_url : rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/' ?>';
-    
+
     document.addEventListener('DOMContentLoaded', function() {
-        // Show loading indicator
         document.getElementById('calendar-loading')?.classList.remove('d-none');
-        
         var calendarEl = document.getElementById('calendar');
-        var selectedDate = null; // Store the selected date
-        
+        var selectedDate = null;
+
+        // Helper: format Date object as YYYY-MM-DD in local time
+        function formatDateLocal(dateObj) {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         // First create the calendar with basic configuration
         var calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
@@ -862,16 +870,13 @@
             },
             
             // Add this event handler inside your calendar initialization
+
             dateClick: function(info) {
-                // Update the selectedDate variable when a day is clicked
-                selectedDate = info.dateStr;
-            
-                // Update the display text in the clear day section
-                document.getElementById('selectedDayDisplay').textContent = 
-                    'Selected: ' + new Date(selectedDate).toLocaleDateString();
-            
-                // Optionally, also update the date input in the Add Availability panel
-                document.querySelector('input[name="availability_date"]').value = selectedDate;
+                selectedDate = formatDateLocal(info.date);
+            document.getElementById('selectedDayDisplay').textContent =
+                'Selected: ' + info.date.toLocaleDateString();
+                const availInput = document.querySelector('input[name="availability_date"]');
+                if (availInput) availInput.value = selectedDate;
             }
         });
 
@@ -902,7 +907,7 @@
             const startStr = event.start.toISOString();
             const endStr = event.end ? event.end.toISOString() :
                         new Date(event.start.getTime() + 30*60000).toISOString();
-        
+            
             const updatedData = {
                 id: eventId,
                 type: eventType,
@@ -1019,7 +1024,10 @@
         // Clear Day button handler - This now gets the currently selected date from our tracking variable
         document.getElementById('clearDayBtn').addEventListener('click', function() {
             // Use the selected date or fall back to current displayed date
-            const dateToUse = selectedDate || calendar.getDate().toISOString().split('T')[0];
+            let dateToUse = selectedDate;
+                if (!dateToUse) {
+                dateToUse = formatDateLocal(calendar.getDate());
+            }
         
             if (!dateToUse) {
                 showNotification('Please select a day first by clicking on the calendar', 'warning');
@@ -1251,54 +1259,23 @@
 </script>
 
 <script>
-// Optional: Add real-time validation for time fields
-document.querySelectorAll('input[type="time"]').forEach(function(input) {
-    input.addEventListener('change', function() {
-        // If this is start time and we also have an end time input as next sibling
-        if (this.name === 'start_time' && this.form.querySelector('input[name="end_time"]')) {
-            const startTime = this.value;
-            const endTimeInput = this.form.querySelector('input[name="end_time"]');
-            const endTime = endTimeInput.value;
-            
-            // If end time is set and is before start time
-            if (endTime && endTime <= startTime) {
-                // Calculate a default end time (1 hour later)
-                const startParts = startTime.split(':');
-                let endHour = parseInt(startParts[0]) + 1;
-                if (endHour > 23) endHour = 23;
-                
-                const newEndTime = endHour.toString().padStart(2, '0') + ':' + startParts[1];
-                endTimeInput.value = newEndTime;
-                
-                showNotification('End time automatically adjusted to be after start time', 'info');
-            }
-        }
-    });
-});
-</script>
-
-<script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Function to replace the icons
   function replaceCalendarIcons() {
     const prevButtons = document.querySelectorAll('.fc-prev-button');
     const nextButtons = document.querySelectorAll('.fc-next-button');
-    
     prevButtons.forEach(button => {
       button.innerHTML = '<i class="fas fa-chevron-left"></i>';
     });
-    
     nextButtons.forEach(button => {
       button.innerHTML = '<i class="fas fa-chevron-right"></i>';
     });
   }
-  
   replaceCalendarIcons();
-  
   setTimeout(replaceCalendarIcons, 500);
-  
   document.addEventListener('click', function(e) {
-    if (e.target.closest('.fc-button')) {
+    const btn = e.target.closest('.fc-button');
+    if (btn) {
+      btn.blur();
       setTimeout(replaceCalendarIcons, 100);
     }
   });
@@ -1306,4 +1283,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
-     

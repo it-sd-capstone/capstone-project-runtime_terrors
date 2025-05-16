@@ -64,6 +64,17 @@ return $appointment['appointment_date'] >= $currentDate;
         
         include VIEW_PATH . '/patient/index.php';
     }
+public function viewProfile() {
+    $user_id = $_SESSION['user_id'] ?? null;
+    if (!$user_id) {
+        header('Location: ' . base_url('index.php/auth/login'));
+        exit;
+    }
+    $userData = $this->userModel->getUserById($user_id);
+    $patientData = $this->userModel->getPatientProfile($user_id);
+    $patient = array_merge($userData ?: [], $patientData ?: []);
+    include VIEW_PATH . '/patient/view_profile.php'; 
+}
 
     /**
      * Handles all patient-related appointment actions (booking, canceling, rescheduling, history)
@@ -409,17 +420,17 @@ set_flash_message('error', "Missing required fields for booking.", 'patient_book
     /**
      * Load patient profile view
      */
-    public function profile() {
-        $user_id = $_SESSION['user_id'] ?? null;
-        if (!$user_id) {
-            header('Location: ' . base_url('index.php/auth/login'));
-            exit;
-        }
-        $userData = $this->userModel->getUserById($user_id);
-        $patientData = $this->userModel->getPatientProfile($user_id);
-        $patient = array_merge($userData ?: [], $patientData ?: []);
-        include VIEW_PATH . '/patient/profile.php';
+public function profile() {
+    $user_id = $_SESSION['user_id'] ?? null;
+    if (!$user_id) {
+        header('Location: ' . base_url('index.php/auth/login'));
+        exit;
     }
+    $userData = $this->userModel->getUserById($user_id);
+    $patientData = $this->userModel->getPatientProfile($user_id);
+    $patient = array_merge($userData ?: [], $patientData ?: []);
+    include VIEW_PATH . '/patient/profile.php'; // <-- This is the edit form!
+}
 
     public function updateProfile() {
         // Initialize errors array
