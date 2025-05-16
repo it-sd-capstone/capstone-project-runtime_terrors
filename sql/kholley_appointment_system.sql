@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 14, 2025 at 07:00 PM
+-- Generation Time: May 16, 2025 at 02:42 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `activity_log` (
   `related_type` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`log_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=361 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=473 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `activity_log`
@@ -128,7 +128,119 @@ INSERT INTO `activity_log` (`log_id`, `user_id`, `description`, `category`, `cre
 (357, 71, 'Auth: login_success', 'authentication', '2025-05-14 11:56:36', '127.0.0.1', NULL, NULL, NULL),
 (358, 71, 'Auth: logout', 'authentication', '2025-05-14 11:57:30', '127.0.0.1', NULL, NULL, NULL),
 (359, 72, 'Auth: login_success', 'authentication', '2025-05-14 11:57:51', '127.0.0.1', NULL, NULL, NULL),
-(360, 72, 'Auth: logout', 'authentication', '2025-05-14 11:58:55', '127.0.0.1', NULL, NULL, NULL);
+(360, 72, 'Auth: logout', 'authentication', '2025-05-14 11:58:55', '127.0.0.1', NULL, NULL, NULL),
+(361, 73, 'Auth: logout', 'authentication', '2025-05-14 12:23:28', '127.0.0.1', NULL, NULL, NULL),
+(362, 3, 'Auth: login_success', 'authentication', '2025-05-14 12:23:46', '127.0.0.1', NULL, NULL, NULL),
+(363, 3, 'Auth: logout', 'authentication', '2025-05-14 12:46:50', '127.0.0.1', NULL, NULL, NULL),
+(364, 0, 'Patient scheduled appointment with provider #68', '73', '2025-05-14 12:47:23', '127.0.0.1', NULL, NULL, NULL),
+(365, 73, 'Auth: logout', 'authentication', '2025-05-14 12:48:42', '127.0.0.1', NULL, NULL, NULL),
+(366, 73, 'Auth: logout', 'authentication', '2025-05-14 12:54:12', '127.0.0.1', NULL, NULL, NULL),
+(367, 68, 'Auth: logout', 'authentication', '2025-05-14 12:56:11', '127.0.0.1', NULL, NULL, NULL),
+(368, 3, 'Auth: logout', 'authentication', '2025-05-14 12:57:27', '127.0.0.1', NULL, NULL, NULL),
+(369, 68, 'Auth: logout', 'authentication', '2025-05-14 13:10:26', '127.0.0.1', NULL, NULL, NULL),
+(370, 3, 'Auth: logout', 'authentication', '2025-05-14 13:13:02', '127.0.0.1', NULL, NULL, NULL),
+(371, 68, 'Auth: logout', 'authentication', '2025-05-14 13:17:10', '127.0.0.1', NULL, NULL, NULL),
+(372, 73, 'Auth: logout', 'authentication', '2025-05-14 13:24:05', '127.0.0.1', NULL, NULL, NULL),
+(373, 68, 'Auth: logout', 'authentication', '2025-05-14 13:30:27', '127.0.0.1', NULL, NULL, NULL),
+(374, 3, 'User deleted', 'security', '2025-05-14 14:17:53', '127.0.0.1', '{\"deleted_user_id\":\"77\",\"performed_by\":3,\"user_data\":null}', 77, 'user'),
+(375, 3, 'User deleted', 'security', '2025-05-14 14:23:20', '127.0.0.1', '{\"deleted_user_id\":\"78\",\"performed_by\":3,\"user_data\":null}', 78, 'user'),
+(376, 0, 'Admin created new provider: Test Test', '3', '2025-05-14 14:32:22', '127.0.0.1', NULL, NULL, NULL),
+(377, 3, 'Auth: logout', 'authentication', '2025-05-14 14:32:35', '127.0.0.1', NULL, NULL, NULL),
+(378, 79, 'Auth: logout', 'authentication', '2025-05-14 14:39:12', '127.0.0.1', NULL, NULL, NULL),
+(379, 3, 'User deleted', 'security', '2025-05-14 14:51:07', '127.0.0.1', '{\"deleted_user_id\":\"79\",\"performed_by\":3,\"user_data\":null}', 79, 'user'),
+(380, 0, 'Admin created new provider: Test Test', '3', '2025-05-14 14:51:39', '127.0.0.1', NULL, NULL, NULL),
+(381, 3, 'User deleted', 'security', '2025-05-14 14:52:08', '127.0.0.1', '{\"deleted_user_id\":\"80\",\"performed_by\":3,\"user_data\":null}', 80, 'user'),
+(382, 0, 'Admin created new provider: Test Test', '3', '2025-05-14 14:54:03', '127.0.0.1', NULL, NULL, NULL),
+(383, 3, 'User deleted', 'security', '2025-05-14 14:54:32', '127.0.0.1', '{\"deleted_user_id\":\"81\",\"performed_by\":3,\"user_data\":null}', 81, 'user'),
+(384, 3, 'User deleted', 'security', '2025-05-14 15:48:23', '127.0.0.1', '{\"deleted_user_id\":\"82\",\"performed_by\":3,\"user_data\":null}', 82, 'user'),
+(385, 3, 'User deleted', 'security', '2025-05-14 15:49:15', '127.0.0.1', '{\"deleted_user_id\":\"83\",\"performed_by\":3,\"user_data\":null}', 83, 'user'),
+(386, 3, 'Auth: logout', 'authentication', '2025-05-14 15:56:57', '127.0.0.1', NULL, NULL, NULL),
+(387, 68, 'Auth: logout', 'authentication', '2025-05-14 15:57:19', '127.0.0.1', NULL, NULL, NULL),
+(388, 73, 'Auth: logout', 'authentication', '2025-05-14 16:02:25', '127.0.0.1', NULL, NULL, NULL),
+(389, 3, 'Auth: logout', 'authentication', '2025-05-14 16:03:18', '127.0.0.1', NULL, NULL, NULL),
+(390, 69, 'Auth: login_success', 'authentication', '2025-05-14 16:03:36', '127.0.0.1', NULL, NULL, NULL),
+(391, 69, 'Auth: logout', 'authentication', '2025-05-14 16:06:08', '127.0.0.1', NULL, NULL, NULL),
+(392, 73, 'Auth: logout', 'authentication', '2025-05-14 16:20:53', '127.0.0.1', NULL, NULL, NULL),
+(393, 68, 'Auth: logout', 'authentication', '2025-05-14 16:21:30', '127.0.0.1', NULL, NULL, NULL),
+(394, 69, 'Auth: login_success', 'authentication', '2025-05-14 16:21:48', '127.0.0.1', NULL, NULL, NULL),
+(395, 69, 'Appointment: notes_updated (ID: 56)', 'appointment', '2025-05-14 16:22:34', '127.0.0.1', '{\"updated_by\":69,\"updated_by_role\":\"provider\",\"notes\":\"note\"}', 56, 'appointment'),
+(396, 69, 'Auth: logout', 'authentication', '2025-05-14 16:24:23', '127.0.0.1', NULL, NULL, NULL),
+(397, 68, 'Auth: logout', 'authentication', '2025-05-14 16:26:04', '127.0.0.1', NULL, NULL, NULL),
+(398, NULL, 'Auth: login_failed - Email: provider2@example.com', 'authentication', '2025-05-14 16:26:46', '127.0.0.1', NULL, NULL, NULL),
+(399, 69, 'Auth: login_success', 'authentication', '2025-05-14 16:26:56', '127.0.0.1', NULL, NULL, NULL),
+(400, 69, 'Appointment: notes_updated (ID: 56)', 'appointment', '2025-05-14 16:27:44', '127.0.0.1', '{\"updated_by\":69,\"updated_by_role\":\"provider\",\"notes\":\"note\"}', 56, 'appointment'),
+(401, 69, 'Appointment: notes_updated (ID: 56)', 'appointment', '2025-05-14 16:29:41', '127.0.0.1', '{\"updated_by\":69,\"updated_by_role\":\"provider\",\"notes\":\"note\"}', 56, 'appointment'),
+(402, 69, 'Auth: logout', 'authentication', '2025-05-14 16:34:57', '127.0.0.1', NULL, NULL, NULL),
+(403, 73, 'Auth: logout', 'authentication', '2025-05-14 16:41:54', '127.0.0.1', NULL, NULL, NULL),
+(404, 69, 'Auth: login_success', 'authentication', '2025-05-14 16:42:16', '127.0.0.1', NULL, NULL, NULL),
+(405, 69, 'Appointment: notes_updated (ID: 56)', 'appointment', '2025-05-14 16:43:42', '127.0.0.1', '{\"updated_by\":69,\"updated_by_role\":\"provider\",\"notes\":\"note\"}', 56, 'appointment'),
+(406, 69, 'Auth: logout', 'authentication', '2025-05-14 16:50:56', '127.0.0.1', NULL, NULL, NULL),
+(407, 73, 'Auth: logout', 'authentication', '2025-05-14 16:59:50', '127.0.0.1', NULL, NULL, NULL),
+(408, 69, 'Auth: login_success', 'authentication', '2025-05-14 17:00:06', '127.0.0.1', NULL, NULL, NULL),
+(409, 69, 'Auth: logout', 'authentication', '2025-05-14 17:31:53', '127.0.0.1', NULL, NULL, NULL),
+(410, 0, 'Patient scheduled appointment with provider #68', '73', '2025-05-14 17:32:36', '127.0.0.1', NULL, NULL, NULL),
+(411, 73, 'Appointment: rescheduled (ID: 56)', 'appointment', '2025-05-14 18:19:07', '127.0.0.1', '{\"previous_date\":\"2025-05-14\",\"previous_time\":\"07:00:00\",\"new_date\":\"2025-05-20\",\"new_time\":\"08:00:00\",\"rescheduled_by\":73,\"rescheduled_by_role\":\"patient\"}', 56, 'appointment'),
+(412, 73, 'Appointment: rescheduled (ID: 56)', 'appointment', '2025-05-14 18:25:23', '127.0.0.1', '{\"previous_date\":\"2025-05-20\",\"previous_time\":\"08:00:00\",\"new_date\":\"2025-05-20\",\"new_time\":\"10:35:00\",\"rescheduled_by\":73,\"rescheduled_by_role\":\"patient\"}', 56, 'appointment'),
+(413, 73, 'Appointment: rescheduled (ID: 57)', 'appointment', '2025-05-14 18:27:38', '127.0.0.1', '{\"previous_date\":\"2025-05-23\",\"previous_time\":\"07:00:00\",\"new_date\":\"2025-05-21\",\"new_time\":\"08:15:00\",\"rescheduled_by\":73,\"rescheduled_by_role\":\"patient\"}', 57, 'appointment'),
+(414, 73, 'Appointment: rescheduled (ID: 56)', 'appointment', '2025-05-14 18:32:31', '127.0.0.1', '{\"previous_date\":\"2025-05-20\",\"previous_time\":\"10:35:00\",\"new_date\":\"2025-05-22\",\"new_time\":\"08:00:00\",\"rescheduled_by\":73,\"rescheduled_by_role\":\"patient\"}', 56, 'appointment'),
+(415, 73, 'Appointment: rescheduled (ID: 57)', 'appointment', '2025-05-14 18:39:48', '127.0.0.1', '{\"previous_date\":\"2025-05-21\",\"previous_time\":\"08:15:00\",\"new_date\":\"2025-05-23\",\"new_time\":\"16:15:00\",\"rescheduled_by\":73,\"rescheduled_by_role\":\"patient\"}', 57, 'appointment'),
+(416, 73, 'Auth: logout', 'authentication', '2025-05-14 18:41:13', '127.0.0.1', NULL, NULL, NULL),
+(417, 68, 'Auth: logout', 'authentication', '2025-05-14 18:45:40', '127.0.0.1', NULL, NULL, NULL),
+(418, 73, 'Appointment: rescheduled (ID: 56)', 'appointment', '2025-05-14 18:46:27', '127.0.0.1', '{\"previous_date\":\"2025-05-22\",\"previous_time\":\"08:00:00\",\"new_date\":\"2025-05-22\",\"new_time\":\"14:20:00\",\"rescheduled_by\":73,\"rescheduled_by_role\":\"patient\"}', 56, 'appointment'),
+(419, 73, 'Auth: logout', 'authentication', '2025-05-14 19:17:05', '127.0.0.1', NULL, NULL, NULL),
+(420, 3, 'Auth: logout', 'authentication', '2025-05-14 19:43:00', '127.0.0.1', NULL, NULL, NULL),
+(421, 73, 'Appointment: rescheduled (ID: 56)', 'appointment', '2025-05-14 19:44:08', '127.0.0.1', '{\"previous_date\":\"2025-05-22\",\"previous_time\":\"14:20:00\",\"new_date\":\"2025-05-18\",\"new_time\":\"11:40:00\",\"rescheduled_by\":73,\"rescheduled_by_role\":\"patient\"}', 56, 'appointment'),
+(422, 73, 'Auth: logout', 'authentication', '2025-05-14 19:44:36', '127.0.0.1', NULL, NULL, NULL),
+(423, 68, 'Auth: logout', 'authentication', '2025-05-14 19:45:34', '127.0.0.1', NULL, NULL, NULL),
+(424, 3, 'Auth: logout', 'authentication', '2025-05-14 19:57:45', '127.0.0.1', NULL, NULL, NULL),
+(425, 68, 'Appointment: notes_updated (ID: 57)', 'appointment', '2025-05-14 19:59:10', '127.0.0.1', '{\"updated_by\":68,\"updated_by_role\":\"provider\",\"notes\":\"note\"}', 57, 'appointment'),
+(426, 68, 'Auth: logout', 'authentication', '2025-05-14 20:08:30', '127.0.0.1', NULL, NULL, NULL),
+(427, 73, 'Auth: logout', 'authentication', '2025-05-14 20:55:14', '127.0.0.1', NULL, NULL, NULL),
+(428, 3, 'Auth: logout', 'authentication', '2025-05-14 21:37:29', '127.0.0.1', NULL, NULL, NULL),
+(429, 68, 'Auth: logout', 'authentication', '2025-05-14 21:52:03', '127.0.0.1', NULL, NULL, NULL),
+(430, 3, 'Auth: logout', 'authentication', '2025-05-14 22:34:01', '127.0.0.1', NULL, NULL, NULL),
+(431, 0, 'Patient scheduled appointment with provider #69', '73', '2025-05-14 22:34:36', '127.0.0.1', NULL, NULL, NULL),
+(432, 0, 'Patient scheduled appointment with provider #70', '73', '2025-05-14 23:15:15', '127.0.0.1', NULL, NULL, NULL),
+(433, 73, 'Auth: logout', 'authentication', '2025-05-14 23:36:16', '127.0.0.1', NULL, NULL, NULL),
+(434, 0, 'Patient scheduled appointment with provider #70', '73', '2025-05-14 23:38:14', '127.0.0.1', NULL, NULL, NULL),
+(435, 0, 'Patient scheduled appointment with provider #70', '73', '2025-05-14 23:51:19', '127.0.0.1', NULL, NULL, NULL),
+(436, 73, 'Appointment: rescheduled (ID: 58)', 'appointment', '2025-05-14 23:55:02', '127.0.0.1', '{\"previous_date\":\"2025-05-15\",\"previous_time\":\"07:00:00\",\"new_date\":\"2025-05-20\",\"new_time\":\"11:40:00\",\"rescheduled_by\":73,\"rescheduled_by_role\":\"patient\"}', 58, 'appointment'),
+(437, 68, 'Auth: logout', 'authentication', '2025-05-15 06:53:43', '127.0.0.1', NULL, NULL, NULL),
+(438, 3, 'User deleted', 'security', '2025-05-15 06:58:38', '127.0.0.1', '{\"deleted_user_id\":\"84\",\"performed_by\":3,\"user_data\":null}', 84, 'user'),
+(439, 3, 'Auth: logout', 'authentication', '2025-05-15 07:14:34', '127.0.0.1', NULL, NULL, NULL),
+(440, NULL, 'Auth: registered - New patient account created, verification email failed', 'authentication', '2025-05-15 07:16:18', '127.0.0.1', NULL, NULL, NULL),
+(441, NULL, 'User: created (User ID: 85)', 'user', '2025-05-15 07:16:18', '127.0.0.1', NULL, NULL, NULL),
+(442, NULL, 'Auth: registered - New patient account created, verification email failed', 'authentication', '2025-05-15 07:21:13', '127.0.0.1', NULL, NULL, NULL),
+(443, NULL, 'User: created (User ID: 86)', 'user', '2025-05-15 07:21:13', '127.0.0.1', NULL, NULL, NULL),
+(444, NULL, 'Auth: registered - New patient account created, verification email failed', 'authentication', '2025-05-15 07:25:35', '127.0.0.1', NULL, NULL, NULL),
+(445, NULL, 'User: created (User ID: 87)', 'user', '2025-05-15 07:25:35', '127.0.0.1', NULL, NULL, NULL),
+(446, NULL, 'Auth: registered - New patient account created, verification email failed', 'authentication', '2025-05-15 07:41:06', '127.0.0.1', NULL, NULL, NULL),
+(447, NULL, 'User: created (User ID: 88)', 'user', '2025-05-15 07:41:06', '127.0.0.1', NULL, NULL, NULL),
+(448, 3, 'Auth: logout', 'authentication', '2025-05-15 08:25:53', '127.0.0.1', NULL, NULL, NULL),
+(449, NULL, 'Auth: registered - New patient account created, verification email failed', 'authentication', '2025-05-15 09:10:26', '127.0.0.1', NULL, NULL, NULL),
+(450, NULL, 'User: created (User ID: 89)', 'user', '2025-05-15 09:10:26', '127.0.0.1', NULL, NULL, NULL),
+(451, 89, 'Auth: login_success', 'authentication', '2025-05-15 09:11:09', '127.0.0.1', NULL, NULL, NULL),
+(452, 89, 'Auth: logout', 'authentication', '2025-05-15 09:11:19', '127.0.0.1', NULL, NULL, NULL),
+(453, 3, 'Auth: logout', 'authentication', '2025-05-15 09:34:23', '127.0.0.1', NULL, NULL, NULL),
+(454, 3, 'Auth: logout', 'authentication', '2025-05-15 09:35:14', '127.0.0.1', NULL, NULL, NULL),
+(455, 3, 'User deleted', 'security', '2025-05-15 09:36:05', '127.0.0.1', '{\"deleted_user_id\":\"89\",\"performed_by\":3,\"user_data\":null}', 89, 'user'),
+(456, 3, 'User deleted', 'security', '2025-05-15 09:36:18', '127.0.0.1', '{\"deleted_user_id\":\"88\",\"performed_by\":3,\"user_data\":null}', 88, 'user'),
+(457, 3, 'User deleted', 'security', '2025-05-15 09:36:35', '127.0.0.1', '{\"deleted_user_id\":\"87\",\"performed_by\":3,\"user_data\":null}', 87, 'user'),
+(458, 3, 'User deleted', 'security', '2025-05-15 09:36:46', '127.0.0.1', '{\"deleted_user_id\":\"86\",\"performed_by\":3,\"user_data\":null}', 86, 'user'),
+(459, 3, 'User deleted', 'security', '2025-05-15 09:36:58', '127.0.0.1', '{\"deleted_user_id\":\"85\",\"performed_by\":3,\"user_data\":null}', 85, 'user'),
+(460, 3, 'Auth: logout', 'authentication', '2025-05-15 09:38:20', '127.0.0.1', NULL, NULL, NULL),
+(461, 3, 'Auth: logout', 'authentication', '2025-05-15 17:28:51', '127.0.0.1', NULL, NULL, NULL),
+(462, 3, 'Auth: logout', 'authentication', '2025-05-15 18:02:07', '127.0.0.1', NULL, NULL, NULL),
+(463, NULL, 'Auth: registered - New patient account created, verification email failed', 'authentication', '2025-05-15 18:04:17', '127.0.0.1', NULL, NULL, NULL),
+(464, NULL, 'User: created (User ID: 90)', 'user', '2025-05-15 18:04:17', '127.0.0.1', NULL, NULL, NULL),
+(465, 3, 'Auth: logout', 'authentication', '2025-05-15 18:25:45', '127.0.0.1', NULL, NULL, NULL),
+(466, NULL, 'Auth: registered - New patient account created, verification email failed', 'authentication', '2025-05-15 18:26:32', '127.0.0.1', NULL, NULL, NULL),
+(467, NULL, 'User: created (User ID: 91)', 'user', '2025-05-15 18:26:32', '127.0.0.1', NULL, NULL, NULL),
+(468, NULL, 'Auth: registered - New patient account created, verification email sent', 'authentication', '2025-05-15 18:33:36', '127.0.0.1', NULL, NULL, NULL),
+(469, NULL, 'User: created (User ID: 92)', 'user', '2025-05-15 18:33:36', '127.0.0.1', NULL, NULL, NULL),
+(470, 3, 'User deleted', 'security', '2025-05-15 18:34:24', '127.0.0.1', '{\"deleted_user_id\":\"92\",\"performed_by\":3,\"user_data\":null}', 92, 'user'),
+(471, 3, 'User deleted', 'security', '2025-05-15 18:34:51', '127.0.0.1', '{\"deleted_user_id\":\"90\",\"performed_by\":3,\"user_data\":null}', 90, 'user'),
+(472, 3, 'User deleted', 'security', '2025-05-15 18:35:14', '127.0.0.1', '{\"deleted_user_id\":\"91\",\"performed_by\":3,\"user_data\":null}', 91, 'user');
 
 -- --------------------------------------------------------
 
@@ -158,7 +270,19 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   KEY `patient_id` (`patient_id`),
   KEY `provider_id` (`provider_id`),
   KEY `service_id` (`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=62 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `appointments`
+--
+
+INSERT INTO `appointments` (`appointment_id`, `patient_id`, `provider_id`, `service_id`, `appointment_date`, `start_time`, `end_time`, `status`, `type`, `notes`, `reason`, `reminder_sent`, `confirmed_at`, `canceled_at`, `created_at`, `updated_at`) VALUES
+(56, 73, 69, 35, '2025-05-18', '11:40:00', '12:10:00', 'confirmed', 'in_person', 'note', 'Canceled by administrator', 0, NULL, '2025-05-14 21:52:27', '2025-05-14 12:47:23', '2025-05-14 21:52:40'),
+(57, 73, 68, 35, '2025-05-23', '16:15:00', '16:45:00', 'confirmed', 'in_person', 'note', 'Canceled by administrator', 0, NULL, '2025-05-14 21:15:17', '2025-05-14 17:32:36', '2025-05-14 21:55:16'),
+(58, 73, 69, 38, '2025-05-20', '11:40:00', '12:40:00', 'scheduled', 'in_person', '', 'visit', 0, NULL, NULL, '2025-05-14 22:34:36', '2025-05-14 23:55:02'),
+(59, 73, 70, 42, '2025-05-14', '07:00:00', '07:40:00', 'scheduled', 'in_person', '', 'n', 0, NULL, NULL, '2025-05-14 23:15:14', '2025-05-14 23:15:14'),
+(60, 73, 70, 42, '2025-05-16', '07:00:00', '07:40:00', 'scheduled', 'in_person', '', 'n', 0, NULL, NULL, '2025-05-14 23:38:14', '2025-05-14 23:38:14'),
+(61, 73, 70, 42, '2025-05-16', '08:25:00', '09:05:00', 'scheduled', 'in_person', '', 'm', 0, NULL, NULL, '2025-05-14 23:51:19', '2025-05-14 23:51:19');
 
 -- --------------------------------------------------------
 
@@ -270,8 +394,30 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   PRIMARY KEY (`notification_id`),
   UNIQUE KEY `unique_system_notification` (`subject`(100),`message`(100),`is_system`,`audience`),
   KEY `user_id` (`user_id`),
-  KEY `appointment_id` (`appointment_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `appointment_id` (`appointment_id`),
+  KEY `idx_notifications_user_id` (`user_id`),
+  KEY `idx_notifications_is_read` (`is_read`),
+  KEY `idx_notifications_created_at` (`created_at`),
+  KEY `idx_notifications_appointment_id` (`appointment_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`notification_id`, `user_id`, `appointment_id`, `subject`, `message`, `type`, `status`, `scheduled_for`, `sent_at`, `created_at`, `is_system`, `is_read`, `audience`) VALUES
+(14, 73, 56, 'Appointment Rescheduled', 'Your appointment has been rescheduled to May 22, 2025 at 8:00 AM', '', 'pending', NULL, NULL, '2025-05-14 18:32:31', 0, 1, NULL),
+(15, 69, 56, 'Appointment Rescheduled', 'An appointment has been rescheduled to May 22, 2025 at 8:00 AM', '', 'pending', NULL, NULL, '2025-05-14 18:32:31', 0, 0, NULL),
+(16, 73, 57, 'Appointment Rescheduled', 'Your appointment has been rescheduled to May 23, 2025 at 4:15 PM', '', 'pending', NULL, NULL, '2025-05-14 18:39:48', 0, 1, NULL),
+(17, 68, 57, 'Appointment Rescheduled', 'An appointment has been rescheduled to May 23, 2025 at 4:15 PM', '', 'pending', NULL, NULL, '2025-05-14 18:39:48', 0, 0, NULL),
+(18, 73, 56, 'Appointment Rescheduled', 'Your appointment has been rescheduled to May 22, 2025 at 2:20 PM', '', 'pending', NULL, NULL, '2025-05-14 18:46:27', 0, 1, NULL),
+(19, 69, 56, 'Appointment Rescheduled', 'An appointment has been rescheduled to May 22, 2025 at 2:20 PM', '', 'pending', NULL, NULL, '2025-05-14 18:46:27', 0, 0, NULL),
+(20, 73, 56, 'Appointment Rescheduled', 'Your appointment has been rescheduled to May 18, 2025 at 11:40 AM', '', 'pending', NULL, NULL, '2025-05-14 19:44:08', 0, 1, NULL),
+(21, 69, 56, 'Appointment Rescheduled', 'An appointment has been rescheduled to May 18, 2025 at 11:40 AM', '', 'pending', NULL, NULL, '2025-05-14 19:44:08', 0, 0, NULL),
+(22, 73, 58, 'Appointment Rescheduled', 'Your appointment has been rescheduled to May 20, 2025 at 11:40 AM', '', 'pending', NULL, NULL, '2025-05-14 23:55:02', 0, 0, NULL),
+(23, 69, 58, 'Appointment Rescheduled', 'An appointment has been rescheduled to May 20, 2025 at 11:40 AM', '', 'pending', NULL, NULL, '2025-05-14 23:55:02', 0, 0, NULL),
+(25, 3, NULL, 'System Update', 'System updated to version 2.1.0', '', '', NULL, NULL, '2025-05-16 00:25:14', 1, 0, 'admin'),
+(26, 3, NULL, 'Database Backup', 'Weekly database backup completed successfully', '', '', NULL, NULL, '2025-05-16 00:25:14', 1, 0, 'admin');
 
 -- --------------------------------------------------------
 
@@ -316,7 +462,7 @@ CREATE TABLE IF NOT EXISTS `patient_profiles` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`patient_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=77 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=93 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `patient_profiles`
@@ -350,153 +496,13 @@ CREATE TABLE IF NOT EXISTS `provider_availability` (
   `service_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`availability_id`),
   KEY `fk_availability_service` (`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2536 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2676 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `provider_availability`
 --
 
 INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availability_date`, `start_time`, `end_time`, `is_available`, `schedule_type`, `created_at`, `is_recurring`, `weekdays`, `max_appointments`, `service_id`) VALUES
-(1798, 68, '2025-05-14', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1799, 68, '2025-05-14', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1800, 68, '2025-05-14', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1801, 68, '2025-05-14', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1802, 68, '2025-05-14', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1803, 68, '2025-05-14', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1804, 68, '2025-05-14', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1805, 68, '2025-05-14', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1806, 68, '2025-05-14', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1807, 68, '2025-05-14', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1808, 68, '2025-05-14', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1809, 68, '2025-05-14', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1810, 68, '2025-05-14', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1811, 68, '2025-05-14', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1812, 68, '2025-05-14', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1813, 68, '2025-05-14', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1814, 68, '2025-05-14', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1815, 68, '2025-05-14', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1816, 68, '2025-05-14', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1817, 68, '2025-05-14', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1818, 68, '2025-05-16', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1819, 68, '2025-05-16', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1820, 68, '2025-05-16', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1821, 68, '2025-05-16', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1822, 68, '2025-05-16', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1823, 68, '2025-05-16', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1824, 68, '2025-05-16', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1825, 68, '2025-05-16', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1826, 68, '2025-05-16', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1827, 68, '2025-05-16', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1828, 68, '2025-05-16', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1829, 68, '2025-05-16', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1830, 68, '2025-05-16', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1831, 68, '2025-05-16', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1832, 68, '2025-05-16', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1833, 68, '2025-05-16', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1834, 68, '2025-05-16', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1835, 68, '2025-05-16', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1836, 68, '2025-05-16', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1837, 68, '2025-05-16', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1838, 68, '2025-05-19', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1839, 68, '2025-05-19', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1840, 68, '2025-05-19', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1841, 68, '2025-05-19', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1842, 68, '2025-05-19', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1843, 68, '2025-05-19', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1844, 68, '2025-05-19', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1845, 68, '2025-05-19', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1846, 68, '2025-05-19', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1847, 68, '2025-05-19', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1848, 68, '2025-05-19', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1849, 68, '2025-05-19', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1850, 68, '2025-05-19', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1851, 68, '2025-05-19', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1852, 68, '2025-05-19', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1853, 68, '2025-05-19', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1854, 68, '2025-05-19', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1855, 68, '2025-05-19', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1856, 68, '2025-05-19', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1857, 68, '2025-05-19', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1858, 68, '2025-05-21', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1859, 68, '2025-05-21', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1860, 68, '2025-05-21', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1861, 68, '2025-05-21', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1862, 68, '2025-05-21', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1863, 68, '2025-05-21', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1864, 68, '2025-05-21', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1865, 68, '2025-05-21', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1866, 68, '2025-05-21', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1867, 68, '2025-05-21', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1868, 68, '2025-05-21', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1869, 68, '2025-05-21', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1870, 68, '2025-05-21', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1871, 68, '2025-05-21', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1872, 68, '2025-05-21', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1873, 68, '2025-05-21', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1874, 68, '2025-05-21', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1875, 68, '2025-05-21', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1876, 68, '2025-05-21', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1877, 68, '2025-05-21', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1878, 68, '2025-05-23', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1879, 68, '2025-05-23', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1880, 68, '2025-05-23', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1881, 68, '2025-05-23', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1882, 68, '2025-05-23', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1883, 68, '2025-05-23', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1884, 68, '2025-05-23', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1885, 68, '2025-05-23', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1886, 68, '2025-05-23', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1887, 68, '2025-05-23', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1888, 68, '2025-05-23', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1889, 68, '2025-05-23', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1890, 68, '2025-05-23', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1891, 68, '2025-05-23', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1892, 68, '2025-05-23', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1893, 68, '2025-05-23', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1894, 68, '2025-05-23', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1895, 68, '2025-05-23', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1896, 68, '2025-05-23', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1897, 68, '2025-05-23', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1898, 68, '2025-05-26', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1899, 68, '2025-05-26', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1900, 68, '2025-05-26', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1901, 68, '2025-05-26', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1902, 68, '2025-05-26', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1903, 68, '2025-05-26', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1904, 68, '2025-05-26', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1905, 68, '2025-05-26', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1906, 68, '2025-05-26', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1907, 68, '2025-05-26', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1908, 68, '2025-05-26', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1909, 68, '2025-05-26', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1910, 68, '2025-05-26', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1911, 68, '2025-05-26', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1912, 68, '2025-05-26', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1913, 68, '2025-05-26', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1914, 68, '2025-05-26', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1915, 68, '2025-05-26', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1916, 68, '2025-05-26', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1917, 68, '2025-05-26', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1918, 68, '2025-05-28', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1919, 68, '2025-05-28', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1920, 68, '2025-05-28', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1921, 68, '2025-05-28', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1922, 68, '2025-05-28', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1923, 68, '2025-05-28', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1924, 68, '2025-05-28', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1925, 68, '2025-05-28', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1926, 68, '2025-05-28', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1927, 68, '2025-05-28', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1928, 68, '2025-05-28', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1929, 68, '2025-05-28', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1930, 68, '2025-05-28', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1931, 68, '2025-05-28', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1932, 68, '2025-05-28', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1933, 68, '2025-05-28', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
-(1934, 68, '2025-05-28', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 35),
-(1935, 68, '2025-05-28', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 36),
-(1936, 68, '2025-05-28', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 37),
-(1937, 68, '2025-05-28', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 16:49:43', 0, NULL, 1, 41),
 (1938, 69, '2025-05-15', '07:00:00', '08:00:00', 1, 'availability', '2025-05-14 16:51:15', 0, NULL, 1, 38),
 (1939, 69, '2025-05-15', '08:00:00', '08:50:00', 1, 'availability', '2025-05-14 16:51:15', 0, NULL, 1, 39),
 (1940, 69, '2025-05-15', '08:50:00', '09:50:00', 1, 'availability', '2025-05-14 16:51:15', 0, NULL, 1, 38),
@@ -825,8 +831,7 @@ INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availabi
 (2263, 71, '2025-05-17', '11:45:00', '12:00:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 41),
 (2264, 71, '2025-05-17', '12:00:00', '13:00:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 43),
 (2265, 71, '2025-05-17', '13:00:00', '13:15:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 41),
-(2266, 71, '2025-05-17', '13:15:00', '14:15:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 43);
-INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availability_date`, `start_time`, `end_time`, `is_available`, `schedule_type`, `created_at`, `is_recurring`, `weekdays`, `max_appointments`, `service_id`) VALUES
+(2266, 71, '2025-05-17', '13:15:00', '14:15:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 43),
 (2267, 71, '2025-05-17', '14:15:00', '14:30:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 41),
 (2268, 71, '2025-05-17', '14:30:00', '15:30:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 43),
 (2269, 71, '2025-05-17', '15:30:00', '15:45:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 41),
@@ -966,7 +971,8 @@ INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availabi
 (2403, 71, '2025-06-07', '09:15:00', '09:30:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 41),
 (2404, 71, '2025-06-07', '09:30:00', '10:30:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 43),
 (2405, 71, '2025-06-07', '10:30:00', '10:45:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 41),
-(2406, 71, '2025-06-07', '10:45:00', '11:45:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 43),
+(2406, 71, '2025-06-07', '10:45:00', '11:45:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 43);
+INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availability_date`, `start_time`, `end_time`, `is_available`, `schedule_type`, `created_at`, `is_recurring`, `weekdays`, `max_appointments`, `service_id`) VALUES
 (2407, 71, '2025-06-07', '11:45:00', '12:00:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 41),
 (2408, 71, '2025-06-07', '12:00:00', '13:00:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 43),
 (2409, 71, '2025-06-07', '13:00:00', '13:15:00', 1, 'availability', '2025-05-14 16:57:23', 0, NULL, 1, 41),
@@ -1095,7 +1101,127 @@ INSERT INTO `provider_availability` (`availability_id`, `provider_id`, `availabi
 (2532, 72, '2025-06-11', '11:05:00', '11:50:00', 1, 'availability', '2025-05-14 16:58:50', 0, NULL, 1, 35),
 (2533, 72, '2025-06-11', '11:50:00', '12:50:00', 1, 'availability', '2025-05-14 16:58:50', 0, NULL, 1, 38),
 (2534, 72, '2025-06-11', '12:50:00', '13:30:00', 1, 'availability', '2025-05-14 16:58:50', 0, NULL, 1, 42),
-(2535, 72, '2025-06-11', '13:30:00', '14:15:00', 1, 'availability', '2025-05-14 16:58:50', 0, NULL, 1, 35);
+(2535, 72, '2025-06-11', '13:30:00', '14:15:00', 1, 'availability', '2025-05-14 16:58:50', 0, NULL, 1, 35),
+(2556, 68, '2025-05-16', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2557, 68, '2025-05-16', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2558, 68, '2025-05-16', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2559, 68, '2025-05-16', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2560, 68, '2025-05-16', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2561, 68, '2025-05-16', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2562, 68, '2025-05-16', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2563, 68, '2025-05-16', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2564, 68, '2025-05-16', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2565, 68, '2025-05-16', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2566, 68, '2025-05-16', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2567, 68, '2025-05-16', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2568, 68, '2025-05-16', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2569, 68, '2025-05-16', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2570, 68, '2025-05-16', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2571, 68, '2025-05-16', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2572, 68, '2025-05-16', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2573, 68, '2025-05-16', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2574, 68, '2025-05-16', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2575, 68, '2025-05-16', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2576, 68, '2025-05-19', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2577, 68, '2025-05-19', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2578, 68, '2025-05-19', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2579, 68, '2025-05-19', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2580, 68, '2025-05-19', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2581, 68, '2025-05-19', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2582, 68, '2025-05-19', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2583, 68, '2025-05-19', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2584, 68, '2025-05-19', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2585, 68, '2025-05-19', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2586, 68, '2025-05-19', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2587, 68, '2025-05-19', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2588, 68, '2025-05-19', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2589, 68, '2025-05-19', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2590, 68, '2025-05-19', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2591, 68, '2025-05-19', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2592, 68, '2025-05-19', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2593, 68, '2025-05-19', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2594, 68, '2025-05-19', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2595, 68, '2025-05-19', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2596, 68, '2025-05-21', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2597, 68, '2025-05-21', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2598, 68, '2025-05-21', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2599, 68, '2025-05-21', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2600, 68, '2025-05-21', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2601, 68, '2025-05-21', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2602, 68, '2025-05-21', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2603, 68, '2025-05-21', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2604, 68, '2025-05-21', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2605, 68, '2025-05-21', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2606, 68, '2025-05-21', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2607, 68, '2025-05-21', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2608, 68, '2025-05-21', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2609, 68, '2025-05-21', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2610, 68, '2025-05-21', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2611, 68, '2025-05-21', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2612, 68, '2025-05-21', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2613, 68, '2025-05-21', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2614, 68, '2025-05-21', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2615, 68, '2025-05-21', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2616, 68, '2025-05-23', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2617, 68, '2025-05-23', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2618, 68, '2025-05-23', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2619, 68, '2025-05-23', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2620, 68, '2025-05-23', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2621, 68, '2025-05-23', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2622, 68, '2025-05-23', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2623, 68, '2025-05-23', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2624, 68, '2025-05-23', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2625, 68, '2025-05-23', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2626, 68, '2025-05-23', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2627, 68, '2025-05-23', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2628, 68, '2025-05-23', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2629, 68, '2025-05-23', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2630, 68, '2025-05-23', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2631, 68, '2025-05-23', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2632, 68, '2025-05-23', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2633, 68, '2025-05-23', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2634, 68, '2025-05-23', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2635, 68, '2025-05-23', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2636, 68, '2025-05-26', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2637, 68, '2025-05-26', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2638, 68, '2025-05-26', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2639, 68, '2025-05-26', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2640, 68, '2025-05-26', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2641, 68, '2025-05-26', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2642, 68, '2025-05-26', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2643, 68, '2025-05-26', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2644, 68, '2025-05-26', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2645, 68, '2025-05-26', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2646, 68, '2025-05-26', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2647, 68, '2025-05-26', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2648, 68, '2025-05-26', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2649, 68, '2025-05-26', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2650, 68, '2025-05-26', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2651, 68, '2025-05-26', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2652, 68, '2025-05-26', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2653, 68, '2025-05-26', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2654, 68, '2025-05-26', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2655, 68, '2025-05-26', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2656, 68, '2025-05-28', '07:00:00', '07:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2657, 68, '2025-05-28', '07:45:00', '08:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2658, 68, '2025-05-28', '08:15:00', '08:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2659, 68, '2025-05-28', '08:45:00', '09:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2660, 68, '2025-05-28', '09:00:00', '09:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2661, 68, '2025-05-28', '09:45:00', '10:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2662, 68, '2025-05-28', '10:15:00', '10:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2663, 68, '2025-05-28', '10:45:00', '11:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2664, 68, '2025-05-28', '11:00:00', '11:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2665, 68, '2025-05-28', '11:45:00', '12:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2666, 68, '2025-05-28', '12:15:00', '12:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2667, 68, '2025-05-28', '12:45:00', '13:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2668, 68, '2025-05-28', '13:00:00', '13:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2669, 68, '2025-05-28', '13:45:00', '14:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2670, 68, '2025-05-28', '14:15:00', '14:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2671, 68, '2025-05-28', '14:45:00', '15:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41),
+(2672, 68, '2025-05-28', '15:00:00', '15:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 35),
+(2673, 68, '2025-05-28', '15:45:00', '16:15:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 36),
+(2674, 68, '2025-05-28', '16:15:00', '16:45:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 37),
+(2675, 68, '2025-05-28', '16:45:00', '17:00:00', 1, 'availability', '2025-05-14 18:07:49', 0, NULL, 1, 41);
 
 -- --------------------------------------------------------
 
@@ -1117,14 +1243,14 @@ CREATE TABLE IF NOT EXISTS `provider_profiles` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`profile_id`),
   KEY `provider_id` (`provider_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `provider_profiles`
 --
 
 INSERT INTO `provider_profiles` (`profile_id`, `provider_id`, `specialization`, `title`, `bio`, `accepting_new_patients`, `max_patients_per_day`, `profile_image`, `created_at`, `updated_at`) VALUES
-(25, 68, 'Practisioner', '', 'Hello', 1, 20, NULL, '2025-05-14 00:55:56', '2025-05-14 15:10:14'),
+(25, 68, 'Practisioner', NULL, 'Hello', 1, 20, NULL, '2025-05-14 00:55:56', '2025-05-15 00:58:33'),
 (26, 69, '', '', '', 1, 0, NULL, '2025-05-14 00:57:20', '2025-05-14 00:57:20'),
 (27, 70, '', '', '', 1, 0, NULL, '2025-05-14 00:59:28', '2025-05-14 00:59:28'),
 (28, 71, '', '', '', 1, 0, NULL, '2025-05-14 01:01:01', '2025-05-14 01:01:01'),
@@ -1189,7 +1315,7 @@ CREATE TABLE IF NOT EXISTS `recurring_schedules` (
   `updated_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`schedule_id`),
   KEY `provider_id` (`provider_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `recurring_schedules`
@@ -1210,7 +1336,8 @@ INSERT INTO `recurring_schedules` (`schedule_id`, `provider_id`, `day_of_week`, 
 (27, 71, 6, '07:00:00', '17:00:00', 1, 'availability', NULL, NULL, '2025-05-14 11:57:13', '2025-05-14 11:57:13'),
 (28, 72, 6, '08:00:00', '15:00:00', 1, 'availability', NULL, NULL, '2025-05-14 11:58:22', '2025-05-14 11:58:22'),
 (29, 72, 0, '08:00:00', '15:00:00', 1, 'availability', NULL, NULL, '2025-05-14 11:58:27', '2025-05-14 11:58:27'),
-(30, 72, 3, '08:00:00', '15:00:00', 1, 'availability', NULL, NULL, '2025-05-14 11:58:40', '2025-05-14 11:58:40');
+(30, 72, 3, '08:00:00', '15:00:00', 1, 'availability', NULL, NULL, '2025-05-14 11:58:40', '2025-05-14 11:58:40'),
+(31, 68, 4, '08:00:00', '17:00:00', 1, 'availability', NULL, NULL, '2025-05-14 21:38:34', '2025-05-14 21:38:34');
 
 -- --------------------------------------------------------
 
@@ -1228,7 +1355,7 @@ CREATE TABLE IF NOT EXISTS `services` (
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `services`
@@ -1287,16 +1414,16 @@ CREATE TABLE IF NOT EXISTS `users` (
   `token_expires` datetime DEFAULT NULL,
   `password_change_required` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=77 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=93 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`user_id`, `email`, `password_hash`, `first_name`, `last_name`, `phone`, `role`, `is_active`, `is_verified`, `email_verified_at`, `created_at`, `last_login`, `verification_token`, `reset_token`, `reset_token_expires`, `token_expires`, `password_change_required`) VALUES
-(3, 'admin@example.com', '$2y$10$mn369d8QchCNaqnZ9DA15OJejiRrlHCzw33TIkq01qepowE42AWkS', 'Admin', 'User', NULL, 'admin', 1, 1, NULL, '2025-04-17 08:59:28', '2025-05-13 18:22:21', NULL, NULL, NULL, NULL, 0),
+(3, 'admin@example.com', '$2y$10$mn369d8QchCNaqnZ9DA15OJejiRrlHCzw33TIkq01qepowE42AWkS', 'Admin', 'User', NULL, 'admin', 1, 1, NULL, '2025-04-17 08:59:28', '2025-05-16 01:25:45', NULL, NULL, NULL, NULL, 0),
 (68, 'provider@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Samantha', 'Smith', '(656) 537-6347', 'provider', 1, 1, NULL, '2025-05-13 19:55:56', '2025-05-13 22:29:35', NULL, NULL, NULL, NULL, 0),
-(69, 'provider2@example.com', '$2y$10$J/sDVq0FXbe/FpodSn/ifOLwHJ4wUVjCtLqWbS0MW1w2pREpHG8h2', 'Stan', 'Smith', '(766) 765-7777', 'provider', 1, 1, NULL, '2025-05-13 19:57:20', '2025-05-14 11:50:15', NULL, NULL, NULL, NULL, 0),
+(69, 'provider2@example.com', '$2y$10$J/sDVq0FXbe/FpodSn/ifOLwHJ4wUVjCtLqWbS0MW1w2pREpHG8h2', 'Stan', 'Smith', '(766) 765-7777', 'provider', 1, 1, NULL, '2025-05-13 19:57:20', '2025-05-14 17:00:06', NULL, NULL, NULL, NULL, 0),
 (70, 'provider3@example.com', '$2y$10$0x2CPgCVmYF0hCN2xQYzrO0.JetdfBjnOyp5fV69W/wyn.McKrsou', 'Johnny ', 'Lee', '(465) 484-1315', 'provider', 1, 1, NULL, '2025-05-13 19:59:28', '2025-05-14 11:55:56', NULL, NULL, NULL, NULL, 0),
 (71, 'provider4@example.com', '$2y$10$RGFbqG3XnrymDsmq4IRK9.PtY4qKleqheodz4Nmh2xUndWXcO6WNu', 'Omar', 'Clackson', '(554) 864-4464', 'provider', 1, 1, NULL, '2025-05-13 20:01:01', '2025-05-14 11:56:36', NULL, NULL, NULL, NULL, 0),
 (72, 'provider5@example.com', '$2y$10$YxiuYX7ioK0CjxrDOsq5BOb0Ge3MncExR4ThiN3JXzgP3EsgSp7le', 'Tammy', 'Lee', '(676) 776-7455', 'provider', 1, 1, NULL, '2025-05-13 20:02:48', '2025-05-14 11:57:51', NULL, NULL, NULL, NULL, 0),

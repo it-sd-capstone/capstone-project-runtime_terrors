@@ -718,18 +718,6 @@ if (!defined('RECAPTCHA_SITE_KEY')) {
             }
         });
         
-        // Add alert for users trying to navigate away from the form
-        window.addEventListener('beforeunload', function(e) {
-            const form = document.getElementById('registerForm');
-            
-            // Check if form exists and has user input
-            if (form && hasUserInput(form)) {
-                // Show confirmation message
-                e.preventDefault();
-                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        });
         
         // Helper function to check if form has user input
         function hasUserInput(form) {

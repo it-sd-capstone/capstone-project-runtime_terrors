@@ -16,7 +16,7 @@ return [
 
         'from_email' => 'admin@capstone.mommabearsweetz.com',
         'from_name' => 'Appointment System',
-        'debug' => 2 // Set to 2 for testing, change to 0 for production
+        'debug' => 0 // Set to 2 for testing, change to 0 for production
     ],
     'mail' => [
         'from_email' => 'admin@capstone.mommabearsweetz.com',

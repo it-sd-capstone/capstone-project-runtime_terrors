@@ -1,4 +1,5 @@
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 require_once(__DIR__ . '/../services/EmailService.php');
 require_once(__DIR__ . '/../config/email_config.php');
 require_once(__DIR__ . '/../helpers/validation_helpers.php');
@@ -188,6 +189,9 @@ set_flash_message('success', $message, 'global');
                         $this->activityLogModel->logAuth(null, 'login_failed', "Email: $email");
                     }
                 } catch (Exception $e) {
+    // Log system event
+logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
+
                     error_log("Login error: " . $e->getMessage());
                     $error = "An error occurred during login. Please try again.";
                 }

@@ -1,5 +1,6 @@
 <?php
 
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 class LegalController {
     
     /**

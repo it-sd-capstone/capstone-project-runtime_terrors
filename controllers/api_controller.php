@@ -1,4 +1,5 @@
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 class ApiController {
     private $db;
     private $providerModel;
@@ -320,6 +321,9 @@ class ApiController {
             echo json_encode($finalEvents);
             
         } catch (Exception $e) {
+    // Log system event
+logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
+
             error_log("Error getting available slots: " . $e->getMessage());
             header('Content-Type: application/json');
             echo json_encode(['error' => 'Failed to retrieve availability data']);

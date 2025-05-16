@@ -1,4 +1,5 @@
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 require_once MODEL_PATH . '/Notification.php';
 
 /**
@@ -45,7 +46,15 @@ class NotificationController {
         // Load the appropriate view based on user role
         include VIEW_PATH . "/{$role}/notifications.php";
     }
-    
+    /**
+     * Debug routing
+     */
+    public function debug() {
+        echo "<h1>NotificationController Debug</h1>";
+        echo "<p>This confirms the NotificationController is accessible.</p>";
+        echo "<p>Try accessing <a href='index.php/notification/createTestSystemNotifications'>createTestSystemNotifications</a></p>";
+    }
+
     /**
      * Retrieve and display notifications for a user
      *
@@ -219,6 +228,9 @@ class NotificationController {
             ]);
             exit;
         } catch (Exception $e) {
+    // Log system event
+logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
+
             error_log("Error in getAdminNotifications: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());
             
@@ -467,5 +479,113 @@ class NotificationController {
     public function deleteAppointmentNotifications($appointmentId) {
         return $this->notificationModel->deleteNotificationsByAppointmentId($appointmentId);
     }
+    /**
+     * Create test system notifications (for development)
+     */
+    public function createTestSystemNotifications() {
+        // Create a response array
+        $response = ['success' => true, 'notifications' => [], 'debug' => []];
+        
+        // First, find a valid admin user_id
+        $admin_query = "SELECT user_id FROM users WHERE role = 'admin' LIMIT 1";
+        $admin_result = $this->db->query($admin_query);
+        
+        if (!$admin_result || $admin_result->num_rows == 0) {
+            // If no admin found, try to get any user
+            $user_query = "SELECT user_id FROM users LIMIT 1";
+            $user_result = $this->db->query($user_query);
+            
+            if (!$user_result || $user_result->num_rows == 0) {
+                $response['error'] = "No valid users found in the database";
+                header('Content-Type: application/json');
+                echo json_encode($response, JSON_PRETTY_PRINT);
+                return;
+            }
+            
+            $user_row = $user_result->fetch_assoc();
+            $user_id = $user_row['user_id'];
+        } else {
+            $admin_row = $admin_result->fetch_assoc();
+            $user_id = $admin_row['user_id'];
+        }
+        
+        $response['debug']['user_id_for_test'] = $user_id;
+        
+        // Define test notifications
+        $testNotifications = [
+            [
+                'subject' => 'System Update',
+                'message' => 'System updated to version 2.1.0',
+                'type' => 'system_update',
+                'status' => 'unread',
+                'is_system' => 1,
+                'audience' => 'admin',
+                'user_id' => $user_id  // Add the valid user_id
+            ],
+            [
+                'subject' => 'Database Backup',
+                'message' => 'Weekly database backup completed successfully',
+                'type' => 'system_maintenance',
+                'status' => 'unread', 
+                'is_system' => 1,
+                'audience' => 'admin',
+                'user_id' => $user_id  // Add the valid user_id
+            ]
+        ];
+        
+        // Create each notification
+        $notification = new Notification($this->db);
+        foreach ($testNotifications as $notificationData) {
+            // Track debug info for this notification
+            $debug_item = [
+                'data' => $notificationData,
+                'result' => null,
+                'error' => null
+            ];
+            
+            try {
+                $notificationId = $notification->create($notificationData);
+                $debug_item['result'] = $notificationId;
+                
+                if ($notificationId) {
+                    $response['notifications'][] = array_merge(['id' => $notificationId], $notificationData);
+                } else {
+                    // Get the last error if available
+                    if (method_exists($this->db, 'error')) {
+                        $debug_item['error'] = $this->db->error;
+                    }
+                }
+            } catch (Exception $e) {
+                $debug_item['error'] = $e->getMessage();
+            }
+            
+            $response['debug']['items'][] = $debug_item;
+        }
+        
+        // Add table structure info if possible
+        try {
+            $tables_query = $this->db->query("SHOW TABLES LIKE 'notifications'");
+            $response['debug']['table_exists'] = $tables_query && $tables_query->num_rows > 0;
+            
+            if ($response['debug']['table_exists']) {
+                $columns_query = $this->db->query("SHOW COLUMNS FROM notifications");
+                $columns = [];
+                if ($columns_query) {
+                    while ($column = $columns_query->fetch_assoc()) {
+                        $columns[] = $column['Field'];
+                    }
+                }
+                $response['debug']['columns'] = $columns;
+            }
+        } catch (Exception $e) {
+            $response['debug']['schema_error'] = $e->getMessage();
+        }
+        
+        // Return JSON response
+        header('Content-Type: application/json');
+        echo json_encode($response, JSON_PRETTY_PRINT);
+    }
+
+
 }
 ?>

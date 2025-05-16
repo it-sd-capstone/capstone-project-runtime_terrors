@@ -1,4 +1,5 @@
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 /**
  * User Model
  * 
@@ -79,6 +80,9 @@ class User {
             return false;
             
         } catch (Exception $e) {
+    // Log system event
+logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
+
             error_log("Authentication error: " . $e->getMessage());
             throw $e;
         }

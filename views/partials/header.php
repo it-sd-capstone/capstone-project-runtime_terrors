@@ -93,7 +93,31 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
             box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
             transition: none !important;
         }
-        
+        /* Add this to your existing CSS */
+        .dashboard-cards .card-body .d-grid {
+        margin-top: auto; /* Push button to the bottom of available space */
+        margin-bottom: 15px; /* Add some space between button and footer */
+        }
+
+        .dashboard-cards .card-body {
+        display: flex;
+        flex-direction: column;
+        height: calc(100% - 1px); /* Subtract footer height */
+        }
+        /* Card fix using position absolute */
+        .dashboard-cards .card {
+        position: relative;
+        padding-bottom: 50px; /* Space for the footer */
+        min-height: 250px; /* Ensure all cards have enough height */
+        }
+
+        .dashboard-cards .card-footer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        }
+
         .card:hover {
             transform: none !important;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;

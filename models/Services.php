@@ -1,4 +1,5 @@
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 /** 
  * Service Model
  *  
@@ -102,6 +103,9 @@ class Services {
             
             error_log("Found " . count($services) . " services");
         } catch (Exception $e) {
+    // Log system event
+logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
+
             error_log("Error in getServices: " . $e->getMessage());
         }
         

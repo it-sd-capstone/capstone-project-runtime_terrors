@@ -1,4 +1,5 @@
 <?php
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 require_once MODEL_PATH . '/User.php';
 require_once MODEL_PATH . '/Appointment.php';
 require_once MODEL_PATH . '/Services.php';
@@ -663,6 +664,11 @@ redirect('patient/appointments');
      * Cancel Appointment
      */
     public function cancelAppointment($appointment_id) {
+    // Log system event
+    if ($success) {
+        logSystemEvent('appointment_cancelled', 'An appointment was cancelled in the system', 'Appointment Cancelled');
+    }
+
         // Get appointment ID from request
         $appointment_id = $_POST['appointment_id'] ?? $appointment_id;
         $success = $this->appointmentModel->cancelAppointment($appointment_id, $_SESSION['user_id']);

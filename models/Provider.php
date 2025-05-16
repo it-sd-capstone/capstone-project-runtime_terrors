@@ -1,5 +1,6 @@
 <?php
 
+require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
 class Provider {
     private $providerModel;
     private $db;
@@ -1602,6 +1603,11 @@ public function updateProfile($provider_id, $data) {
      * @return int|bool New provider ID or false on failure
      */
     public function createProvider($userData, $profileData) {
+    // Log system event
+    if ($success || $provider_id) {
+        logSystemEvent('provider_added', 'A new healthcare provider was added to the system', 'New Provider Added');
+    }
+
         try {
             $this->db->begin_transaction();
             
