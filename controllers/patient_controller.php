@@ -1,5 +1,5 @@
 <?php
-require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
+require_once __DIR__ . '/../helpers/system_notifications.php';
 require_once MODEL_PATH . '/User.php';
 require_once MODEL_PATH . '/Appointment.php';
 require_once MODEL_PATH . '/Services.php';
@@ -388,21 +388,6 @@ set_flash_message('error', "Missing required fields for booking.", 'patient_book
                 header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
                 exit;
             }
-        }
-    }
-
-
-    // ✅ Check Provider Availability
-    public function checkAvailability() {
-        if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            $input = json_decode(file_get_contents("php://input"), true);
-            $provider_id = intval($input['provider_id'] ?? 0);
-            $appointment_date = htmlspecialchars($input['date'] ?? '');
-            $appointment_time = htmlspecialchars($input['time'] ?? '');
-            $available = $this->appointmentModel->isSlotAvailable($provider_id, $appointment_date, $appointment_time);
-            header("Content-Type: application/json");
-            echo json_encode(["available" => $available]);
-            exit;
         }
     }
 

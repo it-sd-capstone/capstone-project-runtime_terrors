@@ -1,5 +1,5 @@
 <?php
-require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
+require_once __DIR__ . '/../helpers/system_notifications.php';
 require_once(__DIR__ . '/../services/EmailService.php');
 require_once(__DIR__ . '/../config/email_config.php');
 require_once(__DIR__ . '/../helpers/validation_helpers.php');

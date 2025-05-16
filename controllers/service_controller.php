@@ -1,5 +1,5 @@
 <?php
-require_once 'C:/xampp/htdocs/appointment-system/capstone-project-runtime_terrors/helpers/system_notifications.php';
+require_once __DIR__ . '/../helpers/system_notifications.php';
 require_once MODEL_PATH . '/Services.php';
 require_once MODEL_PATH . '/Provider.php';
 
