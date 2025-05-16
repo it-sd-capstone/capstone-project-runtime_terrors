@@ -1960,6 +1960,7 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
         $first_name = trim($_POST['first_name'] ?? '');
         $last_name = trim($_POST['last_name'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
+        $digitsOnlyPhone = preg_replace('/\D/', '', $phone);
         $specialization = trim($_POST['specialization'] ?? '');
         $bio = trim($_POST['bio'] ?? '');
         $accepting_new_patients = isset($_POST['accepting_new_patients']) ? 1 : 0;
@@ -1990,8 +1991,10 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
         }
         
         // Validate phone number (should be 10 digits)
-        if (strlen($phone) !== 10) {
+        if (strlen($digitsOnlyPhone) !== 10) {
             $errors[] = "Please enter a valid 10-digit phone number.";
+        } else {
+            $phone = $digitsOnlyPhone; // Save the cleaned phone number
         }
         
         // Continue with update only if no errors
@@ -2001,8 +2004,9 @@ set_flash_message('error', "Could not retrieve your profile information. Please 
                 exit;
             }
             set_flash_message('error', implode('<br>', $errors), 'provider_profile');
-            redirect('provider/profile');
-            return;
+            header('Location: ' . base_url('index.php/provider/profile'));
+            exit;
+            
         }
         
         // Validate required data
