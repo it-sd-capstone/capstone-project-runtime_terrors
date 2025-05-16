@@ -277,6 +277,16 @@ class PatientController {
                 exit;
             }
             
+            // NEW CODE: Check if appointment time is in the past
+            $now = new DateTime();
+            $appointmentDateTime = new DateTime($appointment_date . ' ' . $appointment_time);
+            if ($appointmentDateTime <= $now) {
+                error_log("Attempted to book appointment in the past: $appointment_date $appointment_time");
+                $_SESSION['error'] = "Cannot book appointments in the past. Please select a future time.";
+                header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
+                exit;
+            }
+            
             if ($provider_id && !empty($appointment_date) && !empty($appointment_time)) {
                 // Log the input parameters
                 error_log("Booking attempt with provider_id: $provider_id, date: $appointment_date, start_time: $appointment_time, service_id: $service_id");
@@ -385,8 +395,6 @@ class PatientController {
         }
     }
 
-
-    // ✅ Check Provider Availability
     public function checkAvailability() {
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $input = json_decode(file_get_contents("php://input"), true);
@@ -400,24 +408,6 @@ class PatientController {
         }
     }
 
-    /**
-     * View Appointment History
-     */
-    // public function history() {
-    //     $patient_id = $_SESSION['user_id'] ?? null;
-    //     if (!$patient_id) {
-    //         header('Location: ' . base_url('index.php/auth'));
-    //         exit;
-    //     }
-    //     $upcomingAppointments = $this->appointmentModel->getUpcomingAppointments($patient_id) ?? [];
-    //     $pastAppointments = $this->appointmentModel->getPastAppointments($patient_id) ?? [];
-    //     include VIEW_PATH . '/appointments/history.php';
-    // }
-
-
-    /**
-     * Load patient profile view
-     */
     public function profile() {
         $user_id = $_SESSION['user_id'] ?? null;
         if (!$user_id) {

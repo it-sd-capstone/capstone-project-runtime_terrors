@@ -604,7 +604,7 @@ class AppointmentsController {
             header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
-        $logs = $this->activityLogModel->getAppointmentLogs($appointmentId);
+        $logs = $this->appointmentModel->getAppointmentLogs($appointmentId);
         include VIEW_PATH . '/appointments/view.php';
     }
 
