@@ -733,6 +733,7 @@
     var base_url = '<?= isset($base_url) ? $base_url : rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/' ?>';
     
     document.addEventListener('DOMContentLoaded', function() {
+        
         // Show loading indicator
         document.getElementById('calendar-loading')?.classList.remove('d-none');
         
@@ -798,11 +799,21 @@
                     (info.event.extendedProps.type === 'consolidated' || 
                      info.event.extendedProps.type === 'consolidated_recurring')) {
                     
+                    $(info.el).addClass('tooltip-event');
+                    
                     $(info.el).tooltip({
                         title: 'Click for detailed view',
-                        placement: 'top'
+                        placement: 'top',
+                        trigger: 'hover',
+                        container: 'body',
+                        delay: { show: 200, hide: 0 }
                     });
-                }
+                            
+                        // Add manual trigger to hide tooltip when mouse leaves
+                        $(info.el).on('mouseleave', function() {
+                            $(this).tooltip('hide');
+                        });
+                    }
                 
                 // Always show time in the title for recurring work hours (both in month and week views)
                 if (info.event.extendedProps && 
@@ -847,6 +858,8 @@
             
             // Add event click handler
             eventClick: function(info) {
+                   // Hide any active tooltips first
+                    $('.tooltip-event').tooltip('hide');
                 // For consolidated events in month view, switch to day view
                 if (info.event.extendedProps && 
                     (info.event.extendedProps.type === 'consolidated' || 
@@ -863,6 +876,7 @@
             
             // Add this event handler inside your calendar initialization
             dateClick: function(info) {
+                $('.tooltip-event').tooltip('hide');
                 // Update the selectedDate variable when a day is clicked
                 selectedDate = info.dateStr;
             
