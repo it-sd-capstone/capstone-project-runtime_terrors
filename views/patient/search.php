@@ -130,10 +130,17 @@
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                 <?php if (!empty($provider['provider_id'])): ?>
+
                                                     <a href="<?= base_url('index.php/patient/profile') ?>"
                                                        class="btn btn-outline-primary"> Profile</a>
                                                     <a href="<?= base_url('index.php/patient/book') ?>"
                                                        class="btn btn-primary"> Book</a>
+                                             //main
+                                                    //<a href="<?= base_url('index.php/patient/view_provider/' . $provider['provider_id']) ?>"
+                                                        //class="btn btn-outline-primary">Profile</a>
+                                                    //<a href="<?= base_url('index.php/patient/book?provider_id=' . $provider['provider_id']) ?>"
+                                                        //class="btn btn-primary">Book</a>
+
                                                 <?php else: ?>
                                                     <span class="text-muted">Provider details unavailable</span>
                                                 <?php endif; ?>

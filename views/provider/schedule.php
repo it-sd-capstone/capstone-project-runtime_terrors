@@ -1277,5 +1277,33 @@ document.querySelectorAll('input[type="time"]').forEach(function(input) {
 });
 </script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Function to replace the icons
+  function replaceCalendarIcons() {
+    const prevButtons = document.querySelectorAll('.fc-prev-button');
+    const nextButtons = document.querySelectorAll('.fc-next-button');
+    
+    prevButtons.forEach(button => {
+      button.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    });
+    
+    nextButtons.forEach(button => {
+      button.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    });
+  }
+  
+  replaceCalendarIcons();
+  
+  setTimeout(replaceCalendarIcons, 500);
+  
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.fc-button')) {
+      setTimeout(replaceCalendarIcons, 100);
+    }
+  });
+});
+</script>
+
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
      
