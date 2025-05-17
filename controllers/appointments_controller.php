@@ -551,7 +551,7 @@ class AppointmentsController {
     public function reschedule() {
 
         // Set consistent timezone
-        date_default_timezone_set('America/New_York'); // Update to your timezone
+        date_default_timezone_set('America/Chicago'); // Update to your timezone
         
         if (!in_array($_SESSION['role'], ['patient', 'provider', 'admin'])) {
             set_flash_message('error', 'You do not have permission to reschedule');
