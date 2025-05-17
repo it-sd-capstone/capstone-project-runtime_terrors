@@ -859,7 +859,7 @@ class AppointmentsController {
         
         if ($success) {
             set_flash_message('success', 'Thank you for your feedback!');
-            header('Location: ' . base_url('index.php/appointments?success=rated'));
+            header('Location: ' . base_url('index.php/appointments'));
             exit;
         } else {
             set_flash_message('error', 'Failed to submit your rating');

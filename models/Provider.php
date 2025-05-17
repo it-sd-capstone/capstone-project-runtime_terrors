@@ -1822,7 +1822,7 @@ public function updateProfile($provider_id, $data) {
                     WHERE provider_id = u.user_id 
                     AND is_available = 1 
                     AND availability_date >= CURDATE()
-                ) AS next_availability_date
+                ) AS next_available_date
             FROM 
                 users u
             JOIN 
@@ -1889,8 +1889,8 @@ public function updateProfile($provider_id, $data) {
         }
         
         // Removed rating from ORDER BY since it doesn't exist in your schema
-        $query .= " ORDER BY next_availability_date ASC, u.first_name ASC";
-        
+         $query .= " ORDER BY next_available_date ASC, u.first_name ASC";
+         
         $providers = [];
         
         $stmt = $this->db->prepare($query);
