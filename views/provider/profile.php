@@ -323,5 +323,51 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Find the provider profile form
+    const form = document.getElementById('providerProfileForm');
+    
+    if (form) {
+        // Add novalidate attribute to enable custom validation
+        form.setAttribute('novalidate', '');
+        
+        // Add Bootstrap validation to form on submit
+        form.addEventListener('submit', function(event) {
+            if (!this.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            // This class enables Bootstrap's validation styles
+            this.classList.add('was-validated');
+        });
+        
+        // Add validation feedback for all required inputs
+        const requiredInputs = form.querySelectorAll('input[required]');
+        requiredInputs.forEach(function(input) {
+            // Only add invalid-feedback if it doesn't already exist
+            if (!input.nextElementSibling || !input.nextElementSibling.classList.contains('invalid-feedback')) {
+                const feedback = document.createElement('div');
+                feedback.classList.add('invalid-feedback');
+                feedback.textContent = `Please enter a valid ${input.previousElementSibling.textContent.toLowerCase()}`;
+                input.parentNode.appendChild(feedback);
+            }
+            
+            // Add real-time validation as the user types
+            input.addEventListener('input', function() {
+                if (this.checkValidity()) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            });
+        });
+    }
+    
+    // The rest of your existing phone and name validation code can remain unchanged
+});
 </script>
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
