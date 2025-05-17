@@ -251,7 +251,7 @@ public function getByProvider($provider_id) {
                 SET appointment_date = ?, 
                     start_time = ?, 
                     end_time = ?,
-                    status = 'scheduled',
+                    status = 'confirmed',
                     updated_at = CURRENT_TIMESTAMP
                 WHERE appointment_id = ?
             ");
