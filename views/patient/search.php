@@ -1,3 +1,4 @@
+
 <?php include VIEW_PATH . '/partials/header.php'; ?>
 
 <div class="container mt-4">
@@ -19,7 +20,7 @@
                         </div>
                     <?php endif; ?>
                     
-                    <!-- Search Form (Simplified to match database) -->
+                    <!-- Search Form -->
                     <form method="GET" action="<?= base_url('index.php/patient/search') ?>" class="mb-4">
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -55,7 +56,6 @@
                             </div>
                         </div>
 
-                        <!-- Add hidden field to indicate form submission -->
                         <input type="hidden" name="search_submitted" value="1">
                         
                         <div class="d-flex justify-content-between">
@@ -167,8 +167,8 @@
                                                 <h5 class="card-title"><?= htmlspecialchars($provider['name']) ?></h5>
                                                 <h6 class="card-subtitle mb-2 text-muted"><?= htmlspecialchars($provider['specialization']?? $provider['specialty'] ?? 'Specialty not listed') ?></h6>
                                                 <p class="card-text small"><?= htmlspecialchars($provider['bio'] ?? 'No bio available.') ?></p>
-                                                <a href="<?= base_url('index.php/patient/viewProvider/' . $provider['provider_id']) ?>" class="card-link">View Profile</a>
-                                                <a href="<?= base_url('index.php/patient/selectService') ?>" class="card-link">Book Appointment</a>
+                                                <a href="<?= base_url('index.php/patient/view_provider/' . $provider['provider_id']) ?>" class="card-link">View Profile</a>
+                                                <a href="<?= base_url('index.php/patient/book?provider_id=' . $provider['provider_id']) ?>" class="card-link">Book Appointment</a>
                                             </div>
                                         </div>
                                     </div>
@@ -184,21 +184,18 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize any interactive elements
+    // Example: Handle specialty selection for analytics/debug
     const specialtySelect = document.getElementById('specialty');
-    const locationInput = document.getElementById('location');
-    
-    // Example: Auto-suggest providers as user types
-    if (locationInput) {
-        locationInput.addEventListener('input', function() {
-            console.log('Provider search:', this.value);
-        });
-    }
-    
-    // Example: Handle specialty selection
     if (specialtySelect) {
         specialtySelect.addEventListener('change', function() {
             console.log('Selected specialty:', this.value);
+        });
+    }
+    // Example: Handle location input for analytics/debug
+    const locationInput = document.getElementById('location');
+    if (locationInput) {
+        locationInput.addEventListener('input', function() {
+            console.log('Provider search:', this.value);
         });
     }
 });

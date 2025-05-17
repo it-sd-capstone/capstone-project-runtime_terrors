@@ -236,13 +236,24 @@ set_flash_message('error', 'Provider not found', 'global');
                 error_log("Direct SQL: Provider ID: {$p['user_id']}, Name: {$p['first_name']} {$p['last_name']}");
             }
         }
-        
+        $selectedProviderId = isset($_GET['provider_id']) ? intval($_GET['provider_id']) : null;
+
         // Get all active providers
         $providers = $this->providerModel->getAll();
         
         // Get all services
         $services = $this->serviceModel->getAllServices();
+
+        // If a provider is preselected, get only their services
+        $providerServices = [];
+        if ($selectedProviderId) {
+            $providerServices = $this->providerModel->getProviderServices($selectedProviderId);
         
+        $serviceIds = array_column($providerServices, 'service_id');
+        $services = array_filter($services, function($s) use ($serviceIds) {
+            return in_array($s['service_id'], $serviceIds);
+        });
+        }
         // Associate services with each provider
         foreach ($providers as &$provider) {
             // Get services for this provider
