@@ -612,12 +612,142 @@ public function updateProfile($provider_id, $data) {
             return false;
         }
     }
+    /**
+     * Delete recurring schedules for a specific day of the week
+     * 
+     * @param int $provider_id Provider ID
+     * @param int $day_of_week Day of week (0=Sunday, 1=Monday, etc.)
+     * @return int Number of schedules deleted
+     */
+    public function deleteRecurringSchedulesByDay($provider_id, $day_of_week, $specific_date = null) {
+        try {
+            if ($specific_date) {
+                // For a specific date: Create a deletion marker
+                $stmt = $this->db->prepare("
+                    INSERT INTO recurring_schedules 
+                    (provider_id, day_of_week, specific_date, start_time, end_time, is_active)
+                    VALUES (?, ?, ?, '00:00:00', '00:00:00', 0)
+                ");
+                $stmt->bind_param("iis", $provider_id, $day_of_week, $specific_date);
+                $stmt->execute();
+                return $stmt->affected_rows > 0 ? 1 : 0;
+            } else {
+                // Delete the general pattern (existing functionality)
+                $stmt = $this->db->prepare("
+                    DELETE FROM recurring_schedules 
+                    WHERE provider_id = ? AND day_of_week = ? AND specific_date IS NULL
+                ");
+                $stmt->bind_param("ii", $provider_id, $day_of_week);
+                $stmt->execute();
+                return $stmt->affected_rows;
+            }
+        } catch (Exception $e) {
+            error_log("Error managing recurring schedules: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+
+    /**
+     * Delete all recurring schedules for a provider
+     * 
+     * @param int $provider_id Provider ID
+     * @return int Number of schedules deleted
+     */
+    public function deleteAllRecurringSchedules($provider_id) {
+        try {
+            $stmt = $this->db->prepare("
+                DELETE FROM recurring_schedules 
+                WHERE provider_id = ?
+            ");
+            $stmt->bind_param("i", $provider_id);
+            $stmt->execute();
+            
+            return $stmt->affected_rows;
+        } catch (Exception $e) {
+            error_log("Error deleting all recurring schedules: " . $e->getMessage());
+            return 0;
+        }
+    }
+    /**
+     * Delete recurring schedules for days of week within a date range
+     * 
+     * @param int $provider_id Provider ID
+     * @param string $start_date Start date (YYYY-MM-DD)
+     * @param string $end_date End date (YYYY-MM-DD)
+     * @return int Number of schedules deleted
+     */
+    public function deleteRecurringSchedulesInRange($provider_id, $start_date, $end_date) {
+        try {
+            // First identify which days of the week fall within this date range
+            $days_in_range = [];
+            $current = strtotime($start_date);
+            $end = strtotime($end_date);
+            
+            while ($current <= $end) {
+                $day_of_week = date('w', $current); // 0 (Sunday) through 6 (Saturday)
+                $days_in_range[] = $day_of_week;
+                $current = strtotime('+1 day', $current);
+            }
+            
+            // Remove duplicates
+            $days_in_range = array_unique($days_in_range);
+            
+            if (empty($days_in_range)) {
+                return 0;
+            }
+            
+            // Create placeholders for the IN clause
+            $placeholders = implode(',', array_fill(0, count($days_in_range), '?'));
+            
+            // Prepare the statement with the dynamic placeholders
+            $sql = "DELETE FROM recurring_schedules 
+                    WHERE provider_id = ? 
+                    AND day_of_week IN ($placeholders)";
+            
+            $stmt = $this->db->prepare($sql);
+            
+            // Build the parameter list
+            $types = 'i' . str_repeat('i', count($days_in_range));
+            $params = array($provider_id);
+            foreach ($days_in_range as $day) {
+                $params[] = $day;
+            }
+            
+            // Bind parameters using call_user_func_array
+            call_user_func_array([$stmt, 'bind_param'], $this->refValues(array_merge([$types], $params)));
+            
+            $stmt->execute();
+            return $stmt->affected_rows;
+            
+        } catch (Exception $e) {
+            error_log("Error deleting recurring schedules in range: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Helper function to pass parameters by reference for bind_param
+     * 
+     * @param array $params Array of parameters
+     * @return array Array of references to parameters
+     */
+    private function refValues($params) {
+        $refs = [];
+        foreach ($params as $key => $value) {
+            $refs[$key] = &$params[$key];
+        }
+        return $refs;
+    }
+
     public function getRecurringSchedulesByProvider($provider_id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT provider_id, day_of_week, start_time, end_time, is_active 
-                FROM recurring_schedules 
-                WHERE provider_id = ? AND is_active = 1
+                SELECT provider_id, day_of_week, start_time, end_time, is_active, schedule_id
+                FROM recurring_schedules
+                WHERE provider_id = ? 
+                AND is_active = 1
+                AND specific_date IS NULL
             ");
             $stmt->bind_param("i", $provider_id);
             $stmt->execute();
@@ -628,6 +758,7 @@ public function updateProfile($provider_id, $data) {
             return [];
         }
     }
+
 
     // Check for overlapping availability
     public function hasOverlappingAvailability($provider_id, $date, $start_time, $end_time) {
@@ -1408,9 +1539,27 @@ public function updateProfile($provider_id, $data) {
 
     public function getRecurringSchedules($providerId) {
         try {
-            $query = "SELECT * FROM recurring_schedules 
-                      WHERE provider_id = ? AND is_active = 1
-                      ORDER BY day_of_week, start_time";
+            // First get all specific date exceptions
+            $exceptionQuery = "SELECT specific_date, day_of_week 
+                            FROM recurring_schedules
+                            WHERE provider_id = ? 
+                            AND is_active = 0
+                            AND specific_date IS NOT NULL";
+            $exceptionStmt = $this->db->prepare($exceptionQuery);
+            $exceptionStmt->bind_param("i", $providerId);
+            $exceptionStmt->execute();
+            $exceptionResult = $exceptionStmt->get_result();
+            
+            $excludedDates = [];
+            while ($row = $exceptionResult->fetch_assoc()) {
+                $excludedDates[$row['specific_date']] = $row['day_of_week'];
+            }
+            
+            // Then get the regular recurring schedules
+            $query = "SELECT * FROM recurring_schedules
+                    WHERE provider_id = ? AND is_active = 1
+                    AND specific_date IS NULL
+                    ORDER BY day_of_week, start_time";
             $stmt = $this->db->prepare($query);
             $stmt->bind_param("i", $providerId);
             $stmt->execute();
@@ -1418,6 +1567,13 @@ public function updateProfile($provider_id, $data) {
             
             $schedules = [];
             while ($row = $result->fetch_assoc()) {
+                // Add excluded dates information to each schedule
+                $row['excluded_dates'] = [];
+                foreach ($excludedDates as $date => $day) {
+                    if ($day == $row['day_of_week']) {
+                        $row['excluded_dates'][] = $date;
+                    }
+                }
                 $schedules[] = $row;
             }
             
@@ -1427,6 +1583,7 @@ public function updateProfile($provider_id, $data) {
             return [];
         }
     }
+
     
     public function getBookedAppointments($provider_id) {
         try {

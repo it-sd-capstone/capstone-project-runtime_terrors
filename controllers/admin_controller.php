@@ -1246,7 +1246,7 @@ class AdminController {
     }
 
 
-   /**
+    /**
      * View a provider's availability schedule
      *
      * @return void
@@ -1287,6 +1287,7 @@ class AdminController {
         
         // Get provider details
         $provider = $this->userModel->getUserById($providerId);
+        $providerProfile = $this->providerModel->getProviderById($providerId);
         
         if (!$provider || $provider['role'] !== 'provider') {
             set_flash_message('error', "Provider not found or user is not a provider", 'admin_providers');
@@ -1294,7 +1295,19 @@ class AdminController {
             exit;
         }
         
-        // Get provider's availability schedule
+        // Merge the provider arrays to have all provider data in one array
+        if ($providerProfile) {
+            $provider = array_merge($provider, $providerProfile);
+        }
+        
+        // Debug the provider data
+        error_log("Provider data: " . json_encode($provider));
+        
+        // Get recurring schedules using your existing method
+        $recurringSchedules = $this->providerModel->getRecurringSchedules($providerId);
+        error_log("Provider recurring schedules: " . json_encode($recurringSchedules));
+        
+        // Keep the original availability variable for backward compatibility
         $availability = $this->providerModel->getProviderAvailability($providerId);
         
         // Get provider's upcoming appointments
@@ -1303,8 +1316,6 @@ class AdminController {
         // Use the correct filename with the typo "avaliability" (notice the extra 'i')
         include VIEW_PATH . '/admin/provider_avaliability.php';
     }
-
-
 
     /**
      * Manage services offered by a provider

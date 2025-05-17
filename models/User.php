@@ -14,7 +14,7 @@ class User {
      * @param mysqli|PDO $db Database connection
      */
     public function __construct($db) {
-        $this->db = $db;
+        $this->db = get_db();
     }
     
     /**
@@ -664,16 +664,31 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
             throw $e;
         }
     }
+    
     /**
      * Get the last login timestamp for a user
      */
     public function getLastLoginTime($userId) {
-        $sql = "SELECT last_login FROM users WHERE id = ?";
-        $result = $this->db->query($sql, [$userId]);
-        $user = $result->getRowArray();
+        // Sanitize the input to prevent SQL injection
+        $userId = (int)$userId; // Force to integer
         
-        return $user ? $user['last_login'] : null;
+        try {
+            // Use direct query with escaped value
+            $sql = "SELECT last_login FROM users WHERE user_id = {$userId}";
+            $result = $this->db->query($sql);
+            
+            if ($result && $result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                return $row['last_login'];
+            }
+            
+            return null;
+        } catch (Exception $e) {
+            error_log("Error getting last login time: " . $e->getMessage());
+            return null;
+        }
     }
+
     
 
     /**

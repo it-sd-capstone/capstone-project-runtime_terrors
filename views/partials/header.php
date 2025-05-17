@@ -13,8 +13,8 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['logged_in']) && isset($_SESS
     $session_login_time = $_SESSION['login_timestamp'];
     
     // Load user model
-    require_once APP_ROOT . '/models/user_model.php';
-    $userModel = new UserModel();
+    require_once APP_ROOT . '/models/User.php';
+    $userModel = new User(get_db());
     
     // Get the last login time from database
     $latest_login = $userModel->getLastLoginTime($_SESSION['user_id']);

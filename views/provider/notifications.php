@@ -17,66 +17,6 @@
                 </div>
             <?php endif; ?>
 
-            <!-- Notification Settings -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Notification Settings</h4>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="<?= base_url('index.php/provider/updateNotificationSettings') ?>">
-                        <?= csrf_field() ?>
-                        <div class="mb-4">
-                            <h5>Notification Methods</h5>
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications"
-                                    <?= isset($notificationSettings['email_notifications']) && $notificationSettings['email_notifications'] ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="email_notifications">
-                                    Email Notifications
-                                </label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="sms_notifications" name="sms_notifications"
-                                    <?= isset($notificationSettings['sms_notifications']) && $notificationSettings['sms_notifications'] ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="sms_notifications">
-                                    SMS Notifications
-                                </label>
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <h5>Notification Types</h5>
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="appointment_reminders" name="appointment_reminders"
-                                    <?= isset($notificationSettings['appointment_reminders']) && $notificationSettings['appointment_reminders'] ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="appointment_reminders">
-                                    Appointment Reminders
-                                </label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="system_updates" name="system_updates"
-                                    <?= isset($notificationSettings['system_updates']) && $notificationSettings['system_updates'] ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="system_updates">
-                                    System Updates
-                                </label>
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <h5>Reminder Preferences</h5>
-                            <div class="mb-3">
-                                <label for="reminder_time" class="form-label">Send appointment reminders</label>
-                                <select class="form-select" id="reminder_time" name="reminder_time">
-                                    <option value="24" <?= isset($notificationSettings['reminder_time']) && $notificationSettings['reminder_time'] == 24 ? 'selected' : '' ?>>24 hours before</option>
-                                    <option value="48" <?= isset($notificationSettings['reminder_time']) && $notificationSettings['reminder_time'] == 48 ? 'selected' : '' ?>>48 hours before</option>
-                                    <option value="72" <?= isset($notificationSettings['reminder_time']) && $notificationSettings['reminder_time'] == 72 ? 'selected' : '' ?>>72 hours before</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Save Settings</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
             <!-- Notifications List -->
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
@@ -175,12 +115,78 @@
                     <div class="card-footer bg-light">
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="text-muted">Showing <?= count($notifications) ?> notification(s)</small>
-                            <a href="#settings" class="btn btn-sm btn-outline-secondary">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#notificationSettingsModal">
                                 <i class="fas fa-cog me-1"></i> Notification Settings
-                            </a>
+                            </button>
                         </div>
                     </div>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Settings Modal -->
+<div class="modal fade" id="notificationSettingsModal" tabindex="-1" aria-labelledby="notificationSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="notificationSettingsModalLabel">Notification Settings</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="<?= base_url('index.php/provider/updateNotificationSettings') ?>" id="notificationSettingsForm">
+                    <?= csrf_field() ?>
+                    <div class="mb-4">
+                        <h5>Notification Methods</h5>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications"
+                                <?= isset($notificationSettings['email_notifications']) && $notificationSettings['email_notifications'] ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="email_notifications">
+                                Email Notifications
+                            </label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="sms_notifications" name="sms_notifications"
+                                <?= isset($notificationSettings['sms_notifications']) && $notificationSettings['sms_notifications'] ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="sms_notifications">
+                                SMS Notifications
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <h5>Notification Types</h5>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="appointment_reminders" name="appointment_reminders"
+                                <?= isset($notificationSettings['appointment_reminders']) && $notificationSettings['appointment_reminders'] ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="appointment_reminders">
+                                Appointment Reminders
+                            </label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="system_updates" name="system_updates"
+                                <?= isset($notificationSettings['system_updates']) && $notificationSettings['system_updates'] ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="system_updates">
+                                System Updates
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <h5>Reminder Preferences</h5>
+                        <div class="mb-3">
+                            <label for="reminder_time" class="form-label">Send appointment reminders</label>
+                            <select class="form-select" id="reminder_time" name="reminder_time">
+                                <option value="24" <?= isset($notificationSettings['reminder_time']) && $notificationSettings['reminder_time'] == 24 ? 'selected' : '' ?>>24 hours before</option>
+                                <option value="48" <?= isset($notificationSettings['reminder_time']) && $notificationSettings['reminder_time'] == 48 ? 'selected' : '' ?>>48 hours before</option>
+                                <option value="72" <?= isset($notificationSettings['reminder_time']) && $notificationSettings['reminder_time'] == 72 ? 'selected' : '' ?>>72 hours before</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveNotificationSettings">Save Settings</button>
             </div>
         </div>
     </div>
@@ -207,49 +213,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to mark a single notification as read
     function markAsRead(notificationId, buttonElement) {
-        fetch('<?= base_url('index.php/notification/markAsRead') ?>', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'notification_id=' + notificationId
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update UI
-                const notificationItem = buttonElement.closest('.list-group-item');
-                notificationItem.classList.remove('list-group-item-primary');
-                buttonElement.remove();
-            }
-        })
-        .catch(error => console.error('Error marking notification as read:', error));
+        // Create a form element - this ensures CSRF token is included
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '<?= base_url('index.php/notification/markAsRead') ?>';
+        form.style.display = 'none';
+        
+        // Add notification ID
+        const idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'notification_id';
+        idInput.value = notificationId;
+        form.appendChild(idInput);
+        
+        // Add CSRF token if it exists
+        const csrfTokenElement = document.querySelector('input[name="csrf_token"]');
+        if (csrfTokenElement) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfTokenElement.value;
+            form.appendChild(csrfInput);
+        }
+        
+        // Submit form
+        document.body.appendChild(form);
+        form.submit();
     }
 
     // Function to mark all notifications as read
     function markAllAsRead() {
-        fetch('<?= base_url('index.php/notification/markAsRead') ?>', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'mark_all=1'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update UI
-                document.querySelectorAll('.list-group-item-primary').forEach(item => {
-                    item.classList.remove('list-group-item-primary');
-                });
-                document.querySelectorAll('.mark-read').forEach(button => {
-                    button.remove();
-                });
-                // Hide the mark all button
-                document.getElementById('markAllRead').style.display = 'none';
-            }
-        })
-        .catch(error => console.error('Error marking all notifications as read:', error));
+        // Create a form element
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '<?= base_url('index.php/notification/markAllAsRead') ?>';
+        form.style.display = 'none';
+        
+        // Add CSRF token if it exists
+        const csrfTokenElement = document.querySelector('input[name="csrf_token"]');
+        if (csrfTokenElement) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfTokenElement.value;
+            form.appendChild(csrfInput);
+        }
+        
+        // Submit form
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Handle notification settings form submission
+    const saveSettingsButton = document.getElementById('saveNotificationSettings');
+    if (saveSettingsButton) {
+        saveSettingsButton.addEventListener('click', function() {
+            document.getElementById('notificationSettingsForm').submit();
+        });
     }
 });
 </script>

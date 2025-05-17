@@ -39,10 +39,10 @@
                     <h5 class="card-title mb-0">Weekly Schedule</h5>
                 </div>
                 <div class="card-body">
-                    <?php if (empty($availability)): ?>
+                    <?php if (empty($recurringSchedules)): ?>
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle me-2"></i>
-                            This provider hasn't set up their availability schedule yet.
+                            This provider hasn't set up their recurring availability schedule yet.
                         </div>
                     <?php else: ?>
                         <div class="table-responsive">
@@ -57,33 +57,27 @@
                                 <tbody>
                                     <?php
                                     $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                                    $dayMap = [1, 2, 3, 4, 5, 6, 0]; // Map array index to day_of_week value
                                     
-                                    foreach ($days as $index => $day): 
-                                        // Convert day to numeric format (Monday=1, Tuesday=2, etc.)
-                                        $dayNumeric = $index + 1;
+                                    foreach ($days as $index => $day):
+                                        $dayOfWeek = $dayMap[$index];
+                                        
+                                        // Find schedule for this day
+                                        $daySchedule = null;
+                                        foreach ($recurringSchedules as $schedule) {
+                                            if ($schedule['day_of_week'] == $dayOfWeek) {
+                                                $daySchedule = $schedule;
+                                                break;
+                                            }
+                                        }
                                     ?>
                                         <tr>
                                             <td><?= $day ?></td>
-                                            <?php
-                                            // Find this day in the availability array
-                                            $dayData = null;
-                                            foreach ($availability as $avail) {
-                                                // Check if this availability applies to this day using numeric weekdays
-                                                if (isset($avail['weekdays']) && !empty($avail['weekdays']) && $avail['is_recurring']) {
-                                                    $weekdaysArray = explode(',', $avail['weekdays']);
-                                                    if (in_array($dayNumeric, $weekdaysArray)) {
-                                                        $dayData = $avail;
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                            ?>
-                                            
-                                            <?php if ($dayData && $dayData['is_available']): ?>
+                                            <?php if ($daySchedule): ?>
                                                 <td><span class="badge bg-success">Available</span></td>
                                                 <td>
-                                                    <?= date('g:i A', strtotime($dayData['start_time'])) ?> - 
-                                                    <?= date('g:i A', strtotime($dayData['end_time'])) ?>
+                                                    <?= date('g:i A', strtotime($daySchedule['start_time'])) ?> - 
+                                                    <?= date('g:i A', strtotime($daySchedule['end_time'])) ?>
                                                 </td>
                                             <?php else: ?>
                                                 <td><span class="badge bg-secondary">Unavailable</span></td>
@@ -144,13 +138,52 @@
             <h5 class="card-title mb-0">Special Date Exceptions</h5>
         </div>
         <div class="card-body">
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle me-2"></i>
-                This section would typically show dates where the provider has special hours or is unavailable.
-            </div>
+            <?php
+            // Collect all excluded dates from recurring schedules
+            $allExcludedDates = [];
+            foreach ($recurringSchedules as $schedule) {
+                if (!empty($schedule['excluded_dates'])) {
+                    foreach ($schedule['excluded_dates'] as $date) {
+                        $allExcludedDates[] = [
+                            'date' => $date,
+                            'day_of_week' => $schedule['day_of_week']
+                        ];
+                    }
+                }
+            }
+            ?>
             
-            <!-- This would be populated from a separate table in your database -->
-            <p class="text-muted">No special date exceptions have been set up for this provider.</p>
+            <?php if (empty($allExcludedDates)): ?>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    This section shows dates where the provider has special hours or is unavailable.
+                    No special date exceptions have been set up for this provider.
+                </div>
+            <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Normal Day</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($allExcludedDates as $exception): 
+                                $dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                $dayName = $dayNames[$exception['day_of_week']];
+                            ?>
+                                <tr>
+                                    <td><?= date('M j, Y', strtotime($exception['date'])) ?></td>
+                                    <td><span class="badge bg-danger">Unavailable</span></td>
+                                    <td><?= $dayName ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

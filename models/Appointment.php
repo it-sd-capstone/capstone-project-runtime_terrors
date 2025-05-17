@@ -17,7 +17,7 @@ class Appointment {
                     patient_id, provider_id, service_id, appointment_date,
                     start_time, end_time, status, type, notes, reason, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, 'scheduled', ?, ?, ?, NOW())
+                VALUES (?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?, NOW())
             ");
             if (!$stmt) {
                 error_log("SQL prepare error: " . $this->db->error);
