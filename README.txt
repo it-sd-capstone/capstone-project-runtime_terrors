@@ -27,14 +27,26 @@ clone: git clone https://github.com/it-sd-capstone/capstone-project-runtime_terr
       - If using a custom port: http://localhost:8080/phpmyadmin (common alternative port)
       - Alternatively: Open XAMPP Control Panel → Click "Admin" button next to MySQL
 
+- Open phpMyAdmin (http://localhost/phpmyadmin).
    Create a new database named:
    kholley_appointment_system
 
-   Import the database files in the following order:
-   1. Import the schema structure and data by selecting the `sql/kholley_appointment_system.sql` file in the Import tab of phpMyAdmin
+   Importing the database files in phpMyAdmin
+   *Note: Each file must be imported separately in the specified order to ensure proper database setup. Wait for each import to complete before starting the next one.
+   - Open phpMyAdmin(If not already opened) (http://localhost/phpmyadmin).
+   - Select the database: Click on Kholley_appointment_system in the left sidebar.
+   - Click the Import tab.
+   Step 1: Import Kholley_appointment_system.sql
+   - Click Choose File and select Kholley_appointment_system.sql.
+   - Click Go and wait for it to complete.
+   Step 2: Import create_no_show_event.sql
+   - Click Choose File and select create_no_show_event.sql.
+   - Click Go and wait for it to finish.
+   Step 3: Import DBfill.sql
+   - Click Choose File and select DBfill.sql.
+   - Click Go and wait for it to complete.
 
-   Note: Each file must be imported separately in the specified order to ensure proper database setup. Wait for each import to complete before starting the next one.
- 
+
 4. Configure Database Connection
   For basic installation with default settings, no changes are needed as the system will use these defaults:
      - Host: localhost
