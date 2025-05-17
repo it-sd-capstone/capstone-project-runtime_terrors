@@ -54,16 +54,16 @@ class PatientController {
         $pastAppointments = $this->appointmentModel->getPastAppointments($patient_id) ?? [];
         
         // Filter the upcoming appointments to only include ones with dates in the future
-        // This only affects this page and doesn't modify the original function
+        // AND exclude completed appointments
         $currentDate = date('Y-m-d');
         $upcomingAppointments = array_filter($upcomingAppointments, function($appointment) use ($currentDate) {
-            
+            return $appointment['appointment_date'] >= $currentDate && $appointment['status'] !== 'completed';
+        });
+        
         // Add appointment reminder notification if there's an upcoming appointment
         if (!empty($upcomingAppointments)) {
             set_flash_message('info', "Reminder: You have an upcoming appointment", 'patient_dashboard');
         }
-return $appointment['appointment_date'] >= $currentDate;
-        });
         
         include VIEW_PATH . '/patient/index.php';
     }
