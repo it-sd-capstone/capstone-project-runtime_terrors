@@ -643,6 +643,23 @@ public function profile() {
         include VIEW_PATH . '/patient/search.php';
     }
 
+    public function notifications() {
+        // Get the current user's ID
+        $user_id = $_SESSION['user_id'] ?? null;
+        
+        if (!$user_id) {
+            set_flash_message('error', "Please log in to view notifications", 'auth_login');
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
+        }
+        
+        // Get notifications for this user from the notification model
+        $notifications = $this->notificationModel->getNotificationsForUser($user_id);
+        
+        // Load the notifications view
+        include VIEW_PATH . '/patient/notifications.php';
+    }
+
     /**
      * Step 1: Service Selection
      * Displays a form for the user to select which service they're looking for

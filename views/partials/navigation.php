@@ -14,92 +14,119 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
   <div class="container-fluid">
-    <!-- Brand for all users -->
-    <a class="navbar-brand" href="<?= base_url('index.php/home') ?>">
-      <?php if ($userRole === 'admin'): ?>Admin Portal
-      <?php elseif ($userRole === 'provider'): ?>Provider Portal
-      <?php elseif ($userRole === 'patient'): ?>Patient Portal
-      <?php else: ?>Appointment System<?php endif; ?>
-    </a>
+    <!-- Removed brand completely - keeping this comment to maintain structure -->
     
-    <!-- Hamburger menu ONLY for guests -->
     <?php if (!$isLoggedIn): ?>
+    <!-- Hamburger menu for GUEST USERS -->
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#guestNavbar" aria-controls="guestNavbar" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     
-    <!-- Guest Navigation - collapsible on mobile -->
+    <!-- Guest Navigation - collapsible on mobile includes auth links -->
     <div class="collapse navbar-collapse" id="guestNavbar">
       <ul class="navbar-nav me-auto">
         <?php if (!$is_home_page): ?>
         <li class="nav-item">
-          <a class="nav-link" href="<?= base_url('index.php/home') ?>">Home</a>
+          <a class="nav-link" href="<?= base_url('index.php/home') ?>">
+            <i class="fas fa-home me-2 d-lg-none"></i>Home
+          </a>
         </li>
         <?php endif; ?>
+      </ul>
+      <!-- Auth links for desktop and mobile -->
+      <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link" href="<?= base_url('index.php/auth/register') ?>">Register</a>
+          <a class="nav-link" href="<?= base_url('index.php/auth/register') ?>">
+            <i class="fas fa-user-plus me-2 d-lg-none"></i>Register
+          </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<?= base_url('index.php/auth') ?>">Login</a>
+          <a class="nav-link" href="<?= base_url('index.php/auth') ?>">
+            <i class="fas fa-sign-in-alt me-2 d-lg-none"></i>Login
+          </a>
         </li>
       </ul>
     </div>
     <?php else: ?>
+    <!-- For logged-in users -->
+    <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#loggedInNavbar" aria-controls="loggedInNavbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
     
-    <!-- For logged-in users - Desktop Navigation -->
-    <div class="desktop-nav">
+    <!-- Desktop Navigation for logged-in users -->
+    <div class="collapse navbar-collapse" id="loggedInNavbar">
       <ul class="navbar-nav me-auto">
         <?php if (!$is_home_page): ?>
         <li class="nav-item">
-          <a class="nav-link" href="<?= base_url('index.php/home') ?>">Home</a>
+          <a class="nav-link" href="<?= base_url('index.php/home') ?>">
+            <i class="fas fa-home me-2 d-lg-none"></i>Home
+          </a>
         </li>
         <?php endif; ?>
         
         <?php if ($userRole === 'admin'): ?>
           <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('index.php/admin/providers') ?>">Providers</a>
+            <a class="nav-link" href="<?= base_url('index.php/admin/providers') ?>">
+              <i class="fas fa-user-md me-2 d-lg-none"></i>Providers
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('index.php/admin/services') ?>">Services</a>
+            <a class="nav-link" href="<?= base_url('index.php/admin/services') ?>">
+              <i class="fas fa-clipboard-list me-2 d-lg-none"></i>Services
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('index.php/admin/appointments') ?>">Appointments</a>
+            <a class="nav-link" href="<?= base_url('index.php/admin/appointments') ?>">
+              <i class="fas fa-calendar-check me-2 d-lg-none"></i>Appointments
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('index.php/admin/users') ?>">Users</a>
+            <a class="nav-link" href="<?= base_url('index.php/admin/users') ?>">
+              <i class="fas fa-users me-2 d-lg-none"></i>Users
+            </a>
           </li>
         <?php elseif ($userRole === 'provider'): ?>
           <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('index.php/provider/services') ?>">Services</a>
+            <a class="nav-link" href="<?= base_url('index.php/provider/services') ?>">
+              <i class="fas fa-clipboard-list me-2 d-lg-none"></i>Services
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('index.php/provider/schedule') ?>">Schedule</a>
+            <a class="nav-link" href="<?= base_url('index.php/provider/schedule') ?>">
+              <i class="fas fa-calendar-alt me-2 d-lg-none"></i>Schedule
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('index.php/provider/appointments') ?>">Appointments</a>
+            <a class="nav-link" href="<?= base_url('index.php/provider/appointments') ?>">
+              <i class="fas fa-calendar-check me-2 d-lg-none"></i>Appointments
+            </a>
           </li>
         <?php elseif ($userRole === 'patient'): ?>
           <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('index.php/patient/book') ?>">Book</a>
+            <a class="nav-link" href="<?= base_url('index.php/patient/book') ?>">
+              <i class="fas fa-book-medical me-2 d-lg-none"></i>Book
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('index.php/appointments') ?>">My Appointments</a>
+            <a class="nav-link" href="<?= base_url('index.php/appointments') ?>">
+              <i class="fas fa-calendar-check me-2 d-lg-none"></i>My Appointments
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('index.php/patient/search') ?>">Find Provider</a>
+            <a class="nav-link" href="<?= base_url('index.php/patient/search') ?>">
+              <i class="fas fa-search me-2 d-lg-none"></i>Find Provider
+            </a>
           </li>
         <?php endif; ?>
       </ul>
-    </div>
-    <?php endif; ?>
-    
-    <!-- Right side for all users -->
-    <ul class="navbar-nav ms-auto">
-      <?php if ($isLoggedIn): ?>
+      
+      <!-- Right side for logged-in users -->
+      <ul class="navbar-nav ms-auto">
         <?php if (($userRole === 'patient' || $userRole === 'provider') && !isset($hideNotifications)): ?>
         <li class="nav-item notifications-icon">
           <a class="nav-link position-relative" href="<?= base_url('index.php/' . $userRole . '/notifications') ?>">
             <i class="fas fa-bell"></i>
+            <span class="d-lg-none ms-2">Notifications</span>
             <?php
             // Get unread notification count
             $unreadCount = 0;
@@ -129,13 +156,13 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
         </li>
         <?php endif; ?>
         
-        <!-- User dropdown - This will contain ALL navigation on mobile -->
+        <!-- User dropdown for logged-in users -->
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <span class="badge bg-<?= $userRole === 'admin' ? 'danger' : ($userRole === 'provider' ? 'success' : 'primary') ?>">
               <?= ucfirst($userRole) ?>
             </span>
-            <?= htmlspecialchars($userName) ?>
+            <span class="text-truncate" style="max-width: 150px; display: inline-block; vertical-align: middle;"><?= htmlspecialchars($userName) ?></span>
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
             <!-- Mobile-only navigation items -->
@@ -242,72 +269,131 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
             </li>
           </ul>
         </li>
-      <?php else: ?>
-        <li class="nav-item auth-links">
-          <a class="nav-link" href="<?= base_url('index.php/auth/register') ?>">Register</a>
-        </li>
-        <li class="nav-item auth-links">
-          <a class="nav-link" href="<?= base_url('index.php/auth') ?>">Login</a>
-        </li>
-      <?php endif; ?>
-    </ul>
+      </ul>
+    </div>
+    <?php endif; ?>
   </div>
 </nav>
 
 <style>
-/* Custom responsive styling */
-@media (max-width: 991px) {
-  .desktop-nav {
-    display: none !important;
-  }
-  
-  .auth-links {
-    display: none !important;
+/* Additional styles for dropdown */
+.dropdown-menu {
+  padding: 0.5rem;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.dropdown-item {
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  margin-bottom: 2px;
+}
+
+.dropdown-item:hover, .dropdown-item:focus {
+  background-color: rgba(0,0,0,0.05);
+}
+
+.dropdown-header {
+  font-weight: bold;
+  color: #555;
+  padding: 0.5rem 1rem;
+}
+
+/* Ensure proper navbar functionality on mobile */
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-top: 0.5rem;
+    max-height: 80vh;
+    overflow-y: auto;
   }
   
   .mobile-only {
     display: block !important;
   }
   
-  .dropdown-menu.show {
-    display: block !important;
+  .navbar-nav .nav-link {
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .navbar-nav .nav-link:hover {
+    background-color: rgba(0,0,0,0.05);
+  }
+  
+  /* Position fixes for notification badge */
+  .position-relative .badge {
+    transform: translate(25%, -50%) !important;
+  }
+  
+  /* Add extra space for items */
+  .navbar-nav .nav-item {
+    margin-bottom: 0.25rem;
+  }
+  
+  /* Make links easier to tap */
+  .navbar-nav a {
+    display: block;
+    width: 100%;
   }
 }
 
+/* Mobile-only nav items */
 @media (min-width: 992px) {
   .mobile-only {
     display: none !important;
   }
-  
-  .desktop-nav {
-    display: flex !important;
-  }
-  
-  .auth-links {
-    display: block !important;
-  }
-}
-
-/* Additional styles for dropdown */
-.dropdown-menu {
-  padding: 0.5rem;
-}
-.dropdown-item {
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-}
-.dropdown-item:hover, .dropdown-item:focus {
-  background-color: rgba(0,0,0,0.05);
-}
-.dropdown-header {
-  font-weight: bold;
-  color: #555;
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Manual implementation of dropdown toggle
+  // Use Bootstrap's built-in collapse functionality for navbar toggler buttons
+  var navbarTogglers = document.querySelectorAll('.navbar-toggler');
+  
+  navbarTogglers.forEach(function(toggler) {
+    toggler.addEventListener('click', function() {
+      var targetId = this.getAttribute('data-bs-target');
+      var targetElement = document.querySelector(targetId);
+      
+      if (targetElement) {
+        targetElement.classList.toggle('show');
+      }
+    });
+  });
+  
+  // Handle clicks on nav links to close menus on mobile
+  var navLinks = document.querySelectorAll('.navbar-nav .nav-link:not(.dropdown-toggle)');
+  
+  navLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      var navbarCollapse = this.closest('.navbar-collapse');
+      if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+        navbarCollapse.classList.remove('show');
+      }
+    });
+  });
+  
+  // Handle clicks outside the navbar to close it
+  document.addEventListener('click', function(event) {
+    var openMenus = document.querySelectorAll('.navbar-collapse.show');
+    
+    openMenus.forEach(function(menu) {
+      // Check if the click was outside the menu and its toggler
+      var toggler = document.querySelector('[data-bs-target="#' + menu.id + '"]');
+      
+      if (!menu.contains(event.target) && (!toggler || !toggler.contains(event.target))) {
+        menu.classList.remove('show');
+      }
+    });
+  });
+  
+  // Handle dropdown toggle for user menu
   var userDropdown = document.getElementById('userDropdown');
   if (userDropdown) {
     userDropdown.addEventListener('click', function(e) {
@@ -328,67 +414,5 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
-  
-  // Handle hamburger menu for guests
-  var hamburger = document.querySelector('.navbar-toggler');
-  if (hamburger) {
-    hamburger.addEventListener('click', function() {
-      var target = document.querySelector(this.getAttribute('data-bs-target'));
-      if (target) {
-        target.classList.toggle('show');
-      }
-    });
-  }
-  
-  // Handle window resize
-  window.addEventListener('resize', function() {
-    // Force update display classes when resizing between mobile and desktop
-    if (window.innerWidth >= 992) {
-      // Desktop mode
-      document.querySelectorAll('.desktop-nav').forEach(function(el) {
-        el.style.display = 'flex';
-      });
-      document.querySelectorAll('.mobile-only').forEach(function(el) {
-        el.style.display = 'none';
-      });
-      document.querySelectorAll('.auth-links').forEach(function(el) {
-        el.style.display = 'block';
-      });
-    } else {
-      // Mobile mode
-      document.querySelectorAll('.desktop-nav').forEach(function(el) {
-        el.style.display = 'none';
-      });
-      document.querySelectorAll('.mobile-only').forEach(function(el) {
-        el.style.display = 'block';
-      });
-      document.querySelectorAll('.auth-links').forEach(function(el) {
-        el.style.display = 'none';
-      });
-      
-      // Close any open dropdowns when switching to mobile
-      document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
-        menu.classList.remove('show');
-      });
-    }
-  });
-  
-  // Initial check on page load
-  if (window.innerWidth >= 992) {
-    document.querySelectorAll('.desktop-nav').forEach(function(el) {
-      el.style.display = 'flex';
-    });
-    document.querySelectorAll('.mobile-only').forEach(function(el) {
-      el.style.display = 'none';
-    });
-  } else {
-    document.querySelectorAll('.desktop-nav').forEach(function(el) {
-      el.style.display = 'none';
-    });
-    document.querySelectorAll('.mobile-only').forEach(function(el) {
-      el.style.display = 'block';
-    });
-  }
 });
 </script>
-
