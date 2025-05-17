@@ -427,15 +427,18 @@ class AppointmentsController {
             header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
+        
         $user_id = $_SESSION['user_id'];
         $role = $_SESSION['role'] ?? '';
         $appointment_id = $_POST['appointment_id'] ?? null;
         $notes = $_POST['notes'] ?? '';
+        
         if (!$appointment_id) {
             set_flash_message('error', 'No appointment specified');
             header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
+        
         $appointment = $this->appointmentModel->getById($appointment_id);
         if (!$appointment ||
             ($role == 'provider' && $appointment['provider_id'] != $user_id) &&
@@ -444,6 +447,7 @@ class AppointmentsController {
             header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
+        
         $result = $this->appointmentModel->updateNotes($appointment_id, $notes);
         if ($result) {
             $details = json_encode([
@@ -451,14 +455,56 @@ class AppointmentsController {
                 'updated_by_role' => $role,
                 'notes' => $notes
             ]);
+            
             $this->activityLogModel->logAppointment($user_id, "notes_updated", $appointment_id, $details);
+            
+            // Format date for notifications
+            $formattedDate = date('F j, Y', strtotime($appointment['appointment_date']));
+            $formattedTime = date('g:i A', strtotime($appointment['start_time']));
+            
+            // Create notification for patient about notes update
+            $patientMessage = "Notes have been updated for your appointment scheduled for $formattedDate at $formattedTime.";
+            
+            // Notify patient about the notes update
+            $this->notificationModel->addNotification([
+                'user_id' => $appointment['patient_id'],
+                'subject' => 'Appointment Notes Updated',
+                'message' => $patientMessage,
+                'type' => 'appointment_notes',
+                'appointment_id' => $appointment_id
+            ]);
+            
+            // Notify provider if admin made the change
+            if ($role === 'admin' && $appointment['provider_id'] != $user_id) {
+                $providerMessage = "Notes have been updated for appointment scheduled on $formattedDate at $formattedTime.";
+                
+                $this->notificationModel->addNotification([
+                    'user_id' => $appointment['provider_id'],
+                    'subject' => 'Appointment Notes Updated',
+                    'message' => $providerMessage,
+                    'type' => 'appointment_notes',
+                    'appointment_id' => $appointment_id
+                ]);
+            }
+            
+            // Add system notification for admins
+            $this->notificationModel->create([
+                'subject' => 'Appointment Notes Updated',
+                'message' => "Notes updated for Appointment ID: $appointment_id by " . ($_SESSION['first_name'] ?? 'User') . " " . ($_SESSION['last_name'] ?? ''),
+                'type' => 'appointment_notes_updated',
+                'is_system' => 1,
+                'audience' => 'admin'
+            ]);
+            
             set_flash_message('success', 'Appointment notes updated successfully');
         } else {
             set_flash_message('error', 'Failed to update appointment notes');
         }
+        
         header('Location: ' . base_url('index.php/appointments/view?id=' . $appointment_id));
         exit;
     }
+
 
     public function history($id = null) {
         if (!isset($_SESSION['user_id'])) {

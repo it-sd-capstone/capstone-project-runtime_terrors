@@ -86,6 +86,7 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
      * @return bool Success status
      */
     public function logAppointment($userId, $action, $appointmentId, $details = null) {
+        $result = false;
         $description = "Appointment: $action (ID: $appointmentId)";
         
         // Store additional details if provided
@@ -94,17 +95,30 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
             try {
                 $ipAddress = $this->getClientIp();
                 
-                $query = "INSERT INTO activity_log (user_id, description, category, ip_address, details, related_id, related_type) 
-                         VALUES (?, ?, ?, ?, ?, ?, 'appointment')";
-                         
+                $query = "INSERT INTO activity_log (user_id, description, category, ip_address, details, related_id, related_type)
+                        VALUES (?, ?, ?, ?, ?, ?, 'appointment')";
+                        
                 if ($this->db instanceof mysqli) {
                     $stmt = $this->db->prepare($query);
                     $category = 'appointment';
                     $stmt->bind_param("issssi", $userId, $description, $category, $ipAddress, $details, $appointmentId);
-                    return $stmt->execute();
+                    $result = $stmt->execute();
+                    
+                    // Debug log to confirm insertion
+                    error_log("Appointment log created for action '$action' with ID $appointmentId. Result: " . ($result ? 'Success' : 'Failed'));
+                    if (!$result) {
+                        error_log("DB Error: " . $this->db->error);
+                    }
+                    
+                    return $result;
                 } else {
                     $stmt = $this->db->prepare($query);
-                    return $stmt->execute([$userId, $description, 'appointment', $ipAddress, $details, $appointmentId]);
+                    $result = $stmt->execute([$userId, $description, 'appointment', $ipAddress, $details, $appointmentId]);
+                    
+                    // Debug log to confirm insertion
+                    error_log("Appointment log created for action '$action' with ID $appointmentId. Result: " . ($result ? 'Success' : 'Failed'));
+                    
+                    return $result;
                 }
             } catch (Exception $e) {
                 error_log("Error logging appointment activity with details: " . $e->getMessage());
@@ -116,6 +130,7 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
             return $this->logActivity($userId, $description, 'appointment');
         }
     }
+
     
     /**
      * Log service activity
@@ -384,32 +399,35 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
 
     /**
      * Get activity logs for a specific appointment
-     * 
+     *
      * @param int $appointmentId The appointment ID
      * @return array Logs for the appointment
      */
     public function getAppointmentLogs($appointmentId) {
         try {
-            $query = "SELECT a.*, CONCAT(u.first_name, ' ', u.last_name) as user_name, 
-                            u.first_name as user_first_name, u.last_name as user_last_name, 
+            // Expanded query to ensure it catches all appointment-related activities
+            $query = "SELECT a.*, CONCAT(u.first_name, ' ', u.last_name) as user_name,
+                            u.first_name as user_first_name, u.last_name as user_last_name,
                             u.role as user_role
-                     FROM activity_log a
-                     LEFT JOIN users u ON a.user_id = u.user_id
-                     WHERE a.category = 'appointment' 
-                       AND (a.related_id = ? OR a.description LIKE ?)
-                     ORDER BY a.created_at DESC";
-            
+                    FROM activity_log a
+                    LEFT JOIN users u ON a.user_id = u.user_id
+                    WHERE (a.category = 'appointment' AND a.related_id = ?)
+                        OR a.description LIKE ?
+                        OR (a.details LIKE ? AND a.category = 'appointment')
+                    ORDER BY a.created_at DESC";
+                    
             $searchPattern = "%Appointment: % (ID: $appointmentId)%";
+            $detailsPattern = "%\"appointment_id\":$appointmentId%";
             
             if ($this->db instanceof mysqli) {
                 $stmt = $this->db->prepare($query);
-                $stmt->bind_param("is", $appointmentId, $searchPattern);
+                $stmt->bind_param("iss", $appointmentId, $searchPattern, $detailsPattern);
                 $stmt->execute();
                 $result = $stmt->get_result();
                 return $result->fetch_all(MYSQLI_ASSOC);
             } else {
                 $stmt = $this->db->prepare($query);
-                $stmt->execute([$appointmentId, $searchPattern]);
+                $stmt->execute([$appointmentId, $searchPattern, $detailsPattern]);
                 return $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
         } catch (Exception $e) {
