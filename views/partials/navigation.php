@@ -14,21 +14,15 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
   <div class="container-fluid">
-    <!-- Brand for all users -->
-    <a class="navbar-brand" href="<?= base_url('index.php/home') ?>">
-      <?php if ($userRole === 'admin'): ?>Admin Portal
-      <?php elseif ($userRole === 'provider'): ?>Provider Portal
-      <?php elseif ($userRole === 'patient'): ?>Patient Portal
-      <?php else: ?>Appointment System<?php endif; ?>
-    </a>
+    <!-- Removed brand completely -->
     
-    <!-- Hamburger menu ONLY for guests -->
     <?php if (!$isLoggedIn): ?>
+    <!-- Hamburger menu for GUEST USERS - this will control ALL navbar content on mobile -->
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#guestNavbar" aria-controls="guestNavbar" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     
-    <!-- Guest Navigation - collapsible on mobile -->
+    <!-- Guest Navigation - collapsible on mobile includes auth links -->
     <div class="collapse navbar-collapse" id="guestNavbar">
       <ul class="navbar-nav me-auto">
         <?php if (!$is_home_page): ?>
@@ -36,6 +30,9 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
           <a class="nav-link" href="<?= base_url('index.php/home') ?>">Home</a>
         </li>
         <?php endif; ?>
+      </ul>
+      <!-- Auth links for desktop and mobile -->
+      <ul class="navbar-nav ms-auto">
         <li class="nav-item">
           <a class="nav-link" href="<?= base_url('index.php/auth/register') ?>">Register</a>
         </li>
@@ -45,9 +42,13 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
       </ul>
     </div>
     <?php else: ?>
+    <!-- For logged-in users -->
+    <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#loggedInNavbar" aria-controls="loggedInNavbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
     
-    <!-- For logged-in users - Desktop Navigation -->
-    <div class="desktop-nav">
+    <!-- Desktop Navigation for logged-in users -->
+    <div class="collapse navbar-collapse" id="loggedInNavbar">
       <ul class="navbar-nav me-auto">
         <?php if (!$is_home_page): ?>
         <li class="nav-item">
@@ -90,12 +91,9 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
           </li>
         <?php endif; ?>
       </ul>
-    </div>
-    <?php endif; ?>
-    
-    <!-- Right side for all users -->
-    <ul class="navbar-nav ms-auto">
-      <?php if ($isLoggedIn): ?>
+      
+      <!-- Right side for logged-in users -->
+      <ul class="navbar-nav ms-auto">
         <?php if (($userRole === 'patient' || $userRole === 'provider') && !isset($hideNotifications)): ?>
         <li class="nav-item notifications-icon">
           <a class="nav-link position-relative" href="<?= base_url('index.php/' . $userRole . '/notifications') ?>">
@@ -129,7 +127,7 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
         </li>
         <?php endif; ?>
         
-        <!-- User dropdown - This will contain ALL navigation on mobile -->
+        <!-- User dropdown for logged-in users -->
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <span class="badge bg-<?= $userRole === 'admin' ? 'danger' : ($userRole === 'provider' ? 'success' : 'primary') ?>">
@@ -242,52 +240,13 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
             </li>
           </ul>
         </li>
-      <?php else: ?>
-        <li class="nav-item auth-links">
-          <a class="nav-link" href="<?= base_url('index.php/auth/register') ?>">Register</a>
-        </li>
-        <li class="nav-item auth-links">
-          <a class="nav-link" href="<?= base_url('index.php/auth') ?>">Login</a>
-        </li>
-      <?php endif; ?>
-    </ul>
+      </ul>
+    </div>
+    <?php endif; ?>
   </div>
 </nav>
 
 <style>
-/* Custom responsive styling */
-@media (max-width: 991px) {
-  .desktop-nav {
-    display: none !important;
-  }
-  
-  .auth-links {
-    display: none !important;
-  }
-  
-  .mobile-only {
-    display: block !important;
-  }
-  
-  .dropdown-menu.show {
-    display: block !important;
-  }
-}
-
-@media (min-width: 992px) {
-  .mobile-only {
-    display: none !important;
-  }
-  
-  .desktop-nav {
-    display: flex !important;
-  }
-  
-  .auth-links {
-    display: block !important;
-  }
-}
-
 /* Additional styles for dropdown */
 .dropdown-menu {
   padding: 0.5rem;
@@ -303,11 +262,33 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
   font-weight: bold;
   color: #555;
 }
+
+/* Ensure proper navbar functionality on mobile */
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-top: 0.5rem;
+  }
+  
+  .mobile-only {
+    display: block !important;
+  }
+}
+
+/* Mobile-only nav items */
+@media (min-width: 992px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Manual implementation of dropdown toggle
+  // Manual implementation of dropdown toggle for userDropdown
   var userDropdown = document.getElementById('userDropdown');
   if (userDropdown) {
     userDropdown.addEventListener('click', function(e) {
@@ -329,66 +310,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Handle hamburger menu for guests
-  var hamburger = document.querySelector('.navbar-toggler');
-  if (hamburger) {
-    hamburger.addEventListener('click', function() {
-      var target = document.querySelector(this.getAttribute('data-bs-target'));
-      if (target) {
-        target.classList.toggle('show');
-      }
-    });
-  }
-  
-  // Handle window resize
-  window.addEventListener('resize', function() {
-    // Force update display classes when resizing between mobile and desktop
-    if (window.innerWidth >= 992) {
-      // Desktop mode
-      document.querySelectorAll('.desktop-nav').forEach(function(el) {
-        el.style.display = 'flex';
+  // Handle hamburger menu for all navbar toggles
+  var hamburgers = document.querySelectorAll('.navbar-toggler');
+  if (hamburgers.length > 0) {
+    hamburgers.forEach(function(hamburger) {
+      hamburger.addEventListener('click', function() {
+        var targetId = this.getAttribute('data-bs-target');
+        var target = document.querySelector(targetId);
+        if (target) {
+          target.classList.toggle('show');
+        }
       });
-      document.querySelectorAll('.mobile-only').forEach(function(el) {
-        el.style.display = 'none';
-      });
-      document.querySelectorAll('.auth-links').forEach(function(el) {
-        el.style.display = 'block';
-      });
-    } else {
-      // Mobile mode
-      document.querySelectorAll('.desktop-nav').forEach(function(el) {
-        el.style.display = 'none';
-      });
-      document.querySelectorAll('.mobile-only').forEach(function(el) {
-        el.style.display = 'block';
-      });
-      document.querySelectorAll('.auth-links').forEach(function(el) {
-        el.style.display = 'none';
-      });
-      
-      // Close any open dropdowns when switching to mobile
-      document.querySelectorAll('.dropdown-menu.show').forEach(function(menu) {
-        menu.classList.remove('show');
-      });
-    }
-  });
-  
-  // Initial check on page load
-  if (window.innerWidth >= 992) {
-    document.querySelectorAll('.desktop-nav').forEach(function(el) {
-      el.style.display = 'flex';
-    });
-    document.querySelectorAll('.mobile-only').forEach(function(el) {
-      el.style.display = 'none';
-    });
-  } else {
-    document.querySelectorAll('.desktop-nav').forEach(function(el) {
-      el.style.display = 'none';
-    });
-    document.querySelectorAll('.mobile-only').forEach(function(el) {
-      el.style.display = 'block';
     });
   }
 });
 </script>
-
