@@ -1057,51 +1057,129 @@ public function getByProvider($provider_id) {
     }
 
     public function getAppointmentHistory($appointment_id) {
-        $history = [];
-        $stmt = $this->db->prepare("
-            SELECT 
-                ah.*,
-                u.first_name,
-                u.last_name,
-                CONCAT(u.first_name, ' ', u.last_name) AS user_name
-            FROM appointment_history ah
-            LEFT JOIN users u ON ah.user_id = u.user_id
-            WHERE ah.appointment_id = ?
-            ORDER BY ah.created_at DESC
-        ");
-        $stmt->bind_param("i", $appointment_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $history[] = $row;
+        try {
+            $history = [];
+            
+            // 1. Get notifications data
+            $query1 = "SELECT 
+                        n.*, 
+                        u.first_name, 
+                        u.last_name, 
+                        u.role,
+                        n.created_at,
+                        'notification' as source_type
+                    FROM notifications n
+                    LEFT JOIN users u ON n.user_id = u.user_id
+                    WHERE n.appointment_id = ?
+                    ORDER BY n.created_at ASC";
+            
+            // 2. Get activity log data for notes updates
+            $query2 = "SELECT 
+                        a.*, 
+                        u.first_name, 
+                        u.last_name, 
+                        u.role,
+                        a.created_at,
+                        'activity_log' as source_type
+                    FROM activity_log a
+                    LEFT JOIN users u ON a.user_id = u.user_id
+                    WHERE a.description LIKE ? 
+                        AND a.description LIKE ?
+                    ORDER BY a.created_at ASC";
+            
+            if ($this->db instanceof mysqli) {
+                // Get notifications
+                $stmt1 = $this->db->prepare($query1);
+                $stmt1->bind_param("i", $appointment_id);
+                $stmt1->execute();
+                $result1 = $stmt1->get_result();
+                $notificationsHistory = $result1->fetch_all(MYSQLI_ASSOC);
+                
+                // Get activity logs
+                $stmt2 = $this->db->prepare($query2);
+                $searchParam1 = "Appointment: notes_updated%";
+                $searchParam2 = "%(ID: $appointment_id)%";
+                $stmt2->bind_param("ss", $searchParam1, $searchParam2);
+                $stmt2->execute();
+                $result2 = $stmt2->get_result();
+                $activityHistory = $result2->fetch_all(MYSQLI_ASSOC);
+            } else {
+                // Get notifications
+                $stmt1 = $this->db->prepare($query1);
+                $stmt1->execute([$appointment_id]);
+                $notificationsHistory = $stmt1->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Get activity logs
+                $stmt2 = $this->db->prepare($query2);
+                $searchParam1 = "Appointment: notes_updated%";
+                $searchParam2 = "%(ID: $appointment_id)%";
+                $stmt2->execute([$searchParam1, $searchParam2]);
+                $activityHistory = $stmt2->fetchAll(PDO::FETCH_ASSOC);
             }
+            
+            // Merge both results
+            $history = array_merge($notificationsHistory, $activityHistory);
+            
+            // Sort by created_at
+            usort($history, function($a, $b) {
+                return strtotime($a['created_at']) - strtotime($b['created_at']);
+            });
+            
+            return $history;
+        } catch (Exception $e) {
+            error_log("Error getting appointment history: " . $e->getMessage());
+            return [];
         }
-        if (empty($history)) {
-            $appointmentData = $this->getById($appointment_id);
-            if ($appointmentData) {
-                $history[] = [
-                    'history_id' => 0,
-                    'appointment_id' => $appointment_id,
-                    'user_id' => $appointmentData['patient_id'],
-                    'status' => 'scheduled',
-                    'notes' => 'Appointment created',
-                    'created_at' => $appointmentData['created_at'],
-                    'first_name' => $appointmentData['patient_first_name'],
-                    'last_name' => $appointmentData['patient_last_name'],
-                    'user_name' => $appointmentData['patient_first_name'] . ' ' . $appointmentData['patient_last_name']
-                ];
-            }
-        }
-        return $history;
     }
 
     public function getAppointmentLogs($appointment_id) {
         $logs = [];
         $history = $this->getAppointmentHistory($appointment_id);
+        $deduplicated = [];
+        
+        // Deduplicate notifications based on action type and created_at timestamp (rounded to minutes)
         foreach ($history as $record) {
+            $action = 'status_changed';
+            
+            if ($record['source_type'] === 'notification') {
+                $subject = strtolower($record['subject'] ?? '');
+                
+                if (strpos($subject, 'confirmation') !== false || strpos($subject, 'new appointment') !== false) {
+                    $action = 'created';
+                } elseif (strpos($subject, 'cancelled') !== false || strpos($subject, 'cancellation') !== false) {
+                    $action = 'canceled';
+                } elseif (strpos($subject, 'rescheduled') !== false) {
+                    $action = 'rescheduled';
+                }
+            } else if ($record['source_type'] === 'activity_log') {
+                // Handle activity log entries
+                if (strpos($record['description'], 'notes_updated') !== false) {
+                    $action = 'notes_updated';
+                }
+            }
+            
+            // Create a key based on action and timestamp (to the minute)
+            $timestampMinute = date('Y-m-d H:i', strtotime($record['created_at']));
+            $key = $action . '_' . $timestampMinute;
+            
+            // Prioritize patient records over provider records for notifications
+            $isPatient = ($record['user_id'] == 99); // Patient user ID
+            
+            if (!isset($deduplicated[$key]) || $isPatient) {
+                $deduplicated[$key] = [
+                    'record' => $record,
+                    'action' => $action
+                ];
+            }
+        }
+        
+        // Convert deduplicated records to logs
+        foreach ($deduplicated as $item) {
+            $record = $item['record'];
+            $action = $item['action'];
             $details = [];
             $appointment = $this->getById($appointment_id);
+            
             if ($appointment) {
                 $details = [
                     'appointment_date' => $appointment['appointment_date'],
@@ -1109,26 +1187,27 @@ public function getByProvider($provider_id) {
                     'end_time' => $appointment['end_time'],
                     'cancellation_reason' => $appointment['reason'] ?? 'No reason provided',
                     'previous_status' => '',
-                    'new_status' => $record['status'] ?? '',
+                    'new_status' => $action === 'canceled' ? 'canceled' : ($appointment['status'] ?? ''),
                     'reason' => $appointment['reason'] ?? ''
                 ];
             }
-            $action = 'status_changed';
-            if (strpos(strtolower($record['notes'] ?? ''), 'created') !== false) {
-                $action = 'created';
-            } elseif (strpos(strtolower($record['notes'] ?? ''), 'cancel') !== false || 
-                     $record['status'] === 'canceled') {
-                $action = 'canceled';
-            }
+            
             $logs[] = [
                 'details' => json_encode($details),
                 'action' => $action,
                 'created_at' => $record['created_at'],
+                'user_name' => ($record['first_name'] ?? '') . ' ' . ($record['last_name'] ?? ''),
                 'user_first_name' => $record['first_name'] ?? '',
                 'user_last_name' => $record['last_name'] ?? '',
                 'user_role' => $record['role'] ?? 'patient'
             ];
         }
+        
+        // Sort by created_at in ascending order (oldest first)
+        usort($logs, function($a, $b) {
+            return strtotime($a['created_at']) - strtotime($b['created_at']);
+        });
+        
         return $logs;
     }
 

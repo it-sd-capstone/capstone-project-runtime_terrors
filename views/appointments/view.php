@@ -147,7 +147,7 @@ if (!isset($appointment)) {
                     </div>
                 </div>
                 
-                <!-- Appointment History -->
+              <!-- Appointment History -->
                 <?php if (!empty($logs)): ?>
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-secondary text-white">
@@ -156,7 +156,7 @@ if (!isset($appointment)) {
                     <div class="card-body">
                         <div class="timeline">
                             <?php foreach ($logs as $index => $log): ?>
-                                <?php 
+                                <?php
                                     $details = json_decode($log['details'] ?? '', true) ?? [];
                                     $action = $log['action'] ?? '';
                                     $actionClass = '';
@@ -217,38 +217,55 @@ if (!isset($appointment)) {
                                             ?>
                                         </h6>
                                         <p class="text-muted mb-1">
-                                            <?= date('F j, Y g:i A', strtotime($log['created_at'] ?? 'now')) ?> 
+                                            <?= date('F j, Y g:i A', strtotime($log['created_at'] ?? 'now')) ?>
                                             by <?= htmlspecialchars(($log['user_first_name'] ?? '') . ' ' . ($log['user_last_name'] ?? '')) ?>
+                                            (<?= ucfirst(htmlspecialchars($log['user_role'] ?? 'Unknown')) ?>)
                                         </p>
                                         
-                                        <?php if ($action === 'rescheduled' && isset($details['previous_date'])): ?>
+                                        <?php if ($action === 'created'): ?>
                                             <p class="mb-0">
-                                                Changed from: 
+                                                Booked an appointment for <?= date('F j, Y', strtotime($details['appointment_date'] ?? 'now')) ?>
+                                                at <?= date('g:i A', strtotime($details['start_time'] ?? '00:00:00')) ?>
+                                            </p>
+                                        <?php elseif ($action === 'rescheduled' && isset($details['previous_date'])): ?>
+                                            <p class="mb-0">
+                                                Changed from:
                                                 <span class="text-decoration-line-through">
-                                                    <?= date('F j, Y', strtotime($details['previous_date'])) ?> 
+                                                    <?= date('F j, Y', strtotime($details['previous_date'])) ?>
                                                     at <?= date('g:i A', strtotime($details['previous_time'] ?? '00:00:00')) ?>
                                                 </span>
                                                 <br>
-                                                To: <?= date('F j, Y', strtotime($details['new_date'] ?? '')) ?> 
+                                                To: <?= date('F j, Y', strtotime($details['new_date'] ?? '')) ?>
                                                 at <?= date('g:i A', strtotime($details['new_time'] ?? '00:00:00')) ?>
                                             </p>
-                                        <?php elseif ($action === 'canceled' && isset($details['cancellation_reason'])): ?>
+                                        <?php elseif ($action === 'canceled'): ?>
                                             <p class="mb-0">
-                                                Reason: <?= htmlspecialchars($details['cancellation_reason']) ?>
+                                                Canceled an appointment previously scheduled for 
+                                                <?= date('F j, Y', strtotime($details['appointment_date'] ?? 'now')) ?>
+                                                at <?= date('g:i A', strtotime($details['start_time'] ?? '00:00:00')) ?>
                                             </p>
+                                            <?php if (isset($details['cancellation_reason'])): ?>
+                                                <p class="mb-0">
+                                                    Reason: <?= htmlspecialchars($details['cancellation_reason']) ?>
+                                                </p>
+                                            <?php endif; ?>
                                         <?php elseif ($action === 'status_changed' && isset($details['previous_status'])): ?>
                                             <p class="mb-0">
-                                                Changed from 
+                                                Changed from
                                                 <span class="badge bg-<?= getStatusBadgeClass($details['previous_status']) ?>">
                                                     <?= ucfirst($details['previous_status']) ?>
                                                 </span>
-                                                to 
+                                                to
                                                 <span class="badge bg-<?= getStatusBadgeClass($details['new_status']) ?>">
                                                     <?= ucfirst($details['new_status']) ?>
                                                 </span>
                                                 <?php if (!empty($details['reason'])): ?>
                                                     <br>Reason: <?= htmlspecialchars($details['reason']) ?>
                                                 <?php endif; ?>
+                                            </p>
+                                        <?php elseif ($action === 'notes_updated'): ?>
+                                            <p class="mb-0">
+                                                Updated appointment notes
                                             </p>
                                         <?php endif; ?>
                                     </div>
