@@ -243,7 +243,7 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
         }
     }
  
-    /**
+   /**
      * Mark notifications as read
      *
      * @return void Outputs JSON response
@@ -251,15 +251,18 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
     public function markAsRead() {
         // Check if user is logged in
         if (!isset($_SESSION['user_id'])) {
-            redirect('auth');
-            return;
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
         }
         
         // Check if notification ID is provided
         if (!isset($_POST['notification_id']) || empty($_POST['notification_id'])) {
             set_flash_message('error', 'Invalid notification');
-            redirect($_SERVER['HTTP_REFERER'] ?? $_SESSION['role'] . "/notifications");
-            return;
+            $redirect_url = isset($_SERVER['HTTP_REFERER']) ? 
+                $_SERVER['HTTP_REFERER'] : 
+                base_url('index.php/' . $_SESSION['role'] . "/notifications");
+            header('Location: ' . $redirect_url);
+            exit;
         }
         
         $notificationId = $_POST['notification_id'];
@@ -270,8 +273,11 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
         
         if (!$notification || $notification['user_id'] != $userId) {
             set_flash_message('error', 'Access denied');
-            redirect($_SERVER['HTTP_REFERER'] ?? $_SESSION['role'] . "/notifications");
-            return;
+            $redirect_url = isset($_SERVER['HTTP_REFERER']) ? 
+                $_SERVER['HTTP_REFERER'] : 
+                base_url('index.php/' . $_SESSION['role'] . "/notifications");
+            header('Location: ' . $redirect_url);
+            exit;
         }
         
         // Mark as read
@@ -283,17 +289,21 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
             set_flash_message('error', 'Failed to update notification');
         }
         
-        redirect($_SERVER['HTTP_REFERER'] ?? $_SESSION['role'] . "/notifications");
+        $redirect_url = isset($_SERVER['HTTP_REFERER']) ? 
+            $_SERVER['HTTP_REFERER'] : 
+            base_url('index.php/' . $_SESSION['role'] . "/notifications");
+        header('Location: ' . $redirect_url);
+        exit;
     }
-    
+
     /**
      * Mark all notifications as read for the current user
      */
     public function markAllAsRead() {
         // Check if user is logged in
         if (!isset($_SESSION['user_id'])) {
-            redirect('auth');
-            return;
+            header('Location: ' . base_url('index.php/auth'));
+            exit;
         }
         
         $userId = $_SESSION['user_id'];
@@ -307,8 +317,13 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
             set_flash_message('error', 'Failed to update notifications');
         }
         
-        redirect($_SERVER['HTTP_REFERER'] ?? $_SESSION['role'] . "/notifications");
+        $redirect_url = isset($_SERVER['HTTP_REFERER']) ? 
+            $_SERVER['HTTP_REFERER'] : 
+            base_url('index.php/' . $_SESSION['role'] . "/notifications");
+        header('Location: ' . $redirect_url);
+        exit;
     }
+
     
     /**
      * Add a new system notification

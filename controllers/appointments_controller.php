@@ -120,6 +120,50 @@ class AppointmentsController {
                             $bookingResult['appointment_id'],
                             $details
                         );
+                        
+                        // Format date/time for notifications
+                        $formattedDate = date('F j, Y', strtotime($bookingResult['appointment_date']));
+                        $formattedTime = date('g:i A', strtotime($bookingResult['start_time']));
+                        
+                        // Get service name for better notification detail
+                        $serviceName = '';
+                        try {
+                            $serviceData = $this->serviceModel->getServiceById($serviceId);
+                            $serviceName = $serviceData['name'] ?? '';
+                        } catch (Exception $e) {
+                            error_log("Error fetching service name: " . $e->getMessage());
+                        }
+                        
+                        // Create notification for patient (booking user)
+                        $this->notificationModel->addNotification([
+                            'user_id' => $_SESSION['user_id'],
+                            'subject' => 'Appointment Confirmation',
+                            'message' => "Your appointment" . ($serviceName ? " for $serviceName" : "") . 
+                                        " has been scheduled for $formattedDate at $formattedTime.",
+                            'type' => 'appointment',
+                            'appointment_id' => $bookingResult['appointment_id']
+                        ]);
+                        
+                        // Create notification for provider
+                        $this->notificationModel->addNotification([
+                            'user_id' => $bookingResult['provider_id'],
+                            'subject' => 'New Appointment Booking',
+                            'message' => "A new appointment" . ($serviceName ? " for $serviceName" : "") . 
+                                        " has been scheduled for $formattedDate at $formattedTime.",
+                            'type' => 'appointment',
+                            'appointment_id' => $bookingResult['appointment_id']
+                        ]);
+                        
+                        // Create system notification for admin tracking
+                        $notification = new Notification($this->db);
+                        $notification->create([
+                            'subject' => 'New Appointment Booked',
+                            'message' => "Appointment ID: " . $bookingResult['appointment_id'] . " has been created",
+                            'type' => 'appointment_created',
+                            'is_system' => 1,
+                            'audience' => 'admin'
+                        ]);
+                        
                         set_flash_message('success', "Appointment booked successfully!");
                         header('Location: ' . base_url('index.php/appointments?success=booked'));
                         exit;
@@ -169,27 +213,18 @@ class AppointmentsController {
         }
     }
 
-    public function cancel() {
-        // Log appointment cancellation as system notification
-        if ($success) {
-            $notification = new Notification($this->db);
-            $notification->create([
-                'subject' => 'Appointment Cancelled',
-                'message' => "Appointment ID: " . $appointment_id . " has been cancelled",
-                'type' => 'appointment_cancelled',
-                'is_system' => 1,
-                'audience' => 'admin'
-            ]);
-        }
-
+   public function cancel() {
         $appointmentId = $_GET['id'] ?? null;
         $reason = $_GET['reason'] ?? 'No reason provided';
+        
         if (!$appointmentId) {
             set_flash_message('error', 'No appointment specified');
             header('Location: ' . base_url('index.php/appointments'));
             exit;
         }
+        
         $appointment = $this->appointmentModel->getById($appointmentId);
+        
         if ($appointment) {
             if (
                 $_SESSION['user_id'] == $appointment['patient_id'] ||
@@ -197,6 +232,39 @@ class AppointmentsController {
                 $_SESSION['role'] === 'admin'
             ) {
                 if ($this->appointmentModel->cancelAppointment($appointmentId, $reason)) {
+                    // Create system notification for admin
+                    $notification = new Notification($this->db);
+                    $notification->create([
+                        'subject' => 'Appointment Cancelled',
+                        'message' => "Appointment ID: " . $appointmentId . " has been cancelled",
+                        'type' => 'appointment_cancelled',
+                        'is_system' => 1,
+                        'audience' => 'admin'
+                    ]);
+                    
+                    // Format date/time for readability in notifications
+                    $formattedDate = date('F j, Y', strtotime($appointment['appointment_date']));
+                    $formattedTime = date('g:i A', strtotime($appointment['start_time']));
+                    
+                    // Add patient notification
+                    $this->notificationModel->addNotification([
+                        'user_id' => $appointment['patient_id'],
+                        'subject' => 'Appointment Cancelled',
+                        'message' => "Your appointment scheduled for $formattedDate at $formattedTime has been cancelled.",
+                        'type' => 'appointment',
+                        'appointment_id' => $appointmentId
+                    ]);
+                    
+                    // Add provider notification
+                    $this->notificationModel->addNotification([
+                        'user_id' => $appointment['provider_id'],
+                        'subject' => 'Appointment Cancelled',
+                        'message' => "An appointment scheduled for $formattedDate at $formattedTime has been cancelled.",
+                        'type' => 'appointment',
+                        'appointment_id' => $appointmentId
+                    ]);
+                    
+                    // Log the cancellation in activity log
                     $details = json_encode([
                         'previous_status' => $appointment['status'],
                         'cancellation_reason' => $reason,
@@ -204,25 +272,30 @@ class AppointmentsController {
                         'appointment_date' => $appointment['appointment_date'],
                         'start_time' => $appointment['start_time']
                     ]);
+                    
                     $this->activityLogModel->logAppointment(
                         $_SESSION['user_id'],
                         'canceled',
                         $appointmentId,
                         $details
                     );
+                    
                     if (isset($appointment['availability_id'])) {
                         $this->appointmentModel->restoreAvailabilitySlot($appointment['availability_id']);
                     }
+                    
                     set_flash_message('success', 'Appointment canceled successfully');
                     header('Location: ' . base_url('index.php/appointments'));
                     exit;
                 }
             }
         }
+        
         set_flash_message('error', 'Failed to cancel appointment');
         header('Location: ' . base_url('index.php/appointments'));
         exit;
     }
+
 
     public function updateStatus() {
         if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'provider') {
@@ -269,6 +342,67 @@ class AppointmentsController {
                 'reason' => $_POST['reason'] ?? 'No reason provided'
             ]);
             $this->activityLogModel->logAppointment($_SESSION['user_id'], "status_changed", $appointmentId, $details);
+            
+            // Format date for notifications
+            $formattedDate = date('F j, Y', strtotime($appointment['appointment_date']));
+            $formattedTime = date('g:i A', strtotime($appointment['start_time']));
+            
+            // Create appropriate message based on new status
+            $patientMessage = "Your appointment scheduled for $formattedDate at $formattedTime has been ";
+            $providerMessage = "Appointment scheduled for $formattedDate at $formattedTime has been ";
+            
+            switch ($newStatus) {
+                case 'confirmed':
+                    $patientMessage .= "confirmed. Please arrive 10 minutes before your scheduled time.";
+                    $providerMessage .= "confirmed.";
+                    break;
+                case 'canceled':
+                    $patientMessage .= "canceled. " . ($_POST['reason'] ?? '');
+                    $providerMessage .= "canceled. " . ($_POST['reason'] ?? '');
+                    break;
+                case 'completed':
+                    $patientMessage .= "marked as completed. Thank you for your visit!";
+                    $providerMessage .= "marked as completed.";
+                    break;
+                case 'no_show':
+                    $patientMessage .= "marked as 'no show'. Please contact us to reschedule.";
+                    $providerMessage .= "marked as 'no show'.";
+                    break;
+                default:
+                    $patientMessage .= "updated to: $newStatus";
+                    $providerMessage .= "updated to: $newStatus";
+                    break;
+            }
+            
+            // Notify patient about the status change
+            $this->notificationModel->addNotification([
+                'user_id' => $appointment['patient_id'],
+                'subject' => 'Appointment Status Updated',
+                'message' => $patientMessage,
+                'type' => 'appointment_status',
+                'appointment_id' => $appointmentId
+            ]);
+            
+            // Notify provider if admin made the change
+            if ($_SESSION['role'] === 'admin' && $appointment['provider_id'] != $_SESSION['user_id']) {
+                $this->notificationModel->addNotification([
+                    'user_id' => $appointment['provider_id'],
+                    'subject' => 'Appointment Status Updated',
+                    'message' => $providerMessage,
+                    'type' => 'appointment_status',
+                    'appointment_id' => $appointmentId
+                ]);
+            }
+            
+            // Add system notification for admins
+            $this->notificationModel->create([
+                'subject' => 'Appointment Status Changed',
+                'message' => "Appointment ID: $appointmentId status changed from '{$appointment['status']}' to '$newStatus'",
+                'type' => 'appointment_status_changed',
+                'is_system' => 1,
+                'audience' => 'admin'
+            ]);
+            
             set_flash_message('success', 'Appointment status updated successfully');
         } else {
             set_flash_message('error', 'Failed to update appointment status');
@@ -276,6 +410,7 @@ class AppointmentsController {
         header('Location: ' . base_url('index.php/appointments/view?id=' . $appointmentId));
         exit;
     }
+
 
     public function update_notes() {
         if (!isset($_SESSION['user_id'])) {
@@ -368,17 +503,6 @@ class AppointmentsController {
     }
 
     public function reschedule() {
-        // Log appointment rescheduling as system notification
-        if ($success) {
-            $notification = new Notification($this->db);
-            $notification->create([
-                'subject' => 'Appointment Rescheduled',
-                'message' => "Appointment ID: " . $appointment_id . " has been rescheduled",
-                'type' => 'appointment_rescheduled',
-                'is_system' => 1,
-                'audience' => 'admin'
-            ]);
-        }
 
         // Set consistent timezone
         date_default_timezone_set('America/New_York'); // Update to your timezone
@@ -501,6 +625,16 @@ class AppointmentsController {
                     
                     if ($result) {
                         error_log("Reschedule SUCCESS for appointment $appointmentId");
+                        
+                        // Add system notification here
+                        $notification = new Notification($this->db);
+                        $notification->create([
+                            'subject' => 'Appointment Rescheduled',
+                            'message' => "Appointment ID: " . $appointmentId . " has been rescheduled",
+                            'type' => 'appointment_rescheduled',
+                            'is_system' => 1,
+                            'audience' => 'admin'
+                        ]);
                         
                         $details = json_encode([
                             'previous_date' => $appointment['appointment_date'],

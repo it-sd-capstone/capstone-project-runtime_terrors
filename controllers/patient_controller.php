@@ -4,6 +4,7 @@ require_once MODEL_PATH . '/User.php';
 require_once MODEL_PATH . '/Appointment.php';
 require_once MODEL_PATH . '/Services.php';
 require_once MODEL_PATH . '/Provider.php';
+require_once MODEL_PATH . '/Notification.php';
 require_once MODEL_PATH . '/ActivityLog.php';
 require_once __DIR__ . '/../helpers/validation_helpers.php';
 
@@ -17,6 +18,7 @@ class PatientController {
     private $serviceModel;
     private $providerModel;
     private $activityLogModel;
+    private $notificationModel;
 
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) {
@@ -32,6 +34,7 @@ class PatientController {
         $this->serviceModel = new Services($this->db);
         $this->providerModel = new Provider($this->db);
         $this->activityLogModel = new ActivityLog($this->db);
+        $this->notificationModel = new Notification($this->db);
     }
     public function index() {
         $patient_id = $_SESSION['user_id'] ?? null;
@@ -391,23 +394,72 @@ set_flash_message('error', "An error occurred while booking: " . $e->getMessage(
                             'appointment_scheduling'  // Third param is category (using descriptive name)
                         );
                     }
+                    // Format date/time for notifications
+                    $formattedDate = date('F j, Y', strtotime($appointment_date));
+                    $formattedTime = date('g:i A', strtotime($appointment_time));
                     
+                    // Get service name for better notification detail
+                    $serviceName = '';
+                    try {
+                        $serviceData = $this->serviceModel->getServiceById($service_id);
+                        $serviceName = $serviceData['name'] ?? '';
+                    } catch (Exception $e) {
+                        error_log("Error fetching service name: " . $e->getMessage());
+                    }
+                    
+                    // Create notification for patient (booking user)
+                    if (isset($this->notificationModel)) {
+                        // Detailed logging to debug notification creation
+                        error_log("Creating booking notification for patient ID: $patient_id");
+                        
+                        $this->notificationModel->addNotification([
+                            'user_id' => $patient_id,
+                            'subject' => 'Appointment Confirmation',
+                            'message' => "Your appointment" . ($serviceName ? " for $serviceName" : "") .
+                                        " has been scheduled for $formattedDate at $formattedTime.",
+                            'type' => 'appointment',
+                            'appointment_id' => $result // Assuming $result is the appointment ID
+                        ]);
+                        
+                        // Create notification for provider
+                        error_log("Creating booking notification for provider ID: $provider_id");
+                        
+                        $this->notificationModel->addNotification([
+                            'user_id' => $provider_id,
+                            'subject' => 'New Appointment Booking',
+                            'message' => "A new appointment" . ($serviceName ? " for $serviceName" : "") .
+                                        " has been scheduled for $formattedDate at $formattedTime.",
+                            'type' => 'appointment',
+                            'appointment_id' => $result
+                        ]);
+                        
+                        // Create system notification for admin tracking
+                        $this->notificationModel->create([
+                            'subject' => 'New Appointment Booked',
+                            'message' => "Appointment ID: $result has been created",
+                            'type' => 'appointment_created',
+                            'is_system' => 1,
+                            'audience' => 'admin'
+                        ]);
+                    } else {
+                        error_log("Cannot create notifications - notificationModel is not set");
+                    }
                     // Redirect to appointments page with success message
-set_flash_message('success', "Your appointment has been booked successfully!", 'patient_book');
+                    set_flash_message('success', "Your appointment has been booked successfully!", 'patient_book');
                     // Use the correct path format for cross-controller redirection
                     $redirectUrl = base_url("index.php/appointments?success=booked");
                     error_log("Redirecting to: " . $redirectUrl);
                     header("Location: " . $redirectUrl);
                     exit;
                 } else {
-set_flash_message('error', "Failed to book appointment. Please try again.", 'patient_book');
+                    set_flash_message('error', "Failed to book appointment. Please try again.", 'patient_book');
                     header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
                     exit;
                 }
                 
                 exit;
             } else {
-set_flash_message('error', "Missing required fields for booking.", 'patient_book');
+                set_flash_message('error', "Missing required fields for booking.", 'patient_book');
                 header("Location: " . base_url("index.php/patient/book?provider_id=" . $provider_id));
                 exit;
             }

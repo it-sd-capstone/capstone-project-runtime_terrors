@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
     markReadButtons.forEach(button => {
         button.addEventListener('click', function() {
             const notificationId = this.getAttribute('data-id');
-            markAsRead(notificationId, this);
+            submitMarkAsReadForm(notificationId);
         });
     });
     
@@ -116,56 +116,61 @@ document.addEventListener('DOMContentLoaded', function() {
     const markAllButton = document.getElementById('markAllRead');
     if (markAllButton) {
         markAllButton.addEventListener('click', function() {
-            markAllAsRead();
+            submitMarkAllAsReadForm();
         });
     }
     
-    // Function to mark a single notification as read
-    function markAsRead(notificationId, buttonElement) {
-        fetch('<?= base_url('index.php/notification/markAsRead') ?>', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'notification_id=' + notificationId
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update UI
-                const notificationItem = buttonElement.closest('.list-group-item');
-                notificationItem.classList.remove('list-group-item-primary');
-                buttonElement.remove();
-            }
-        })
-        .catch(error => console.error('Error marking notification as read:', error));
+    // Function to create and submit form for marking a single notification as read
+    function submitMarkAsReadForm(notificationId) {
+        // Create form element
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '<?= base_url('index.php/notification/markAsRead') ?>';
+        form.style.display = 'none';
+        
+        // Add notification ID to form
+        const idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'notification_id';
+        idInput.value = notificationId;
+        form.appendChild(idInput);
+        
+        // Add CSRF token if it exists
+        const csrfTokenInput = document.querySelector('input[name="csrf_token"]');
+        if (csrfTokenInput) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfTokenInput.value;
+            form.appendChild(csrfInput);
+        }
+        
+        // Add to body and submit
+        document.body.appendChild(form);
+        form.submit();
     }
     
-    // Function to mark all notifications as read
-    function markAllAsRead() {
-        fetch('<?= base_url('index.php/notification/markAsRead') ?>', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'mark_all=1'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update UI
-                document.querySelectorAll('.list-group-item-primary').forEach(item => {
-                    item.classList.remove('list-group-item-primary');
-                });
-                document.querySelectorAll('.mark-read').forEach(button => {
-                    button.remove();
-                });
-                
-                // Hide the mark all button
-                document.getElementById('markAllRead').style.display = 'none';
-            }
-        })
-        .catch(error => console.error('Error marking all notifications as read:', error));
+    // Function to create and submit form for marking all notifications as read
+    function submitMarkAllAsReadForm() {
+        // Create form element
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '<?= base_url('index.php/notification/markAllAsRead') ?>';
+        form.style.display = 'none';
+        
+        // Add CSRF token if it exists
+        const csrfTokenInput = document.querySelector('input[name="csrf_token"]');
+        if (csrfTokenInput) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfTokenInput.value;
+            form.appendChild(csrfInput);
+        }
+        
+        // Add to body and submit
+        document.body.appendChild(form);
+        form.submit();
     }
 });
 </script>
