@@ -2585,6 +2585,29 @@ public function setAcceptingNewPatients($providerId, $accepting) {
             ];
         }
     }
+    public function getProviderReviews($providerId) {
+        $stmt = $this->db->prepare("
+            SELECT 
+                r.rating, 
+                r.comment, 
+                r.created_at, 
+                u.first_name AS patient_first_name, 
+                u.last_name AS patient_last_name,
+                s.name AS service_name
+            FROM appointment_ratings r
+            JOIN users u ON r.patient_id = u.user_id
+            JOIN appointments a ON r.appointment_id = a.appointment_id
+            JOIN services s ON a.service_id = s.service_id
+            WHERE r.provider_id = ?
+            ORDER BY r.created_at DESC
+        ");
+        $stmt->bind_param("i", $providerId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+
+    
     public function updateAvailabilitySlot($availabilityId, $date, $startTime, $endTime) {
         try {
             $query = "UPDATE provider_availability 

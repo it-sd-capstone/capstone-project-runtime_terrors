@@ -49,12 +49,15 @@ class ProviderController {
         if (!empty($recentAppointments)) {
             set_flash_message('info', "You have new appointment bookings", 'provider_dashboard');
         }
-redirect('auth/login');
+            redirect('auth/login');
             return;
         }
         
         $provider_id = $_SESSION['user_id'];
-        error_log("Loading provider dashboard for ID: " . $provider_id);
+        $providerId = $_SESSION['user_id']; // or however you get the provider's id
+
+        // Example: get all reviews for this provider
+        $reviews = $this->providerModel->getProviderReviews($providerId);
         
         // Get provider data
         $providerData = $this->providerModel->getProviderData($provider_id);
