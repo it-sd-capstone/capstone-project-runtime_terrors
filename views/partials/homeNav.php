@@ -11,38 +11,34 @@ $userName = isset($userName) ? $userName : ($isLoggedIn ? ($_SESSION['name'] ?? 
 ?>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light" id="mainNavbar">
-  <div class="container">
-    <!-- Home-specific brand/logo can go here -->
-    <a class="navbar-brand" href="<?= base_url('index.php/home') ?>">
+  <div class="container-fluid">
+    <!-- Home-specific brand/logo as non-clickable text -->
+    <span class="navbar-brand">
       <strong>Appointment System</strong>
-    </a>
+    </span>
     
-    <?php if (!$isLoggedIn): ?>
-    <!-- Guest Navigation -->
-    <button class="navbar-toggler" type="button" id="navbarToggleGuest">
+    <button class="navbar-toggler ms-auto" type="button" id="navbarToggleGuest">
       <span class="navbar-toggler-icon"></span>
     </button>
     
+    <?php if (!$isLoggedIn): ?>
+    <!-- Guest Navigation -->
     <div class="collapse navbar-collapse" id="homeGuestNavbar">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
           <a class="nav-link" href="<?= base_url('index.php/auth/register') ?>">
-            <i class="fas fa-user-plus me-2 d-lg-none"></i>Register
+            <i class="fas fa-user-plus me-2"></i>Register
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="<?= base_url('index.php/auth') ?>">
-            <i class="fas fa-sign-in-alt me-2 d-lg-none"></i>Login
+            <i class="fas fa-sign-in-alt me-2"></i>Login
           </a>
         </li>
       </ul>
     </div>
     <?php else: ?>
     <!-- Logged-in Navigation -->
-    <button class="navbar-toggler" type="button" id="navbarToggleUser">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    
     <div class="collapse navbar-collapse" id="homeLoggedInNavbar">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
@@ -67,13 +63,13 @@ $userName = isset($userName) ? $userName : ($isLoggedIn ? ($_SESSION['name'] ?? 
             <?php if ($userRole === 'patient'): ?>
             <li>
               <a class="dropdown-item" href="<?= base_url('index.php/patient/viewProfile') ?>">
-                <i class="fas fa-user"></i> My Profile
+                <i class="fas fa-user me-2"></i> My Profile
               </a>
             </li>
             <?php elseif ($userRole === 'provider'): ?>
             <li>
               <a class="dropdown-item" href="<?= base_url('index.php/provider/viewProfile') ?>">
-                <i class="fas fa-user"></i> My Profile
+                <i class="fas fa-user me-2"></i> My Profile
               </a>
             </li>
             <?php endif; ?>
@@ -81,7 +77,7 @@ $userName = isset($userName) ? $userName : ($isLoggedIn ? ($_SESSION['name'] ?? 
             <li><hr class="dropdown-divider"></li>
             <li>
               <a class="dropdown-item" href="<?= base_url('index.php/auth/logout') ?>">
-                <i class="fas fa-sign-out-alt"></i> Logout
+                <i class="fas fa-sign-out-alt me-2"></i> Logout
               </a>
             </li>
           </ul>
@@ -92,7 +88,113 @@ $userName = isset($userName) ? $userName : ($isLoggedIn ? ($_SESSION['name'] ?? 
   </div>
 </nav>
 
-<!-- Custom navigation script that works independently of Bootstrap -->
+<style>
+/* Navbar styles - matching the navigation.php styles exactly */
+.navbar {
+  padding: 0.5rem 1rem;
+}
+
+/* Additional styles for dropdown */
+.dropdown-menu {
+  padding: 0.5rem;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.dropdown-item {
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  margin-bottom: 2px;
+}
+
+.dropdown-item:hover, .dropdown-item:focus {
+  background-color: rgba(0,0,0,0.05);
+}
+
+.dropdown-header {
+  font-weight: bold;
+  color: #555;
+  padding: 0.5rem 1rem;
+}
+
+/* Navbar styles for dashboard */
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    z-index: 1000;
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-top: 0.5rem;
+    max-height: 0;
+    overflow: hidden;
+    display: none !important; /* Hide by default in mobile */
+  }
+  
+  /* Only show when the 'show' class is applied */
+  .navbar-collapse.show {
+    max-height: 80vh;
+    overflow-y: auto;
+    display: block !important;
+  }
+  
+  /* Hide mobile menu items initially */
+  .navbar-nav {
+    display: none;
+  }
+  
+  /* Show them when the menu is expanded */
+  .navbar-collapse.show .navbar-nav {
+    display: block;
+  }
+  
+  .navbar-nav .nav-link {
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .navbar-nav .nav-link:hover {
+    background-color: rgba(0,0,0,0.05);
+  }
+  
+  /* Add extra space for items */
+  .navbar-nav .nav-item {
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* Force the navigation menu to be displayed when it has the 'show' class */
+.navbar-collapse.show {
+  height: auto !important;
+  visibility: visible !important;
+  overflow: visible !important;
+}
+
+.dropdown-menu.show {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Add these new rules to ensure hero section text remains white */
+.hero-section {
+  color: white !important;
+}
+.hero-section h1, 
+.hero-section p, 
+.hero-section .display-4, 
+.hero-section .lead {
+  color: white !important;
+}
+</style>
+
+<!-- Custom navigation script -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Prevent the script from running twice
@@ -103,32 +205,19 @@ document.addEventListener('DOMContentLoaded', function() {
   const openMenus = document.querySelectorAll('.navbar-collapse.show');
   openMenus.forEach(menu => menu.classList.remove('show'));
   
-  // Custom toggle for guest navigation
-  const guestToggle = document.getElementById('navbarToggleGuest');
+  // Custom toggle for guest/user navigation
+  const navbarToggle = document.getElementById('navbarToggleGuest');
   const guestMenu = document.getElementById('homeGuestNavbar');
-  
-  if (guestToggle && guestMenu) {
-    guestToggle.addEventListener('click', function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      console.log('Guest toggle clicked');
-      guestMenu.classList.toggle('show');
-      return false;
-    });
-  }
-  
-  // Custom toggle for logged-in navigation
-  const userToggle = document.getElementById('navbarToggleUser');
   const userMenu = document.getElementById('homeLoggedInNavbar');
   
-  if (userToggle && userMenu) {
-    userToggle.addEventListener('click', function(event) {
+  if (navbarToggle) {
+    navbarToggle.addEventListener('click', function(event) {
       event.preventDefault();
       event.stopPropagation();
       
-      console.log('User toggle clicked');
-      userMenu.classList.toggle('show');
+      // Toggle the appropriate menu
+      if (guestMenu) guestMenu.classList.toggle('show');
+      if (userMenu) userMenu.classList.toggle('show');
       return false;
     });
   }
@@ -165,70 +254,3 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
-
-<style>
-/* Add necessary styles to make the navigation work properly */
-.navbar-collapse {
-  transition: height 0.35s ease;
-}
-
-/* Force the navigation menu to be displayed when it has the 'show' class */
-.navbar-collapse.show {
-  display: block !important;
-  height: auto !important;
-  visibility: visible !important;
-  overflow: visible !important;
-}
-
-.dropdown-menu.show {
-  display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-/* Add these new rules to ensure hero section text remains white */
-.hero-section {
-  color: white !important;
-}
-.hero-section h1, 
-.hero-section p, 
-.hero-section .display-4, 
-.hero-section .lead {
-  color: white !important;
-}
-
-@media (max-width: 991.98px) {
-  /* Properly hide the navbar collapse in mobile view until toggled */
-  .navbar-collapse {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    left: 0;
-    z-index: 1000;
-    background-color: white;
-    padding: 1rem;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    margin-top: 0.5rem;
-    border-radius: 0.25rem;
-    max-height: 0;
-    overflow: hidden;
-    display: none !important; /* Hide by default in mobile */
-  }
-  
-  /* Only show when the 'show' class is applied */
-  .navbar-collapse.show {
-    max-height: 80vh;
-    overflow-y: auto;
-    display: block !important;
-  }
-  
-  /* Hide mobile menu items initially */
-  .navbar-nav {
-    display: none;
-  }
-  
-  /* Show them when the menu is expanded */
-  .navbar-collapse.show .navbar-nav {
-    display: block;
-  }
-}
-</style>
