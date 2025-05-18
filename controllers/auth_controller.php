@@ -79,70 +79,80 @@ set_flash_message('success', $message, 'global');
     }
     
     public function login() {
-        $error = '';
-        $errors = [];
-        $resent = false;
-        
-        // Check if verification email was requested to be resent
-        if (isset($_GET['resend']) && isset($_GET['email'])) {
-            $email = $this->sanitizeInput($_GET['email']);
-            $resent = $this->resendVerificationEmail($email);
+    $error = '';
+    $errors = [];
+    $resent = false;
+
+    // Check if verification email was requested to be resent
+    if (isset($_GET['resend']) && isset($_GET['email'])) {
+        $email = $this->sanitizeInput($_GET['email']);
+        $resent = $this->resendVerificationEmail($email);
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // Verify CSRF token
+        if (!verify_csrf_token()) {
+            return;
         }
-        
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Verify CSRF token
-            if (!verify_csrf_token()) {
-                return;
-            }
-            
-            error_log("Login attempt for email: " . ($_POST['email'] ?? 'none'));
-            
-            $email = $_POST['email'] ?? '';
-            $password = $_POST['password'] ?? '';
-            
-            // Basic validation
-            if (empty($email)) {
-                $errors[] = "Email is required";
-            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $errors[] = "Invalid email format";
-            }
-            
-            if (empty($password)) {
-                $errors[] = "Password is required";
-            }
-            
-            // If basic validation passes, attempt authentication
-            if (empty($errors)) {
-                error_log("Attempting to authenticate user with email: $email");
-                try {
-                    // Load user model
-                    $userModel = new User($this->db);
-                    $user = $userModel->authenticate($email, $password);
-                    
-                    if ($user) {
-                        // Check if email is verified
-                        if (empty($user['email_verified_at']) && ($user['is_verified'] ?? 0) == 0) {
-                            $errors[] = "Your email address has not been verified. Please check your email for the verification link or 
-                                <a href='" . base_url('index.php/auth/login?resend=1&email=' . urlencode($email)) . "'>click here</a> to resend the verification email.";
-                            
-                            // Log verification needed
-                            $this->activityLogModel->logAuth($user['user_id'], 'login_failed', "Email not verified: $email");
-                            
-                            // Include the view and exit
-                            include VIEW_PATH . '/auth/index.php';
-                            return;
-                        }
-                        
-                        // Check if password change is required
-                        if (isset($user['password_change_required']) && $user['password_change_required'] == 1) {
-                            // Store user ID in session for password change
-                            $_SESSION['temp_user_id'] = $user['user_id'];
-                            
-                            // Redirect to password change page
-                            header('Location: ' . base_url('index.php/auth/change_password'));
-                            exit;
-                        }
-                        
+
+        error_log("Login attempt for email: " . ($_POST['email'] ?? 'none'));
+
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
+
+        // Basic validation
+        if (empty($email)) {
+            $errors[] = "Email is required";
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Invalid email format";
+        }
+
+        if (empty($password)) {
+            $errors[] = "Password is required";
+        }
+
+        // If basic validation passes, attempt authentication
+        if (empty($errors)) {
+            error_log("Attempting to authenticate user with email: $email");
+            try {
+                // Load user model
+                $userModel = new User($this->db);
+                $user = $userModel->getUserByEmail($email);
+
+                if ($user) {
+                    // Check if account is deactivated
+                    if (isset($user['is_active']) && !$user['is_active']) {
+                        $errors[] = "This account has been deactivated. Please contact administration.";
+                        $this->activityLogModel->logAuth($user['user_id'], 'login_failed', "Account deactivated: $email");
+                    }
+                    // Check password (defensive: ensure hash exists)
+                    elseif (!isset($user['password_hash']) || !password_verify($password, $user['password_hash'])) {
+                        $errors[] = "Invalid password. Please try again.";
+                        $this->activityLogModel->logAuth($user['user_id'], 'login_failed', "Invalid password: $email");
+                    }
+                    // Check if email is verified
+                    elseif (empty($user['email_verified_at']) && ($user['is_verified'] ?? 0) == 0) {
+                        $errors[] = "Your email address has not been verified. Please check your email for the verification link or 
+                            <a href='" . base_url('index.php/auth/login?resend=1&email=' . urlencode($email)) . "'>click here</a> to resend the verification email.";
+
+                        // Log verification needed
+                        $this->activityLogModel->logAuth($user['user_id'], 'login_failed', "Email not verified: $email");
+
+                        // Include the view and exit
+                        include VIEW_PATH . '/auth/index.php';
+                        return;
+                    }
+                    // Check if password change is required
+                    elseif (isset($user['password_change_required']) && $user['password_change_required'] == 1) {
+                        // Store user ID in session for password change
+                        $_SESSION['temp_user_id'] = $user['user_id'];
+
+                        // Redirect to password change page
+                        header('Location: ' . base_url('index.php/auth/change_password'));
+                        exit;
+                    }
+                    // Successful login
+                    else {
                         // After authentication succeeds but before redirect:
                         $loginUpdate = $this->userModel->updateLastLogin($user['user_id']);
 
@@ -157,10 +167,10 @@ set_flash_message('success', $message, 'global');
                         $_SESSION['name'] = $user['first_name'] . ' ' . $user['last_name'];
                         $_SESSION['role'] = $user['role'];
                         $_SESSION['logged_in'] = true;
-                        
+
                         // Log the successful login
                         $this->activityLogModel->logAuth($user['user_id'], 'login_success');
-                        
+
                         // Redirect based on role
                         switch ($user['role']) {
                             case 'admin':
@@ -173,41 +183,31 @@ set_flash_message('success', $message, 'global');
                                 header('Location: ' . base_url('index.php/home'));
                         }
                         exit;
-                    } else {
-                        // Try to be more specific about the error
-                        // Check if user exists with that email
-                        if ($userModel->emailExists($email)) {
-                            $errors[] = "Invalid password. Please try again.";
-                        } else {
-                            $errors[] = "No account found with that email address.";
-                        }
-                        
-                        // Additional helper message for demo purposes
-                        $errors[] = "For testing, try the demo logins below or use 'password' as the password.";
-                        
-                        // Log failed login attempt
-                        $this->activityLogModel->logAuth(null, 'login_failed', "Email: $email");
                     }
-                } catch (Exception $e) {
-    // Log system event
-logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
-
-                    error_log("Login error: " . $e->getMessage());
-                    $error = "An error occurred during login. Please try again.";
+                } else {
+                    $errors[] = "No account found with that email address. Create an account or please contact administration for assistance";
+                    $this->activityLogModel->logAuth(null, 'login_failed', "Email: $email");
                 }
+            } catch (Exception $e) {
+                // Log system event
+                logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
+
+                error_log("Login error: " . $e->getMessage());
+                $error = "An error occurred during login. Please try again.";
             }
         }
-        
-        // Pass the resend status to the view
-        $data = [
-            'errors' => $errors,
-            'error' => $error,
-            'resent' => $resent
-        ];
-        
-        include VIEW_PATH . '/auth/index.php';
     }
-    
+
+    // Pass the resend status to the view
+    $data = [
+        'errors' => $errors,
+        'error' => $error,
+        'resent' => $resent
+    ];
+    extract($data);
+
+    include VIEW_PATH . '/auth/index.php';
+}
     /**
      * Resend verification email
      *
