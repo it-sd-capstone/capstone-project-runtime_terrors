@@ -14,7 +14,7 @@ $current_url = isset($current_url) ? $current_url : ($_SERVER['REQUEST_URI'] ?? 
 <nav class="navbar navbar-expand-lg navbar-light bg-light" id="dashMainNavbar">
   <div class="container-fluid">
     <!-- Dashboard branding - optional -->
-    <a class="navbar-brand d-lg-none" href="<?= base_url('index.php/' . $userRole . '/dashboard') ?>">
+    <a class="navbar-brand d-lg-none" href="<?= base_url('index.php/' . $userRole) ?>">
       <span class="badge bg-<?= $userRole === 'admin' ? 'danger' : ($userRole === 'provider' ? 'success' : 'primary') ?>">
         <?= ucfirst($userRole) ?> Dashboard
       </span>
