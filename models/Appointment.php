@@ -1003,7 +1003,7 @@ public function getByProvider($provider_id) {
      * @return array Status counts
      */
     public function getAppointmentStatusCounts() {
-        $statuses = ['scheduled', 'confirmed', 'completed', 'canceled', 'no-show'];
+        $statuses = ['confirmed', 'completed', 'canceled', 'no-show'];
         $result = [];
         
         foreach ($statuses as $status) {

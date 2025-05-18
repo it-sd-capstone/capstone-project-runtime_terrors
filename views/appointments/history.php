@@ -77,6 +77,14 @@
                                                 <p><small>Changed status from <strong><?= htmlspecialchars(ucfirst($details['previous_status'])) ?></strong> 
                                                    to <strong><?= htmlspecialchars(ucfirst($details['new_status'])) ?></strong></small></p>
                                                 <p><small>Reason: <?= htmlspecialchars($details['reason']) ?></small></p>
+                                            <?php elseif ($log['action'] === 'notes_updated'): ?>
+                                                <p><small>Provider updated appointment notes</small></p>
+                                                <?php if (isset($details['previous_notes'])): ?>
+                                                    <p><small><strong>Previous notes:</strong> <?= nl2br(htmlspecialchars($details['previous_notes'] ? $details['previous_notes'] : 'None')) ?></small></p>
+                                                <?php endif; ?>
+                                                <?php if (isset($details['new_notes'])): ?>
+                                                    <p><small><strong>New notes:</strong> <?= nl2br(htmlspecialchars($details['new_notes'])) ?></small></p>
+                                                <?php endif; ?>
                                             <?php else: ?>
                                                 <pre class="small"><?= htmlspecialchars(json_encode($details, JSON_PRETTY_PRINT)) ?></pre>
                                             <?php endif; ?>
@@ -167,6 +175,8 @@ function getActionClass($action) {
             return 'danger';
         case 'status_changed':
             return 'info';
+        case 'notes_updated':
+            return 'warning';
         default:
             return 'secondary';
     }
@@ -180,6 +190,8 @@ function formatActionText($action) {
             return 'Appointment Canceled';
         case 'status_changed':
             return 'Status Updated';
+        case 'notes_updated':
+            return 'Notes Updated';
         default:
             return ucfirst(str_replace('_', ' ', $action));
     }
