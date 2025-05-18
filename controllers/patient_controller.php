@@ -456,7 +456,7 @@ set_flash_message('error', "An error occurred while booking: " . $e->getMessage(
                         error_log("Cannot create notifications - notificationModel is not set");
                     }
                     // Redirect to appointments page with success message
-                    set_flash_message('success', "Your appointment has been booked successfully!", 'patient_book');
+                    // set_flash_message('success', "Your appointment has been booked successfully!", 'patient_book');
                     // Use the correct path format for cross-controller redirection
                     $redirectUrl = base_url("index.php/appointments?success=booked");
                     error_log("Redirecting to: " . $redirectUrl);
@@ -844,7 +844,7 @@ set_flash_message('error', "Service not found", 'patient_book');
                     }
                     
                     // Redirect to appointments page with success message
-                    $_SESSION['success'] = "Your appointment has been booked successfully!";
+                    // $_SESSION['success'] = "Your appointment has been booked successfully!";
                     // Use the correct path format for cross-controller redirection
                     $redirectUrl = base_url("index.php/appointments?success=booked");
                     error_log("Redirecting to: " . $redirectUrl);
