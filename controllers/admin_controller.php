@@ -1048,10 +1048,6 @@ class AdminController {
      * Add a new provider
      */
     public function addProvider() {
-    // Log system event
-    if ($success || $provider_id) {
-        logSystemEvent('provider_added', 'A new healthcare provider was added to the system', 'New Provider Added');
-    }
 
         // Check if user is admin
         if (!$this->isUserAdmin()) {
