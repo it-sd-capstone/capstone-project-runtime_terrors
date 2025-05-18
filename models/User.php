@@ -1329,7 +1329,7 @@ class User {
                 $medicalConditions = $data['medical_conditions'] ?? '';
                 
                 $stmt->bind_param(
-                    "iissssss",
+                    "iisssssss",  // 9 characters for 9 parameters (2 integers + 7 strings)
                     $patientId,
                     $patientId, // user_id is the same as patient_id
                     $phone,
