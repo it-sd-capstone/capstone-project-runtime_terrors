@@ -2308,21 +2308,27 @@ set_flash_message('error', "Failed to update accepting new patients status.", 'p
      * Cancel Appointment
      */
     public function cancelAppointment($appointment_id) {
-    // Log system event
-    if ($success) {
-        logSystemEvent('appointment_cancelled', 'An appointment was cancelled in the system', 'Appointment Cancelled');
-    }
-
         // Get appointment ID from request
         $appointment_id = $_POST['appointment_id'] ?? $appointment_id;
+        
+        // Set the success variable first
         $success = $this->appointmentModel->cancelAppointment($appointment_id, $_SESSION['user_id']);
-    
+        
+        // Then use it for logging
+        if ($success) {
+            logSystemEvent('appointment_cancelled', 'An appointment was cancelled in the system', 'Appointment Cancelled');
+        }
+
         if ($success) {
             set_flash_message('success', "Appointment cancelled successfully", 'provider_appointments');
         } else {
             set_flash_message('error', "Failed to cancel appointment", 'provider_appointments');
         }
-}
+        
+        // Add a redirect back to appointments page
+        header('Location: ' . base_url('index.php/provider/appointments'));
+        exit;
+    }
 
     /**
      * Reschedule Appointment

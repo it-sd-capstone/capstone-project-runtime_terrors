@@ -1,4 +1,3 @@
-
 <?php 
   include VIEW_PATH . '/partials/header.php'; 
 ?>
@@ -16,9 +15,10 @@
     </div>
 
     <div class="row">
-        <!-- Upcoming Appointments -->
+        <!-- Left Column -->
         <div class="col-md-8">
-            <div class="card shadow">
+            <!-- Upcoming Appointments -->
+            <div class="card shadow mb-4">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h3 class="h5 mb-0">Upcoming Appointments</h3>
                     <a href="<?= base_url('index.php/provider/appointments') ?>" class="btn btn-light btn-sm">View All</a>
@@ -67,8 +67,44 @@
                     <?php endif; ?>
                 </div>
             </div>
+            
+            <!-- Recent Reviews Section - Moved here from right column -->
+            <?php if (!empty($reviews)) : ?>
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Recent Reviews</h3>
+                        <?php if (count($reviews) > 5): ?>
+                            <a href="<?= base_url('index.php/provider/reviews') ?>" class="btn btn-dark btn-sm">View All</a>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <?php foreach (array_slice($reviews, 0, 5) as $review) : ?>
+                            <div class="mb-3 pb-3 border-bottom">
+                                <div class="d-flex align-items-center mb-1">
+                                    <span class="me-2 text-warning">
+                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                            <i class="fa<?= $i < $review['rating'] ? 's' : 'r' ?> fa-star"></i>
+                                        <?php endfor; ?>
+                                    </span>
+                                    <span class="text-muted small ms-auto"><?= date('M d, Y', strtotime($review['created_at'])) ?></span>
+                                </div>
+                                <div class="mb-1">
+                                    <strong><?= htmlspecialchars($review['patient_first_name']) ?> <?= htmlspecialchars($review['patient_last_name']) ?></strong>
+                                    <span class="text-muted small">for <?= htmlspecialchars($review['service_name']) ?></span>
+                                </div>
+                                <?php if (!empty($review['comment'])): ?>
+                                    <div class="text-secondary"><?= htmlspecialchars($review['comment']) ?></div>
+                                <?php else: ?>
+                                    <div class="text-muted small fst-italic">No comment left.</div>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
-        <!-- Stats, Actions, and Recent Reviews -->
+        
+        <!-- Right Column - Stats and Actions -->
         <div class="col-md-4">
             <!-- Provider Stats -->
             <div class="card shadow mb-4">
@@ -110,41 +146,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Recent Reviews Section -->
-            <?php if (!empty($reviews)) : ?>
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h3 class="h5 mb-0">Recent Reviews</h3>
-                    </div>
-                    <div class="card-body">
-                        <?php foreach (array_slice($reviews, 0, 5) as $review) : ?>
-                            <div class="mb-3 pb-3 border-bottom">
-                                <div class="d-flex align-items-center mb-1">
-                                    <span class="me-2 text-warning">
-                                        <?php for ($i = 0; $i < 5; $i++): ?>
-                                            <i class="fa<?= $i < $review['rating'] ? 's' : 'r' ?> fa-star"></i>
-                                        <?php endfor; ?>
-                                    </span>
-                                    <span class="text-muted small ms-auto"><?= date('M d, Y', strtotime($review['created_at'])) ?></span>
-                                </div>
-                                <div class="mb-1">
-                                    <strong><?= htmlspecialchars($review['patient_first_name']) ?> <?= htmlspecialchars($review['patient_last_name']) ?></strong>
-                                    <span class="text-muted small">for <?= htmlspecialchars($review['service_name']) ?></span>
-                                </div>
-                                <?php if (!empty($review['comment'])): ?>
-                                    <div class="text-secondary"><?= htmlspecialchars($review['comment']) ?></div>
-                                <?php else: ?>
-                                    <div class="text-muted small fst-italic">No comment left.</div>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                        <?php if (count($reviews) > 5): ?>
-                            <a href="<?= base_url('index.php/provider/reviews') ?>" class="btn btn-link p-0">View all reviews</a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
         </div>
     </div>
 </div>
