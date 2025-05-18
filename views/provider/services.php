@@ -4,6 +4,56 @@ print_r($_SESSION);
 echo " -->";
 ?>
 <?php include VIEW_PATH . '/partials/header.php'; ?>
+
+<!-- Add only targeted CSS for mobile improvements -->
+<style>
+    /* Mobile optimizations */
+    @media screen and (max-width: 767px) {
+        /* Make the create button full-width on small screens */
+        @media (max-width: 576px) {
+            .col-lg-8.col-md-10.mx-auto {
+                width: 100%;
+            }
+            .col-lg-8.col-md-10.mx-auto .btn {
+                width: 100%;
+            }
+            .justify-content-end {
+                justify-content: center !important;
+            }
+        }
+        
+        /* Table adjustments for mobile */
+        .table-responsive {
+            border: 0;
+            overflow-x: auto;
+        }
+        
+        /* Stack the buttons on small screens */
+        .edit-service-btn {
+            display: inline-block;
+            margin-bottom: 0.5rem !important;
+            margin-right: 0.5rem;
+        }
+        
+        .table th, .table td {
+            white-space: normal;
+        }
+        
+        /* Compact the description on mobile */
+        .table td:nth-child(2) {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Make buttons more touch-friendly */
+        .btn-sm {
+            padding: 0.375rem 0.5rem;
+        }
+    }
+</style>
+
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-md-12">
@@ -242,6 +292,21 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_price').value = btn.getAttribute('data-price');
         });
     });
+    
+    // Add this simple tap-to-expand functionality for descriptions on mobile
+    if (window.innerWidth < 768) {
+        document.querySelectorAll('.table td:nth-child(2)').forEach(function(cell) {
+            cell.addEventListener('click', function() {
+                if (this.style.whiteSpace === 'normal') {
+                    this.style.whiteSpace = 'nowrap';
+                    this.style.maxWidth = '150px';
+                } else {
+                    this.style.whiteSpace = 'normal';
+                    this.style.maxWidth = 'none';
+                }
+            });
+        });
+    }
 });
 </script>
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
