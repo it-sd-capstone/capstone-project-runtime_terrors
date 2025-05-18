@@ -94,5 +94,47 @@ body {
 
 <!-- Bootstrap Bundle with Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Only run if user is logged in
+<?php if (isset($_SESSION['user_id']) && $_SESSION['logged_in']): ?>
+document.addEventListener('DOMContentLoaded', function() {
+  // Function to update notification badge
+  function updateNotificationBadge() {
+    fetch('<?= base_url('index.php/notification/getUnreadCount') ?>')
+      .then(response => response.json())
+      .then(data => {
+        const notificationBadge = document.querySelector('.notifications-icon .badge');
+        const notificationIcon = document.querySelector('.notifications-icon');
+        
+        if (data.count > 0) {
+          // If badge doesn't exist, create it
+          if (!notificationBadge) {
+            const badge = document.createElement('span');
+            badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+            badge.textContent = data.count;
+            document.querySelector('.notifications-icon .nav-link').appendChild(badge);
+          } else {
+            // Update existing badge
+            notificationBadge.textContent = data.count;
+            notificationBadge.style.display = 'inline-block';
+          }
+        } else if (notificationBadge) {
+          // Hide badge if count is 0
+          notificationBadge.style.display = 'none';
+        }
+      })
+      .catch(error => console.error('Error fetching notification count:', error));
+  }
+  
+  // Update on page load
+  updateNotificationBadge();
+  
+  // Update every 30 seconds (optional)
+  setInterval(updateNotificationBadge, 30000);
+});
+<?php endif; ?>
+</script>
+
 </body>
 </html>

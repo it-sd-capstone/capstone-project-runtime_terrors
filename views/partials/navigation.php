@@ -130,18 +130,12 @@ $is_home_page = isset($is_home_page) ? $is_home_page : (strpos($current_url, 'in
             <?php
             // Get unread notification count
             $unreadCount = 0;
-            if (isset($db) && $db instanceof mysqli && isset($_SESSION['user_id'])) {
+            if (isset($_SESSION['user_id'])) {
                 try {
-                    $query = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
-                    $stmt = $db->prepare($query);
-                    if ($stmt) {
-                        $stmt->bind_param("i", $_SESSION['user_id']);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        if ($row = $result->fetch_assoc()) {
-                            $unreadCount = $row['count'];
-                        }
-                    }
+                    // Use the Notification model to get the count
+                    require_once APP_ROOT . '/models/Notification.php';
+                    $notificationModel = new Notification(get_db());
+                    $unreadCount = $notificationModel->getUnreadCountByUserId($_SESSION['user_id']);
                 } catch (Exception $e) {
                     error_log("Error getting notification count: " . $e->getMessage());
                 }
