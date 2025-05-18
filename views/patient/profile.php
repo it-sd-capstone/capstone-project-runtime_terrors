@@ -62,9 +62,9 @@
                                 <div class="mb-3">
                                     <label for="phone" class="form-label">Phone</label>
                                     <input type="tel" class="form-control" id="phone" name="phone"
-                                           value="<?= htmlspecialchars($patient['phone'] ?? '') ?>" 
-                                           pattern="^\(\d{3}\) \d{3}-\d{4}$" placeholder="(123) 456-7890" required>
-                                    <div class="invalid-feedback">Please enter a valid phone number in format: (123) 456-7890</div>
+                                        value="<?= htmlspecialchars($patient['phone'] ?? '') ?>" 
+                                        pattern="^\(\d{3}\) \d{3}-\d{4}$" placeholder="(123) 456-7890">
+                                    <div class="invalid-feedback">If provided, phone number must be in format: (123) 456-7890</div>
                                 </div>
                                 
                                 <div class="mb-3">
@@ -194,11 +194,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Phone number formatting
     const phoneInputs = document.querySelectorAll('input[type="tel"]');
-    
+
     phoneInputs.forEach(function(input) {
         input.addEventListener('input', function(e) {
+            // Allow empty value for optional phone fields
+            if (e.target.value.trim() === '') {
+                e.target.setCustomValidity('');
+                return;
+            }
+            
             // Remove all non-numeric characters
             let value = e.target.value.replace(/\D/g, '');
             
@@ -216,14 +221,25 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the input value
             e.target.value = value;
             
-            // Validate the pattern
+            // Validate the pattern only if not empty
             if (input.pattern) {
-                const pattern = new RegExp(input.pattern);
-                if (pattern.test(input.value)) {
+                if (value.trim() === '') {
                     input.setCustomValidity('');
                 } else {
-                    input.setCustomValidity('Please enter a valid phone number in format: (123) 456-7890');
+                    const pattern = new RegExp(input.pattern);
+                    if (pattern.test(input.value)) {
+                        input.setCustomValidity('');
+                    } else {
+                        input.setCustomValidity('Please enter a valid phone number in format: (123) 456-7890');
+                    }
                 }
+            }
+        });
+        
+        // Also validate on blur to handle cleared fields
+        input.addEventListener('blur', function(e) {
+            if (e.target.value.trim() === '') {
+                e.target.setCustomValidity('');
             }
         });
     });
