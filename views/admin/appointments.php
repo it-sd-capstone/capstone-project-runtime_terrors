@@ -118,7 +118,7 @@
                         <div class="col-md-6">
                             <label for="status" class="form-label">Status</label>
                             <select class="form-select" id="status" name="status" required>
-                                <option value="scheduled" selected>Scheduled</option>
+                                <!-- <option value="scheduled" selected>Scheduled</option> -->
                                 <option value="confirmed">Confirmed</option>
                                 <option value="completed">Completed</option>
                                 <option value="canceled">Canceled</option>

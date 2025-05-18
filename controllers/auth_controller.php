@@ -261,13 +261,13 @@ class AuthController {
     
     
     public function register() {
-
         $old = [
             'first_name' => $_POST['first_name'] ?? '',
             'last_name' => $_POST['last_name'] ?? '',
             'email' => $_POST['email'] ?? '',
             'phone' => $_POST['phone'] ?? ''
         ];
+        
         error_log("Register method called");
         error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
         $error = '';
@@ -279,32 +279,32 @@ class AuthController {
             $email = $_POST['email'] ?? '';
             $password = $_POST['password'] ?? '';
             $confirmPassword = $_POST['confirm_password'] ?? '';
-            $firstName = $_POST['first_name'] ?? '';
-            $lastName = $_POST['last_name'] ?? '';
+            
+            // Capitalize first letter of first and last name before validation
+            $firstName = ucfirst(strtolower($_POST['first_name'] ?? ''));
+            $lastName = ucfirst(strtolower($_POST['last_name'] ?? ''));
+            
             $phone = $_POST['phone'] ?? '';
             $role = 'patient'; // Default role for new users
-
+            
             // Validate first name
             $firstNameValidation = validateName($firstName);
             if (!$firstNameValidation['valid']) {
                 $errors[] = $firstNameValidation['error'];
             } else {
                 $firstName = $firstNameValidation['sanitized'];
+                // Ensure capitalization after sanitization
+                $firstName = ucfirst(strtolower($firstName));
             }
-
+            
             // Validate last name
             $lastNameValidation = validateName($lastName);
             if (!$lastNameValidation['valid']) {
                 $errors[] = $lastNameValidation['error'];
             } else {
                 $lastName = $lastNameValidation['sanitized'];
-            }
-
-            // Basic field validation (your existing code continues here)
-            if (empty($email)) {
-                $errors[] = "Email address is required";
-            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $errors[] = "Invalid email format";
+                // Ensure capitalization after sanitization
+                $lastName = ucfirst(strtolower($lastName));
             }
             
             // Basic field validation
@@ -313,15 +313,15 @@ class AuthController {
             } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $errors[] = "Invalid email format";
             }
-
+            
             if (empty($firstName)) {
                 $errors[] = "First name is required";
             }
-
+            
             if (empty($lastName)) {
                 $errors[] = "Last name is required";
             }
-
+            
             // Check if email already exists
             if (!empty($email) && $this->userModel->emailExists($email)) {
                 $errors[] = "Email address is already registered";

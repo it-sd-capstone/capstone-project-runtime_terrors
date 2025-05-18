@@ -29,7 +29,7 @@
                     <?php if (!empty($notifications)) : ?>
                         <div class="list-group">
                             <?php foreach ($notifications as $notification) : ?>
-                                <?php 
+                                <?php
                                     $isRead = $notification['is_read'] ?? false;
                                     $notificationClass = $isRead ? '' : 'list-group-item-primary';
                                     $notificationType = $notification['type'] ?? 'info';
@@ -75,7 +75,7 @@
                                         $timeAgo = 'just now';
                                     }
                                 ?>
-                                <div class="list-group-item list-group-item-action <?= $notificationClass ?>" 
+                                <div class="list-group-item list-group-item-action <?= $notificationClass ?>"
                                      data-notification-id="<?= $notification['notification_id'] ?>">
                                     <div class="d-flex w-100 justify-content-between">
                                         <h5 class="mb-1">
@@ -87,7 +87,7 @@
                                     <p class="mb-1"><?= htmlspecialchars($notification['message']) ?></p>
                                     <div class="d-flex justify-content-between align-items-center mt-2">
                                         <?php if (isset($notification['appointment_id'])): ?>
-                                            <a href="<?= base_url('index.php/provider/appointments/view/' . $notification['appointment_id']) ?>" 
+                                            <a href="<?= base_url('index.php/provider/appointments/view/' . $notification['appointment_id']) ?>"
                                                class="btn btn-sm btn-outline-info">
                                                 View Appointment
                                             </a>
@@ -95,7 +95,7 @@
                                             <span></span>
                                         <?php endif; ?>
                                         <?php if (!$isRead): ?>
-                                            <button class="btn btn-sm btn-outline-primary mark-read" 
+                                            <button class="btn btn-sm btn-outline-primary mark-read"
                                                     data-id="<?= $notification['notification_id'] ?>">
                                                 Mark as Read
                                             </button>
@@ -111,20 +111,25 @@
                         </div>
                     <?php endif; ?>
                 </div>
-                <?php if (!empty($notifications)): ?>
-                    <div class="card-footer bg-light">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Showing <?= count($notifications) ?> notification(s)</small>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#notificationSettingsModal">
-                                <i class="fas fa-cog me-1"></i> Notification Settings
-                            </button>
-                        </div>
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <?php if (!empty($notifications)): ?>
+                                Showing <?= count($notifications) ?> notification(s)
+                            <?php else: ?>
+                                No notifications
+                            <?php endif; ?>
+                        </small>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#notificationSettingsModal">
+                            <i class="fas fa-cog me-1"></i> Notification Settings
+                        </button>
                     </div>
-                <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
 
 <!-- Notification Settings Modal -->
 <div class="modal fade" id="notificationSettingsModal" tabindex="-1" aria-labelledby="notificationSettingsModalLabel" aria-hidden="true">

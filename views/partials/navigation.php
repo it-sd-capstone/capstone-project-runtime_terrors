@@ -306,4 +306,26 @@ document.addEventListener('DOMContentLoaded', function() {
   opacity: 1 !important;
   visibility: visible !important;
 }
+
+/* Remove underlines from all navigation links */
+.navbar a,
+.navbar .nav-link,
+.navbar .dropdown-item,
+.navbar .navbar-brand {
+  text-decoration: none !important;
+}
+
+/* Optionally add underline only on hover if desired */
+.navbar a:hover {
+  text-decoration: none !important;
+}
+
+/* Fix for specific link underlines that might be coming from other CSS */
+#dashboardNavbar .nav-link,
+#dashUserDropdownMenu .dropdown-item,
+.navbar-brand {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
 </style>

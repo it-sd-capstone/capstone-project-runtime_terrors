@@ -159,10 +159,6 @@ set_flash_message('error', 'Provider ID is required', 'global');
             exit;
         }
         
-        // Load necessary models
-        require_once MODEL_PATH . '/provider.php';
-        require_once MODEL_PATH . '/services.php';
-        
         // Create model instances
         $providerModel = new Provider($this->db);
         $serviceModel = new Services($this->db);

@@ -115,10 +115,6 @@ include VIEW_PATH . '/partials/header.php';
               <h3 class="h6">Appointment Status</h3>
               <ul class="list-group">
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                  Scheduled
-                  <span class="badge bg-info rounded-pill"><?= $stats['scheduledAppointments'] ?? 0 ?></span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
                   Confirmed
                   <span class="badge bg-warning rounded-pill"><?= $stats['confirmedAppointments'] ?? 0 ?></span>
                 </li>
@@ -446,20 +442,21 @@ document.addEventListener('DOMContentLoaded', function() {
   applySavedWidgetPreferences();
 });
 
-/** * Initialize the dashboard charts */
+/**
+ * Initialize the dashboard charts
+ */
 function initializeCharts() {
     // Appointment Status Chart
     const statusCtx = document.getElementById('appointmentStatusChart');
     if (!statusCtx) return;
-   
+    
     const statusChart = new Chart(statusCtx.getContext('2d'), {
         type: 'doughnut',
         data: {
-            labels: ['Scheduled', 'Confirmed', 'Completed', 'Canceled', 'No Show'],
+            labels: ['Confirmed', 'Completed', 'Canceled', 'No Show'],
             datasets: [{
-                data: [0, 0, 0, 0, 0], // Will be populated with real data
+                data: [0, 0, 0, 0], // Will be populated with real data - removed one zero
                 backgroundColor: [
-                    '#36a2eb',  // Blue for scheduled
                     '#ffcd56',  // Yellow for confirmed
                     '#4bc0c0',  // Teal for completed
                     '#ff6384',  // Red for canceled
@@ -481,11 +478,11 @@ function initializeCharts() {
             }
         }
     });
-   
+    
     // Appointment Trends Chart
     const trendsCtx = document.getElementById('appointmentTrendsChart');
     if (!trendsCtx) return;
-   
+    
     const trendsChart = new Chart(trendsCtx.getContext('2d'), {
         type: 'line',
         data: {
@@ -513,13 +510,13 @@ function initializeCharts() {
             }
         }
     });
-   
+    
     // Store chart references globally for later updates
     window.adminCharts = {
         statusChart: statusChart,
         trendsChart: trendsChart
     };
-   
+    
     // Load initial data
     updateChartTimePeriod('monthly');
 }

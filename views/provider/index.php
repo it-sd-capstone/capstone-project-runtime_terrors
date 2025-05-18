@@ -106,26 +106,7 @@
         
         <!-- Right Column - Stats and Actions -->
         <div class="col-md-4">
-            <!-- Provider Stats -->
-            <div class="card shadow mb-4">
-                <div class="card-header bg-success text-white">
-                    <h3 class="h5 mb-0">Your Statistics</h3>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-3">
-                        <div class="stat-label">Rating</div>
-                        <div class="stat-value"><strong>4.8</strong> <small class="text-muted">(125 reviews)</small></div>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3">
-                        <div class="stat-label">Appointments</div>
-                        <div class="stat-value"><strong><?= count($appointments ?? []) ?></strong> <small class="text-muted">upcoming</small></div>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <div class="stat-label">Completion Rate</div>
-                        <div class="stat-value"><strong>98%</strong></div>
-                    </div>
-                </div>
-            </div>
+           
 
             <!-- Quick Actions -->
             <div class="card shadow mb-4">
