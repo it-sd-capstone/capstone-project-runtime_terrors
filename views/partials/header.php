@@ -2,7 +2,6 @@
 if (!defined('APP_ROOT')) {
     die("Direct access to views is not allowed");
 }
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -31,10 +30,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['logged_in']) && isset($_SESS
 $isLoggedIn = isset($_SESSION['user_id']) && ($_SESSION['logged_in'] ?? false) === true;
 $userRole = $isLoggedIn ? ($_SESSION['role'] ?? 'guest') : 'guest';
 $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['first_name'] . ' ' . $_SESSION['last_name'] ?? $_SESSION['email'] ?? 'User') : '';
-
 $current_url = $_SERVER['REQUEST_URI'] ?? '';
-$is_home_page = (strpos($current_url, 'index.php/home') !== false || $current_url === '/' || $current_url === '/index.php');
-
 $pageTitle = $pageTitle ?? 'Appointment System';
 
 if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRole) !== false) {
@@ -62,7 +58,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
     <link rel="shortcut icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
-
     <?php if ($userRole === 'provider'): ?>
     <!-- FullCalendar for provider role -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
@@ -94,7 +89,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
             margin-top: auto;
             margin-bottom: 15px;
         }
-
         .dashboard-cards .card-body {
             display: flex;
             flex-direction: column;
@@ -106,14 +100,12 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
             padding-bottom: 50px;
             min-height: 250px;
         }
-
         .dashboard-cards .card-footer {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
         }
-
         .card:hover {
             transform: none !important;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
@@ -149,7 +141,6 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
     </style>
 </head>
 <body>
-    <?php if ($userRole !== 'guest' || !$is_home_page): ?>
     <div class="header-container">
         <header class="mb-4">
             <div class="page-title-desktop">
@@ -158,7 +149,7 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
                 <?php elseif ($userRole === 'provider'): ?>
                     <h1 class="display-5">Provider Dashboard</h1>
                 <?php elseif ($userRole === 'patient'): ?>
-                    <h1 class="display-5">Patient Dashboard</h1>
+                               <h1 class="display-5">Patient Dashboard</h1>
                 <?php else: ?>
                     <h1 class="display-5">Appointment System</h1>
                 <?php endif; ?>
@@ -217,7 +208,7 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
             // Home
             'home' => 'home'
         ];
-                
+        
         // Determine the context from the URL
         $messageContext = 'global';
         foreach ($contextMap as $urlPart => $context) {
@@ -243,8 +234,4 @@ if (strpos($current_url, 'dashboard') !== false || strpos($current_url, $userRol
     
     <div class="container">
         <?php display_flash_messages(); ?>
-    <?php endif; ?>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+        
