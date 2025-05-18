@@ -17,20 +17,20 @@ class User {
         $this->db = get_db();
     }
     
-    /**
+   /**
      * Authenticate a user with secure password verification
-     * 
+     *
      * @param string $email User email
      * @param string $password User password (plain text)
-     * @return array|bool User data if authenticated, false otherwise
+     * @return array|bool User data if authenticated, false or array with error message otherwise
      */
     public function authenticate($email, $password) {
         try {
             if ($this->db instanceof mysqli) {
-                // MySQLi implementation
-                $query = "SELECT user_id, email, password_hash, first_name, last_name, role, 
-                        password_change_required, email_verified_at, is_verified 
-                        FROM users WHERE email = ? AND is_active = 1";
+                // First, check if the user exists regardless of active status
+                $query = "SELECT user_id, email, password_hash, first_name, last_name, role,
+                        password_change_required, email_verified_at, is_verified, is_active
+                        FROM users WHERE email = ?";
                 
                 $stmt = $this->db->prepare($query);
                 $stmt->bind_param("s", $email);
@@ -39,22 +39,34 @@ class User {
                 $result = $stmt->get_result();
                 $user = $result->fetch_assoc();
                 error_log("User query result: " . ($user ? "User found" : "No user found"));
-                if ($user) {
+                
+                // Check if user exists but is deactivated
+                if ($user && $user['is_active'] != 1) {
+                    return ['error' => true, 'message' => 'Your account has been deactivated. Please contact support for assistance.'];
+                }
+                
+                // If user is active, proceed with validation
+                if ($user && $user['is_active'] == 1) {
                     error_log("Password verification: " . (password_verify($password, $user['password_hash']) ? "Success" : "Failed"));
                 }
                 
             } elseif ($this->db instanceof PDO) {
                 // PDO implementation
-                $query = "SELECT user_id, email, password_hash, first_name, last_name, role, 
-                password_change_required, email_verified_at, is_verified
-                FROM users
-                WHERE email = :email AND is_active = 1";
+                $query = "SELECT user_id, email, password_hash, first_name, last_name, role,
+                        password_change_required, email_verified_at, is_verified, is_active
+                        FROM users
+                        WHERE email = :email";
                 
                 $stmt = $this->db->prepare($query);
                 $stmt->bindParam(':email', $email, PDO::PARAM_STR);
                 $stmt->execute();
                 
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                // Check if user exists but is deactivated
+                if ($user && $user['is_active'] != 1) {
+                    return ['error' => true, 'message' => 'Your account has been deactivated. Please contact support for assistance.'];
+                }
             } else {
                 throw new Exception("Unsupported database connection type");
             }
@@ -65,7 +77,8 @@ class User {
             }
             
             // Secure password verification using PHP's built-in function
-            if ($user && password_verify($password, $user['password_hash'])) {
+            // Only proceed for active users
+            if ($user && $user['is_active'] == 1 && password_verify($password, $user['password_hash'])) {
                 // Check if password needs rehashing (if PHP's default algorithm has been updated)
                 if (password_needs_rehash($user['password_hash'], PASSWORD_DEFAULT)) {
                     $this->updatePasswordHash($user['user_id'], $password);
@@ -80,13 +93,13 @@ class User {
             return false;
             
         } catch (Exception $e) {
-    // Log system event
-logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
-
+            // Log system event
+            logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . '', 'System Error Detected');
             error_log("Authentication error: " . $e->getMessage());
             throw $e;
         }
     }
+
     /**
      * Delete a patient's profile information
      * 
