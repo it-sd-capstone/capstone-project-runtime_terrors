@@ -19,6 +19,57 @@
     <link href="<?= base_url('css/style.css') ?>" rel="stylesheet">
     
     <style>
+        /* Fix for carousel card height */
+        #testimonialCarousel .card {
+        height: auto !important; /* Override any height settings */
+        max-height: none !important;
+        }
+
+        #testimonialCarousel .carousel-item {
+        height: auto !important;
+        }
+
+        /* Ensure testimonial cards don't grow unnecessarily tall */
+        #testimonialCarousel .card-body {
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        }
+
+        /* Limit the height of the testimonial quote */
+        #testimonialCarousel .lead {
+        max-height: 150px;
+        overflow-y: auto;
+        margin-bottom: 1.5rem;
+        }
+
+        /* Make sure avatar sizing is consistent */
+        #testimonialCarousel .rounded-circle {
+        min-width: 50px;
+        min-height: 50px;
+        max-width: 50px;
+        max-height: 50px;
+        margin-right: 1rem;
+        }
+        
+        /* Override for the specific call-to-action card */
+        section.py-5 > .container > .card.text-center.bg-primary {
+        height: auto !important;
+        }
+
+        section.py-5 > .container > .card.text-center.bg-primary > .card-body.py-5 {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        }
+
+        /* Reset any hover transformations for this specific card */
+        section.py-5 > .container > .card.text-center.bg-primary:hover {
+        transform: none !important;
+        }
+        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
