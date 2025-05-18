@@ -33,24 +33,38 @@ if (!defined('APP_ROOT')) {
                 <h3>Forgot Password</h3>
             </div>
             <div class="card-body p-4">
-                <?php if (!empty($error)): ?>
-                    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-                <?php endif; ?>
+                <?php 
+                // Get all flash messages for the global context
+                $flash_messages = get_flash_messages('global');
+
+                // Display flash messages, sorted by type
+                if (!empty($flash_messages)): 
+                    foreach ($flash_messages as $flash):
+                        $alert_class = match($flash['type']) {
+                            'success' => 'alert-success',
+                            'error' => 'alert-danger',
+                            'warning' => 'alert-warning',
+                            default => 'alert-info'
+                        };
+                ?>
+                    <div class="alert <?= $alert_class ?> alert-dismissible fade show" role="alert">
+                        <?= htmlspecialchars($flash['message']) ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php 
+                    endforeach;
+                endif; 
+                ?>
                 
                 <?php if (!empty($success)): ?>
                     <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
                 <?php else: ?>
                     <p class="mb-3">Enter your email address and we'll send you a link to reset your password.</p>
-                    <form method="POST" action="<?= base_url('index.php/auth/forgot_password') ?>">
+                    <form method="POST" action="<?= base_url('index.php/auth/forgot_password_process') ?>">
                         <?= csrf_field() ?>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
-                            <div class="input-group">
-                                <input type="email" class="form-control" id="email" name="email" required>
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </div>
+                            <input type="email" class="form-control" id="email" name="email" required>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 py-2">Send Reset Link</button>
                     </form>

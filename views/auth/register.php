@@ -186,7 +186,7 @@ if (!defined('RECAPTCHA_SITE_KEY')) {
                         <?= htmlspecialchars($successMessage) ?>
                     </div>
                     
-                    <?php if($verificationUrl && ENVIRONMENT === 'development'): ?>
+                    <!-- <?php if($verificationUrl && ENVIRONMENT === 'development'): ?>
                     <div class="demo-verification-link">
                         <div class="d-flex align-items-center">
                             <i class="bi bi-info-circle-fill text-warning me-2 fs-5"></i>
@@ -200,8 +200,8 @@ if (!defined('RECAPTCHA_SITE_KEY')) {
                             <i class="bi bi-envelope-check me-2"></i>Verify Your Email Address
                         </a>
                     </div>
-                    <?php endif; ?>
-                <?php else: ?>
+                    <?php endif; ?> -->
+                <?php else: ?> 
                 
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle me-1"></i> Fields marked with <span class="text-danger">*</span> are required

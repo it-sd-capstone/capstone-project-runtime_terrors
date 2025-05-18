@@ -43,14 +43,14 @@ class AuthController {
      * Set error message in session
      */
     private function setErrorMessage($message) {
-set_flash_message('error', $message, 'global');
+    set_flash_message('error', $message, 'global');
     }
 
     /**
      * Set success message in session
      */
     private function setSuccessMessage($message) {
-set_flash_message('success', $message, 'global');
+    set_flash_message('success', $message, 'global');
     }
 
     /**
@@ -63,15 +63,17 @@ set_flash_message('success', $message, 'global');
 
     /**
      * Validate CSRF token
+     * @return bool True if token is valid, false otherwise
      */
     private function validateCsrfToken() {
         if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
             $this->setErrorMessage('Invalid CSRF token');
-            redirect('auth/login');
-            return false;
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit; // Important to stop execution
         }
         return true;
     }
+
     
     public function index() {
         // Display login form
@@ -429,10 +431,10 @@ set_flash_message('success', $message, 'global');
                     $success = 'Registration successful! Please check your email to verify your account.';
                     
                     // For development environment only, show the verification link directly
-                    if (ENVIRONMENT === 'development') {
-                        $success .= " <a href='$verifyUrl'>Verify now</a> (for development only)";
-                        error_log("Verification URL: $verifyUrl");
-                    }
+                    // if (ENVIRONMENT === 'development') {
+                    //     $success .= " <a href='$verifyUrl'>Verify now</a> (for development only)";
+                    //     error_log("Verification URL: $verifyUrl");
+                    // }
                     
                     // Log whether email was sent successfully
                     error_log("Verification email " . ($emailSent ? "sent successfully" : "failed to send") . " to $email");
@@ -555,8 +557,8 @@ set_flash_message('success', $message, 'global');
         
         if (empty($email)) {
             $this->setErrorMessage('Email address is required.');
-            redirect('auth/forgot_password');
-            return;
+            header('Location: ' . base_url('index.php/auth/forgot_password'));
+            exit; // Important to add exit after header redirect
         }
         
         // Use existing User model method to handle password reset request
@@ -566,8 +568,8 @@ set_flash_message('success', $message, 'global');
         // Always show success message even if email doesn't exist (security best practice)
         if (!$resetRequest) {
             $this->setSuccessMessage('If your email is registered, you will receive instructions to reset your password.');
-            redirect('auth/login');
-            return;
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
         }
         
         // Get user data for logging
@@ -582,21 +584,23 @@ set_flash_message('success', $message, 'global');
             // Log the activity
             if (method_exists($this, 'logActivity')) {
                 $this->logActivity($user['user_id'], 'password_reset_request',
-                            "Password reset requested, Email sent: " . ($emailSent ? 'Yes' : 'No'));
+                        "Password reset requested, Email sent: " . ($emailSent ? 'Yes' : 'No'));
             }
             
             // Set success message
             $this->setSuccessMessage('Password reset instructions have been sent to your email.');
             
-            // For development, also show the link directly
-            if (ENVIRONMENT === 'development') {
-                $resetUrl = base_url("index.php/auth/reset_password?token=" . $resetRequest['token']);
-                $this->setSuccessMessage('For development: <a href="' . $resetUrl . '">Reset password now</a>');
-            }
+            // // For development, also show the link directly
+            // if (ENVIRONMENT === 'development') {
+            //     $resetUrl = base_url("index.php/auth/reset_password?token=" . $resetRequest['token']);
+            //     $this->setSuccessMessage('For development: <a href="' . $resetUrl . '">Reset password now</a>');
+            // }
         }
         
-        redirect('auth/login');
+        header('Location: ' . base_url('index.php/auth/login'));
+        exit;
     }
+
 
 
     /**
@@ -607,34 +611,40 @@ set_flash_message('success', $message, 'global');
         
         if (empty($token)) {
             $this->setErrorMessage('Invalid reset token.');
-            redirect('auth/login');
-            return;
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
         }
         
-        // Check if token exists and is valid
+        error_log("Processing reset password request with token: " . $token);
+        
+        // Check if token exists and is valid, using the correct column names
         $stmt = $this->db->prepare("
             SELECT user_id, token_expires 
-            FROM users 
-            WHERE reset_token = ?
+            FROM users
+            WHERE verification_token = ?
         ");
         
         $stmt->bind_param("s", $token);
         $stmt->execute();
         $result = $stmt->get_result();
         
+        error_log("Token query returned " . $result->num_rows . " rows");
+        
         if ($result->num_rows === 0) {
             $this->setErrorMessage('Invalid reset token.');
-            redirect('auth/login');
-            return;
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
         }
         
         $user = $result->fetch_assoc();
         
-        // Check if token is expired
-        if (strtotime($user['token_expires']) < time()) {
+        error_log("User data: " . json_encode($user));
+        
+        // Check if token is expired with NULL safety
+        if (empty($user['token_expires']) || strtotime($user['token_expires']) < time()) {
             $this->setErrorMessage('Reset token has expired. Please request a new one.');
-            redirect('auth/forgot_password');
-            return;
+            header('Location: ' . base_url('index.php/auth/forgot_password'));
+            exit;
         }
         
         // Load reset password view with token
@@ -642,55 +652,94 @@ set_flash_message('success', $message, 'global');
         $this->loadView('auth/reset_password', $data);
     }
 
+
     /**
-     * Process reset password
+     * Process password reset form submission
      */
     public function reset_password_process() {
+        // Add debug logging
+        error_log("Reset password process started");
         // Validate CSRF token
-        $this->validateCsrfToken();
+        if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+            $this->setErrorMessage('Invalid CSRF token');
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+        $token = $this->sanitizeInput($_GET['token'] ?? '');
+        $password = $this->sanitizeInput($_POST['password'] ?? '');
+        $confirmPassword = $this->sanitizeInput($_POST['confirm_password'] ?? '');
         
-        $token = $this->sanitizeInput($_POST['token'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $confirm_password = $_POST['confirm_password'] ?? '';
-        
-        // Validate input
-        if (empty($token) || empty($password) || empty($confirm_password)) {
-            $this->setErrorMessage('All fields are required.');
-            redirect('auth/reset_password?token=' . urlencode($token));
+        error_log("Processing password reset with token: " . $token);
+        if (empty($token) || empty($password) || empty($confirmPassword)) {
+            $this->setErrorMessage('All fields are required');
+            $this->loadView('auth/reset_password', ['token' => $token]);
             return;
         }
         
-        if ($password !== $confirm_password) {
-            $this->setErrorMessage('Passwords do not match.');
-            redirect('auth/reset_password?token=' . urlencode($token));
+        // Validate password
+        if ($password !== $confirmPassword) {
+            $this->setErrorMessage('Passwords do not match');
+            $this->loadView('auth/reset_password', ['token' => $token]);
             return;
         }
         
-        // Use the existing User model method to reset the password
-        // This method already handles validation, token verification, hashing, and DB update
-        $result = $this->userModel->resetPassword($token, $password);
-        
-        if (is_array($result) && isset($result['error'])) {
-            // If there's an error, show it to the user
-            $this->setErrorMessage($result['error']);
-            redirect('auth/reset_password?token=' . urlencode($token));
+        // Validate password complexity with inline validation
+        if (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || 
+            !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password) || 
+            !preg_match('/[^A-Za-z0-9]/', $password)) {
+            $this->setErrorMessage('Password must be at least 8 characters and include uppercase, lowercase, number, and special character');
+            $this->loadView('auth/reset_password', ['token' => $token]);
             return;
         }
         
-        if ($result === true) {
-            // Get user data for activity logging
-            $userId = $this->getUserIdByResetToken($token);
-            
-            // Log the activity
-            if (method_exists($this, 'logActivity') && $userId) {
-                $this->logActivity($userId, 'password_reset', "Password was reset successfully");
-            }
-            
-            $this->setSuccessMessage('Your password has been reset successfully. You can now log in with your new password.');
-            redirect('auth/login');
+        // Verify token and get user
+        $stmt = $this->db->prepare("
+            SELECT user_id, token_expires
+            FROM users
+            WHERE verification_token = ?
+        ");
+        
+        $stmt->bind_param("s", $token);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            $this->setErrorMessage('Invalid reset token');
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
+        }
+        
+        $user = $result->fetch_assoc();
+        
+        // Check if token is expired
+        if (empty($user['token_expires']) || strtotime($user['token_expires']) < time()) {
+            $this->setErrorMessage('Reset token has expired. Please request a new one.');
+            header('Location: ' . base_url('index.php/auth/forgot_password'));
+            exit;
+        }
+        
+        // Hash the new password
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        
+        // Update the password in the database
+        $updateStmt = $this->db->prepare("
+            UPDATE users
+            SET password_hash = ?, verification_token = NULL, token_expires = NULL
+            WHERE user_id = ?
+        ");
+        
+        $updateStmt->bind_param("si", $hashedPassword, $user['user_id']);
+        $updateResult = $updateStmt->execute();
+        
+        error_log("Password update result: " . ($updateResult ? 'success' : 'failed'));
+        
+        if ($updateResult) {
+            $this->setSuccessMessage('Your password has been updated successfully. You can now log in with your new password.');
+            header('Location: ' . base_url('index.php/auth/login'));
+            exit;
         } else {
-            $this->setErrorMessage('An error occurred while resetting your password. Please try again.');
-            redirect('auth/reset_password?token=' . urlencode($token));
+            $this->setErrorMessage('An error occurred. Please try again.');
+            $this->loadView('auth/reset_password', ['token' => $token]);
         }
     }
 
@@ -720,7 +769,7 @@ set_flash_message('success', $message, 'global');
     }
     
     /**
-     * Handle forced password change for new accounts
+     * Handle forced password change for new accounts and regular password changes
      */
     public function change_password() {
         $error = '';
@@ -744,62 +793,84 @@ set_flash_message('success', $message, 'global');
             } elseif ($newPassword !== $confirmPassword) {
                 $error = 'Passwords do not match';
             } else {
-                // Update password
-                $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
-                
-                $stmt = $this->db->prepare("UPDATE users SET password_hash = ?, password_change_required = 0 WHERE user_id = ?");
-                $stmt->bind_param("si", $passwordHash, $userId);
-                
-                if ($stmt->execute()) {
-                    // If this was a temporary login, create a proper session now
-                    if (isset($_SESSION['temp_user_id'])) {
-                        // Get user details for session
-                        $userStmt = $this->db->prepare("SELECT user_id, email, first_name, last_name, role FROM users WHERE user_id = ?");
-                        $userStmt->bind_param("i", $userId);
-                        $userStmt->execute();
-                        $result = $userStmt->get_result();
+                // For temporary users (first login), no password verification needed
+                if (isset($_SESSION['temp_user_id'])) {
+                    // Update password without verification
+                    $this->updateUserPassword($_SESSION['temp_user_id'], $newPassword, $error, $success);
+                } else {
+                    // Regular users must verify current password
+                    $currentPassword = $_POST['current_password'] ?? '';
+                    
+                    if (empty($currentPassword)) {
+                        $error = 'Current password is required';
+                    } else {
+                        // Verify current password
+                        $stmt = $this->db->prepare("SELECT password_hash FROM users WHERE user_id = ?");
+                        $stmt->bind_param("i", $userId);
+                        $stmt->execute();
+                        $result = $stmt->get_result();
                         $user = $result->fetch_assoc();
                         
-                        // Set session variables
-                        $_SESSION['user_id'] = $user['user_id'];
-                        $_SESSION['email'] = $user['email'];
-                        $_SESSION['name'] = $user['first_name'] . ' ' . $user['last_name'];
-                        $_SESSION['role'] = $user['role'];
-                        $_SESSION['logged_in'] = true;
-                      
-                         // Remove temporary user ID
-                        unset($_SESSION['temp_user_id']);
-                        
-
-                        // Redirect based on role - all go to home except admin
-                        switch ($_SESSION['role']) {
-                            case 'admin':
-                                header('Location: ' . base_url('index.php/home'));
-                                break;
-                            default: // provider and patient both go to home
-                                header('Location: ' . base_url('index.php/home'));
-                                break;
+                        if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
+                            $error = 'Current password is incorrect';
+                        } else {
+                            // Current password verified, proceed with update
+                            $this->updateUserPassword($userId, $newPassword, $error, $success);
                         }
-                        exit;
-
-                        // Remove temporary user ID
-                        //unset($_SESSION['temp_user_id']);
-                        
-                        // Redirect based on role
-                        //$this->redirectBasedOnRole($user['role']);
-
-                    } else {
-                        $success = 'Password changed successfully';
                     }
-                } else {
-                    $error = 'Failed to update password';
                 }
             }
         }
         
         include VIEW_PATH . '/auth/change_password.php';
     }
-    
+    /**
+     * Helper method to update user password
+     */
+    private function updateUserPassword($userId, $newPassword, &$error, &$success) {
+        $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
+        
+        $stmt = $this->db->prepare("UPDATE users SET password_hash = ?, password_change_required = 0 WHERE user_id = ?");
+        $stmt->bind_param("si", $passwordHash, $userId);
+        
+        if ($stmt->execute()) {
+            // If this was a temporary login, create a proper session now
+            if (isset($_SESSION['temp_user_id'])) {
+                // Get user details for session
+                $userStmt = $this->db->prepare("SELECT user_id, email, first_name, last_name, role FROM users WHERE user_id = ?");
+                $userStmt->bind_param("i", $userId);
+                $userStmt->execute();
+                $result = $userStmt->get_result();
+                $user = $result->fetch_assoc();
+                
+                // Set session variables
+                $_SESSION['user_id'] = $user['user_id'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['name'] = $user['first_name'] . ' ' . $user['last_name'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['logged_in'] = true;
+                
+                // Remove temporary user ID
+                unset($_SESSION['temp_user_id']);
+                
+                // Redirect based on role - all go to home except admin
+                switch ($_SESSION['role']) {
+                    case 'admin':
+                        header('Location: ' . base_url('index.php/home'));
+                        break;
+                    default: // provider and patient both go to home
+                        header('Location: ' . base_url('index.php/home'));
+                        break;
+                }
+                exit;
+            } else {
+                $success = 'Password changed successfully';
+            }
+        } else {
+            $error = 'Failed to update password';
+        }
+    }
+
    /**
      * Handle user logout
      */
@@ -838,7 +909,6 @@ set_flash_message('success', $message, 'global');
         exit;
     }
 
-    
     /**
      * Demo function to allow easy role switching for testing
      */

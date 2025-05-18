@@ -112,6 +112,8 @@
                                     <td class="px-4 py-3">
                                         <?php if (!empty($service['custom_notes'])): ?>
                                             <small class="text-muted"><?= htmlspecialchars($service['custom_notes']) ?></small>
+                                        <?php elseif (isset($service['description'])): ?>
+                                            <small class="text-muted"><?= htmlspecialchars($service['description']) ?> <span class="badge bg-light text-dark">Default</span></small>
                                         <?php else: ?>
                                             <small class="text-muted">-</small>
                                         <?php endif; ?>

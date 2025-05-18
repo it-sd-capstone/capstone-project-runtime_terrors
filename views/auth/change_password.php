@@ -8,9 +8,28 @@
                     <h5 class="mb-0">Change Password</h5>
                 </div>
                 <div class="card-body">
-                    <?php if (!empty($error)): ?>
-                        <div class="alert alert-danger"><?= $error ?></div>
-                    <?php endif; ?>
+                    <?php 
+                    // Get all flash messages for the global context
+                    $flash_messages = get_flash_messages('global');
+
+                    // Display flash messages, sorted by type
+                    if (!empty($flash_messages)): 
+                        foreach ($flash_messages as $flash):
+                            $alert_class = match($flash['type']) {
+                                'success' => 'alert-success',
+                                'error' => 'alert-danger',
+                                'warning' => 'alert-warning',
+                                default => 'alert-info'
+                            };
+                    ?>
+                        <div class="alert <?= $alert_class ?> alert-dismissible fade show" role="alert">
+                            <?= htmlspecialchars($flash['message']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php 
+                        endforeach;
+                    endif; 
+                    ?>
                     
                     <?php if (!empty($success)): ?>
                         <div class="alert alert-success"><?= $success ?></div>

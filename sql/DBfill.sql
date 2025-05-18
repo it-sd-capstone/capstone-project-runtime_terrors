@@ -1,5 +1,4 @@
 SET FOREIGN_KEY_CHECKS = 0;
-
 TRUNCATE TABLE activity_log;
 TRUNCATE TABLE appointments;
 TRUNCATE TABLE appointment_history;
@@ -15,23 +14,26 @@ TRUNCATE TABLE provider_services;
 TRUNCATE TABLE recurring_schedules;
 TRUNCATE TABLE user_tokens;
 TRUNCATE TABLE waitlist;
-
 DELETE FROM users WHERE role != 'admin';
-
 SET FOREIGN_KEY_CHECKS = 1;
 
 SET @current_date = CURDATE();
 SET @current_time = CURTIME();
 SET @current_datetime = NOW();
 
+-- Define password hashes directly in the script
+SET @admin_password = '$2y$10$6QBLl04XRuAj/y/bzRkAsuwgcm7pLZwFyBTuVejCB61NQs2TgSQ62'; -- Admin123@
+SET @provider_password = '$2y$10$xaSYNovxOA8bQ16f7AEEPuTGdbzucps5N4sKmYlu0EbcV3ltpOUa.'; -- Provider123@
+SET @patient_password = '$2y$10$orC5gFnaapRZiP6ZndYCFOmR7diEtkUNprBr4ZWaqZr0CWsK6dSJ2'; -- Patient123@
+-- Insert provider users with correct password hash
 INSERT INTO users (email, password_hash, first_name, last_name, phone, role, is_active, is_verified, email_verified_at, created_at)
-VALUES 
-('provider@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Jennifer', 'Smith', '(555) 123-4567', 'provider', 1, 1, @current_datetime, @current_datetime),
-('provider2@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Michael', 'Johnson', '(555) 234-5678', 'provider', 1, 1, @current_datetime, @current_datetime),
-('provider3@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'David', 'Williams', '(555) 345-6789', 'provider', 1, 1, @current_datetime, @current_datetime),
-('provider4@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Sarah', 'Brown', '(555) 456-7890', 'provider', 1, 1, @current_datetime, @current_datetime),
-('provider5@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'James', 'Davis', '(555) 567-8901', 'provider', 1, 1, @current_datetime, @current_datetime),
-('provider6@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Emily', 'Miller', '(555) 678-9012', 'provider', 1, 1, @current_datetime, @current_datetime);
+VALUES
+('provider@example.com', @provider_password, 'Jennifer', 'Smith', '(555) 123-4567', 'provider', 1, 1, @current_datetime, @current_datetime),
+('provider2@example.com', @provider_password, 'Michael', 'Johnson', '(555) 234-5678', 'provider', 1, 1, @current_datetime, @current_datetime),
+('provider3@example.com', @provider_password, 'David', 'Williams', '(555) 345-6789', 'provider', 1, 1, @current_datetime, @current_datetime),
+('provider4@example.com', @provider_password, 'Sarah', 'Brown', '(555) 456-7890', 'provider', 1, 1, @current_datetime, @current_datetime),
+('provider5@example.com', @provider_password, 'James', 'Davis', '(555) 567-8901', 'provider', 1, 1, @current_datetime, @current_datetime),
+('provider6@example.com', @provider_password, 'Emily', 'Miller', '(555) 678-9012', 'provider', 1, 1, @current_datetime, @current_datetime);
 
 SET @provider1_id = LAST_INSERT_ID();
 SET @provider2_id = @provider1_id + 1;
@@ -40,18 +42,19 @@ SET @provider4_id = @provider1_id + 3;
 SET @provider5_id = @provider1_id + 4;
 SET @provider6_id = @provider1_id + 5;
 
+-- Insert patient users with correct password hash
 INSERT INTO users (email, password_hash, first_name, last_name, phone, role, is_active, is_verified, email_verified_at, created_at)
-VALUES 
-('patient@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Robert', 'Anderson', '(555) 789-0123', 'patient', 1, 1, @current_datetime, @current_datetime),
-('patient2@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Lisa', 'Taylor', '(555) 890-1234', 'patient', 1, 1, @current_datetime, @current_datetime),
-('patient3@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Thomas', 'Moore', '(555) 901-2345', 'patient', 1, 1, @current_datetime, @current_datetime),
-('patient4@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Jessica', 'Jackson', '(555) 012-3456', 'patient', 1, 1, @current_datetime, @current_datetime),
-('patient5@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Daniel', 'White', '(555) 123-4567', 'patient', 1, 1, @current_datetime, @current_datetime),
-('patient6@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Michelle', 'Harris', '(555) 234-5678', 'patient', 1, 1, @current_datetime, @current_datetime),
-('patient7@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Kevin', 'Martin', '(555) 345-6789', 'patient', 1, 1, @current_datetime, @current_datetime),
-('patient8@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Patricia', 'Thompson', '(555) 456-7890', 'patient', 1, 1, @current_datetime, @current_datetime),
-('patient9@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Christopher', 'Garcia', '(555) 567-8901', 'patient', 1, 1, @current_datetime, @current_datetime),
-('patient10@example.com', '$2y$10$yw4M0It4rzy2elD4Fa7r3O1/yzYwXK3v8bBTLV5ZJXwIDdg2JXR9C', 'Amanda', 'Martinez', '(555) 678-9012', 'patient', 1, 1, @current_datetime, @current_datetime);
+VALUES
+('patient@example.com', @patient_password, 'Robert', 'Anderson', '(555) 789-0123', 'patient', 1, 1, @current_datetime, @current_datetime),
+('patient2@example.com', @patient_password, 'Lisa', 'Taylor', '(555) 890-1234', 'patient', 1, 1, @current_datetime, @current_datetime),
+('patient3@example.com', @patient_password, 'Thomas', 'Moore', '(555) 901-2345', 'patient', 1, 1, @current_datetime, @current_datetime),
+('patient4@example.com', @patient_password, 'Jessica', 'Jackson', '(555) 012-3456', 'patient', 1, 1, @current_datetime, @current_datetime),
+('patient5@example.com', @patient_password, 'Daniel', 'White', '(555) 123-4567', 'patient', 1, 1, @current_datetime, @current_datetime),
+('patient6@example.com', @patient_password, 'Michelle', 'Harris', '(555) 234-5678', 'patient', 1, 1, @current_datetime, @current_datetime),
+('patient7@example.com', @patient_password, 'Kevin', 'Martin', '(555) 345-6789', 'patient', 1, 1, @current_datetime, @current_datetime),
+('patient8@example.com', @patient_password, 'Patricia', 'Thompson', '(555) 456-7890', 'patient', 1, 1, @current_datetime, @current_datetime),
+('patient9@example.com', @patient_password, 'Christopher', 'Garcia', '(555) 567-8901', 'patient', 1, 1, @current_datetime, @current_datetime),
+('patient10@example.com', @patient_password, 'Amanda', 'Martinez', '(555) 678-9012', 'patient', 1, 1, @current_datetime, @current_datetime);
 
 SET @patient1_id = LAST_INSERT_ID();
 SET @patient2_id = @patient1_id + 1;
@@ -236,6 +239,107 @@ DELIMITER ;
 
 CALL GenerateAvailabilitySlots();
 DROP PROCEDURE GenerateAvailabilitySlots;
+
+-- Directly populate provider_availability with practical slots for the next 30 days
+INSERT INTO provider_availability (
+    provider_id, 
+    availability_date, 
+    start_time, 
+    end_time, 
+    is_available, 
+    schedule_type, 
+    created_at, 
+    is_recurring, 
+    weekdays, 
+    max_appointments, 
+    service_id
+)
+SELECT 
+    p.user_id,  -- Changed from p.provider_id to p.user_id
+    DATE_ADD(CURDATE(), INTERVAL seq.n DAY), -- Date (current date + 0 to 29 days)
+    -- Start time based on provider's recurring schedule for that day of week
+    rs.start_time,
+    -- End time from recurring schedule 
+    rs.end_time,
+    1, -- is_available
+    'availability', -- schedule_type
+    NOW(), -- created_at
+    1, -- is_recurring (1 for master recurring entries)
+    rs.day_of_week, -- Weekday as string
+    3, -- max_appointments
+    NULL -- service_id (NULL for master recurring entries)
+FROM 
+    users p
+    -- This generates numbers 0 to 29 for our date range
+    CROSS JOIN (
+        SELECT 0 AS n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 
+        UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9
+        UNION SELECT 10 UNION SELECT 11 UNION SELECT 12 UNION SELECT 13 UNION SELECT 14
+        UNION SELECT 15 UNION SELECT 16 UNION SELECT 17 UNION SELECT 18 UNION SELECT 19
+        UNION SELECT 20 UNION SELECT 21 UNION SELECT 22 UNION SELECT 23 UNION SELECT 24
+        UNION SELECT 25 UNION SELECT 26 UNION SELECT 27 UNION SELECT 28 UNION SELECT 29
+    ) seq
+    -- Join with recurring_schedules to get appropriate time slots
+    INNER JOIN recurring_schedules rs ON p.user_id = rs.provider_id
+WHERE 
+    p.role = 'provider'
+    -- Only include if day of week in recurring_schedules matches the generated date's day of week
+    AND rs.day_of_week = WEEKDAY(DATE_ADD(CURDATE(), INTERVAL seq.n DAY)) + 1
+    AND rs.is_active = 1;
+
+-- Now add specific service slots (non-recurring) for each provider
+INSERT INTO provider_availability (
+    provider_id, 
+    availability_date, 
+    start_time, 
+    end_time, 
+    is_available, 
+    schedule_type, 
+    created_at, 
+    is_recurring, 
+    weekdays, 
+    max_appointments, 
+    service_id
+)
+SELECT 
+    rs.provider_id,
+    DATE_ADD(CURDATE(), INTERVAL seq.n DAY),
+    -- Generate 30-minute slots starting from recurring schedule start time
+    ADDTIME(rs.start_time, SEC_TO_TIME(slot.slot_num * 1800)), -- 1800 seconds = 30 minutes
+    ADDTIME(rs.start_time, SEC_TO_TIME((slot.slot_num + 1) * 1800)),
+    1,
+    'availability',
+    NOW(),
+    0, -- not recurring for specific service slots
+    CAST(rs.day_of_week AS CHAR), -- Explicitly cast to string
+    1, -- one appointment per slot
+    ps.service_id
+FROM 
+    recurring_schedules rs
+    -- Generate numbers 0 to 29 for dates
+    CROSS JOIN (
+        SELECT 0 AS n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 
+        UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9
+        UNION SELECT 10 UNION SELECT 11 UNION SELECT 12 UNION SELECT 13 UNION SELECT 14
+        UNION SELECT 15 UNION SELECT 16 UNION SELECT 17 UNION SELECT 18 UNION SELECT 19
+        UNION SELECT 20 UNION SELECT 21 UNION SELECT 22 UNION SELECT 23 UNION SELECT 24
+        UNION SELECT 25 UNION SELECT 26 UNION SELECT 27 UNION SELECT 28 UNION SELECT 29
+    ) seq
+    -- Generate slot numbers (0-15 covers a standard workday with 30-min slots)
+    CROSS JOIN (
+        SELECT 0 AS slot_num UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 
+        UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7
+        UNION SELECT 8 UNION SELECT 9 UNION SELECT 10 UNION SELECT 11
+        UNION SELECT 12 UNION SELECT 13 UNION SELECT 14 UNION SELECT 15
+    ) slot
+    -- Join with provider_services to get service IDs
+    INNER JOIN provider_services ps ON rs.provider_id = ps.provider_id
+WHERE 
+    rs.is_active = 1
+    -- Only include if day of week matches the generated date's day of week
+    AND rs.day_of_week = WEEKDAY(DATE_ADD(CURDATE(), INTERVAL seq.n DAY)) + 1
+    -- Only include slots that fit within the provider's schedule
+    AND ADDTIME(rs.start_time, SEC_TO_TIME((slot.slot_num + 1) * 1800)) <= rs.end_time;
 
 INSERT INTO appointments (
     patient_id, 
