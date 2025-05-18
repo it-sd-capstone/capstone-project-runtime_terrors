@@ -138,15 +138,28 @@ if (!defined('APP_ROOT')) {
                 <h3 class="mb-0">Login to Your Account</h3>
             </div>
             <div class="card-body p-4">
-                <?php if (isset($_SESSION['success_message'])): ?>
-                    <div class="alert alert-success mt-3"><?= $_SESSION['success_message'] ?></div>
-                    <?php unset($_SESSION['success_message']); ?>
-                <?php endif; ?>
-                
-                <?php if (isset($_SESSION['error_message'])): ?>
-                    <div class="alert alert-danger mt-3"><?= $_SESSION['error_message'] ?></div>
-                    <?php unset($_SESSION['error_message']); ?>
-                <?php endif; ?>
+                <?php 
+                // Get all flash messages for the global context
+                $flash_messages = get_flash_messages('global');
+
+                // Display flash messages, sorted by type
+                if (!empty($flash_messages)): 
+                    foreach ($flash_messages as $flash):
+                        $alert_class = match($flash['type']) {
+                            'success' => 'alert-success',
+                            'error' => 'alert-danger',
+                            'warning' => 'alert-warning',
+                            default => 'alert-info'
+                        };
+                ?>
+                    <div class="alert <?= $alert_class ?> alert-dismissible fade show" role="alert">
+                        <?= htmlspecialchars($flash['message']) ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php 
+                    endforeach;
+                endif; 
+                ?>
                 
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-danger mt-3">

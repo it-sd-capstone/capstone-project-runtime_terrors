@@ -33,16 +33,45 @@ if (!defined('APP_ROOT')) {
                 <h3>Reset Your Password</h3>
             </div>
             <div class="card-body p-4">
-                <?php if (!empty($error)): ?>
-                    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+                <?php 
+                // Get all flash messages for the global context
+                $flash_messages = get_flash_messages('global');
+
+                // Display flash messages, sorted by type
+                if (!empty($flash_messages)): 
+                    foreach ($flash_messages as $flash):
+                        $alert_class = match($flash['type']) {
+                            'success' => 'alert-success',
+                            'error' => 'alert-danger',
+                            'warning' => 'alert-warning',
+                            default => 'alert-info'
+                        };
+                ?>
+                        <div class="alert <?= $alert_class ?> alert-dismissible fade show" role="alert">
+                            <?= htmlspecialchars($flash['message']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                <?php 
+                    endforeach;
+                endif; 
+                ?>
+
+                <!-- Keep your existing error handling for backward compatibility -->
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert-danger mt-3">
+                        <?php foreach ($errors as $err): ?>
+                            <div><?= $err ?></div>
+                        <?php endforeach; ?>
+                    </div>
                 <?php endif; ?>
                 
                 <?php if (!empty($success)): ?>
                     <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
                     <div class="text-center mt-3">
                         <a href="<?= base_url('index.php/auth') ?>" class="btn btn-primary">Go to Login</a>
-                    </div>                <?php else: ?>
-                    <form action="<?= base_url('index.php/auth/reset_password?token=' . htmlspecialchars($token ?? '')) ?>" method="post">
+                    </div>
+                <?php else: ?>
+                    <form action="<?= base_url('index.php/auth/reset_password_process?token=' . htmlspecialchars($token ?? '')) ?>" method="post">
                         <?= csrf_field() ?>
                         <div class="mb-3">
                             <label for="password" class="form-label">New Password</label>
@@ -68,5 +97,15 @@ if (!defined('APP_ROOT')) {
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+            } else {
+                passwordInput.type = 'password';
+            }
+        }
+    </script>
 </body>
 </html>

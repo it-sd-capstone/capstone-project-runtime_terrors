@@ -741,14 +741,17 @@ class User {
         }
     }
 
-    /**
+   /**
      * Generate password reset token
-     * 
+     *
      * @param string $email User email
      * @return array|bool Token data or false on failure
      */
     public function requestPasswordReset($email) {
+        error_log("Password reset requested for email: " . $email);
+
         if (!$this->emailExists($email)) {
+            error_log("Email not found: " . $email);
             return false;
         }
         
@@ -757,33 +760,32 @@ class User {
             $token = bin2hex(random_bytes(32));
             $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
             
-            if ($this->db instanceof mysqli) {
-                $stmt = $this->db->prepare("
-                    UPDATE users
-                    SET reset_token = ?, reset_token_expires = ?
-                    WHERE email = ?
-                ");
-                $stmt->bind_param("sss", $token, $expires, $email);
-                $stmt->execute();
-            } elseif ($this->db instanceof PDO) {
-                $stmt = $this->db->prepare("
-                    UPDATE users
-                    SET reset_token = :token, reset_token_expires = :expires
-                    WHERE email = :email
-                ");
-                $stmt->bindParam(':token', $token, PDO::PARAM_STR);
-                $stmt->bindParam(':expires', $expires, PDO::PARAM_STR);
-                $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-                $stmt->execute();
+            error_log("Generated reset token for " . $email . ". Expires: " . $expires);
+            
+            // Get the user ID first
+            $user = $this->getUserByEmail($email);
+            if (!$user) {
+                error_log("User not found for email: " . $email);
+                return false;
             }
             
-            return ['token' => $token, 'expires' => $expires];
+            // Use updateVerificationToken which updates the correct columns
+            $success = $this->updateVerificationToken($user['user_id'], $token, $expires);
+            
+            if ($success) {
+                error_log("Reset token updated successfully for " . $email);
+                return ['token' => $token, 'expires' => $expires];
+            }
+            
+            error_log("Failed to update reset token for " . $email);
+            return false;
             
         } catch (Exception $e) {
             error_log("Password reset request error: " . $e->getMessage());
             return false;
         }
     }
+
 
     /**
      * Reset password using token
@@ -1788,7 +1790,8 @@ class User {
      */
     public function getUserByEmail($email) {
         $stmt = $this->db->prepare("
-            SELECT user_id, first_name, last_name, email, email_verified_at, is_verified
+            SELECT user_id, first_name, last_name, email, email_verified_at, is_verified,
+                verification_token, token_expires, reset_token, reset_token_expires
             FROM users
             WHERE email = ?
         ");
@@ -1802,6 +1805,7 @@ class User {
         
         return $result->fetch_assoc();
     }
+
     /**
      * Update user verification token
      *
@@ -1821,6 +1825,7 @@ class User {
         
         return $success && $stmt->affected_rows > 0;
     }
+
      /**
      * Get all available providers for booking
      * 
