@@ -227,18 +227,7 @@ if (!defined('APP_ROOT')) {
         
         <!-- Quick Role Selector for Demos/Testing -->
         <div class="demo-login">
-            <h5 class="text-center mb-3">Quick Login for Testing</h5>
-            <div class="d-flex justify-content-between">
-                <a href="<?= base_url('index.php/auth/demo?role=patient') ?>" class="btn btn-outline-primary">
-                    <i class="bi bi-person me-1"></i> Patient
-                </a>
-                <a href="<?= base_url('index.php/auth/demo?role=provider') ?>" class="btn btn-outline-success">
-                    <i class="bi bi-clipboard-pulse me-1"></i> Provider
-                </a>
-                <a href="<?= base_url('index.php/auth/demo?role=admin') ?>" class="btn btn-outline-dark">
-                    <i class="bi bi-shield-lock me-1"></i> Admin
-                </a>
-            </div>
+            <h5 class="text-center mb-3">Login Credentials for Testing</h5>
             <div class="mt-3 text-center text-muted small">
                 <p class="mb-2">For demo purposes:</p>
                 <div class="table-responsive">

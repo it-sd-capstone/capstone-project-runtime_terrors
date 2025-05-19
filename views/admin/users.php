@@ -2,9 +2,9 @@
 ini_set('display_errors', 2);
 ini_set('display_startup_errors', 2);
 error_reporting(E_ALL);
-
 ?>
 <?php include VIEW_PATH . '/partials/header.php'; ?>
+
 <div class="container">
     <h2>Manage Users</h2>
     
@@ -12,7 +12,6 @@ error_reporting(E_ALL);
     <div class="card mb-3">
         <div class="card-header">
             <h5>Filter Users</h5>
-            
         </div>
         <div class="card-body">
             <form action="<?= base_url('index.php/admin/users') ?>" method="get" class="row g-3">
@@ -68,7 +67,26 @@ error_reporting(E_ALL);
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($users as $user): ?>
+                                <?php 
+                                // Pagination logic
+                                $items_per_page = 10; // Number of users to display per page
+                                $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+                                $current_page = max(1, $current_page); // Ensure page is at least 1
+                                
+                                $total_items = count($users);
+                                $total_pages = ceil($total_items / $items_per_page);
+                                
+                                // Ensure current page doesn't exceed total pages
+                                if ($current_page > $total_pages && $total_pages > 0) {
+                                    $current_page = $total_pages;
+                                }
+                                
+                                $start_index = ($current_page - 1) * $items_per_page;
+                                $paged_users = array_slice($users, $start_index, $items_per_page);
+                                
+                                if (!empty($paged_users)):
+                                    foreach ($paged_users as $user): 
+                                ?>
                                 <tr>
                                     <td><?= $user['user_id'] ?></td>
                                     <td><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></td>
@@ -88,9 +106,77 @@ error_reporting(E_ALL);
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
+                                <?php else: ?>
+                                <tr>
+                                    <td colspan="6" class="text-center">No users found</td>
+                                </tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination controls -->
+                    <?php if ($total_pages > 1): 
+                        // Preserve any existing filter parameters
+                        $query_params = $_GET;
+                        unset($query_params['page']); // Remove the page parameter to rebuild it
+                        $query_string = http_build_query($query_params);
+                        $url = base_url('index.php/admin/users') . ($query_string ? "?$query_string&" : "?");
+                    ?>
+                    <nav aria-label="User pagination">
+                        <ul class="pagination justify-content-center mt-4">
+                            <!-- Previous page link -->
+                            <li class="page-item <?= ($current_page <= 1) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="<?= $url ?>page=<?= $current_page - 1 ?>" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            
+                            <!-- Page number links -->
+                            <?php 
+                            $start_page = max(1, $current_page - 2);
+                            $end_page = min($total_pages, $current_page + 2);
+                            
+                            // Show first page if not included in the range
+                            if ($start_page > 1): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="<?= $url ?>page=1">1</a>
+                                </li>
+                                <?php if ($start_page > 2): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                            
+                            <!-- Display page links in the calculated range -->
+                            <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+                                <li class="page-item <?= ($i == $current_page) ? 'active' : '' ?>">
+                                    <a class="page-link" href="<?= $url ?>page=<?= $i ?>"><?= $i ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            
+                            <!-- Show last page if not included in the range -->
+                            <?php if ($end_page < $total_pages): ?>
+                                <?php if ($end_page < $total_pages - 1): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                <?php endif; ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="<?= $url ?>page=<?= $total_pages ?>"><?= $total_pages ?></a>
+                                </li>
+                            <?php endif; ?>
+                            
+                            <!-- Next page link -->
+                            <li class="page-item <?= ($current_page >= $total_pages) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="<?= $url ?>page=<?= $current_page + 1 ?>" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

@@ -1,4 +1,5 @@
 <?php include VIEW_PATH . '/partials/header.php'; ?>
+
 <div class="container">
     <h2>Manage Appointments</h2>
     
@@ -26,39 +27,114 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php if(!empty($appointments)): ?>
-                                    <?php foreach ($appointments as $appointment): ?>
-                                    <tr>
-                                        <td><?= $appointment['appointment_id'] ?></td>
-                                        <td><?= htmlspecialchars($appointment['patient_name'] ?? 'N/A') ?></td>
-                                        <td><?= htmlspecialchars($appointment['provider_name'] ?? 'N/A') ?></td>
-                                        <td><?= htmlspecialchars($appointment['service_name'] ?? 'N/A') ?></td>
-                                        <td><?= date('F j, Y g:i A', strtotime($appointment['appointment_date'] . ' ' . $appointment['start_time'])) ?></td>
-                                        <td>
-                                            <span class="badge bg-<?= 
-                                                $appointment['status'] === 'confirmed' ? 'success' : 
-                                                ($appointment['status'] === 'pending' ? 'warning' : 
-                                                ($appointment['status'] === 'canceled' ? 'danger' : 'secondary')) 
-                                            ?>">
-                                                <?= ucfirst($appointment['status']) ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="<?= base_url('index.php/admin/appointments/edit/' . $appointment['appointment_id']) ?>" class="btn btn-outline-primary">Edit</a>
-                                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAppointmentModal<?= $appointment['appointment_id'] ?>">Cancel</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
+                                <?php 
+                                // Pagination logic
+                                $items_per_page = 10; // Number of items to display per page
+                                $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+                                $current_page = max(1, $current_page); // Ensure page is at least 1
+                                
+                                $total_items = count($appointments);
+                                $total_pages = ceil($total_items / $items_per_page);
+                                
+                                // Ensure current page doesn't exceed total pages
+                                if ($current_page > $total_pages && $total_pages > 0) {
+                                    $current_page = $total_pages;
+                                }
+                                
+                                $start_index = ($current_page - 1) * $items_per_page;
+                                $paged_appointments = array_slice($appointments, $start_index, $items_per_page);
+                                
+                                if(!empty($paged_appointments)): 
+                                    foreach ($paged_appointments as $appointment): 
+                                ?>
+                                <tr>
+                                    <td><?= $appointment['appointment_id'] ?></td>
+                                    <td><?= htmlspecialchars($appointment['patient_name'] ?? 'N/A') ?></td>
+                                    <td><?= htmlspecialchars($appointment['provider_name'] ?? 'N/A') ?></td>
+                                    <td><?= htmlspecialchars($appointment['service_name'] ?? 'N/A') ?></td>
+                                    <td><?= date('F j, Y g:i A', strtotime($appointment['appointment_date'] . ' ' . $appointment['start_time'])) ?></td>
+                                    <td>
+                                        <span class="badge bg-<?= 
+                                            $appointment['status'] === 'confirmed' ? 'success' :
+                                            ($appointment['status'] === 'pending' ? 'warning' :
+                                            ($appointment['status'] === 'canceled' ? 'danger' : 'secondary'))
+                                        ?>">
+                                            <?= ucfirst($appointment['status']) ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="<?= base_url('index.php/admin/appointments/edit/' . $appointment['appointment_id']) ?>" class="btn btn-outline-primary">Edit</a>
+                                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAppointmentModal<?= $appointment['appointment_id'] ?>">Cancel</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
                                 <?php else: ?>
-                                    <tr>
-                                        <td colspan="7" class="text-center">No appointments found</td>
-                                    </tr>
+                                <tr>
+                                    <td colspan="7" class="text-center">No appointments found</td>
+                                </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination controls -->
+                    <?php if ($total_pages > 1): ?>
+                    <nav aria-label="Appointment pagination">
+                        <ul class="pagination justify-content-center mt-4">
+                            <!-- Previous page link -->
+                            <li class="page-item <?= ($current_page <= 1) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?page=<?= $current_page - 1 ?>" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            
+                            <!-- Page number links -->
+                            <?php 
+                            $start_page = max(1, $current_page - 2);
+                            $end_page = min($total_pages, $current_page + 2);
+                            
+                            // Show first page if not included in the range
+                            if ($start_page > 1): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">1</a>
+                                </li>
+                                <?php if ($start_page > 2): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                            
+                            <!-- Display page links in the calculated range -->
+                            <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+                                <li class="page-item <?= ($i == $current_page) ? 'active' : '' ?>">
+                                    <a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            
+                            <!-- Show last page if not included in the range -->
+                            <?php if ($end_page < $total_pages): ?>
+                                <?php if ($end_page < $total_pages - 1): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                <?php endif; ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<?= $total_pages ?>"><?= $total_pages ?></a>
+                                </li>
+                            <?php endif; ?>
+                            
+                            <!-- Next page link -->
+                            <li class="page-item <?= ($current_page >= $total_pages) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="?page=<?= $current_page + 1 ?>" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

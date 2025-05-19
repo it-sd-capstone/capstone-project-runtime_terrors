@@ -1,5 +1,4 @@
 <?php include VIEW_PATH . '/partials/header.php'; ?>
-
 <div class="container-fluid my-4">
     <!-- Success messages section -->
     <?php if (isset($_SESSION['success']) && isset($_SESSION['show_password'])): ?>
@@ -76,48 +75,66 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($providers)): ?>
+                        <?php 
+                        // Pagination logic
+                        $items_per_page = 10; // Number of providers to display per page
+                        $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+                        $current_page = max(1, $current_page); // Ensure page is at least 1
+                        
+                        $total_items = count($providers);
+                        $total_pages = ceil($total_items / $items_per_page);
+                        
+                        // Ensure current page doesn't exceed total pages
+                        if ($current_page > $total_pages && $total_pages > 0) {
+                            $current_page = $total_pages;
+                        }
+                        
+                        $start_index = ($current_page - 1) * $items_per_page;
+                        $paged_providers = array_slice($providers, $start_index, $items_per_page);
+                        
+                        if (empty($paged_providers)): 
+                        ?>
                             <tr>
                                 <td colspan="9" class="text-center">No providers found.</td>
                             </tr>
                         <?php else: ?>
                             <?php
                             // Using strict indexing to avoid any rendering issues
-                            $providerCount = count($providers);
+                            $providerCount = count($paged_providers);
                             for ($i = 0; $i < $providerCount; $i++):
                             ?>
                                 <tr>
-                                    <td><?= $providers[$i]['user_id'] ?></td>
-                                    <td><?= htmlspecialchars($providers[$i]['first_name'] . ' ' . $providers[$i]['last_name']) ?></td>
-                                    <td><?= htmlspecialchars($providers[$i]['email']) ?></td>
-                                    <td><?= htmlspecialchars($providers[$i]['specialization'] ?? 'N/A') ?></td>
-                                    <td><?= htmlspecialchars($providers[$i]['title'] ?? 'N/A') ?></td>
+                                    <td><?= $paged_providers[$i]['user_id'] ?></td>
+                                    <td><?= htmlspecialchars($paged_providers[$i]['first_name'] . ' ' . $paged_providers[$i]['last_name']) ?></td>
+                                    <td><?= htmlspecialchars($paged_providers[$i]['email']) ?></td>
+                                    <td><?= htmlspecialchars($paged_providers[$i]['specialization'] ?? 'N/A') ?></td>
+                                    <td><?= htmlspecialchars($paged_providers[$i]['title'] ?? 'N/A') ?></td>
                                     <td>
                                         <span class="badge bg-info">
-                                            <?= $providers[$i]['service_count'] ?? 0 ?> services
+                                            <?= $paged_providers[$i]['service_count'] ?? 0 ?> services
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge bg-primary">
-                                            <?= $providers[$i]['appointment_count'] ?? 0 ?> appointments
+                                            <?= $paged_providers[$i]['appointment_count'] ?? 0 ?> appointments
                                         </span>
                                     </td>
                                     <td>
-                                        <?php if ($providers[$i]['is_active']): ?>
+                                        <?php if ($paged_providers[$i]['is_active']): ?>
                                             <span class="badge bg-success">Active</span>
                                         <?php else: ?>
                                             <span class="badge bg-danger">Inactive</span>
                                         <?php endif; ?>
                                         
-                                        <?php if (isset($providers[$i]['accepting_new_patients']) && $providers[$i]['accepting_new_patients']): ?>
+                                        <?php if (isset($paged_providers[$i]['accepting_new_patients']) && $paged_providers[$i]['accepting_new_patients']): ?>
                                             <span class="badge bg-info">Accepting Patients</span>
                                         <?php else: ?>
                                             <span class="badge bg-warning text-dark">Not Accepting</span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" 
-                                                data-bs-toggle="modal" data-bs-target="#actionModal<?= $providers[$i]['user_id'] ?>">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                 data-bs-toggle="modal" data-bs-target="#actionModal<?= $paged_providers[$i]['user_id'] ?>">
                                             Actions <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                     </td>
@@ -127,10 +144,76 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination controls -->
+            <?php if ($total_pages > 1): 
+                // Preserve any existing filter parameters
+                $query_params = $_GET;
+                unset($query_params['page']); // Remove the page parameter to rebuild it
+                $query_string = http_build_query($query_params);
+                $url = base_url('index.php/admin/providers') . ($query_string ? "?$query_string&" : "?");
+            ?>
+            <nav aria-label="Provider pagination">
+                <ul class="pagination justify-content-center mt-4">
+                    <!-- Previous page link -->
+                    <li class="page-item <?= ($current_page <= 1) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="<?= $url ?>page=<?= $current_page - 1 ?>" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Page number links -->
+                    <?php 
+                    $start_page = max(1, $current_page - 2);
+                    $end_page = min($total_pages, $current_page + 2);
+                    
+                    // Show first page if not included in the range
+                    if ($start_page > 1): ?>
+                        <li class="page-item">
+                            <a class="page-link" href="<?= $url ?>page=1">1</a>
+                        </li>
+                        <?php if ($start_page > 2): ?>
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                    
+                    <!-- Display page links in the calculated range -->
+                    <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+                        <li class="page-item <?= ($i == $current_page) ? 'active' : '' ?>">
+                            <a class="page-link" href="<?= $url ?>page=<?= $i ?>"><?= $i ?></a>
+                        </li>
+                    <?php endfor; ?>
+                    
+                    <!-- Show last page if not included in the range -->
+                    <?php if ($end_page < $total_pages): ?>
+                        <?php if ($end_page < $total_pages - 1): ?>
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        <?php endif; ?>
+                        <li class="page-item">
+                            <a class="page-link" href="<?= $url ?>page=<?= $total_pages ?>"><?= $total_pages ?></a>
+                        </li>
+                    <?php endif; ?>
+                    
+                    <!-- Next page link -->
+                    <li class="page-item <?= ($current_page >= $total_pages) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="<?= $url ?>page=<?= $current_page + 1 ?>" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <?php endif; ?>
         </div>
         <div class="card-footer text-muted py-3">
             <div class="d-flex justify-content-between align-items-center">
-                <span>Total Providers: <?= count($providers) ?></span>
+                <span>Total Providers: <?= $total_items ?></span>
+                <?php if ($total_pages > 0): ?>
+                <span>Page <?= $current_page ?> of <?= $total_pages ?></span>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -138,11 +221,12 @@
     <!-- Action Modals - Separate from table for clean HTML -->
     <?php if (!empty($providers)): ?>
         <?php 
+        // We need to use the full providers array for modals to ensure all modals exist
         $providerCount = count($providers);
         for ($i = 0; $i < $providerCount; $i++): 
         ?>
             <div class="modal fade" id="actionModal<?= $providers[$i]['user_id'] ?>" tabindex="-1" 
-                 aria-labelledby="actionModalLabel<?= $providers[$i]['user_id'] ?>" aria-hidden="true">
+                  aria-labelledby="actionModalLabel<?= $providers[$i]['user_id'] ?>" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -153,7 +237,7 @@
                         </div>
                         <div class="modal-body">
                             <div class="list-group">
-                                <a href="<?= base_url('index.php/admin/manageProviderServices?id=' . $providers[$i]['user_id']) ?>"
+                                <a href="<?= base_url('index.php/admin/manageProviderServices?id=' . $providers[$i]['user_id']) ?>" 
                                    class="list-group-item list-group-item-action">
                                     <div class="d-flex w-100 justify-content-between">
                                         <h6 class="mb-1">Manage Services</h6>
@@ -162,7 +246,7 @@
                                     <small class="text-muted">Configure services offered by this provider</small>
                                 </a>
                                 
-                                <a href="<?= base_url('index.php/admin/viewAvailability?id=' . $providers[$i]['user_id']) ?>"
+                                <a href="<?= base_url('index.php/admin/viewAvailability?id=' . $providers[$i]['user_id']) ?>" 
                                    class="list-group-item list-group-item-action">
                                     <div class="d-flex w-100 justify-content-between">
                                         <h6 class="mb-1">View Availability</h6>
@@ -171,7 +255,7 @@
                                     <small class="text-muted">See provider's schedule and available time slots</small>
                                 </a>
                                 
-                                <button type="button" class="list-group-item list-group-item-action"
+                                <button type="button" class="list-group-item list-group-item-action" 
                                         onclick="document.getElementById('status-form-<?= $providers[$i]['user_id'] ?>').submit()">
                                     <div class="d-flex w-100 justify-content-between">
                                         <h6 class="mb-1"><?= $providers[$i]['is_active'] ? 'Deactivate' : 'Activate' ?> Account</h6>
@@ -182,7 +266,7 @@
                                     </small>
                                 </button>
                                 
-                                <button type="button" class="list-group-item list-group-item-action"
+                                <button type="button" class="list-group-item list-group-item-action" 
                                         onclick="document.getElementById('patients-form-<?= $providers[$i]['user_id'] ?>').submit()">
                                     <div class="d-flex w-100 justify-content-between">
                                         <h6 class="mb-1"><?= isset($providers[$i]['accepting_new_patients']) && $providers[$i]['accepting_new_patients'] ? 'Stop' : 'Start' ?> Accepting Patients</h6>
@@ -214,5 +298,4 @@
         <?php endfor; ?>
     <?php endif; ?>
 </div>
-
 <?php include VIEW_PATH . '/partials/footer.php'; ?>
