@@ -264,11 +264,6 @@ public function getByProvider($provider_id) {
     }
 
     public function cancelAppointment($appointment_id, $reason) {
-    // Log system event
-    if ($success) {
-        logSystemEvent('appointment_cancelled', 'An appointment was cancelled in the system', 'Appointment Cancelled');
-    }
-
         try {
             $stmt = $this->db->prepare("
                 UPDATE appointments
@@ -279,7 +274,12 @@ public function getByProvider($provider_id) {
                 WHERE appointment_id = ?
             ");
             $stmt->bind_param("si", $reason, $appointment_id);
-            return $stmt->execute();
+            $success = $stmt->execute();
+            // Log system event only if the update was successful
+            if ($success) {
+                logSystemEvent('appointment_cancelled', 'An appointment was cancelled in the system', 'Appointment Cancelled');
+            }
+            return $success;
         } catch (Exception $e) {
             error_log("Error canceling appointment: " . $e->getMessage());
             return false;
