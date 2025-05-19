@@ -264,11 +264,6 @@ public function getByProvider($provider_id) {
     }
 
     public function cancelAppointment($appointment_id, $reason) {
-    // Log system event
-    if ($success) {
-        logSystemEvent('appointment_cancelled', 'An appointment was cancelled in the system', 'Appointment Cancelled');
-    }
-
         try {
             $stmt = $this->db->prepare("
                 UPDATE appointments
@@ -279,12 +274,20 @@ public function getByProvider($provider_id) {
                 WHERE appointment_id = ?
             ");
             $stmt->bind_param("si", $reason, $appointment_id);
-            return $stmt->execute();
+            $success = $stmt->execute();
+            
+            // Log system event only if the update was successful
+            if ($success) {
+                logSystemEvent('appointment_cancelled', 'An appointment was cancelled in the system', 'Appointment Cancelled');
+            }
+            
+            return $success;
         } catch (Exception $e) {
             error_log("Error canceling appointment: " . $e->getMessage());
             return false;
         }
     }
+
 
     public function getAllAppointments() {
         try {
@@ -1260,6 +1263,53 @@ public function getByProvider($provider_id) {
             error_log("Error submitting rating: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Check if there's a time conflict for a provider
+     * 
+     * @param int $providerId Provider ID
+     * @param string $date Appointment date (YYYY-MM-DD)
+     * @param string $startTime Start time (HH:MM:SS)
+     * @param string $endTime End time (HH:MM:SS)
+     * @param int|null $excludeAppointmentId Optional appointment ID to exclude from check
+     * @return bool True if there is a conflict, false otherwise
+     */
+    public function checkTimeConflict($providerId, $date, $startTime, $endTime = null, $excludeAppointmentId = null) {
+        // If no end time provided, calculate based on service duration or use default
+        if ($endTime === null) {
+            // Default to 1 hour if we can't determine
+            $endTime = date('H:i:s', strtotime($startTime . ' + 1 hour'));
+        }
+        
+        // Build the SQL query
+        $sql = "SELECT appointment_id FROM appointments 
+                WHERE provider_id = ? 
+                AND appointment_date = ? 
+                AND status != 'canceled' 
+                AND (
+                    (start_time <= ? AND (end_time IS NULL OR end_time > ?)) OR 
+                    (start_time < ? AND (end_time IS NULL OR end_time >= ?))
+                )";
+        
+        // Add exclusion if needed
+        $params = [$providerId, $date, $endTime, $startTime, $startTime, $endTime];
+        $types = "isssss";
+        
+        if ($excludeAppointmentId !== null) {
+            $sql .= " AND appointment_id != ?";
+            $params[] = $excludeAppointmentId;
+            $types .= "i";
+        }
+        
+        // Execute the query
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        // If any rows returned, there's a conflict
+        return $result->num_rows > 0;
     }
 }
 ?>

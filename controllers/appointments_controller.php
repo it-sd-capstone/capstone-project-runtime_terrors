@@ -98,6 +98,18 @@ class AppointmentsController {
                 if (!$slotIsAvailable) {
                     set_flash_message('error', "Selected time slot is no longer available.");
                 } else {
+                    // Add this before creating a new appointment
+                    if ($this->appointmentModel->checkTimeConflict(
+                        $providerId, 
+                        $appointmentDate, 
+                        $startTime, 
+                        $endTime
+                    )) {
+                        // Set an error message
+                        $_SESSION['error'] = "This time slot is already booked. Please select a different time.";
+                        // Redirect back to the form or return an error response
+                        return false;
+                    }
                     $bookingResult = $this->appointmentModel->bookAppointment(
                         $_SESSION['user_id'],
                         $availabilityId,
