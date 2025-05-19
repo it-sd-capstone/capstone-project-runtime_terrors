@@ -42,104 +42,125 @@ class ServiceController {
     /**
      * Process service creation or update
      */
-
-public function processService() {
-    $errors = [];
-    error_log("Session user role: " . ($_SESSION['user_role'] ?? 'not set'));
-    error_log("Session user ID: " . ($_SESSION['user_id'] ?? 'not set'));
-
-    error_log("ServiceController::processService called");
-    error_log("POST data: " . json_encode($_POST));
-    error_log("Session data: user_id=" . ($_SESSION['user_id'] ?? 'not set') .
-        ", role=" . ($_SESSION['role'] ?? 'not set'));
-
-    if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-        error_log("Not a POST request, redirecting");
-        header('Location: ' . base_url('index.php/provider/services'));
-        exit;
-    }
-
-    $action = $_POST['action'] ?? '';
-
-    $service_name = isset($_POST['service_name']) ? trim($_POST['service_name']) :
-                (isset($_POST['name']) ? trim($_POST['name']) : '');
-    $description = isset($_POST['description']) ? trim($_POST['description']) : '';
-    $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
-    $duration = isset($_POST['duration']) ? intval($_POST['duration']) : 30;
-
-    if (empty($service_name)) {
-        error_log("Service name is empty, aborting");
-set_flash_message('error', "Service name is required", 'provider_services');
-        header('Location: ' . base_url('index.php/provider/services'));
-        exit;
-    }
-
-    $serviceData = [
-        'name' => $service_name,
-        'description' => $description,
-        'price' => $price,
-        'duration' => $duration
-    ];
-    error_log("Service data prepared: " . json_encode($serviceData));
-
-    require_once MODEL_PATH . '/Services.php';
-    $serviceModel = new Services($this->db);
-
-    $service_id = isset($_POST['service_id']) ? intval($_POST['service_id']) : null;
-    $success = false;
-
-    if (count($errors) === 0) {
-        switch ($action) {
-            case 'add':
-                error_log("Data being sent to model: " . json_encode($serviceData));
-                error_log("Calling createService with data");
-                $service_id = $this->serviceModel->createService($serviceData);
-                $success = ($service_id !== false);
-                error_log("createService result: " . ($success ? "success (ID: $service_id)" : "failure"));
-                break;
-
-            default:
-                if ($service_id) {
-                    error_log("Updating existing service ID: $service_id");
-                    $success = $serviceModel->updateService($service_id, $serviceData);
-                } else {
-                    error_log("Creating new service");
-                    $service_id = $serviceModel->createService($serviceData);
+    public function processService() {
+        $errors = [];
+        error_log("Session user role: " . ($_SESSION['user_role'] ?? 'not set'));
+        error_log("Session user ID: " . ($_SESSION['user_id'] ?? 'not set'));
+        error_log("ServiceController::processService called");
+        error_log("POST data: " . json_encode($_POST));
+        error_log("Session data: user_id=" . ($_SESSION['user_id'] ?? 'not set') .
+            ", role=" . ($_SESSION['role'] ?? 'not set'));
+        
+        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+            error_log("Not a POST request, redirecting");
+            header('Location: ' . base_url('index.php/provider/services'));
+            exit;
+        }
+        
+        $action = $_POST['action'] ?? '';
+        $service_name = isset($_POST['service_name']) ? trim($_POST['service_name']) :
+                    (isset($_POST['name']) ? trim($_POST['name']) : '');
+        $description = isset($_POST['description']) ? trim($_POST['description']) : '';
+        $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
+        $duration = isset($_POST['duration']) ? intval($_POST['duration']) : 30;
+        
+        if (empty($service_name)) {
+            error_log("Service name is empty, aborting");
+            set_flash_message('error', "Service name is required", 'provider_services');
+            header('Location: ' . base_url('index.php/provider/services'));
+            exit;
+        }
+        
+        $serviceData = [
+            'name' => $service_name,
+            'description' => $description,
+            'price' => $price,
+            'duration' => $duration
+        ];
+        
+        error_log("Service data prepared: " . json_encode($serviceData));
+        require_once MODEL_PATH . '/Services.php';
+        $serviceModel = new Services($this->db);
+        $service_id = isset($_POST['service_id']) ? intval($_POST['service_id']) : null;
+        $success = false;
+        
+        if (count($errors) === 0) {
+            switch ($action) {
+                case 'add':
+                    error_log("Data being sent to model: " . json_encode($serviceData));
+                    error_log("Calling createService with data");
+                    $service_id = $this->serviceModel->createService($serviceData);
                     $success = ($service_id !== false);
-                }
-                error_log("Service operation result: " . ($success ? "success (ID: $service_id)" : "failure"));
-                break;
-        }
-
-        // Always associate with provider if a new service was created and user is a provider
-        if ($success && isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'provider') {
-            $provider_id = $_SESSION['user_id'];
-            error_log("Attempting to associate service $service_id with provider $provider_id");
-
-            require_once MODEL_PATH . '/Provider.php';
-            $providerModel = new Provider($this->db);
-
-            if (method_exists($providerModel, 'addServiceToProvider')) {
-                $provider_result = $providerModel->addServiceToProvider($provider_id, $service_id);
-                error_log("Provider association result: " . ($provider_result ? "success" : "failure"));
-            } else {
-                error_log("ERROR: Method 'addServiceToProvider' does not exist in Provider model!");
+                    error_log("createService result: " . ($success ? "success (ID: $service_id)" : "failure"));
+                    
+                    // Only associate with provider for new services
+                    if ($success && isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'provider') {
+                        $provider_id = $_SESSION['user_id'];
+                        error_log("Attempting to associate service $service_id with provider $provider_id");
+                        require_once MODEL_PATH . '/Provider.php';
+                        $providerModel = new Provider($this->db);
+                        if (method_exists($providerModel, 'addServiceToProvider')) {
+                            $provider_result = $providerModel->addServiceToProvider($provider_id, $service_id);
+                            error_log("Provider association result: " . ($provider_result ? "success" : "failure"));
+                        } else {
+                            error_log("ERROR: Method 'addServiceToProvider' does not exist in Provider model!");
+                        }
+                    } else {
+                        error_log("Not associating with provider. Success=$success, User ID=" .
+                                ($_SESSION['user_id'] ?? 'not set') . ", Role=" . ($_SESSION['role'] ?? 'not set'));
+                    }
+                    break;
+                    
+                case 'update':
+                    if ($service_id) {
+                        error_log("Updating existing service ID: $service_id");
+                        $success = $serviceModel->updateService($service_id, $serviceData);
+                        error_log("Update service result: " . ($success ? "success" : "failure"));
+                    } else {
+                        error_log("Cannot update: No service ID provided");
+                        $success = false;
+                    }
+                    break;
+                    
+                default:
+                    error_log("No valid action specified, defaulting to create");
+                    if ($service_id) {
+                        error_log("Updating existing service ID: $service_id");
+                        $success = $serviceModel->updateService($service_id, $serviceData);
+                    } else {
+                        error_log("Creating new service");
+                        $service_id = $serviceModel->createService($serviceData);
+                        $success = ($service_id !== false);
+                        
+                        // Only associate with provider for new services in default case
+                        if ($success && isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'provider') {
+                            $provider_id = $_SESSION['user_id'];
+                            error_log("Attempting to associate service $service_id with provider $provider_id");
+                            require_once MODEL_PATH . '/Provider.php';
+                            $providerModel = new Provider($this->db);
+                            if (method_exists($providerModel, 'addServiceToProvider')) {
+                                $provider_result = $providerModel->addServiceToProvider($provider_id, $service_id);
+                                error_log("Provider association result: " . ($provider_result ? "success" : "failure"));
+                            } else {
+                                error_log("ERROR: Method 'addServiceToProvider' does not exist in Provider model!");
+                            }
+                        }
+                    }
+                    error_log("Service operation result: " . ($success ? "success (ID: $service_id)" : "failure"));
+                    break;
             }
-        } else {
-            error_log("Not associating with provider. Success=$success, User ID=" .
-                    ($_SESSION['user_id'] ?? 'not set') . ", Role=" . ($_SESSION['role'] ?? 'not set'));
         }
+        
+        if ($success) {
+            $message = $action === 'update' ? "Service updated successfully!" : "Service created and added to your offerings!";
+            set_flash_message('success', $message, 'provider_services');
+        } else {
+            set_flash_message('error', "Failed to " . ($action === 'update' ? "update" : "create") . " service. Please try again.", 'provider_services');
+        }
+        
+        header('Location: ' . base_url('index.php/provider/services'));
+        exit;
     }
-
-    if ($success) {
-set_flash_message('success', $service_id ? "Service created and added to your offerings!" : "Service updated successfully!", 'provider_services');
-    } else {
-set_flash_message('error', "Failed to create or update service. Please try again.", 'provider_services');
-    }
-
-    header('Location: ' . base_url('index.php/provider/services'));
-    exit;
-}
 
     /**
      * Add a service to the provider's offerings

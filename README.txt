@@ -32,19 +32,14 @@ clone: git clone https://github.com/it-sd-capstone/capstone-project-runtime_terr
    kholley_appointment_system
 
    Importing the database files in phpMyAdmin
-   *Note: Each file must be imported separately in the specified order to ensure proper database setup. Wait for each import to complete before starting the next one.
+  
    - Open phpMyAdmin(If not already opened) (http://localhost/phpmyadmin).
    - Select the database: Click on Kholley_appointment_system in the left sidebar.
    - Click the Import tab.
    Step 1: Import Kholley_appointment_system.sql
    - Click Choose File and select Kholley_appointment_system.sql.
    - Click Go and wait for it to complete.
-   Step 2: Import create_no_show_event.sql
-   - Click Choose File and select create_no_show_event.sql.
-   - Click Go and wait for it to finish.
-   Step 3: Import DBfill.sql
-   - Click Choose File and select DBfill.sql.
-   - Click Go and wait for it to complete.
+
 
 
 4. Configure Database Connection

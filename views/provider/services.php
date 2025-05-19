@@ -157,6 +157,7 @@ echo " -->";
             <div class="modal-content">
                 <form method="POST" action="<?= base_url('index.php/service/processService') ?>" class="needs-validation" novalidate id="editServiceForm">
                     <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="update">
                     <input type="hidden" name="service_id" id="edit_service_id">
                     <div class="modal-header bg-info text-white">
                         <h5 class="modal-title" id="editServiceModalLabel"><i class="fas fa-edit me-2"></i>Edit Service</h5>
