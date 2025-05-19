@@ -18,8 +18,18 @@ define('TESTS_PATH', APP_ROOT . '/tests');
 // Error reporting - comment out in production
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+require_once APP_ROOT . "/public_html/includes/security_headers.php";
+// Set secure cookie parameters before starting the session
+$currentCookieParams = session_get_cookie_params();
+session_set_cookie_params(
+    $currentCookieParams["lifetime"],
+    $currentCookieParams["path"],
+    $currentCookieParams["domain"],
+    isset($_SERVER['HTTPS']), // Set secure flag automatically based on HTTPS
+    true // Set httpOnly flag to true
+);
 
-// Start session
+// Now start the session
 session_start();
 
 // Load .env file - ADD THIS SECTION
@@ -45,7 +55,6 @@ if (file_exists($env_file)) {
 }
 // Load helper functions
 require_once APP_ROOT . '/core/helpers.php';
-
 // Load environment configuration
 require_once CONFIG_PATH . '/environment.php';
 // Load helper functions

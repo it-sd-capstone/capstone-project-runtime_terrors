@@ -171,6 +171,8 @@ class AuthController {
                                 // Store the login timestamp in the session for validation
                                 $_SESSION['login_timestamp'] = strtotime($loginUpdate['timestamp']);
                             }
+                            // Before setting any session variables, regenerate the session ID
+                            session_regenerate_id(true);
                             // Set session variables
                             $_SESSION['user_id'] = $user['user_id'];
                             $_SESSION['email'] = $user['email'];
@@ -892,13 +894,20 @@ class AuthController {
         // If a session cookie is used, destroy it
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params["path"], $params["domain"],
-                $params["secure"], $params["httponly"]
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
             );
         }
         
+        // Destroy the session and regenerate ID
         session_destroy();
+        session_regenerate_id(true);
         
         // Add a flash message to show on home page
         set_flash_message('success', 'You have been logged out successfully.', 'global');
