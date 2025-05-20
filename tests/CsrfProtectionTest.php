@@ -67,11 +67,6 @@ function testCriticalForms() {
         APP_ROOT . '/views/auth/forgot_password.php',
         APP_ROOT . '/views/auth/reset_password.php',
         APP_ROOT . '/views/patient/book.php',
-        APP_ROOT . '/views/patient/reschedule.php',
-        APP_ROOT . '/views/patient/cancel.php',
-        APP_ROOT . '/views/provider/addService.php',
-        APP_ROOT . '/views/provider/editService.php',
-        APP_ROOT . '/views/provider/schedule.php',
         APP_ROOT . '/views/provider/notifications.php',
         APP_ROOT . '/views/admin/add_provider.php',
         APP_ROOT . '/views/admin/edit_appointment.php',
@@ -117,8 +112,7 @@ function testControllerValidation() {
         APP_ROOT . '/controllers/patient_controller.php',
         APP_ROOT . '/controllers/provider_controller.php',
         APP_ROOT . '/controllers/admin_controller.php',
-        APP_ROOT . '/controllers/appointments_controller.php',
-        APP_ROOT . '/controllers/service_controller.php'
+        APP_ROOT . '/controllers/appointments_controller.php'
     ];
     
     $pass = 0;

@@ -567,46 +567,61 @@ logSystemEvent('system_error', 'A system error occurred: ' . $e->getMessage() . 
         return false;
     }
         
-    /**
-     * Delete a service by ID
-     * 
-     * @param int $service_id The ID of the service to delete
-     * @return bool True if deleted successfully, false otherwise
-     */
-    public function deleteService($service_id) {
-        try {
-            error_log("Attempting to delete service with ID: $service_id");
-            
-            // First check if the service exists
-            $query = "SELECT service_id FROM services WHERE service_id = ?";
-            $stmt = $this->db->prepare($query);
-            $stmt->bind_param("i", $service_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($result->num_rows === 0) {
-                error_log("Service with ID $service_id not found");
-                return false;
-            }
-            
-            // Delete the service
-            $query = "DELETE FROM services WHERE service_id = ?";
-            $stmt = $this->db->prepare($query);
-            $stmt->bind_param("i", $service_id);
-            $success = $stmt->execute();
-            
-            if ($success) {
-                error_log("Service with ID $service_id deleted successfully");
-                return true;
-            } else {
-                error_log("Failed to delete service with ID $service_id: " . $stmt->error);
-                return false;
-            }
-        } catch (Exception $e) {
-            error_log("Exception deleting service with ID $service_id: " . $e->getMessage());
-            return false;
-        }
-    }
+   /**
+   * Delete a service by ID
+   *  
+   * @param int $service_id The ID of the service to delete
+   * @return bool True if deleted successfully, false otherwise
+   */
+  public function deleteService($service_id) {
+      try {
+          error_log("Attempting to delete service with ID: $service_id");
+
+          // First check if the service exists
+          $query = "SELECT service_id FROM services WHERE service_id = ?";
+          $stmt = $this->db->prepare($query);
+          $stmt->bind_param("i", $service_id);
+          $stmt->execute();
+          $result = $stmt->get_result();
+
+          if ($result->num_rows === 0) {
+              error_log("Service with ID $service_id not found");
+              return false;
+          }
+
+          // First delete related records in provider_availability
+          $query = "DELETE FROM provider_availability WHERE service_id = ?";
+          $stmt = $this->db->prepare($query);
+          $stmt->bind_param("i", $service_id);
+          $stmt->execute();
+          error_log("Deleted related provider_availability records for service ID $service_id");
+
+          // Also delete from provider_services if it exists
+          $query = "DELETE FROM provider_services WHERE service_id = ?";
+          $stmt = $this->db->prepare($query);
+          $stmt->bind_param("i", $service_id);
+          $stmt->execute();
+          error_log("Deleted related provider_services records for service ID $service_id");
+
+          // Now delete the service
+          $query = "DELETE FROM services WHERE service_id = ?";
+          $stmt = $this->db->prepare($query);
+          $stmt->bind_param("i", $service_id);
+          $success = $stmt->execute();
+
+          if ($success) {
+              error_log("Service with ID $service_id deleted successfully");
+              return true;
+          } else {
+              error_log("Failed to delete service with ID $service_id: " . $stmt->error);
+              return false;
+          }
+      } catch (Exception $e) {
+          error_log("Exception deleting service with ID $service_id: " . $e->getMessage());
+          return false;
+      }
+  }
+
 
 
     /**

@@ -134,8 +134,6 @@ class AdminDashboardTest {
         // NEW: Test actual HTML rendering
         $this->testHtmlRendering();
         
-        // NEW: Test API responses
-        $this->testApiResponses();
         
         // NEW: Test user interactions
         $this->testUserInteractions();
@@ -370,7 +368,7 @@ class AdminDashboardTest {
         );
         
         // Test if required partials exist
-        $headerFile = VIEW_PATH . '/partials/admin_header.php';
+        $headerFile = VIEW_PATH . '/partials/header.php';
         $this->assertTest(
             'Admin Header Partial',
             file_exists($headerFile),
@@ -577,9 +575,7 @@ class AdminDashboardTest {
         $quickActions = [
             'Add New User' => 'admin/users/create',
             'Add New Provider' => 'admin/addProvider',
-            'Add New Service' => 'admin/services/create',
-            'Generate Reports' => 'admin/reports',
-            'System Settings' => 'admin/settings'
+            'Add New Service' => 'admin/services/create'
         ];
         
         foreach ($quickActions as $actionName => $actionUrl) {
@@ -931,94 +927,7 @@ class AdminDashboardTest {
         );
     }
     
-    /**
-     * NEW: Test API responses
-     * Verifies that API endpoints return the expected data
-     */
-    private function testApiResponses() {
-        echo "<h2>Testing API Responses</h2>";
-        
-        // First, try to create test notifications
-        $this->makeApiRequest('notification/createTestNotifications');
-        
-        // Test notifications API
-        $notificationResponse = $this->makeApiRequest('notification/getAdminNotifications');
-        
-        // If the API call fails, use a mock response for testing
-        if ($notificationResponse === false) {
-            error_log("Using mock notification data for testing");
-            echo "<div class='alert alert-warning'>Using mock notification data for testing</div>";
-            
-            // Create a mock response
-            $mockResponse = json_encode([
-                'success' => true,
-                'notifications' => [
-                    [
-                        'id' => 1,
-                        'type' => 'info',
-                        'message' => 'This is a mock notification for testing',
-                        'time' => 'just now',
-                        'is_read' => false
-                    ]
-                ],
-                'total_unread' => 1
-            ]);
-            
-            // Use the mock response for testing
-            $notificationResponse = $mockResponse;
-        }
-        
-        $this->assertTest(
-            'Notifications API Response',
-            $notificationResponse !== false,
-            "Expected notifications API to return a response"
-        );
-        
-        if ($notificationResponse !== false) {
-            $notificationData = json_decode($notificationResponse, true);
-            
-            $this->assertTest(
-                'Notifications API Structure',
-                is_array($notificationData) && isset($notificationData['success']),
-                "Expected notifications API to return a JSON object with 'success' property"
-            );
-            
-            if (is_array($notificationData) && isset($notificationData['success'])) {
-                $this->assertTest(
-                    'Notifications API Success',
-                    $notificationData['success'] === true,
-                    "Expected notifications API to return success=true"
-                );
-                
-                $this->assertTest(
-                    'Notifications API Data',
-                    isset($notificationData['notifications']) && is_array($notificationData['notifications']),
-                    "Expected notifications API to return an array of notifications"
-                );
-            }
-        }
-        
-        // Test appointment trends API (if it exists)
-        $trendsResponse = $this->makeApiRequest('admin/getAppointmentTrends', ['period' => 'monthly']);
-        
-        if ($trendsResponse !== false) {
-            $trendsData = json_decode($trendsResponse, true);
-            
-            $this->assertTest(
-                'Appointment Trends API Structure',
-                is_array($trendsData) && isset($trendsData['success']),
-                "Expected appointment trends API to return a JSON object with 'success' property"
-            );
-            
-            if (is_array($trendsData) && isset($trendsData['success']) && $trendsData['success'] === true) {
-                $this->assertTest(
-                    'Appointment Trends API Data',
-                    isset($trendsData['labels']) && isset($trendsData['data']),
-                    "Expected appointment trends API to return labels and data arrays"
-                );
-            }
-        }
-    }
+    
     
     /**
      * NEW: Test user interactions

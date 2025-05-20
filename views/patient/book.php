@@ -16,7 +16,6 @@
                                 <option value="<?= $service['service_id'] ?>" data-duration="<?= $service['duration'] ?? 30 ?>">
                                     <?= htmlspecialchars($service['name']) ?> - 
                                     <?= htmlspecialchars($service['description']) ?>
-                                    ($<?= htmlspecialchars(number_format((float)$service['price'], 2)) ?>)
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -31,7 +30,7 @@
                                 <option value="<?= $p['user_id'] ?>"
                                     data-services='<?= json_encode($p['service_ids'] ?? []) ?>'>
                                     <?= htmlspecialchars($p['first_name'] . ' ' . $p['last_name']) ?>
-                                    <?= !empty($p['specialization']) ? '(' . htmlspecialchars($p['specialization']) . ')' : '' ?>
+                                    <?= '' ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -99,7 +98,6 @@
 <!-- FullCalendar CSS & JS -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
-
 <script>
 // DOM elements
 const serviceSelect = document.getElementById('service_id');
@@ -116,7 +114,7 @@ let calendar = null;
 // Step 1: Service Selection
 serviceSelect.addEventListener('change', function() {
     const selectedService = this.value;
-
+    
     // Reset downstream steps
     providerSelect.value = "";
     providerBio.style.display = "none";
@@ -124,32 +122,47 @@ serviceSelect.addEventListener('change', function() {
     calendarSection.style.display = "none";
     calendarError.style.display = "none";
     bookForm.style.display = "none";
-
+    
     // --- FIX: Remove any previous 'No providers' alert ---
     const oldAlert = providerSection.querySelector('.alert.alert-info');
     if (oldAlert) oldAlert.remove();
-
-    // Filter providers
+    
+    // Filter providers - FIXED VERSION
     let availableProviderCount = 0;
+    
+    // First hide all provider options
     Array.from(providerSelect.options).forEach(opt => {
         if (!opt.value) return; // skip placeholder
-
-        let services = [];
-        try {
-            const servicesData = opt.getAttribute('data-services');
-            services = JSON.parse(servicesData || '[]');
-        } catch (e) {
-            console.error('Error parsing services data:', e);
-            services = [];
-        }
-
-        // Using String() to ensure comparison works regardless of type
-        const show = services.some(id => String(id) === String(selectedService));
-        opt.style.display = show ? '' : 'none';
-        if (show) availableProviderCount++;
+        opt.style.display = 'none';
     });
-
-    // --- FIX: If no providers, show message and disable dropdown ---
+    
+    // Only show providers that offer this specific service
+    if (selectedService) {
+        Array.from(providerSelect.options).forEach(opt => {
+            if (!opt.value) return; // skip placeholder
+            
+            let services = [];
+            try {
+                const servicesData = opt.getAttribute('data-services');
+                services = JSON.parse(servicesData || '[]');
+            } catch (e) {
+                console.error('Error parsing services data:', e);
+                services = [];
+            }
+            
+            // Convert both to strings to ensure comparison works
+            const show = services.some(id => String(id) === String(selectedService));
+            
+            if (show) {
+                opt.style.display = '';
+                availableProviderCount++;
+            }
+        });
+        
+        console.log(`Found ${availableProviderCount} providers for service ${selectedService}`);
+    }
+    
+    // If no providers for this service, show message
     if (selectedService && availableProviderCount === 0) {
         const alertDiv = document.createElement('div');
         alertDiv.className = 'alert alert-info mt-2';
@@ -225,7 +238,7 @@ function loadCalendar(providerId, serviceId) {
                     
                     // Check if this is an available slot (check all possible prop locations)
                     const isAvailable = 
-                        info.event.extendedProps.type === 'availability' || 
+                        info.event.extendedProps.type === 'availability' ||
                         info.event.title === 'Available' ||
                         (info.event.extendedProps && info.event.backgroundColor === '#28a745');
                     
@@ -264,7 +277,7 @@ function loadCalendar(providerId, serviceId) {
                     bookForm.style.display = "block";
                     bookForm.scrollIntoView({behavior: "smooth"});
                 },
-                eventDisplay: 'block',
+                                eventDisplay: 'block',
                 eventTimeFormat: {
                     hour: 'numeric',
                     minute: '2-digit',
@@ -408,5 +421,4 @@ diagnoseApiConnection("<?= base_url('index.php/api/test') ?>");
     content: " (Click to retry)";
 }
 </style>
-
 <?php include VIEW_PATH . '/partials/footer.php'; ?>

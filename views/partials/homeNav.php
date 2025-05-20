@@ -192,6 +192,30 @@ $userName = isset($userName) ? $userName : ($isLoggedIn ? ($_SESSION['name'] ?? 
 .hero-section .lead {
   color: white !important;
 }
+  @media (max-width: 991.98px) {
+  /* Position the collapsed navbar directly behind the toggle button */
+  .navbar-collapse {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin-top: -100%; /* Start offscreen/hidden */
+    transition: margin-top 0.3s ease;
+    width: 100%;
+    z-index: -1; /* Place behind the button */
+  }
+  
+  /* When the menu is expanded/shown */
+  .navbar-collapse.show {
+    margin-top: 50px; /* Adjust this value based on your button position */
+    z-index: 1000; /* Bring it to the front when shown */
+  }
+  
+  /* Container position to allow absolute positioning */
+  .navbar .container-fluid {
+    position: relative;
+  }
+}
+
 </style>
 
 <!-- Custom navigation script -->
